@@ -77,7 +77,6 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "members").required[Set[UserId]]("Missing Group.members"),
         (js \ "admins").required[Set[UserId]]("Missing Group.admins"),
         (js \ "membershipAccessStatus").optional[MembershipAccessStatus]
-
       ).mapN(CreateGroupInput.apply)
   }
   case object UpdateGroupInputSerializer extends ValidationSerializer[UpdateGroupInput] {
