@@ -81,12 +81,7 @@ class SharedZoneTestContext(object):
                 "email": "test@test.com",
                 "description": "this is a description",
                 "members": [{"id": "ok"}, {"id": "support-user-id"}],
-                "admins": [{"id": "ok"}],
-                "membershipAccessStatus": {
-                    "pendingReviewMember": [],
-                    "rejectedMember": [],
-                    "approvedMember": []
-                }
+                "admins": [{"id": "ok"}]
 
             }
 
@@ -99,12 +94,7 @@ class SharedZoneTestContext(object):
                 "email": "test@test.com",
                 "description": "this is a description",
                 "members": [{"id": "dummy"}],
-                "admins": [{"id": "dummy"}],
-                "membershipAccessStatus": {
-                    "pendingReviewMember": [],
-                    "rejectedMember": [],
-                    "approvedMember": []
-                }
+                "admins": [{"id": "dummy"}]
 
             }
             self.dummy_group = self.dummy_vinyldns_client.create_group(dummy_group, status=200)
@@ -116,12 +106,7 @@ class SharedZoneTestContext(object):
                 "email": "test@test.com",
                 "description": "this is a description",
                 "members": [{"id": "sharedZoneUser"}, {"id": "ok"}, {"id": "support-user-id"}],
-                "admins": [{"id": "sharedZoneUser"}, {"id": "ok"}],
-                "membershipAccessStatus": {
-                    "pendingReviewMember": [],
-                    "rejectedMember": [],
-                    "approvedMember": []
-                }
+                "admins": [{"id": "sharedZoneUser"}, {"id": "ok"}]
 
             }
             self.shared_record_group = self.ok_vinyldns_client.create_group(shared_record_group, status=200)
@@ -131,12 +116,7 @@ class SharedZoneTestContext(object):
                 "email": "test@test.com",
                 "description": "this is a description",
                 "members": [{"id": "history-id"}],
-                "admins": [{"id": "history-id"}],
-                "membershipAccessStatus": {
-                    "pendingReviewMember": [],
-                    "rejectedMember": [],
-                    "approvedMember": []
-                }
+                "admins": [{"id": "history-id"}]
 
             }
             self.history_group = self.history_client.create_group(history_group, status=200)
