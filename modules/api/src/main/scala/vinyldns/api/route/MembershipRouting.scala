@@ -126,7 +126,7 @@ class MembershipRoute(
               input.description,
               (input.members ++ input.admins).map(_.id),
               input.admins.map(_.id),
-              input.memberStatus,
+              input.membershipAccessStatus,
               authPrincipal
             )
         ) { group =>
@@ -162,7 +162,7 @@ class MembershipRoute(
       }
     } ~
     path("groups" / Segment  / "access" ) { groupId =>
-      (put & monitor("Endpoint.memberStatus")) {
+      (put & monitor("Endpoint.membershipAccessStatus")) {
         authenticateAndExecuteWithEntity[Group, MembershipAccess](
           (authPrincipal, input) =>
             membershipService.requestGroupMember(

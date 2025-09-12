@@ -34,7 +34,7 @@ object MembershipJsonProtocol {
       description: Option[String],
       members: Set[UserId],
       admins: Set[UserId],
-      memberStatus : Option[MembershipAccessStatus]
+      membershipAccessStatus : Option[MembershipAccessStatus]
   )
   final case class UpdateGroupInput(
       id: String,
@@ -43,7 +43,7 @@ object MembershipJsonProtocol {
       description: Option[String],
       members: Set[UserId],
       admins: Set[UserId],
-      memberStatus : Option[MembershipAccessStatus]
+      membershipAccessStatus : Option[MembershipAccessStatus]
   )
   final case class MemberStatusGroupInput(
                                            pendingReviewMember: Set[String] = Set.empty,
@@ -76,7 +76,7 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "description").optional[String],
         (js \ "members").required[Set[UserId]]("Missing Group.members"),
         (js \ "admins").required[Set[UserId]]("Missing Group.admins"),
-        (js \ "memberStatus").optional[MembershipAccessStatus]
+        (js \ "membershipAccessStatus").optional[MembershipAccessStatus]
 
       ).mapN(CreateGroupInput.apply)
   }
