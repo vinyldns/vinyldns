@@ -617,12 +617,12 @@ class SharedZoneTestContext(object):
             traceback.print_exc()
             raise
 
-    @staticmethod
-    def confirm_member_in_group(client, group):
-        retries = 2
-        success = group in client.list_all_my_groups(status=200)
-        while retries >= 0 and not success:
-            success = group in client.list_all_my_groups(status=200)
-            time.sleep(.05)
-            retries -= 1
-        assert_that(success, is_(True))
+    # @staticmethod
+    # def confirm_member_in_group(client, group):
+    #     retries = 2
+    #     success = group in client.list_all_my_groups(status=200)
+    #     while retries >= 0 and not success:
+    #         success = group in client.list_all_my_groups(status=200)
+    #         time.sleep(.05)
+    #         retries -= 1
+    #     assert_that(success, is_(True))
