@@ -81,7 +81,13 @@ class SharedZoneTestContext(object):
                 "email": "test@test.com",
                 "description": "this is a description",
                 "members": [{"id": "ok"}, {"id": "support-user-id"}],
-                "admins": [{"id": "ok"}]
+                "admins": [{"id": "ok"}],
+                "membershipAccessStatus": {
+                    "pendingReviewMember": [],
+                    "rejectedMember": [],
+                    "approvedMember": []
+                }
+
             }
 
             self.ok_group = self.ok_vinyldns_client.create_group(ok_group, status=200)
@@ -93,7 +99,13 @@ class SharedZoneTestContext(object):
                 "email": "test@test.com",
                 "description": "this is a description",
                 "members": [{"id": "dummy"}],
-                "admins": [{"id": "dummy"}]
+                "admins": [{"id": "dummy"}],
+                "membershipAccessStatus": {
+                    "pendingReviewMember": [],
+                    "rejectedMember": [],
+                    "approvedMember": []
+                }
+
             }
             self.dummy_group = self.dummy_vinyldns_client.create_group(dummy_group, status=200)
             # in theory this shouldn"t be needed, but getting "user is not in group' errors on zone creation
@@ -104,7 +116,13 @@ class SharedZoneTestContext(object):
                 "email": "test@test.com",
                 "description": "this is a description",
                 "members": [{"id": "sharedZoneUser"}, {"id": "ok"}, {"id": "support-user-id"}],
-                "admins": [{"id": "sharedZoneUser"}, {"id": "ok"}]
+                "admins": [{"id": "sharedZoneUser"}, {"id": "ok"}],
+                "membershipAccessStatus": {
+                    "pendingReviewMember": [],
+                    "rejectedMember": [],
+                    "approvedMember": []
+                }
+
             }
             self.shared_record_group = self.ok_vinyldns_client.create_group(shared_record_group, status=200)
 
@@ -113,7 +131,13 @@ class SharedZoneTestContext(object):
                 "email": "test@test.com",
                 "description": "this is a description",
                 "members": [{"id": "history-id"}],
-                "admins": [{"id": "history-id"}]
+                "admins": [{"id": "history-id"}],
+                "membershipAccessStatus": {
+                    "pendingReviewMember": [],
+                    "rejectedMember": [],
+                    "approvedMember": []
+                }
+
             }
             self.history_group = self.history_client.create_group(history_group, status=200)
             self.confirm_member_in_group(self.history_client, self.history_group)

@@ -16,7 +16,12 @@ def test_update_group_success(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         saved_group = client.create_group(new_group, status=200)
 
@@ -66,7 +71,12 @@ def test_update_group_without_name(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         result = client.create_group(new_group, status=200)
         assert_that(result["name"], is_(new_group["name"]))
@@ -97,7 +107,12 @@ def test_update_group_without_email(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         result = client.create_group(new_group, status=200)
         assert_that(result["name"], is_(new_group["name"]))
@@ -108,7 +123,12 @@ def test_update_group_without_email(shared_zone_test_context):
             "name": "without-email",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         errors = client.update_group(update_group["id"], update_group, status=400)["errors"]
         assert_that(errors[0], is_("Missing Group.email"))
@@ -129,7 +149,12 @@ def test_updating_group_without_name_or_email(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         result = client.create_group(new_group, status=200)
         assert_that(result["name"], is_(new_group["name"]))
@@ -139,7 +164,12 @@ def test_updating_group_without_name_or_email(shared_zone_test_context):
             "id": result["id"],
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         errors = client.update_group(update_group["id"], update_group, status=400)["errors"]
         assert_that(errors, has_length(2))
@@ -165,7 +195,12 @@ def test_updating_group_without_members_or_admins(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         result = client.create_group(new_group, status=200)
         assert_that(result["name"], is_(new_group["name"]))
@@ -176,6 +211,11 @@ def test_updating_group_without_members_or_admins(shared_zone_test_context):
             "name": "test-update-without-members",
             "email": "test@test.com",
             "description": "this is a description",
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         errors = client.update_group(update_group["id"], update_group, status=400)["errors"]
         assert_that(errors, has_length(2))
@@ -201,7 +241,12 @@ def test_update_group_adds_admins_as_members(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         saved_group = client.create_group(new_group, status=200)
 
@@ -220,7 +265,12 @@ def test_update_group_adds_admins_as_members(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}, {"id": "dummy"}]
+            "admins": [{"id": "ok"}, {"id": "dummy"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         group = client.update_group(update_group["id"], update_group, status=200)
 
@@ -248,7 +298,12 @@ def test_update_group_conflict(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         conflict_group = client.create_group(new_group, status=200)
         assert_that(conflict_group["name"], is_(new_group["name"]))
@@ -258,7 +313,12 @@ def test_update_group_conflict(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         result = client.create_group(other_group, status=200)
         assert_that(result["name"], is_(other_group["name"]))
@@ -270,7 +330,12 @@ def test_update_group_conflict(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         client.update_group(update_group["id"], update_group, status=409)
     finally:
@@ -310,7 +375,12 @@ def test_update_group_deleted(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         saved_group = client.create_group(new_group, status=200)
         client.delete_group(saved_group["id"], status=200)
@@ -583,7 +653,12 @@ def test_update_group_not_authorized(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         saved_group = ok_client.create_group(new_group, status=200)
 
@@ -615,7 +690,12 @@ def test_update_group_adds_admins_to_member_list(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
 
         saved_group = ok_client.create_group(new_group, status=200)

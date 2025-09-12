@@ -488,6 +488,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync()
@@ -549,6 +550,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
+              updatedInfo.membershipAccessStatus,
               dummyAuth
             )
             .value.unsafeRunSync().swap.toOption.get
@@ -574,6 +576,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync().swap.toOption.get
@@ -599,6 +602,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync().swap.toOption.get
@@ -618,6 +622,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync().swap.toOption.get
@@ -645,6 +650,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync().swap.toOption.get
@@ -666,6 +672,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               Set(),
               Set(),
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync().swap.toOption.get
