@@ -3,9 +3,9 @@
     <Appenders>
         <Console name="CONSOLE" target="SYSTEM_OUT">
             <EcsLayout
-                    serviceName="vinyldns-api"
-                    serviceNodeName="vinyldns-api"
-                    eventDataset="vinyldns-api"
+                    serviceName="vinyldns-core"
+                    serviceNodeName="vinyldns-core"
+                    eventDataset="vinyldns-core"
                     includeOrigin="true"
             />
         </Console>
@@ -21,10 +21,3 @@
         </Root>
     </Loggers>
 </Configuration>
-
-
-
-
-
-
-

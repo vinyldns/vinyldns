@@ -362,13 +362,16 @@ class MySqlRecordSetCacheRepository
         val recordsetDataJoin = sqls"RIGHT JOIN recordset ON recordset.id=recordset_data.recordset_id "
         val recordsetDataJoinQuery = initialQuery.append(recordsetDataJoin)
 
+        // Add GROUP BY clause to group by recordset_data.recordset_id and recordset_data.type
+        val groupByClause = sqls"GROUP BY recordset_data.recordset_id, recordset_data.type "
+
         val appendOpts = if (opts.nonEmpty) {
           val setDelimiter = SQLSyntax.join(opts, sqls"AND")
           val addWhere = sqls"WHERE"
           addWhere.append(setDelimiter)
         } else sqls""
 
-        val appendQueries = recordsetDataJoinQuery.append(appendOpts)
+        val appendQueries = recordsetDataJoinQuery.append(appendOpts).append(groupByClause)
 
         val finalQuery = appendQueries.append(finalQualifiers)
         DB.readOnly { implicit s =>
