@@ -194,10 +194,8 @@ def test_list_generated_zones_with_search_last_page(list_generated_zone_context,
                                                                    max_items=2,
                                                                    status=200)
     zones = result["zones"]
-
     assert_that(zones, has_length(1))
     assert_that(zones[0]["zoneName"], is_(list_generated_zone_context.search_generate_zone3["zoneName"]))
-
     assert_that(result, is_not(has_key("nextId")))
     assert_that(result["maxItems"], is_(2))
     assert_that(result["nameFilter"], is_(f"*test-searched-3{shared_zone_test_context.partition_id}"))
