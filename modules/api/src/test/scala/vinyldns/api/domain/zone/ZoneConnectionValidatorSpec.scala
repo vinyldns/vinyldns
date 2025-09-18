@@ -17,6 +17,7 @@
 package vinyldns.api.domain.zone
 
 import cats.scalatest.{EitherMatchers, EitherValues}
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.mockito.Mockito._
@@ -27,6 +28,7 @@ import org.scalatest.BeforeAndAfterEach
 import vinyldns.core.domain.record._
 import cats.effect._
 import org.mockito.Matchers.any
+import vinyldns.core.TestZoneData.mockPowerDNSProviderApiConnection
 import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
 import vinyldns.core.domain.zone.{ConfiguredDnsConnections, LegacyDnsBackend, Zone, ZoneConnection}
@@ -140,7 +142,8 @@ class ZoneConnectionValidatorSpec
     zc.copy(name = "backend-conn"),
     transfer.copy(name = "backend-transfer")
   )
-  val connections = ConfiguredDnsConnections(zc, transfer, List(backend))
+
+  val connections = ConfiguredDnsConnections(zc, transfer, List(backend),mockPowerDNSProviderApiConnection)
 
   "ConnectionValidator" should {
     "respond with a success if the connection is resolved" in {
