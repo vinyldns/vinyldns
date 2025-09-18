@@ -145,8 +145,8 @@ class ZoneRoute(
     path("zones" / "generate") {
       (post & monitor("Endpoint.generateZone")) {
         authenticateAndExecuteWithEntity[GenerateZone, ZoneGenerationInput](
-          (authPrincipal, generateZone) =>
-            zoneService.handleGenerateZoneRequest(generateZone, authPrincipal)
+          (authPrincipal, zoneGenerationInput) =>
+            zoneService.handleGenerateZoneRequest(zoneGenerationInput, authPrincipal)
         ) { response =>
           complete(StatusCodes.Accepted -> response)
         }
