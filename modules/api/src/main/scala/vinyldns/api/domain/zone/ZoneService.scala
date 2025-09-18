@@ -185,7 +185,10 @@ class ZoneService(
   def handleGenerateZoneRequest(
                                  request: ZoneGenerationInput,
                                  auth: AuthPrincipal
-                               ): Result[GenerateZone] =
+                               ): Result[GenerateZone] = {
+    println("afsfasfas",request)
+
+
     for {
       _ <- validateZoneName(request.zoneName).toResult
       _ <- membershipService.emailValidation(request.email)
@@ -228,6 +231,7 @@ class ZoneService(
       _ <- generateZoneRepository.save(zoneToGenerate).toResult[GenerateZone]
 
     } yield zoneToGenerate
+  }
 
   def handleUpdateGeneratedZoneRequest(
                                  request: ZoneGenerationInput,

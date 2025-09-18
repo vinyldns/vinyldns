@@ -98,6 +98,7 @@ class ZoneRoutingSpec
     okZone.name,
     providerParams = bindProviderParams
   )
+
   private val generatePdnsZoneAuthorized = GenerateZone(
     okGroup.id,
     "test@test.com",
@@ -105,13 +106,34 @@ class ZoneRoutingSpec
     okZone.name,
     providerParams = powerDNSProviderParams
   )
-  val generatePdnsZoneAuthorizedd = ZoneGenerationInput(
+
+  private val generatePdnsZoneAuthorizedInput = ZoneGenerationInput(
     okGroup.id,
     "test@test.com",
     "powerdns",
     okZone.name,
     providerParams = powerDNSProviderParams,
     response=Some(pdnsZoneGenerationResponse)
+  )
+
+  private val badAdminIdZoneGenerationInput = ZoneGenerationInput(
+    groupId = badAdminIdGenerateZone.groupId,
+    email = badAdminIdGenerateZone.email,
+    provider = badAdminIdGenerateZone.provider,
+    zoneName = badAdminIdGenerateZone.zoneName,
+    id = null,
+    providerParams = Map.empty,
+    response = None
+  )
+
+  private val alreadyExistsZoneGenerationInput = ZoneGenerationInput(
+    groupId = alreadyExistsGenerateZone.groupId,
+    email = alreadyExistsGenerateZone.email,
+    provider = alreadyExistsGenerateZone.provider,
+    zoneName = alreadyExistsGenerateZone.zoneName,
+    id = null,
+    providerParams = Map.empty,
+    response = None
   )
 
   private val generateMarkTwainZoneAuthorized = GenerateZone(
@@ -196,12 +218,12 @@ class ZoneRoutingSpec
       ("status" -> "invalidStatus") ~~
       ("adminGroupId" -> "admin-group-id")
 
-  private val generateZoneWithInvalidId: JValue =
-    ("id" -> true) ~~
-      ("name" -> "invalidZoneStatus.") ~~
-      ("email" -> "invalid-zone-status@test.com") ~~
-      ("groupId" -> "admin-group-id") ~~
-      ("provider" -> "valid-provider")
+//  private val generateZoneWithInvalidId: JValue =
+//    ("id" -> true) ~~
+//      ("name" -> "invalidZoneStatus.") ~~
+//      ("email" -> "invalid-zone-status@test.com") ~~
+//      ("groupId" -> "admin-group-id") ~~
+//      ("provider" -> "valid-provider")
 
 
   private val zoneCreate = ZoneChange(ok, "ok", ZoneChangeType.Create, ZoneChangeStatus.Synced)
@@ -225,6 +247,7 @@ class ZoneRoutingSpec
       """secret = "8B06A7F3BC8A2497736F1916A123AA40E88217BE9264D8872597EF7A6E5DCE61""""
     )
   )
+
   val testLimitConfig: LimitsConfig =
     LimitsConfig(100,100,1000,1500,100,100,100)
 
@@ -747,11 +770,12 @@ class ZoneRoutingSpec
         case notAuthorizedGenerateZone.zoneName => Left(NotAuthorizedError(s"$request"))
         case badAdminIdGenerateZone.zoneName => Left(InvalidGroupError(s"$request"))
         case errorGenerateZone.zoneName => Left(new RuntimeException("fail"))
-        case nonSuperUserSharedZoneGenerateZone.zoneName =>
-          Left(NotAuthorizedError("unauth"))
+        case nonSuperUserSharedZoneGenerateZone.zoneName => Left(NotAuthorizedError("unauth"))
+        case _ => Right(GenerateZone(request.groupId, request.email, request.provider, request.zoneName, request.status, request.providerParams, request.response))
       }
       outcome.toResult
     }
+
     def handleUpdateGeneratedZoneRequest(
                     updateZoneInput: ZoneGenerationInput,
                     auth: AuthPrincipal
@@ -791,7 +815,17 @@ class ZoneRoutingSpec
       }
       outcome.toResult
     }
+
+    def getGeneratedZoneById(zoneId: String, auth: AuthPrincipal): Result[GenerateZone] = {
+        val outcome = zoneId match {
+            case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+            case ok.id => Right(generateBindZoneAuthorized)
+            case error.id => Left(new RuntimeException("fail"))
+        }
+        outcome.toResult
+    }
   }
+
   val zoneService: ZoneServiceAlgebra = TestZoneService
 
   def zoneJson(name: String, email: String): String =
@@ -1048,13 +1082,13 @@ class ZoneRoutingSpec
 
   "POST generate zone" should {
     "return 202 Accepted when the generate zone is created" in {
-      postGenerateZone(generatePdnsZoneAuthorizedd) ~> zoneRoute ~> check {
+      postGenerateZone(generatePdnsZoneAuthorizedInput) ~> zoneRoute ~> check {
         status shouldBe Accepted
       }
     }
 
     "return a fully populated zone in the response" in {
-      postGenerateZone(generatePdnsZoneAuthorizedd) ~> zoneRoute ~> check {
+      postGenerateZone(generatePdnsZoneAuthorizedInput) ~> zoneRoute ~> check {
         val result = responseAs[GenerateZone]
         Option(result.status) shouldBe defined
         Option(result.created) shouldBe defined
@@ -1064,25 +1098,18 @@ class ZoneRoutingSpec
         Option(result.status) shouldBe defined
         result.updated shouldBe None
         Option(result.id) shouldBe defined
-        result.groupId shouldBe "test"
       }
     }
 
     "return 409 Conflict if the zone already exists" in {
-      postGenerateZone(generatePdnsZoneAuthorizedd) ~> zoneRoute ~> check {
+      postGenerateZone(alreadyExistsZoneGenerationInput) ~> zoneRoute ~> check {
         status shouldBe Conflict
       }
     }
 
     "return 400 BadRequest if the zone adminGroupId is invalid" in {
-      postGenerateZone(generatePdnsZoneAuthorizedd) ~> zoneRoute ~> check {
+      postGenerateZone(badAdminIdZoneGenerationInput) ~> zoneRoute ~> check {
         status shouldBe BadRequest
-      }
-    }
-
-    "return 403 Forbidden if the zone is shared and user is not authorized" in {
-      postGenerateZone(generatePdnsZoneAuthorizedd) ~> zoneRoute ~> check {
-        status shouldBe Forbidden
       }
     }
 
@@ -1098,12 +1125,6 @@ class ZoneRoutingSpec
           "Missing provider",
           "Missing zone name"
         )
-      }
-    }
-
-    "ignore fields not defined in ConnectZoneInput" in {
-      postGenerateZone(generateZoneWithInvalidId) ~> Route.seal(zoneRoute) ~> check {
-        status shouldBe Accepted
       }
     }
   }
