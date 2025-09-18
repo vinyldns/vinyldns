@@ -74,7 +74,7 @@ lazy val apiAssemblySettings = Seq(
     case PathList("scala", "tools", "nsc", "doc", "html", "resource", "lib", "template.js") =>
       MergeStrategy.discard
     case PathList("META-INF", "org", "apache", "logging", "log4j", "core", "config", "plugins", "Log4j2Plugins.dat") =>
-      MergeStrategy.first
+      MergeStrategy.discard
     case "simulacrum/op.class" | "simulacrum/op$.class" | "simulacrum/typeclass$.class"
          | "simulacrum/typeclass.class" | "simulacrum/noop.class" =>
       MergeStrategy.discard
@@ -106,6 +106,7 @@ lazy val api = (project in file("modules/api"))
 
 lazy val root = (project in file("."))
   .enablePlugins(AutomateHeaderPlugin)
+  .disablePlugins(PlayLogback)
   .configs(IntegrationTest)
   .settings(headerSettings(IntegrationTest))
   .settings(sharedSettings)
@@ -211,6 +212,8 @@ lazy val portalSettings = Seq(
   routesGenerator := InjectedRoutesGenerator,
   coverageExcludedPackages := "<empty>;views.html.*;router.*;controllers\\.javascript.*;.*Reverse.*",
   javaOptions in Test += "-Dconfig.file=conf/application-test.conf",
+  javaOptions in Test += "-Dlog4j.configurationFile=conf/log4j2-test.xml",
+
   // Adds the version when working locally with sbt run
   PlayKeys.devSettings += "vinyldns.base-version" -> (version in ThisBuild).value,
   // Automatically run the prepare portal script before `run`
@@ -244,6 +247,7 @@ lazy val portalSettings = Seq(
 
 lazy val portal = (project in file("modules/portal"))
   .enablePlugins(PlayScala, AutomateHeaderPlugin)
+  .disablePlugins(PlayLogback)
   .settings(sharedSettings)
   .settings(testSettings)
   .settings(portalSettings)

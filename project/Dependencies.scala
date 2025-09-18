@@ -17,6 +17,7 @@ object Dependencies {
   lazy val jaxbV = "2.3.0"
   lazy val fs2V = "2.4.5"
   lazy val ficusV = "1.4.3"
+  lazy val log4j2V = "2.25.1"
 
   lazy val apiDependencies = Seq(
     "com.typesafe.akka"         %% "akka-http"                      % akkaHttpV,
@@ -38,9 +39,9 @@ object Dependencies {
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
     "org.scodec"                %% "scodec-bits"                    % scodecV,
     "org.slf4j"                 %  "slf4j-api"                      % "2.0.17",
-    "org.apache.logging.log4j"  %  "log4j-api"                      % "2.25.0",
-    "org.apache.logging.log4j"  %  "log4j-core"                     % "2.25.0",
-    "org.apache.logging.log4j"  %  "log4j-slf4j2-impl"              % "2.25.0",
+    "org.apache.logging.log4j"  %  "log4j-api"                      % log4j2V,
+    "org.apache.logging.log4j"  %  "log4j-core"                     % log4j2V,
+    "org.apache.logging.log4j"  %  "log4j-slf4j2-impl"              % log4j2V,
     "co.fs2"                    %% "fs2-core"                       % fs2V,
     "com.github.pureconfig"     %% "pureconfig"                     % pureConfigV,
     "com.github.pureconfig"     %% "pureconfig-cats-effect"         % pureConfigV,
@@ -125,7 +126,7 @@ object Dependencies {
     "com.typesafe.play"         %% "play-jdbc"                      % playV,
     "com.typesafe.play"         %% "play-guice"                     % playV,
     "com.typesafe.play"         %% "play-ahc-ws"                    % playV,
-    "com.typesafe.play"         %% "play-specs2"                    % playV % "test",
+    "com.typesafe.play"         %% "play-specs2"                    % playV exclude("ch.qos.logback", "logback-classic"),
     // Netty is to get past a ClassNotFoundError for UnixChannelOption
     // https://discuss.lightbend.com/t/integration-tests-using-play-2-7-2-are-using-the-nettyserver/4458/3
     "io.netty"                  %  "netty-transport-native-unix-common" % "4.1.37.Final" % "test",
@@ -134,6 +135,9 @@ object Dependencies {
     "co.fs2"                    %% "fs2-core"                       % fs2V,
     "de.leanovate.play-mockws"  %% "play-mockws"                    % "2.7.1"  % "test",
     "com.iheart"                %% "ficus"                          % ficusV,
-    "co.elastic.logging"        %  "log4j2-ecs-layout"              % "1.7.0"
+    "co.elastic.logging"        %  "log4j2-ecs-layout"              % "1.7.0",
+    "org.apache.logging.log4j"  %  "log4j-api"                      % log4j2V,
+    "org.apache.logging.log4j"  %  "log4j-core"                     % log4j2V,
+    "org.apache.logging.log4j"  %  "log4j-slf4j2-impl"              % log4j2V
   )
 }

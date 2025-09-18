@@ -9,6 +9,9 @@
                     includeOrigin="true"
             />
         </Console>
+        <Console name="BANNER_APPENDER" target="SYSTEM_OUT">
+            <PatternLayout pattern="%msg%n"/>
+        </Console>
     </Appenders>
     <Loggers>
         <Logger name="org.flywaydb" level="DEBUG" additivity="false">
@@ -21,16 +24,11 @@
         </logger>
         <!-- Suppress the memory pool log -->
         <logger name="MemStats" level="WARN"/>
-
+        <logger name="BANNER_LOGGER" level="INFO" additivity="false">
+            <appender-ref ref="BANNER_APPENDER"/>
+        </logger>
         <Root level="INFO">
             <AppenderRef ref="CONSOLE"/>
         </Root>
     </Loggers>
 </Configuration>
-
-
-
-
-
-
-
