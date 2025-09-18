@@ -633,7 +633,6 @@ class SharedZoneTestContext(object):
         group_ids = [g.get("id") for g in client.list_all_my_groups(status=200)]
         while retries >= 0 and group_id not in group_ids:
             group_ids = [g.get("id") for g in client.list_all_my_groups(status=200)]
-            print(f"[confirm_member_in_group][retry] group_id_in_list={group_id in group_ids}")
             time.sleep(.05)
             retries -= 1
         assert_that(group_id in group_ids, is_(True))
