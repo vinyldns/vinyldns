@@ -272,7 +272,7 @@ class ZoneServiceIntegrationSpec
           .value
           .unsafeRunSync()
       result shouldBe Right(
-        List("name-servers")
+        List("ns1.example.com.", "ns2.example.com.")
       )
     }
     "return a allowed providers with appropriate response" in {
@@ -282,7 +282,7 @@ class ZoneServiceIntegrationSpec
           .value
           .unsafeRunSync()
       result shouldBe Right(
-        List("bind","powerdns")
+        List("powerdns")
       )
     }
   }
