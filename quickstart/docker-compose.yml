@@ -9,7 +9,7 @@ services:
 
   pdns-auth:
     container_name: "vinyldns-pdns-auth"
-    image: pdns-auth:0.1
+    image: powerdns/pdns-auth-master
     volumes:
       - ./pdns/pdns.conf:/etc/powerdns/pdns.conf
     environment:

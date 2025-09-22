@@ -41,7 +41,7 @@ start-pdns:
 	  -p 19005:19005 -p 1053:53 -p 1053:53/udp \
 	  -e PDNS_AUTH_API_KEY="vinyldns_pdns_auth_api_key" \
 	  --network vinyldns_func_test_net \
-	  pdns-auth:0.1
+	  powerdns/pdns-auth-master
 	docker cp $(ROOT_DIR)/quickstart/pdns/pdns.conf vinyldns-pdns-auth:/etc/powerdns/pdns.conf
 
 build:
