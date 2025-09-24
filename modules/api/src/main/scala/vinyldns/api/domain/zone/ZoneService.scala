@@ -24,7 +24,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
-import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.{ZoneCommandResult, _}
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.backend.BackendResolver
@@ -32,7 +32,23 @@ import com.cronutils.model.definition.CronDefinition
 import com.cronutils.model.definition.CronDefinitionBuilder
 import com.cronutils.parser.CronParser
 import com.cronutils.model.CronType
+import org.slf4j.LoggerFactory
 import vinyldns.api.domain.membership.MembershipService
+import org.json4s._
+import org.json4s.jackson.JsonMethods._
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import com.networknt.schema.{JsonSchemaFactory, SpecVersion}
+import org.json4s.{JObject, JValue}
+
+import scala.util.Try
+import scala.jdk.CollectionConverters._
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+import java.net.{HttpURLConnection, URL}
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+import scala.io.Source
 
 object ZoneService {
   def apply(
@@ -43,8 +59,9 @@ object ZoneService {
       accessValidation: AccessValidationsAlgebra,
       backendResolver: BackendResolver,
       crypto: CryptoAlgebra,
-      membershipService:MembershipService
-  ): ZoneService =
+      membershipService:MembershipService,
+      dnsProviderApiConnection : DnsProviderApiConnection
+           ): ZoneService =
     new ZoneService(
       dataAccessor.zoneRepository,
       dataAccessor.groupRepository,
@@ -56,7 +73,9 @@ object ZoneService {
       accessValidation,
       backendResolver,
       crypto,
-      membershipService
+      membershipService,
+      dnsProviderApiConnection,
+      dataAccessor.generateZoneRepository
     )
 }
 
@@ -71,29 +90,34 @@ class ZoneService(
     accessValidation: AccessValidationsAlgebra,
     backendResolver: BackendResolver,
     crypto: CryptoAlgebra,
-    membershipService:MembershipService
-) extends ZoneServiceAlgebra {
+    membershipService: MembershipService,
+    dnsProviderApiConnection: DnsProviderApiConnection,
+    generateZoneRepository: GenerateZoneRepository
+
+                 ) extends ZoneServiceAlgebra {
 
   import accessValidation._
   import zoneValidations._
   import Interfaces._
 
+  private val logger = LoggerFactory.getLogger(classOf[ZoneService])
+
   def connectToZone(
-      createZoneInput: CreateZoneInput,
+      ConnectZoneInput: ConnectZoneInput,
       auth: AuthPrincipal
   ): Result[ZoneCommandResult] =
     for {
-      _ <- isValidZoneAcl(createZoneInput.acl).toResult
-      _ <- membershipService.emailValidation(createZoneInput.email)
-      _ <- connectionValidator.isValidBackendId(createZoneInput.backendId).toResult
-      _ <- validateSharedZoneAuthorized(createZoneInput.shared, auth.signedInUser).toResult
-      _ <- zoneDoesNotExist(createZoneInput.name)
-      _ <- adminGroupExists(createZoneInput.adminGroupId)
-      _ <- if(createZoneInput.recurrenceSchedule.isDefined) canScheduleZoneSync(auth).toResult else IO.unit.toResult
-      isCronStringValid = if(createZoneInput.recurrenceSchedule.isDefined) isValidCronString(createZoneInput.recurrenceSchedule.get) else true
+      _ <- isValidZoneAcl(ConnectZoneInput.acl).toResult
+      _ <- membershipService.emailValidation(ConnectZoneInput.email)
+      _ <- connectionValidator.isValidBackendId(ConnectZoneInput.backendId).toResult
+      _ <- validateSharedZoneAuthorized(ConnectZoneInput.shared, auth.signedInUser).toResult
+      _ <- zoneDoesNotExist(ConnectZoneInput.name)
+      _ <- adminGroupExists(ConnectZoneInput.adminGroupId)
+      _ <- if(ConnectZoneInput.recurrenceSchedule.isDefined) canScheduleZoneSync(auth).toResult else IO.unit.toResult
+      isCronStringValid = if(ConnectZoneInput.recurrenceSchedule.isDefined) isValidCronString(ConnectZoneInput.recurrenceSchedule.get) else true
       _ <- validateCronString(isCronStringValid).toResult
-      _ <- canChangeZone(auth, createZoneInput.name, createZoneInput.adminGroupId).toResult
-      createdZoneInput = if(createZoneInput.recurrenceSchedule.isDefined) createZoneInput.copy(scheduleRequestor = Some(auth.signedInUser.userName)) else createZoneInput
+      _ <- canChangeZone(auth, ConnectZoneInput.name, ConnectZoneInput.adminGroupId).toResult
+      createdZoneInput = if(ConnectZoneInput.recurrenceSchedule.isDefined) ConnectZoneInput.copy(scheduleRequestor = Some(auth.signedInUser.userName)) else ConnectZoneInput
       zoneToCreate = Zone(createdZoneInput, auth.isTestUser)
       _ <- connectionValidator.validateZoneConnections(zoneToCreate)
       createZoneChange <- ZoneChangeGenerator.forAdd(zoneToCreate, auth).toResult
@@ -134,6 +158,388 @@ class ZoneService(
       deleteZoneChange <- ZoneChangeGenerator.forDelete(zone, auth).toResult
       _ <- messageQueue.send(deleteZoneChange).toResult[Unit]
     } yield deleteZoneChange
+
+  def getGenerateZoneByName(zoneName: String, auth: AuthPrincipal): Result[GenerateZone] =
+    for {
+      generateZone <- getGenerateZoneByNameOrFail(ensureTrailingDot(zoneName))
+    } yield generateZone
+
+  def getGeneratedZoneById(zoneId: String, auth: AuthPrincipal): Result[GenerateZone] =
+    for {
+      generateZone <- getGeneratedZoneOrFail(zoneId)
+    } yield generateZone
+
+  def createConnection(apiUrl: String): HttpURLConnection = {
+   new URL(apiUrl).openConnection().asInstanceOf[HttpURLConnection]
+  }
+
+  private def schemaValidationResult(
+                                      providerConfig: DnsProviderConfig,
+                                      operation: String,
+                                      params: Map[String, JValue]
+                                    ): Result[Unit] = providerConfig.schemas.get(operation) match {
+    case Some(schema) => JsonSchemaValidator.validate(schema, params).toResult
+    case None => result(())
+  }
+
+  def handleGenerateZoneRequest(
+                                 request: ZoneGenerationInput,
+                                 auth: AuthPrincipal
+                               ): Result[GenerateZone] =
+    for {
+      _ <- validateZoneName(request.zoneName).toResult
+      _ <- membershipService.emailValidation(request.email)
+      // Validate input
+      providerConfig <- validateProvider(request.provider, dnsProviderApiConnection.providers).toResult
+
+      _ <- schemaValidationResult(providerConfig, "create-zone", request.providerParams)
+      _ <- logger.info(s"Request providerParams: ${request.providerParams}").toResult
+
+      // Build request and endpoint
+      endpoint = buildGenerateZoneEndpoint(providerConfig.endpoints("create-zone"), request)
+      requestJsonOpt = buildGenerateZoneRequestJson(providerConfig.requestTemplates.get("create-zone"), request)
+
+      // Authorization and existence checks
+      _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
+      _ <- generateZoneDoesNotExist(request.zoneName).toResult
+
+      // Send request
+      _ <- logger.info(s"Request: provider=${request.provider}, path=$endpoint, request=$requestJsonOpt").toResult
+      dnsProviderConn <- createConnection(endpoint).toResult
+      dnsConnResponse <- createDnsZoneService(providerConfig.apiKey, "create-zone", requestJsonOpt, dnsProviderConn).toResult
+
+      // Process response
+      responseCode = dnsConnResponse.getResponseCode
+      _ <- logger.info(s"response code: $responseCode").toResult
+      inputStream = if (responseCode >= 400) dnsConnResponse.getErrorStream else dnsConnResponse.getInputStream
+      responseMessage: String = Source.fromInputStream(inputStream, "UTF-8").mkString
+      _ <- isValidGenerateZoneConn(responseCode, responseMessage).toResult
+
+      // Only parse JSON if the response is non-empty
+      responseJson = if (responseMessage.nonEmpty) parse(responseMessage) else JNothing
+      zoneGenerateResponse = ZoneGenerationResponse(
+        responseCode = Some(responseCode),
+        status = Some(dnsConnResponse.getResponseMessage),
+        message = Some(responseJson),
+        changeType = GenerateZoneChangeType.Create
+      )
+      zoneToGenerate = GenerateZone(request.copy(response = Some(zoneGenerateResponse)))
+      _ <- logger.info(s"zone generation response: Create: $zoneToGenerate").toResult
+      _ <- generateZoneRepository.save(zoneToGenerate).toResult[GenerateZone]
+
+    } yield zoneToGenerate
+
+  def handleUpdateGeneratedZoneRequest(
+                                 request: ZoneGenerationInput,
+                                 auth: AuthPrincipal
+                               ): Result[GenerateZone] =
+    for {
+      existingGeneratedZone <- getGenerateZoneByName(request.zoneName, auth)
+      _ <- membershipService.emailValidation(request.email)
+      _ <- canChangeZone(auth, existingGeneratedZone.zoneName, existingGeneratedZone.groupId).toResult
+
+      // Validate input
+      providerConfig <- validateProvider(request.provider, dnsProviderApiConnection.providers).toResult
+      _ <- validateZoneName(request.zoneName).toResult
+      _ <- schemaValidationResult(providerConfig, "update-zone", request.providerParams)
+
+      _ <- logger.info(s"Request providerParams: ${request.providerParams}").toResult
+
+      // Build request and endpoint
+      endpoint = buildGenerateZoneEndpoint(providerConfig.endpoints("update-zone"), request)
+      requestJsonOpt = buildGenerateZoneRequestJson(providerConfig.requestTemplates.get("update-zone"), request)
+
+      // Send request
+      _ <- logger.info(s"Request: provider=${request.provider}, path=$endpoint, request=$requestJsonOpt").toResult
+      dnsProviderConn <- createConnection(endpoint).toResult
+      dnsConnResponse <- createDnsZoneService(providerConfig.apiKey, "update-zone", requestJsonOpt, dnsProviderConn).toResult
+
+      // Process response
+      responseCode = dnsConnResponse.getResponseCode
+      _ <- logger.info(s"response code: $responseCode").toResult
+      inputStream = if (responseCode >= 400) dnsConnResponse.getErrorStream else dnsConnResponse.getInputStream
+      responseMessage: String = Source.fromInputStream(inputStream, "UTF-8").mkString
+      _ <- isValidGenerateZoneConn(responseCode, responseMessage).toResult
+
+      // Only parse JSON if the response is non-empty
+      responseJson = if (responseMessage.nonEmpty) parse(responseMessage) else JNothing
+
+      zoneGenerateResponse = ZoneGenerationResponse(
+        responseCode = Some(responseCode),
+        status = Some(dnsConnResponse.getResponseMessage),
+        message = Some(responseJson),
+        changeType = GenerateZoneChangeType.Update
+      )
+      zoneToUpdate = existingGeneratedZone.copy(
+        email = request.email,
+        groupId = request.groupId,
+        providerParams = existingGeneratedZone.providerParams ++ request.providerParams,
+        response = Some(zoneGenerateResponse),
+        updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
+      )
+      _ <- logger.info(s"zone generation response: Update: $zoneToUpdate").toResult
+      _ <- generateZoneRepository.save(zoneToUpdate).toResult[GenerateZone]
+    } yield zoneToUpdate
+
+
+  def handleDeleteGeneratedZoneRequest(
+                                           generatedZoneId: String,
+                                           auth: AuthPrincipal
+                                       ): Result[GenerateZone] =
+    for {
+      generatedZone <- getGeneratedZoneOrFail(generatedZoneId)
+      _ <- canChangeZone(auth, generatedZone.zoneName, generatedZone.groupId).toResult
+
+      providerConfig <- validateProvider(generatedZone.provider, dnsProviderApiConnection.providers).toResult
+      request = ZoneGenerationInput(
+        zoneName = generatedZone.zoneName,
+        provider = generatedZone.provider,
+        groupId = generatedZone.groupId,
+        email = generatedZone.email,
+        providerParams = generatedZone.providerParams
+      )
+
+      endpoint = buildGenerateZoneEndpoint(providerConfig.endpoints("delete-zone"), request)
+
+      dnsProviderConn <- createConnection(endpoint).toResult
+      dnsConnResponse <- createDnsZoneService(providerConfig.apiKey, "delete-zone", None, dnsProviderConn).toResult
+
+      // Process response
+      responseCode = dnsConnResponse.getResponseCode
+      _ <- logger.info(s"response code: $responseCode").toResult
+      inputStream = if (responseCode >= 400) dnsConnResponse.getErrorStream else dnsConnResponse.getInputStream
+      responseMessage: String = Source.fromInputStream(inputStream, "UTF-8").mkString
+      _ <- isValidGenerateZoneConn(responseCode, responseMessage).toResult
+
+      // Only parse JSON if the response is non-empty
+      responseJson = if (responseMessage.nonEmpty) parse(responseMessage) else JNothing
+      zoneGenerateResponse = ZoneGenerationResponse(
+        responseCode = Some(responseCode),
+        status = Some(dnsConnResponse.getResponseMessage),
+        message = Some(responseJson),
+        changeType = GenerateZoneChangeType.Delete
+      )
+      zoneToDelete = GenerateZone(request.copy(response = Some(zoneGenerateResponse))).copy(id = generatedZone.id)
+      _ <- logger.info(s"zone generation response: Delete: $zoneToDelete").toResult
+      _ <- generateZoneRepository.delete(zoneToDelete).toResult[GenerateZone]
+
+    } yield zoneToDelete
+
+
+  // Build a Generate Zone JSON request using template engine
+  private def buildGenerateZoneRequestJson(
+                                            maybeRequestTemplate: Option[String],
+                                            zoneGenerationInput: ZoneGenerationInput
+                                          ): Option[String] = {
+    val baseParams = Map(
+      "zoneName" -> JString(zoneGenerationInput.zoneName),
+      "provider" -> JString(zoneGenerationInput.provider),
+      "groupId"  -> JString(zoneGenerationInput.groupId),
+      "email"    -> JString(zoneGenerationInput.email)
+    )
+
+    maybeRequestTemplate.map { requestTemplate =>
+      TemplateEngine.renderTemplate(requestTemplate, baseParams ++ zoneGenerationInput.providerParams)
+    }
+  }
+
+  private def buildGenerateZoneEndpoint(
+                                         endpointTemplate: String,
+                                         zoneGenerationInput: ZoneGenerationInput
+                                       ): String = {
+    val baseParams = Map(
+      "zoneName" -> zoneGenerationInput.zoneName,
+      "provider" -> zoneGenerationInput.provider,
+      "groupId" -> zoneGenerationInput.groupId,
+      "email" -> zoneGenerationInput.email
+    )
+
+    val providerParams = zoneGenerationInput.providerParams.map {
+      case (k, JString(v)) => k -> v
+      case (k, JInt(v)) => k -> v.toString
+      case (k, JDouble(v)) => k -> v.toString
+      case (k, JBool(v)) => k -> v.toString
+      case (k, JNull) => k -> ""
+      case (k, v) => k -> compact(render(v)) // for arrays/objects
+    }
+
+    TemplateEngine.substituteEndpoint(endpointTemplate, baseParams ++ providerParams)
+  }
+
+  object TemplateEngine {
+    /** Renders a JSON template, substituting fields and string placeholders with provided params. */
+    def renderTemplate(template: String, params: Map[String, JValue]): String = {
+      val templateJson = parse(template)
+      val withFieldsReplaced = replaceFields(templateJson, params)
+      val withPlaceholdersReplaced = replacePlaceholders(withFieldsReplaced, params)
+      val pruned = withPlaceholdersReplaced.pruneUnusedFields()
+      compact(render(pruned))
+    }
+
+    /** Substitutes {{key}} in a plain string template with URL-encoded values from params. */
+    def substituteEndpoint(endpointTemplate: String, params: Map[String, String]): String =
+      params.foldLeft(endpointTemplate) { case (url, (key, value)) =>
+        val encoded = URLEncoder.encode(value, StandardCharsets.UTF_8.toString)
+        url.replace(s"{{$key}}", encoded)
+      }
+
+    // --- Helpers ---
+
+    private def replaceFields(json: JValue, params: Map[String, JValue]): JValue =
+      json.transformField {
+        case (key, _) if params.contains(key) => (key, params(key))
+      }
+
+    private def replacePlaceholders(json: JValue, params: Map[String, JValue]): JValue =
+      json.transform {
+        case JString(s) if s.startsWith("{{") && s.endsWith("}}") =>
+          val key = s.substring(2, s.length - 2).trim
+          params.getOrElse(key, JString(s))
+        case other => other
+      }
+
+    implicit class JsonPruner(json: JValue) {
+      def pruneUnusedFields(): JValue = json match {
+        case JObject(fields) =>
+          JObject(fields.flatMap {
+            case (key, value) =>
+              val pruned = value.pruneUnusedFields()
+              pruned match {
+                case JString(s) if s.startsWith("{{") && s.endsWith("}}") => None
+                case _ => Some((key, pruned))
+              }
+          })
+        case JArray(items) => JArray(items.map(_.pruneUnusedFields()))
+        case other => other
+      }
+    }
+  }
+
+  object JsonSchemaValidator {
+    private val objectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
+    private val schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012)
+
+    def validate(
+                  schemaJson: String,
+                  data: Map[String, JValue]
+                ): Either[Throwable, Unit] = {
+      for {
+        dataNode <- {
+          val dataJson = JObject(data.toList)
+          val dataString = compact(render(dataJson))
+          Try(objectMapper.readTree(dataString)).toEither.left.map(e =>
+            InvalidRequest(s"Could not parse data as JSON: ${e.getMessage}")
+          )
+        }
+        schema <- Try(schemaFactory.getSchema(schemaJson)).toEither.left.map(e =>
+          InvalidRequest(s"Could not parse schema: ${e.getMessage}")
+        )
+        _ <- {
+          val errors = schema.validate(dataNode).asScala.toSet
+          if (errors.nonEmpty)
+            Left(InvalidRequest(s"JSON schema validation error: ${errors.map(_.getMessage).mkString("; ")}"))
+          else Right(())
+        }
+      } yield ()
+    }
+  }
+
+  def createDnsZoneService(
+                            dnsApiKey: String,
+                            operation: String,
+                            request: Option[String],
+                            connection: HttpURLConnection
+                          ): Either[Throwable, HttpURLConnection] = {
+    try {
+      // Map operation to HTTP method
+      val method = operation match {
+        case "create-zone" => "POST"
+        case "update-zone" => "PUT"
+        case "delete-zone" => "DELETE"
+        case other => throw new IllegalArgumentException(s"Unsupported operation: $other")
+      }
+
+      connection.setRequestMethod(method)
+      connection.setRequestProperty("Content-Type", "application/json")
+      connection.setRequestProperty("X-API-Key", dnsApiKey)
+
+      // Only send a body if the HTTP method and request are appropriate
+      val methodsWithBody = Set("POST", "PUT", "PATCH")
+      if (methodsWithBody.contains(method) && request.isDefined) {
+        connection.setDoOutput(true)
+        val outputStream = connection.getOutputStream
+        try {
+          outputStream.write(request.get.getBytes("UTF-8"))
+        } finally {
+          outputStream.close()
+        }
+      }
+
+      Right(connection)
+    } catch {
+      case e: Exception =>
+        Left(e)
+    }
+  }
+
+  def listGeneratedZones(
+                          authPrincipal: AuthPrincipal,
+                          nameFilter: Option[String] = None,
+                          startFrom: Option[String] = None,
+                          maxItems: Int = 100,
+                          searchByAdminGroup: Boolean = false,
+                          ignoreAccess: Boolean = false
+                        ): Result[ListGeneratedZonesResponse] = {
+    if(!searchByAdminGroup || nameFilter.isEmpty){
+      for {
+        listZonesResult <- generateZoneRepository.listGenerateZones(
+          authPrincipal,
+          nameFilter,
+          startFrom,
+          maxItems,
+          ignoreAccess
+        )
+        generatedZones = listZonesResult.generatedZones
+        groupIds = generatedZones.map(_.groupId).toSet
+        groups <- groupRepository.getGroups(groupIds)
+        generateZoneSummaryInfos = generateZoneSummaryInfoMapping(generatedZones, authPrincipal, groups)
+      } yield ListGeneratedZonesResponse(
+        generateZoneSummaryInfos,
+        listZonesResult.zonesFilter,
+        listZonesResult.startFrom,
+        listZonesResult.nextId,
+        listZonesResult.maxItems,
+        listZonesResult.ignoreAccess
+      )}
+    else {
+      for {
+        groupIds <- getGroupsIdsByName(nameFilter.get)
+        listZonesResult <- generateZoneRepository.listGeneratedZonesByAdminGroupIds(
+          authPrincipal,
+          startFrom,
+          maxItems,
+          groupIds,
+          ignoreAccess
+        )
+        generatedZones = listZonesResult.generatedZones
+        groups <- groupRepository.getGroups(groupIds)
+        generateZoneSummaryInfos = generateZoneSummaryInfoMapping(generatedZones, authPrincipal, groups)
+      } yield ListGeneratedZonesResponse(
+        generateZoneSummaryInfos,
+        nameFilter,
+        listZonesResult.startFrom,
+        listZonesResult.nextId,
+        listZonesResult.maxItems,
+        listZonesResult.ignoreAccess
+      )
+    }
+  }.toResult
+
+  def allowedDNSProviders(): Result[List[String]] =
+    dnsProviderApiConnection.allowedProviders.toResult
+
+  def dnsNameServers(): Result[List[String]] =
+    dnsProviderApiConnection.nameServers.toResult
 
   def syncZone(zoneId: String, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
@@ -292,6 +698,20 @@ class ZoneService(
       ZoneSummaryInfo(zn, groupName, zoneAccess)
     }
 
+  def generateZoneSummaryInfoMapping(
+                              zones: List[GenerateZone],
+                              auth: AuthPrincipal,
+                              groups: Set[Group]
+                            ): List[GenerateZoneSummaryInfo] =
+    zones.map { zn =>
+      val groupName = groups.find(_.id == zn.groupId) match {
+        case Some(group) => group.name
+        case None => "Unknown group name"
+      }
+      val zoneAccess = getGenerateZoneAccess(auth, zn)
+      GenerateZoneSummaryInfo(zn, groupName, zoneAccess)
+    }
+
   def listZoneChanges(
       zoneId: String,
       authPrincipal: AuthPrincipal,
@@ -417,6 +837,35 @@ class ZoneService(
       }
       .toResult
 
+  private def generateZoneDoesNotExist(zoneName: String): Either[Throwable, Unit] = {
+    val existingZoneOpt: Option[GenerateZone] =
+      generateZoneRepository.getGenerateZoneByName(zoneName).unsafeRunSync()
+
+    existingZoneOpt match {
+      case Some(existingZone) =>
+        Left(ZoneAlreadyExistsError(
+          s"Zone with name $zoneName already exists. " +
+            s"Please contact ${existingZone.groupId} to request access."
+        ))
+      case None =>
+        Right(())
+    }
+  }
+
+//  private def generateZoneExists(zoneName: String): Either[Throwable, Unit] = {
+//    val existingZoneOpt: Option[GenerateZone] =
+//      generateZoneRepository.getGenerateZoneByName(zoneName).unsafeRunSync()
+//
+//    existingZoneOpt match {
+//      case Some(_) =>
+//        Right(())
+//      case None =>
+//        Left(ZoneNotFoundError(
+//          s"Zone with name $zoneName does not exist."
+//        ))
+//    }
+//  }
+
   def canScheduleZoneSync(auth: AuthPrincipal): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User '${auth.signedInUser.userName}' is not authorized to schedule zone sync in this zone.")
@@ -451,6 +900,18 @@ class ZoneService(
       .getZoneByName(zoneName)
       .orFail(ZoneNotFoundError(s"Zone with name $zoneName does not exists"))
       .toResult[Zone]
+
+  def getGenerateZoneByNameOrFail(zoneName: String): Result[GenerateZone] =
+    generateZoneRepository
+      .getGenerateZoneByName(zoneName)
+      .orFail(ZoneNotFoundError(s"Zone with name $zoneName does not exists"))
+      .toResult[GenerateZone]
+
+  def getGeneratedZoneOrFail(generatedZoneId: String): Result[GenerateZone] =
+    generateZoneRepository
+      .getGenerateZoneById(generatedZoneId)
+      .orFail(ZoneNotFoundError(s"Generated zone with id $generatedZoneId does not exists"))
+      .toResult[GenerateZone]
 
   def validateZoneConnectionIfChanged(newZone: Zone, existingZone: Zone): Result[Unit] =
     if (newZone.connection != existingZone.connection

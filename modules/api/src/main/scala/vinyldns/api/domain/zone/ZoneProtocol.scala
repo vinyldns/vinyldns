@@ -21,10 +21,16 @@ import vinyldns.core.domain.record.RecordSetChangeStatus.RecordSetChangeStatus
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange, OwnerShipTransfer}
-import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, Zone, ZoneACL, ZoneChange, ZoneConnection}
+import vinyldns.core.domain.record.{OwnerShipTransfer, RecordData, RecordSet, RecordSetChange}
+import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, GenerateZone, GenerateZoneStatus, Zone, ZoneACL, ZoneChange, ZoneConnection, ZoneGenerationResponse}
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
+import vinyldns.core.domain.zone.GenerateZoneStatus.GenerateZoneStatus
 import vinyldns.core.domain.zone.ZoneStatus.ZoneStatus
+
+import java.time.temporal.ChronoUnit
+import java.util.UUID
+import org.json4s._
+import org.json4s.JsonAST.JValue
 
 case class ZoneACLInfo(rules: Set[ACLRuleInfo])
 
@@ -142,6 +148,39 @@ object ZoneSummaryInfo {
       recurrenceSchedule = zone.recurrenceSchedule,
       scheduleRequestor = zone.scheduleRequestor,
       accessLevel = accessLevel
+    )
+}
+
+case class GenerateZoneSummaryInfo(
+                                    groupId: String,
+                                    email: String,
+                                    provider: String,
+                                    zoneName: String,
+                                    status:  GenerateZoneStatus = GenerateZoneStatus.Active,
+                                    providerParams: Map[String, JValue] = Map.empty,
+                                    response: Option[ZoneGenerationResponse] = None,
+                                    id: String = UUID.randomUUID().toString,
+                                    created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
+                                    updated: Option[Instant] = None,
+                                    groupName: String,
+                                    accessLevel: AccessLevel
+                          )
+
+object GenerateZoneSummaryInfo {
+  def apply(zone: GenerateZone, groupName: String, accessLevel: AccessLevel): GenerateZoneSummaryInfo =
+    GenerateZoneSummaryInfo(
+      zone.groupId,
+      zone.email,
+      zone.provider,
+      zone.zoneName,
+      zone.status,
+      zone.providerParams,
+      zone.response,
+      zone.id,
+      zone.created,
+      zone.updated,
+      groupName,
+      accessLevel
     )
 }
 
@@ -326,6 +365,15 @@ case class ListZonesResponse(
                               ignoreAccess: Boolean = false,
                               includeReverse: Boolean = true
                             )
+
+case class ListGeneratedZonesResponse(
+                                       zones: List[GenerateZoneSummaryInfo],
+                                       nameFilter: Option[String],
+                                       startFrom: Option[String] = None,
+                                       nextId: Option[String] = None,
+                                       maxItems: Int = 100,
+                                       ignoreAccess: Boolean = false
+                                     )
 
 case class RecordSetCount( count: Int = 0 )
 
