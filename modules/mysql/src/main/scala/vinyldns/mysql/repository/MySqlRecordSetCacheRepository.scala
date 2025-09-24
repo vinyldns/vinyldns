@@ -341,8 +341,7 @@ class MySqlRecordSetCacheRepository
         val ownerGroupFilter =
           recordOwnerGroupFilter.map(owner => sqls"recordset.owner_group_id = $owner ")
 
-        val opts =
-          (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
+        val opts = (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
 
         val qualifiers = if (nameSort == ASC) {
           sqls"ORDER BY recordset.fqdn ASC, recordset.type ASC "
