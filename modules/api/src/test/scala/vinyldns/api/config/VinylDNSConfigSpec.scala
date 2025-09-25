@@ -54,7 +54,8 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAndAfterAl
         groupChange,
         zoneChange,
         recordChange,
-        recordSetCache
+        recordSetCache,
+        task
       )
     }
 

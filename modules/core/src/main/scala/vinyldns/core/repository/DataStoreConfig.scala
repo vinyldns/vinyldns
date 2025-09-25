@@ -17,7 +17,7 @@
 package vinyldns.core.repository
 
 import com.typesafe.config.Config
-import vinyldns.core.repository.RepositoryName.{RepositoryName}
+import vinyldns.core.repository.RepositoryName.RepositoryName
 
 final case class DataStoreConfig(
     className: String,
