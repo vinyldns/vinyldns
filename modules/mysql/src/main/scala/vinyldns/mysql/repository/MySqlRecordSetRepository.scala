@@ -184,12 +184,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     IO {
       DB.readOnly { implicit s =>
         val maxPlusOne = maxItems.map(_ + 1)
-        println("                                    uhgdhjskajhgjakshghjsahghdjskcvhgvvvvvvvv")
         def escapeSqlLike(input: String): String =
-          
           input.replace("\\", "\\\\").replace("_", "\\_").replace("%", "\\%").replace("*", "%").replace(".", "%")
-
-       
         val zoneAndNameFilters: Option[SQLSyntax] = {
           (zoneId.filter(_.trim.nonEmpty), recordNameFilter.map(_.trim).filter(_.nonEmpty)) match {
             case (Some(zId), Some(rName)) =>
@@ -227,9 +223,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
         val ownerGroupFilter = recordOwnerGroupFilter.map(owner => sqls"owner_group_id = ${owner}")
 
-        //val opts: Seq[SQLSyntax] = List(zoneAndNameFilters, sortBy, typeFilter, ownerGroupFilter).flatten
-        val opts =
-            (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
+        val opts = (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
 
 
         val nameSortQualifiers = nameSort match {
@@ -244,7 +238,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         }
 
       
-        //val recordLimit = maxPlusOne.map(limit => SQLSyntax.createUnsafely(s"LIMIT $limit")).getOrElse(sqls"")
         val recordLimit = maxPlusOne match {
             case Some(limit) => sqls"LIMIT $limit"
             case None => sqls""
@@ -261,9 +254,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         } else sqls""
 
         val finalQuery = initialQuery.append(appendOpts).append(finalQualifiers)
-
-        println("Final SQL:", finalQuery.value)
-        println("Parameters:", finalQuery.parameters)
 
         val results = SQL(finalQuery.value)
           .bind(finalQuery.parameters: _*)
