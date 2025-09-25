@@ -46,7 +46,8 @@ case class ZoneInfo(
                      backendId: Option[String],
                      recurrenceSchedule: Option[String],
                      scheduleRequestor: Option[String],
-                     accessLevel: AccessLevel
+                     accessLevel: AccessLevel,
+                     customMessage: Option[String]
                    )
 
 object ZoneInfo {
@@ -74,7 +75,8 @@ object ZoneInfo {
       backendId = zone.backendId,
       recurrenceSchedule = zone.recurrenceSchedule,
       scheduleRequestor = zone.scheduleRequestor,
-      accessLevel = accessLevel
+      accessLevel = accessLevel,
+      customMessage = zone.customMessage
     )
 }
 
@@ -84,6 +86,7 @@ case class ZoneDetails(
                      status: ZoneStatus,
                      adminGroupId: String,
                      adminGroupName: String,
+                     customMessage: Option[String]
                    )
 
 object ZoneDetails {
@@ -97,6 +100,7 @@ object ZoneDetails {
       status = zone.status,
       adminGroupId = zone.adminGroupId,
       adminGroupName = groupName,
+      customMessage = zone.customMessage
     )
 }
 
@@ -118,7 +122,8 @@ case class ZoneSummaryInfo(
                             backendId: Option[String],
                             recurrenceSchedule: Option[String],
                             scheduleRequestor: Option[String],
-                            accessLevel: AccessLevel
+                            accessLevel: AccessLevel,
+                            customMessage: Option[String]
                           )
 
 object ZoneSummaryInfo {
@@ -141,7 +146,8 @@ object ZoneSummaryInfo {
       zone.backendId,
       recurrenceSchedule = zone.recurrenceSchedule,
       scheduleRequestor = zone.scheduleRequestor,
-      accessLevel = accessLevel
+      accessLevel = accessLevel,
+      customMessage = zone.customMessage
     )
 }
 
