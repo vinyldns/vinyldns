@@ -219,8 +219,8 @@ class RecordSetRoute(
           }
         }
     } ~
-    path("zones" / Segment / "recordsets" / Segment / "changes" / Segment) {
-      (zoneId, _, changeId) =>
+    path("zones" / Segment / "recordsetchange" / Segment) {
+      (zoneId, changeId) =>
         (get & monitor("Endpoint.getRecordSetChange")) {
           authenticateAndExecute(recordSetService.getRecordSetChange(zoneId, changeId, _)) {
             change =>
