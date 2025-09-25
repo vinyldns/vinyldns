@@ -641,6 +641,62 @@ angular.module('controller.records', [])
             });
     };
 
+    $scope.fetchAllRecords = function() {
+        let allRecords = [];
+        let nextId = undefined;
+        function fetchRecords() {
+            return recordsService
+                .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, nextId, $scope.query, $scope.selectedRecordTypes.toString(), $scope.nameSort, $scope.recordTypeSort)
+                .then(function(response) {
+                    $log.info('recordsService::listRecordSetsByZone-success ('+ response.data.recordSets.length +' records)');
+                    allRecords = allRecords.concat(response.data.recordSets);
+                    nextId = response.data.nextId;
+                    if (nextId) {
+                        return fetchRecords(); // Fetch next page
+                    } else {
+                        return allRecords;
+                    }
+                })
+                .catch(function (error){
+                    handleError(error, 'recordsService::listRecordSetsByZone-failure');
+                });
+        }
+
+        return fetchRecords();
+    };
+
+    function convertToCSV(records) {
+        const header = ["recordset_id", "fqdn", "record_type", "ttl", "record_data"];
+        const csvRows = [header.join(",")];
+        records.forEach(recordset => {
+            recordset.records.forEach(record => {
+                const row = [
+                    recordset.id,
+                    recordset.fqdn,
+                    recordset.type,
+                    recordset.ttl,
+                    Object.values(record).join("; ")
+                ];
+                csvRows.push(row.join(","));
+            });
+        });
+
+        return csvRows.join("\n");
+    }
+    $scope.exportRecordsAsCSV = function() {
+        $scope.fetchAllRecords().then(function(records) {
+            const csvData = convertToCSV(records);
+            const blob = new Blob([csvData], { type: 'text/csv' });
+            const downloadLink = angular.element('<a></a>');
+            downloadLink.attr('href', window.URL.createObjectURL(blob));
+            downloadLink.attr('download', 'records.csv');
+            downloadLink[0].click();
+            $log.info('CSV file generated and download triggered');
+        }).catch(function(error) {
+            console.error('Error exporting records:', error);
+        });
+    };
+
     function updateRecordDisplay(records) {
         $q.all([loadZonesPromise, loadRecordsPromise])
             .then(function(){
