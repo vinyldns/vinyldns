@@ -64,7 +64,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
     sql"""
          | SELECT data
          |   FROM user
-         |  WHERE ? IN(id, user_name)
+         |    WHERE id = {id} OR user_name LIKE {userName}
      """.stripMargin
 
   private final val BASE_GET_USERS: String =
@@ -172,11 +172,15 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
    */
   def getUserByIdOrName(userIdentifier: String): IO[Option[User]] =
     monitor("repo.User.getUser") {
+      val userInfo=
+        if (userIdentifier.endsWith("%") || userIdentifier.endsWith("*"))
+        userIdentifier.dropRight(1)
+      else  userIdentifier
       logger.debug(s"Getting user with id: $userIdentifier")
       IO {
         DB.readOnly { implicit s =>
           GET_USER_BY_ID_OR_NAME
-            .bind(userIdentifier)
+            .bindByName('id -> userInfo,'userName ->s"$userInfo%")
             .map(toUser(1))
             .first()
             .apply()
