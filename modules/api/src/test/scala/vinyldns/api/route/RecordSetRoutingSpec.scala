@@ -654,7 +654,8 @@ class RecordSetRoutingSpec
                               recordOwnerGroupFilter: Option[String],
                               nameSort: NameSort,
                               authPrincipal: AuthPrincipal,
-                              recordTypeSort: RecordTypeSort
+                              recordTypeSort: RecordTypeSort,
+                              isFromPortal: Boolean = false
                             ): Result[ListRecordSetsByZoneResponse] = {
       zoneId match {
         case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))

@@ -44,7 +44,8 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
                       recordTypeFilter: Option[Set[RecordType]],
                       recordOwnerGroupFilter: Option[String],
                       nameSort: NameSort,
-                      recordTypeSort: RecordTypeSort
+                      recordTypeSort: RecordTypeSort,
+                      isFromPortal: Boolean = false
                     ): IO[ListRecordSetResults] =
     IO.pure(ListRecordSetResults(nameSort = nameSort,recordTypeSort=recordTypeSort))
 

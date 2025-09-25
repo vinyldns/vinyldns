@@ -55,7 +55,7 @@ angular.module('service.records', [])
             return promis
         };
 
-        this.listRecordSetsByZone = function (id, limit, startFrom, nameFilter, typeFilter, nameSort, recordTypeSort) {
+        this.listRecordSetsByZone = function (id, limit, startFrom, nameFilter, typeFilter, nameSort, recordTypeSort, isFromPortal) {
             if (nameFilter == "") {
                 nameFilter = null;
             }
@@ -74,7 +74,8 @@ angular.module('service.records', [])
                 "recordNameFilter": nameFilter,
                 "recordTypeFilter": typeFilter,
                 "nameSort": nameSort,
-                "recordTypeSort": recordTypeSort
+                "recordTypeSort": recordTypeSort,
+                "isFromPortal": isFromPortal
             };
             var url = utilityService.urlBuilder("/api/zones/"+id+"/recordsets", params);
             let loader = $("#loader");
