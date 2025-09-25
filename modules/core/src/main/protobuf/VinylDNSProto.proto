@@ -241,6 +241,7 @@ message User {
   optional string email = 10;
   optional bool isSupport = 11 [default = false];
   optional bool isTest = 12 [default = false];
+  required string theme = 13;
 }
 
 message UserChange {

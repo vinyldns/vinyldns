@@ -22,7 +22,7 @@ import java.time.Instant
 import org.slf4j.{Logger, LoggerFactory}
 import scodec.bits.ByteVector
 import vinyldns.core.domain.membership.UserChange.{CreateUser, UpdateUser}
-import vinyldns.core.domain.membership.{LockStatus, User, UserChange, UserChangeType}
+import vinyldns.core.domain.membership.{LockStatus, Theme, User, UserChange, UserChangeType}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
@@ -469,6 +469,7 @@ trait ProtobufConversions {
       data.getId,
       data.getIsSuper,
       LockStatus.withName(data.getLockStatus),
+      Theme.withName(data.getTheme),
       data.getIsSupport,
       data.getIsTest
     )
@@ -483,6 +484,7 @@ trait ProtobufConversions {
       .setId(user.id)
       .setIsSuper(user.isSuper)
       .setLockStatus(user.lockStatus.toString)
+      .setTheme(user.theme.toString)
       .setIsSupport(user.isSupport)
       .setIsTest(user.isTest)
 
