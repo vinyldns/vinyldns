@@ -341,6 +341,7 @@ angular.module('controller.records', [])
         if(record.recordSetGroupChange.requestedOwnerGroupId != undefined){
             record.recordSetGroupChange.requestedOwnerGroupId = angular.copy(record.ownerGroupId);
         }
+        
         record['onlyFour'] = true;
         if ($scope.addRecordForm.$valid) {
             updateRecordSet(record);
