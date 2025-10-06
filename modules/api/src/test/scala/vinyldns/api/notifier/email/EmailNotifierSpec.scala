@@ -189,13 +189,12 @@ class EmailNotifierSpec
       message.getFrom should be(Array(fromAddress))
       message.getContentType should be("text/html; charset=us-ascii")
       message.getAllRecipients should be(expectedAddresses)
-      message.getSubject should be(s"VinylDNS RecordSet change ${rsc.id} results")
+      message.getSubject should be(s"VinylDNS RecordSet Ownership transfer")
 
       val content = message.getContent.asInstanceOf[String]
 
-      content.contains(rsc.id) should be(true)
-      content.contains(rsc.recordSet.ownerGroupId.get) should be(true)
-      content.contains(rsc.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.get).get) should be(true)
+      content.contains(rsc.zone.name) should be(true)
+      content.contains(rsc.recordSet.name) should be(true)
     }
 
     "do nothing when user not found" in {
