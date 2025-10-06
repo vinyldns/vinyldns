@@ -82,5 +82,39 @@ class GroupSpec extends AnyWordSpec with Matchers {
       val updatedGroup = newGroup.removeAdminUser(dummyUser)
       (updatedGroup.adminUserIds should contain).only(dummyUser.id)
     }
+    "correctly adds a user to pending review members" in {
+      val newGroup = emptyGroup.pendingReviewMember(okUser, Some("Please add me"), okAuth)
+      newGroup.membershipAccessStatus.isDefined shouldBe true
+      newGroup.membershipAccessStatus.get.pendingReviewMember.map(_.userId) should contain(okUser.id)
+      newGroup.memberIds should not contain okUser.id
+    }
+    "correctly approves a user membership" in {
+      val pendingGroup = emptyGroup.pendingReviewMember(okUser, Some("Please add me"), okAuth)
+      val approvedGroup = pendingGroup.approvedMember(okUser, Some("Approved"), okAuth)
+      approvedGroup.membershipAccessStatus.isDefined shouldBe true
+      approvedGroup.membershipAccessStatus.get.approvedMember.map(_.userId) should contain(okUser.id)
+      approvedGroup.membershipAccessStatus.get.pendingReviewMember.map(_.userId) should not contain okUser.id
+      approvedGroup.memberIds should contain(okUser.id)
+    }
+    "correctly rejects a user membership" in {
+      val pendingGroup = emptyGroup.pendingReviewMember(okUser, Some("Please add me"), okAuth)
+      val rejectedGroup = pendingGroup.rejectedMember(okUser, Some("Rejected"), okAuth)
+      rejectedGroup.membershipAccessStatus.isDefined shouldBe true
+      rejectedGroup.membershipAccessStatus.get.rejectedMember.map(_.userId) should contain(okUser.id)
+      rejectedGroup.membershipAccessStatus.get.pendingReviewMember.map(_.userId) should not contain okUser.id
+      rejectedGroup.memberIds should not contain okUser.id
+    }
+    "maintains correct membership status when approving a user directly" in {
+      val approvedGroup = emptyGroup.approvedMember(okUser, Some("Direct approval"), okAuth)
+      approvedGroup.membershipAccessStatus.isDefined shouldBe true
+      approvedGroup.membershipAccessStatus.get.approvedMember.map(_.userId) should contain(okUser.id)
+      approvedGroup.memberIds should contain(okUser.id)
+    }
+    "maintains correct membership status when rejecting a user directly" in {
+      val rejectedGroup = emptyGroup.rejectedMember(okUser, Some("Direct rejection"), okAuth)
+      rejectedGroup.membershipAccessStatus.isDefined shouldBe true
+      rejectedGroup.membershipAccessStatus.get.rejectedMember.map(_.userId) should contain(okUser.id)
+      rejectedGroup.memberIds should not contain okUser.id
+    }
   }
 }

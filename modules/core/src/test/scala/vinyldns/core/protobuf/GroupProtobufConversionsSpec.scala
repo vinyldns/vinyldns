@@ -16,9 +16,11 @@
 
 package vinyldns.core.protobuf
 
-import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeType, MembershipAccessStatus}
+import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeType, MembershipAccess, MembershipAccessStatus}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import java.time.Instant
 
 class GroupProtobufConversionsSpec extends AnyWordSpec with Matchers with GroupProtobufConversions {
 
@@ -111,6 +113,77 @@ class GroupProtobufConversionsSpec extends AnyWordSpec with Matchers with GroupP
       val roundTrip = fromPB(toPB(groupChange))
 
       roundTrip shouldBe groupChange
+    }
+  }
+  "Converting MembershipAccessStatus to protobufs" should {
+    "work with pending, approved, and rejected members" in {
+      val pendingMember: MembershipAccess = MembershipAccess(
+        userId = "pending-user",
+        created = Instant.ofEpochSecond(1600000000),
+        submittedBy = "test-user",
+        description = Some("Please add me"),
+        status = "Request"
+      )
+
+      val approvedMember: MembershipAccess = MembershipAccess(
+        userId = "approved-user",
+        created = Instant.ofEpochSecond(1600001000),
+        submittedBy = "admin-user",
+        description = Some("Approved request"),
+        status = "Approved"
+      )
+
+      val rejectedMember: MembershipAccess = MembershipAccess(
+        userId = "rejected-user",
+        created = Instant.ofEpochSecond(1600002000),
+        submittedBy = "admin-user",
+        description = Some("Rejected request"),
+        status = "Rejected"
+      )
+
+      val membershipAccessStatus: MembershipAccessStatus = MembershipAccessStatus(
+        pendingReviewMember = Set(pendingMember),
+        approvedMember = Set(approvedMember),
+        rejectedMember = Set(rejectedMember)
+      )
+
+      val roundTrip = fromPB(toPB(membershipAccessStatus))
+
+      roundTrip shouldBe membershipAccessStatus
+    }
+
+    "work with empty sets" in {
+      val emptyStatus: MembershipAccessStatus = MembershipAccessStatus(Set(), Set(), Set())
+      val roundTrip = fromPB(toPB(emptyStatus))
+      roundTrip shouldBe emptyStatus
+    }
+
+    "preserve description field correctly" in {
+      val memberWithDescription: MembershipAccess = MembershipAccess(
+        userId = "test-user",
+        created = Instant.ofEpochSecond(1600000000),
+        submittedBy = "test-user",
+        description = Some("Test description"),
+        status = "Request"
+      )
+
+      val memberWithoutDescription: MembershipAccess = MembershipAccess(
+        userId = "another-user",
+        created = Instant.ofEpochSecond(1600000000),
+        submittedBy = "test-user",
+        description = None,
+        status = "Request"
+      )
+
+      val status: MembershipAccessStatus = MembershipAccessStatus(
+        pendingReviewMember = Set(memberWithDescription, memberWithoutDescription),
+        approvedMember = Set(),
+        rejectedMember = Set()
+      )
+
+      val roundTrip = fromPB(toPB(status))
+
+      roundTrip shouldBe status
     }
   }
 }
