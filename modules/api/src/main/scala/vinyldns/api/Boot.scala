@@ -52,6 +52,7 @@ import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 object Boot extends App {
 
   private val logger = LoggerFactory.getLogger("Boot")
+  private val bannerLogger = LoggerFactory.getLogger("BANNER_LOGGER")
 
   // Create a ScheduledExecutorService with a new single thread
   private val executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
@@ -246,7 +247,7 @@ object Boot extends App {
       logger.info(
         s"STARTING VINYLDNS SERVER ON ${vinyldnsConfig.httpConfig.host}:${vinyldnsConfig.httpConfig.port}"
       )
-      logger.info(banner)
+      bannerLogger.info(banner)
 
       // Starts up our http server
       implicit val actorSystem: ActorSystem = system
