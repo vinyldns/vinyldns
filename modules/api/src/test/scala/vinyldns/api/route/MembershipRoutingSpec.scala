@@ -888,4 +888,163 @@ class MembershipRoutingSpec
       }
     }
   }
+
+  "PUT update user access request" should {
+    "return a 200 response when request for group access is successful" in {
+      val membershipAccessJson = s"""{
+      "userId": "testUser",
+      "description": "Please add me",
+      "status": "Request"
+    }"""
+
+      doReturn(result(okGroup))
+        .when(membershipService)
+        .requestGroupMember(
+          "testUser",
+          Some("Please add me"),
+          "Request",
+          "ok",
+          okAuth
+        )
+
+      Put("/groups/ok/access").withEntity(HttpEntity(ContentTypes.`application/json`, membershipAccessJson)) ~>
+        Route.seal(membershipRoute) ~> check {
+        status shouldBe StatusCodes.OK
+
+        val result = responseAs[GroupInfo]
+        result.id shouldBe okGroupInfo.id
+        result.name shouldBe okGroupInfo.name
+        result.email shouldBe okGroupInfo.email
+        result.description shouldBe okGroupInfo.description
+        result.membershipAccessStatus shouldBe okGroupInfo.membershipAccessStatus
+      }
+    }
+
+    "return a 404 Not Found when the group doesn't exist" in {
+      val membershipAccessJson = s"""{
+      "userId": "testUser",
+      "description": "Please add me",
+      "status": "Request"
+    }"""
+
+      doReturn(result(GroupNotFoundError("Group not found")))
+        .when(membershipService)
+        .requestGroupMember(any[String], any[Option[String]], any[String], anyString, any[AuthPrincipal])
+
+      Put("/groups/notFound/access").withEntity(HttpEntity(ContentTypes.`application/json`, membershipAccessJson)) ~>
+        Route.seal(membershipRoute) ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
+    }
+
+    "return a 400 Bad Request when the status is invalid" in {
+      val membershipAccessJson = s"""{
+      "userId": "testUser",
+      "description": "Invalid request",
+      "status": "InvalidStatus"
+    }"""
+
+      doReturn(result(InvalidGroupRequestError("Invalid status")))
+        .when(membershipService)
+        .requestGroupMember(any[String], any[Option[String]], any[String], anyString, any[AuthPrincipal])
+
+      Put("/groups/test/access").withEntity(HttpEntity(ContentTypes.`application/json`, membershipAccessJson)) ~>
+        Route.seal(membershipRoute) ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+
+    "return a 403 Forbidden when not authorized to approve requests" in {
+      val membershipAccessJson = s"""{
+      "userId": "testUser",
+      "description": "Approve request",
+      "status": "Approved"
+    }"""
+
+      doReturn(result(NotAuthorizedError("Not authorized")))
+        .when(membershipService)
+        .requestGroupMember(any[String], any[Option[String]], any[String], anyString, any[AuthPrincipal])
+
+      Put("/groups/test/access").withEntity(HttpEntity(ContentTypes.`application/json`, membershipAccessJson)) ~>
+        Route.seal(membershipRoute) ~> check {
+        status shouldBe StatusCodes.Forbidden
+      }
+    }
+
+    "return a 200 response when approving group access request is successful" in {
+      val membershipApprovalJson = s"""{
+      "userId": "testUser",
+      "description": "Approving your request",
+      "status": "Approved"
+    }"""
+
+      doReturn(result(okGroup))
+        .when(membershipService)
+        .requestGroupMember(
+          "testUser",
+          Some("Approving your request"),
+          "Approved",
+          "ok",
+          okAuth
+        )
+
+      Put("/groups/ok/access").withEntity(HttpEntity(ContentTypes.`application/json`, membershipApprovalJson)) ~>
+        Route.seal(membershipRoute) ~> check {
+        status shouldBe StatusCodes.OK
+
+        val result = responseAs[GroupInfo]
+        result.id shouldBe okGroupInfo.id
+        result.name shouldBe okGroupInfo.name
+        result.email shouldBe okGroupInfo.email
+        result.description shouldBe okGroupInfo.description
+        result.membershipAccessStatus shouldBe okGroupInfo.membershipAccessStatus
+
+        verify(membershipService).requestGroupMember(
+          "testUser",
+          Some("Approving your request"),
+          "Approved",
+          "ok",
+          okAuth
+        )
+      }
+    }
+
+    "return a 200 response when rejecting group access request is successful" in {
+      val membershipRejectionJson = s"""{
+      "userId": "testUser",
+      "description": "Rejecting your request",
+      "status": "Rejected"
+    }"""
+
+      doReturn(result(okGroup))
+        .when(membershipService)
+        .requestGroupMember(
+          "testUser",
+          Some("Rejecting your request"),
+          "Rejected",
+          "ok",
+          okAuth
+        )
+
+      Put("/groups/ok/access").withEntity(HttpEntity(ContentTypes.`application/json`, membershipRejectionJson)) ~>
+        Route.seal(membershipRoute) ~> check {
+        status shouldBe StatusCodes.OK
+
+        val result = responseAs[GroupInfo]
+        result.id shouldBe okGroupInfo.id
+        result.name shouldBe okGroupInfo.name
+        result.email shouldBe okGroupInfo.email
+        result.description shouldBe okGroupInfo.description
+        result.membershipAccessStatus shouldBe okGroupInfo.membershipAccessStatus
+
+        verify(membershipService).requestGroupMember(
+          "testUser",
+          Some("Rejecting your request"),
+          "Rejected",
+          "ok",
+          okAuth
+        )
+      }
+    }
+  }
 }
