@@ -553,7 +553,8 @@ class RecordSetRoutingSpec
             "rs*",
             recordTypeFilter,
             recordOwnerGroupFilter,
-            nameSort
+            nameSort,
+            None
           )
         )
       } else {
@@ -575,7 +576,8 @@ class RecordSetRoutingSpec
             "rs*",
             recordTypeFilter,
             None,
-            nameSort
+            nameSort,
+            None
           )
         )
       }
@@ -603,7 +605,8 @@ class RecordSetRoutingSpec
                            recordOwnerGroupFilter: Option[String],
                            nameSort: NameSort,
                            authPrincipal: AuthPrincipal,
-                           recordTypeSort: RecordTypeSort
+                           recordTypeSort: RecordTypeSort,
+                           zoneId: Option[String]
                          ): Result[ListGlobalRecordSetsResponse] = {
       if (recordTypeFilter.contains(Set(CNAME))) {
         Right(
@@ -617,7 +620,8 @@ class RecordSetRoutingSpec
             "rs*",
             recordTypeFilter,
             recordOwnerGroupFilter,
-            nameSort
+            nameSort,
+            zoneId
           )
         )
       } else {
@@ -639,7 +643,8 @@ class RecordSetRoutingSpec
             "rs*",
             recordTypeFilter,
             None,
-            nameSort
+            nameSort,
+            zoneId
           )
         )
       }
