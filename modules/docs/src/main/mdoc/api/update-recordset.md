@@ -24,7 +24,7 @@ type          | string        | yes         | the type of recordset |
 ttl           | integer       | yes         | the TTL in seconds |
 records       | array of record data | yes  | record data for recordset, see [RecordSet Model](recordset-model.html) |
 ownerGroupId  | string        | sometimes*          | Record ownership assignment, applicable if the recordset is in a [shared zone](zone-model.html#shared-zones) |
-recordSetGroupChange | OwnerShipTransfer| sometimes†   | Record ownership transfer, requesting ownership to be transferred from one group to another. See [Ownership Transfer Model](ownership-transfer-model.html#ownership-transfer-example)
+recordSetGroupChange | [OwnershipTransfer](ownership-transfer-model.html) | sometimes†   | Record ownership transfer, requesting ownership to be transferred from one group to another. See [Ownership Transfer Model](ownership-transfer-model.html#ownership-transfer-example)
 
 * If a RecordSet has an ownerGroupId you must include that value in the update request, otherwise the update will remove the ownerGroupId value.
 

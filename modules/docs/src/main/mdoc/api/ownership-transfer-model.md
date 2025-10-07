@@ -13,20 +13,31 @@ section: "api"
 
 #### OWNERSHIP TRANSFER ATTRIBUTES <a id="ownership-transfer-attributes"></a>
 
-1. Users can claim unowned records for themselves. The user's group will be auto-assigned to the record when the user requests ownership with their group ID.
-2. Users can request ownership transfer for records already assigned to a group. An ownership transfer request will be sent to the members of the record's current owner group for their approval in VinylDNS. The request will also notify the approvers by email.
+1. Users can claim ownership of Unowned records. When a user requests ownership with their group ID, the user's group will be automatically assigned to the record.
+2. Users can request ownership transfer for records that are already assigned to a group. When a user initiates an ownership transfer, a request is sent to the members of the record's current owner group. These members must review and approve the request in VinylDNS. Approvers will also receive an email notification about the pending transfer.
 
 field         | type        | required?  | description |
 ------------- | :---------- | :--------- |:----------- |
-ownerShipTransferStatus        | OwnerShipTransferStatus   | yes   | Ownership transfer status for this RecordSet change. Must be one of: **AutoApproved**, **Cancelled**, **ManuallyApproved**, **ManuallyRejected**, **Requested** or **PendingReview**. |
-requestedOwnerGroupId          | string    | yes  | UUID of the group |
+ownershipTransferStatus        | OwnershipTransferStatus   | yes   | Ownership transfer status for this RecordSet change. Must be one of: **AutoApproved**, **Cancelled**, **ManuallyApproved**, **ManuallyRejected**, **Requested**, or **PendingReview**. Values are case-sensitive. [See descriptions below.](#ownershiptransferstatus-values) |
+requestedOwnerGroupId          | string    | yes  | UUID of the group to which ownership is being transferred; required when initiating or processing an ownership transfer. |
+
+##### OwnershipTransferStatus Values
+
+| Value              | Description                                                                 |
+|--------------------|-----------------------------------------------------------------------------|
+| AutoApproved       | Ownership transfer was automatically approved.                              |
+| Cancelled          | Ownership transfer request was cancelled.                                   |
+| ManuallyApproved   | Ownership transfer was manually approved by a group member.                 |
+| ManuallyRejected   | Ownership transfer was manually rejected by a group member.                 |
+| Requested          | Ownership transfer has been requested and is awaiting approval.             |
+| PendingReview      | Ownership transfer is pending review by the current owner group.            |
 
 #### OWNERSHIP TRANSFER EXAMPLE <a id="ownership-transfer-example"></a>
 
 ```json
 {
   "recordSetGroupChange" : {
-    "ownerShipTransferStatus": "Requested",
+    "ownershipTransferStatus": "Requested",
     "requestedOwnerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe"
   }
 }
@@ -34,12 +45,12 @@ requestedOwnerGroupId          | string    | yes  | UUID of the group |
 
 #### EXAMPLE HTTP REQUEST AND RESPONSE
 
-Requested `ownerShipTransferStatus` in RecordSets:
+Requested `ownershipTransferStatus` in RecordSets:
 
 ```json
 {
   "recordSetGroupChange" : {
-    "ownerShipTransferStatus": "Requested",
+    "ownershipTransferStatus": "Requested",
     "requestedOwnerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe"
   }
 }
@@ -50,18 +61,18 @@ Cancelled `ownerShipTransferStatus` in RecordSets:
 ```json
 {
   "recordSetGroupChange" : {
-    "ownerShipTransferStatus": "Cancelled",
+    "ownershipTransferStatus": "Cancelled",
     "requestedOwnerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe"
   }
 }
 ```
 
-Approved `ownerShipTransferStatus` in RecordSets:
+Approved `ownershipTransferStatus` in RecordSets:
 
 ```json
 {
   "recordSetGroupChange" : {
-    "ownerShipTransferStatus": "ManuallyApproved",
+    "ownershipTransferStatus": "ManuallyApproved",
     "requestedOwnerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe"
   }
 }
@@ -69,18 +80,18 @@ Approved `ownerShipTransferStatus` in RecordSets:
 ```json
 {
   "recordSetGroupChange" : {
-    "ownerShipTransferStatus": "AutoApproved",
+    "ownershipTransferStatus": "AutoApproved",
     "requestedOwnerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe"
   }
 }
 ```
 
-Rejected `ownerShipTransferStatus` in RecordSets:
+Rejected `ownershipTransferStatus` in RecordSets:
 
 ```json
 {
   "recordSetGroupChange" : {
-    "ownerShipTransferStatus": "ManuallyRejected",
+    "ownershipTransferStatus": "ManuallyRejected",
     "requestedOwnerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe"
   }
 }

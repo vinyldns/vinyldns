@@ -3,7 +3,7 @@ layout: docs
 title:  "RecordSets Ownership Transfer"
 section: "portal_menu"
 ---
-## RecordSets Ownership Transfer <a id="RecordSetsOwnerShipTransfer"></a>
+## RecordSets Ownership Transfer <a id="RecordSetsOwnershipTransfer"></a>
 The Ownership Transfer feature allows a user to transfer a RecordSet in a [shared zone](zone-model.html#shared-zones) from one owner group to another by request/approval.
 
 ## Ownership Transfer Features
@@ -18,17 +18,17 @@ To request Ownership Transfer of an unowned RecordSet in a shared zone, go to th
 
 Select your owner group and submit the request.
 
-[![Request Ownership transfer screenshot](../img/portal/ownership-transfer-request-page.png){: .screenshot}](../img/portal/ownership-transfer-request.png)
+[![Request Ownership transfer screenshot](../img/portal/ownership-transfer-request-page.png){: .screenshot}](../img/portal/ownership-transfer-request-page.png)
 
 To request Ownership Transfer for a RecordSet with an existing owner group in a shared zone, go to the *Zone* page in the VinylDNS Portal and select the *Request* button that corresponds with the records for which you want to request ownership. Select your group in the Record Owner Group Request dropdown, select Requested in the Record Owner Group Status dropdown, then submit the request.
 
-[![Request Ownership transfer screenshot](../img/portal/owned-ownership-request-page.png){: .screenshot}](../img/portal/ownership-transfer-request.png)
+[![Request Ownership transfer screenshot](../img/portal/owned-ownership-request-page.png){: .screenshot}](../img/portal/owned-ownership-request-page.png)
 
 ## Approving/Rejecting Ownership Transfer
 An approver can approve or reject the requested Ownership Transfer in a shared zone on the *Zone* page of the VinylDNS Portal by selecting the *Close Request* button that corresponds with the records they want to approve or reject.
 
-[![Approve Ownership transfer screenshot](../img/portal/ownership-transfer-page.png){: .screenshot}](../img/portal/ownership-transfer-page.png)
+[![Approve Ownership Transfer page screenshot](../img/portal/ownership-transfer-page.png){: .screenshot}](../img/portal/ownership-transfer-page.png)
 
 Select either Approve or Reject in the Record Owner Group Status, then submit.
 
-[![Approve Ownership transfer screenshot](../img/portal/ownership-transfer-approver-page.png){: .screenshot}](../img/portal/ownership-transfer-approver-page.png)
+[![Ownership Transfer Approver page screenshot](../img/portal/ownership-transfer-approver-page.png){: .screenshot}](../img/portal/ownership-transfer-approver-page.png)
