@@ -28,6 +28,7 @@ import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.Messages._
+import vinyldns.core.domain.membership.PermissionStatus.PermissionStatus
 import vinyldns.mysql.TransactionProvider
 
 object MembershipService {
@@ -508,6 +509,18 @@ class MembershipService(
       _ <- isSuperAdmin(authPrincipal).toResult
       existingUser <- getExistingUser(userId)
       newUser = existingUser.updateUserLockStatus(lockStatus)
+      _ <- userRepo.save(newUser).toResult[User]
+    } yield newUser
+
+  def updateUserPermissionStatus(
+    userId: String,
+    permissionStatus: PermissionStatus,
+    authPrincipal: AuthPrincipal
+  ): Result[User] =
+    for {
+      _ <- isSuperAdmin(authPrincipal).toResult
+      existingUser <- getExistingUser(userId)
+      newUser = existingUser.updateUserPermissionStatus(permissionStatus)
       _ <- userRepo.save(newUser).toResult[User]
     } yield newUser
 }

@@ -1,4 +1,4 @@
-@(implicit rootAccountCanReview: Boolean, request: play.api.mvc.Request[Any], meta: models.Meta)
+@(implicit rootAccountIsAdmin: Boolean, request: play.api.mvc.Request[Any], meta: models.Meta)
 
 <div class="alert-wrapper">
     <div ng-repeat="alert in alerts">
@@ -373,7 +373,7 @@
     <!-- END ACL TABLE -->
 
     <!-- START ZONE SYNC SCHEDULE -->
-@if(rootAccountCanReview) {
+@if(rootAccountIsAdmin) {
 <div class="panel panel-default">
     <div class="panel-heading">
         <h3 class="panel-title">

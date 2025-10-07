@@ -923,4 +923,19 @@ class VinylDNS @Inject() (
       )
     }
   }
+
+  def updateUserPermission(userId: String, status: String): Action[AnyContent] = userAction.async { implicit request =>
+    if (request.user.isSuper) {
+      val vinyldnsRequest =
+        new VinylDNSRequest("PUT", s"$vinyldnsServiceBackend", s"users/$userId/update/$status")
+      executeRequest(vinyldnsRequest, request.user).map(response => {
+        Status(response.status)(response.body)
+          .withHeaders(cacheHeaders: _*)
+      })
+    } else {
+      Future.successful(
+        Forbidden("Request restricted to super users only.").withHeaders(cacheHeaders: _*)
+      )
+    }
+  }
 }

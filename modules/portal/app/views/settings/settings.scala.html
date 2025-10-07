@@ -1,0 +1,148 @@
+@(rootAccountName: String, rootAccountIsAdmin: Boolean)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
+
+@content = {
+<!-- PAGE CONTENT -->
+<div class="right_col" role="main">
+
+    <!-- BREADCRUMB -->
+    <ul class="breadcrumb">
+        <li><a href="/">Home</a></li>
+        <li><a href="/settings">Settings</a></li>
+    </ul>
+    <!-- END BREADCRUMB -->
+
+    <!-- PAGE TITLE -->
+    <div class="page-title">
+        <h3>
+            <span class="fa fa-cog"></span> Settings
+        </h3>
+    </div>
+    <!-- END PAGE TITLE -->
+
+
+    <!-- PAGE CONTENT WRAPPER -->
+    <div class="page-content-wrap">
+        <div class="alert-wrapper">
+            <div ng-repeat="alert in alerts">
+                <notification ng-model="alert"></notification>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <!-- Unlock/Lock User Form -->
+                <div class="form-container mx-auto">
+                    <div class="panel-heading">
+                        <h2>Unlock/Lock User</h2>
+                    </div>
+                    <div class="panel-body">
+                        <form name="lockUnlockForm" ng-submit="submitForm()" novalidate>
+                            <div class="form-group">
+                                <label for="username">Enter Username:</label>
+                                <input type="text" id="username" class="form-control w-30" ng-model="username" placeholder="Enter the username" ng-required="true" required />
+                                <div ng-show="lockUnlockForm.username.$touched && lockUnlockForm.username.$invalid" class="text-danger mt-1">
+                                    Username is required.
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Select Action:</label>
+                                <div class="form-check form-check-inline">
+                                    <input type="radio" id="lock" class="form-check-input" ng-model="action" value="lock" required />
+                                    <label for="lock" class="form-check-label">Lock</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input type="radio" id="unlock" class="form-check-input" ng-model="action" value="unlock" required />
+                                    <label for="unlock" class="form-check-label">Unlock</label>
+                                </div>
+                                <div ng-show="lockUnlockForm.$touched && !action" class="text-danger mt-1">
+                                    Please select either Lock or Unlock.
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" ng-disabled="lockUnlockForm.$invalid">Submit</button>
+                            <button type="button" class="btn btn-primary" ng-disabled="!username && !lockUnlockAction && !responseMessage" ng-click="clearLockUnlockForm()">Clear</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="divider"></div> <!-- Line between forms -->
+
+                <!-- Check User Status Form -->
+                <div class="form-container mx-auto">
+                    <div class="panel-heading">
+                        <h2>Check User Status</h2>
+                    </div>
+                    <div class="panel-body">
+                        <form name="statusForm" ng-submit="checkUserStatus()" novalidate>
+                            <div class="form-group">
+                                <label for="statusUsername">Enter Username:</label>
+                                <input type="text" id="statusUsername" class="form-control w-30" ng-model="statusUsername" placeholder="Enter the username" ng-required="true" required />
+                                <div ng-show="statusForm.statusUsername.$touched && statusForm.statusUsername.$invalid" class="text-danger mt-1">
+                                    Username is required.
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" ng-disabled="statusForm.$invalid">Check Status</button>
+                            <button type="button" class="btn btn-primary" ng-disabled="!statusUsername && !statusResponse" ng-click="clearStatusForm()">Clear</button>
+                        </form>
+
+                        <div ng-if="statusResponse">
+                            <p><strong>Username:</strong> {{ statusResponse.userName }}</p>
+                            <p><strong>First Name:</strong> {{ statusResponse.firstName }}</p>
+                            <p><strong>Last Name:</strong> {{ statusResponse.lastName }}</p>
+                            <p><strong>Email:</strong> {{ statusResponse.email }}</p>
+                            <p><strong>User ID:</strong> {{ statusResponse.id }}</p>
+                            <p><strong>Super User:</strong> {{ statusResponse.isSuper ? 'Yes' : 'No' }}</p>
+                            <p><strong>Support User:</strong> {{ statusResponse.isSupport ? 'Yes' : 'No' }}</p>
+                            <p><strong>Lock Status:</strong> {{ statusResponse.lockStatus }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider"></div> <!-- Line between forms -->
+
+                <!-- Update User Permission Form -->
+                <div class="form-container mx-auto">
+                    <div class="panel-heading">
+                        <h2>Update User Permission</h2>
+                    </div>
+                    <div class="panel-body">
+                        <form name="permissionForm" ng-submit="updatePermission()" novalidate>
+                            <div class="form-group">
+                                <label for="permissionUsername">Enter Username:</label>
+                                <input type="text" id="permissionUsername" class="form-control w-30" ng-model="permissionUsername" placeholder="Enter the username" ng-required="true" required />
+                                <div ng-show="permissionForm.permissionUsername.$touched && permissionForm.permissionUsername.$invalid" class="text-danger mt-1">
+                                    Username is required.
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="permission">Select Permission:</label>
+                                <select id="permission" class="form-control w-30" ng-model="selectedPermission" ng-required="true" required>
+                                    <option value="" disabled>Select permission</option>
+                                    <option value="makeSuperUser">Make Super User</option>
+                                    <option value="makeSupportUser">Make Support User</option>
+                                    <option value="removeSuperUser">Remove Super User</option>
+                                    <option value="removeSupportUser">Remove Support User</option>
+                                </select>
+                                <div ng-show="permissionForm.permission.$touched && permissionForm.permission.$invalid" class="text-danger mt-1">
+                                    Permission selection is required.
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" ng-disabled="permissionForm.$invalid">Update Permission</button>
+                            <button type="button" class="btn btn-primary" ng-disabled="!permissionUsername && !permissionAction && !permissionResponseMessage" ng-click="clearPermissionForm()">Clear</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+}
+
+@plugins = {}
+
+@main(rootAccountName, rootAccountIsAdmin)("SettingsController")("Settings")(content)(plugins)

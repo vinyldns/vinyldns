@@ -1,4 +1,4 @@
-@(rootAccountName: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
+@(rootAccountName: String, rootAccountIsAdmin: Boolean)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
 
 @content = {
 <!-- PAGE CONTENT -->
@@ -355,4 +355,4 @@
 
 @plugins = {}
 
-@main(rootAccountName)("DnsChangeNewController")("New DNS Change")(content)(plugins)
+@main(rootAccountName, rootAccountIsAdmin)("DnsChangeNewController")("New DNS Change")(content)(plugins)

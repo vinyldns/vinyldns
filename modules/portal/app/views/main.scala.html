@@ -1,5 +1,5 @@
 @import helper.CSRF
-@(rootAccountName: String)(controller: String)(pageHeader: String)(pageContent: Html)(pagePlugins: Html)(implicit request: play.api.mvc.Request[Any], requestHeader: RequestHeader, customLinks: models.CustomLinks, meta: models.Meta)
+@(rootAccountName: String, rootAccountIsAdmin: Boolean)(controller: String)(pageHeader: String)(pageContent: Html)(pagePlugins: Html)(implicit request: play.api.mvc.Request[Any], requestHeader: RequestHeader, customLinks: models.CustomLinks, meta: models.Meta)
 
 <!DOCTYPE html>
 <html lang="en">
@@ -75,6 +75,15 @@
                                   }
                                     <a href="/zones"><i class="fa fa-table"></i>Zones</a>
                                   </li>
+                                @if(rootAccountIsAdmin){
+                                    @if(controller == "SettingsController") {
+                                    <li class="active">
+                                        } else {
+                                    <li>
+                                        }
+                                        <a href="/settings"><i class="fa fa-cog"></i>Settings</a>
+                                    </li>
+                                }
                                   @*****************************************
                                    * Custom links from application config *
                                    *****************************************@

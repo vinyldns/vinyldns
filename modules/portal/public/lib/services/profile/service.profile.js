@@ -30,6 +30,18 @@ angular.module('service.profile', [])
             return $http.get('/api/users/' + userId);
         }
 
+        this.lockUnlock = function(userId, action){
+            if(action == "lock"){
+                return $http.put('/api/users/' + userId + '/lock', {}, {headers: utilityService.getCsrfHeader()});
+            } else {
+                return $http.put('/api/users/' + userId + '/unlock', {}, {headers: utilityService.getCsrfHeader()});
+            }
+        }
+
+        this.updateUserPermission = function(userId, permissionStatus){
+            return $http.put('/api/users/' + userId + '/update/' + permissionStatus, {}, {headers: utilityService.getCsrfHeader()});
+        }
+
         this.regenerateCredentials = function(){
             return $http.post('/regenerate-creds', {}, {headers: utilityService.getCsrfHeader()});
         }

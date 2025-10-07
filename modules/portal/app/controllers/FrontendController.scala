@@ -48,61 +48,80 @@ class FrontendController @Inject() (
   def logout(): Action[AnyContent] = securitySupport.logout()
 
   def index(): Action[AnyContent] = userAction.async { implicit request =>
-    val canReview = request.user.isSuper || request.user.isSupport
+    val isAdmin = request.user.isSuper || request.user.isSupport
     Future(
       Ok(
         views.html.dnsChanges
-          .dnsChanges(request.user.userName, canReview)
+          .dnsChanges(request.user.userName, isAdmin)
       )
     )
   }
 
   def viewAllGroups(): Action[AnyContent] = userAction.async { implicit request =>
-    Future(Ok(views.html.groups.groups(request.user.userName)))
+    val isAdmin = request.user.isSuper || request.user.isSupport
+    Future(Ok(views.html.groups.groups(request.user.userName, isAdmin)))
   }
 
   def viewGroup(groupId: String): Action[AnyContent] = userAction.async { implicit request =>
     logger.info(s"View group for $groupId")
-    Future(Ok(views.html.groups.groupDetail(request.user.userName)))
+    val isAdmin = request.user.isSuper || request.user.isSupport
+    Future(Ok(views.html.groups.groupDetail(request.user.userName, isAdmin)))
   }
 
   def viewAllZones(): Action[AnyContent] = userAction.async { implicit request =>
-    Future(Ok(views.html.zones.zones(request.user.userName)))
+    val isAdmin = request.user.isSuper || request.user.isSupport
+    Future(Ok(views.html.zones.zones(request.user.userName, isAdmin)))
   }
 
   def viewZone(zoneId: String): Action[AnyContent] = userAction.async { implicit request =>
-    val canReview = request.user.isSuper || request.user.isSupport
-    Future(Ok(views.html.zones.zoneDetail(request.user.userName, canReview, zoneId)))
+    val isAdmin = request.user.isSuper || request.user.isSupport
+    Future(Ok(views.html.zones.zoneDetail(request.user.userName, isAdmin, zoneId)))
   }
 
   def viewRecordSets(): Action[AnyContent] = userAction.async { implicit request =>
-    val canReview = request.user.isSuper || request.user.isSupport
-    Future(Ok(views.html.recordsets.recordSets(request.user.userName, canReview)))
+    val isAdmin = request.user.isSuper || request.user.isSupport
+    Future(Ok(views.html.recordsets.recordSets(request.user.userName, isAdmin)))
   }
 
   def viewAllBatchChanges(): Action[AnyContent] = userAction.async { implicit request =>
-    val canReview = request.user.isSuper || request.user.isSupport
+    val isAdmin = request.user.isSuper || request.user.isSupport
     Future(
       Ok(
         views.html.dnsChanges
-          .dnsChanges(request.user.userName, canReview)
+          .dnsChanges(request.user.userName, isAdmin)
       )
     )
   }
 
   def viewBatchChange(batchId: String): Action[AnyContent] = userAction.async { implicit request =>
     logger.info(s"View Batch Change for $batchId")
-    val canReview = request.user.isSuper || request.user.isSupport
+    val isAdmin = request.user.isSuper || request.user.isSupport
     val dnsChangeNotices = configuration.get[DnsChangeNotices]("dns-change-notices")
     Future(
       Ok(
         views.html.dnsChanges
-          .dnsChangeDetail(request.user.userName, canReview, dnsChangeNotices)
+          .dnsChangeDetail(request.user.userName, isAdmin, dnsChangeNotices)
       )
     )
   }
 
   def viewNewBatchChange(): Action[AnyContent] = userAction.async { implicit request =>
-    Future(Ok(views.html.dnsChanges.dnsChangeNew(request.user.userName)))
+    val isAdmin = request.user.isSuper || request.user.isSupport
+    Future(Ok(views.html.dnsChanges.dnsChangeNew(request.user.userName, isAdmin)))
+  }
+
+  def viewSettings(): Action[AnyContent] = userAction.async { implicit request =>
+    val isAdmin = request.user.isSuper || request.user.isSupport
+    if(isAdmin){
+      Future(
+        Ok(
+          views.html.settings.settings(request.user.userName, isAdmin)
+        )
+      )
+    } else {
+      Future(
+        Forbidden("You are not authorized to access this page.")
+      )
+    }
   }
 }

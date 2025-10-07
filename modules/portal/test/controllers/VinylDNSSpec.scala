@@ -2662,6 +2662,71 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         )
       }
     }
+
+    ".updateUserPermission" should {
+      "return successful if requesting user is a super user" in new WithApplication(app) {
+        val updateStatus = "makesuper"
+        val client = MockWS {
+          case (PUT, u) if u == s"http://localhost:9001/users/${samAccount.id}/update/$updateStatus" =>
+            defaultActionBuilder { Results.Ok(superSamUserJson) }
+        }
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockMultiUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth
+          )
+        val result = underTest.updateUserPermission(samAccount.id, updateStatus)(
+          FakeRequest(PUT, s"/users/${samAccount.id}/update/$updateStatus")
+            .withSession(
+              "username" -> superFrodoUser.userName,
+              "accessKey" -> superFrodoUser.accessKey
+            )
+        )
+
+        status(result) must beEqualTo(OK)
+        contentAsJson(result) must beEqualTo(superSamUserJson)
+        hasCacheHeaders(result)
+      }
+      "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
+        val updateStatus = "makesuper"
+        val client = mock[WSClient]
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockMultiUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth
+          )
+        val result =
+          underTest.updateUserPermission(samAccount.id, updateStatus)(FakeRequest(PUT, s"/users/${samAccount.id}/update/$updateStatus"))
+
+        status(result) mustEqual 401
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+        hasCacheHeaders(result)
+      }
+      "return Forbidden if requesting user is not a super user" in new WithApplication(app) {
+        val updateStatus = "makesuper"
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.updateUserPermission(samAccount.id, updateStatus)(
+            FakeRequest(PUT, s"/users/${samAccount.id}/update/$updateStatus")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
+
+        status(result) must beEqualTo(403)
+        contentAsString(result) must beEqualTo("Request restricted to super users only.")
+        hasCacheHeaders(result)
+      }
+    }
   }
 
   def buildmockUserAccessor: UserAccountAccessor = {

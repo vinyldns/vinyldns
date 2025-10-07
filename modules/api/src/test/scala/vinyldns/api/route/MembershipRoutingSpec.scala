@@ -39,7 +39,8 @@ import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupI
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.LockStatus.LockStatus
-import vinyldns.core.domain.membership.{Group, LockStatus}
+import vinyldns.core.domain.membership.PermissionStatus.PermissionStatus
+import vinyldns.core.domain.membership.{Group, LockStatus, PermissionStatus}
 
 class MembershipRoutingSpec
     extends AnyWordSpec
@@ -813,6 +814,94 @@ class MembershipRoutingSpec
         .when(membershipService)
         .updateUserLockStatus(anyString, any[LockStatus], any[AuthPrincipal])
       Put("/users/forbidden/lock") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.Forbidden
+      }
+    }
+  }
+
+  "PUT update user permission" should {
+    "return a 200 response with the updated user permission" in {
+      membershipRoute = superUserRoute
+      val updatedUser = okUser.copy(isSuper = true)
+      doReturn(result(updatedUser))
+        .when(membershipService)
+        .updateUserPermissionStatus("ok", PermissionStatus.MakeSuper, superUserAuth)
+
+      Put("/users/ok/update/makesuper") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.OK
+
+        val result = responseAs[UserInfo]
+
+        result.id shouldBe updatedUser.id
+        result.isSuper shouldBe Some(updatedUser.isSuper)
+      }
+    }
+
+    "return a 200 response with the user updated to support user" in {
+      membershipRoute = superUserRoute
+      val updatedUser = okUser.copy(isSupport = true)
+      doReturn(result(updatedUser))
+        .when(membershipService)
+        .updateUserPermissionStatus("ok", PermissionStatus.MakeSupport, superUserAuth)
+
+      Put("/users/ok/update/makesupport") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.OK
+
+        val result = responseAs[UserInfo]
+
+        result.id shouldBe updatedUser.id
+        result.isSupport shouldBe Some(updatedUser.isSupport)
+      }
+    }
+
+    "return a 200 response with the user updated to be removed as a support user" in {
+      membershipRoute = superUserRoute
+      val updatedUser = okUser.copy(isSupport = false)
+      doReturn(result(updatedUser))
+        .when(membershipService)
+        .updateUserPermissionStatus("ok", PermissionStatus.RemoveSupport, superUserAuth)
+
+      Put("/users/ok/update/removesupport") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.OK
+
+        val result = responseAs[UserInfo]
+
+        result.id shouldBe updatedUser.id
+        result.isSupport shouldBe Some(updatedUser.isSupport)
+      }
+    }
+
+    "return a 200 response with the user updated to be removed as a super user" in {
+      membershipRoute = superUserRoute
+      val updatedUser = okUser.copy(isSuper = false)
+      doReturn(result(updatedUser))
+        .when(membershipService)
+        .updateUserPermissionStatus("ok", PermissionStatus.RemoveSuper, superUserAuth)
+
+      Put("/users/ok/update/removesuper") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.OK
+
+        val result = responseAs[UserInfo]
+
+        result.id shouldBe updatedUser.id
+        result.isSupport shouldBe Some(updatedUser.isSupport)
+      }
+    }
+
+    "return a 404 Not Found when the user is not found" in {
+      doReturn(result(UserNotFoundError("fail")))
+        .when(membershipService)
+        .updateUserPermissionStatus(anyString, any[PermissionStatus], any[AuthPrincipal])
+      Put("/users/notFound/update/removesuper") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
+    }
+
+    "return a 403 Forbidden when not authorized" in {
+      doReturn(result(NotAuthorizedError("fail")))
+        .when(membershipService)
+        .updateUserPermissionStatus(anyString, any[PermissionStatus], any[AuthPrincipal])
+      Put("/users/forbidden/update/removesupport") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.Forbidden
       }
     }

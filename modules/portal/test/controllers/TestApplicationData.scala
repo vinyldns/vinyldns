@@ -112,6 +112,19 @@ trait TestApplicationData { this: Mockito =>
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     "sam-uuid"
   )
+
+  val superSamAccount = User(
+    "sgamgee",
+    "key",
+    Encrypted("secret"),
+    Some("Samwise"),
+    Some("Gamgee"),
+    Some("sgamgee@hobbitmail.me"),
+    Instant.now.truncatedTo(ChronoUnit.MILLIS),
+    "sam-uuid",
+    true
+  )
+
   val samDetails = LdapUserDetails(
     "CN=sam,OU=hobbits,DC=middle,DC=earth",
     "sam",
@@ -134,6 +147,17 @@ trait TestApplicationData { this: Mockito =>
       |  "created":   "${frodoUser.created}",
       |  "id":        "${frodoUser.id}"
       |}
+     """.stripMargin)
+
+  val superSamUserJson: JsValue = Json.parse(s"""{
+      |  "userName":  "${superSamAccount.userName}",
+      |  "firstName": "${superSamAccount.firstName}",
+      |  "lastName":  "${superSamAccount.lastName}",
+      |  "email":     "${superSamAccount.email}",
+      |  "created":   "${superSamAccount.created}",
+      |  "id":        "${superSamAccount.id}",
+      |  "isSuper":   "${superSamAccount.isSuper}"
+                                        |}
      """.stripMargin)
 
   val hobbitGroupId = "uuid-12345-abcdef"
