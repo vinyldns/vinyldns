@@ -82,11 +82,25 @@ class GroupSpec extends AnyWordSpec with Matchers {
       val updatedGroup = newGroup.removeAdminUser(dummyUser)
       (updatedGroup.adminUserIds should contain).only(dummyUser.id)
     }
-    "correctly adds a user to pending review members" in {
-      val newGroup = emptyGroup.pendingReviewMember(okUser, Some("Please add me"), okAuth)
-      newGroup.membershipAccessStatus.isDefined shouldBe true
-      newGroup.membershipAccessStatus.get.pendingReviewMember.map(_.userId) should contain(okUser.id)
-      newGroup.memberIds should not contain okUser.id
+    "correctly adds a user to existing pending review members" in {
+      val existingMemberAccess = MembershipAccess(
+        userId = dummyUser.id,
+        submittedBy = "admin-user",
+        description = Some("Previous request"),
+        status = MemberStatus.PendingReview.toString
+      )
+      val initialStatus = MembershipAccessStatus(pendingReviewMember = Set(existingMemberAccess))
+      val groupWithExistingStatus = emptyGroup.copy(membershipAccessStatus = Some(initialStatus))
+      val updatedGroup = groupWithExistingStatus.pendingReviewMember(okUser, Some("Please add me"), okAuth)
+
+      updatedGroup.membershipAccessStatus.isDefined shouldBe true
+      val pendingMembers = updatedGroup.membershipAccessStatus.get.pendingReviewMember.map(_.userId)
+      pendingMembers should contain(okUser.id)
+      pendingMembers should contain(dummyUser.id)
+      pendingMembers.size shouldBe 2
+
+      updatedGroup.memberIds should not contain okUser.id
+      updatedGroup.memberIds should not contain dummyUser.id
     }
     "correctly approves a user membership" in {
       val pendingGroup = emptyGroup.pendingReviewMember(okUser, Some("Please add me"), okAuth)

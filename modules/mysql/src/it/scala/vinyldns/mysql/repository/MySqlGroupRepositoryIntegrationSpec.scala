@@ -20,7 +20,7 @@ import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
-import vinyldns.core.domain.membership.{Group, GroupRepository, GroupStatus, MembershipAccessStatus}
+import vinyldns.core.domain.membership.{Group, GroupRepository, GroupStatus, MemberStatus, MembershipAccess, MembershipAccessStatus}
 import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
 import cats.effect.IO
 
@@ -156,6 +156,93 @@ class MySqlGroupRepositoryIntegrationSpec
     "returns empty list when given no ids" in {
       val result = repo.getGroups(Set[String]()).unsafeRunSync()
       result should contain theSameElementsAs Set()
+    }
+    "MySqlGroupRepository membership access" should {
+      "returns empty list when given no ids" in {
+        val result = repo.getGroups(Set[String]()).unsafeRunSync()
+        result should contain theSameElementsAs Set()
+      }
+
+      "save and retrieve a group with membership access status" in {
+        val pendingMembers = Set(
+          MembershipAccess(userId = "user1", submittedBy = "admin1", status = MemberStatus.PendingReview.toString),
+          MembershipAccess(userId = "user2", submittedBy = "admin1", status = MemberStatus.PendingReview.toString)
+        )
+        val rejectedMembers = Set(
+          MembershipAccess(userId = "user3", submittedBy = "admin1", status = MemberStatus.Rejected.toString)
+        )
+        val approvedMembers = Set(
+          MembershipAccess(userId = "user4", submittedBy = "admin1", status = MemberStatus.Approved.toString)
+        )
+
+        val groupWithAccess = Group(
+          name = "group-with-access",
+          email = "access@test.com",
+          membershipAccessStatus = Some(MembershipAccessStatus(pendingMembers, rejectedMembers, approvedMembers))
+        )
+
+        saveGroupData(repo, groupWithAccess).unsafeRunSync()
+        val retrieved = repo.getGroup(groupWithAccess.id).unsafeRunSync()
+
+        retrieved shouldBe Some(groupWithAccess)
+        retrieved.get.membershipAccessStatus.isDefined shouldBe true
+        val accessStatus = retrieved.get.membershipAccessStatus.get
+        accessStatus.pendingReviewMember should contain theSameElementsAs pendingMembers
+        accessStatus.rejectedMember should contain theSameElementsAs rejectedMembers
+        accessStatus.approvedMember should contain theSameElementsAs approvedMembers
+      }
+
+      "update membership access for an existing group" in {
+        val group = groups.head
+        val updatedPendingMembers = Set(
+          MembershipAccess(userId = "newuser1", submittedBy = "admin2", status = MemberStatus.PendingReview.toString)
+        )
+        val updatedRejectedMembers = Set(
+          MembershipAccess(userId = "newuser2", submittedBy = "admin2", status = MemberStatus.Rejected.toString)
+        )
+        val updatedApprovedMembers = Set(
+          MembershipAccess(userId = "newuser3", submittedBy = "admin2", status = MemberStatus.Approved.toString)
+        )
+
+        val updatedGroup = group.copy(
+          membershipAccessStatus = Some(MembershipAccessStatus(updatedPendingMembers, updatedRejectedMembers, updatedApprovedMembers))
+        )
+
+        saveGroupData(repo, updatedGroup).unsafeRunSync()
+        val result = repo.getGroup(group.id).unsafeRunSync()
+
+        result.flatMap(_.membershipAccessStatus).map(_.pendingReviewMember) shouldBe Some(updatedPendingMembers)
+        result.flatMap(_.membershipAccessStatus).map(_.rejectedMember) shouldBe Some(updatedRejectedMembers)
+        result.flatMap(_.membershipAccessStatus).map(_.approvedMember) shouldBe Some(updatedApprovedMembers)
+      }
+
+      "handle empty membership access sets" in {
+        val groupWithEmptyAccess = Group(
+          name = "empty-access-group",
+          email = "empty@test.com",
+          membershipAccessStatus = Some(MembershipAccessStatus(Set(), Set(), Set()))
+        )
+
+        saveGroupData(repo, groupWithEmptyAccess).unsafeRunSync()
+        val result = repo.getGroup(groupWithEmptyAccess.id).unsafeRunSync()
+
+        result.flatMap(_.membershipAccessStatus).map(_.pendingReviewMember) shouldBe Some(Set())
+        result.flatMap(_.membershipAccessStatus).map(_.rejectedMember) shouldBe Some(Set())
+        result.flatMap(_.membershipAccessStatus).map(_.approvedMember) shouldBe Some(Set())
+      }
+
+      "handle null membership access status" in {
+        val groupWithNoAccess = Group(
+          name = "no-access-group",
+          email = "noaccess@test.com",
+          membershipAccessStatus = None
+        )
+
+        saveGroupData(repo, groupWithNoAccess).unsafeRunSync()
+        val result = repo.getGroup(groupWithNoAccess.id).unsafeRunSync()
+
+        result.flatMap(_.membershipAccessStatus) shouldBe Some(MembershipAccessStatus(Set(),Set(),Set()))
+      }
     }
   }
 }

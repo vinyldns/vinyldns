@@ -1,7 +1,7 @@
 # Build VinylDNS API if the JAR doesn't already exist
 FROM vinyldns/build:base-build as base-build
 ARG DOCKERFILE_PATH="test/api/functional"
-COPY "test/api/functional/application.conf" /opt/vinyldns/conf/
+COPY "${DOCKERFILE_PATH}/application.conf" /opt/vinyldns/conf/
 COPY . /build/
 WORKDIR /build
 
@@ -22,11 +22,8 @@ COPY --from=base-build /opt/vinyldns /opt/vinyldns
 # Local bind server files
 COPY quickstart/bind9/etc/named.conf.* /etc/bind/
 COPY quickstart/bind9/zones/ /var/bind/
-RUN apt-get update && \
-    apt-get install -y openjdk-11-jdk && \
-    export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64 && \
-    export PATH=$JAVA_HOME/bin:$PATH && \
-    named-checkconf
+RUN named-checkconf
+
 # Copy over the functional tests
 COPY  modules/api/src/test/functional /functional_test
 

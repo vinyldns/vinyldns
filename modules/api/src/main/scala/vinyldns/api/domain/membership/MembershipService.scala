@@ -122,7 +122,13 @@ class MembershipService(
       existingGroup <- getExistingGroup(groupId)
       user <- getUser(userId, authPrincipal)
       _ <- if (existingGroup.memberIds.contains(userId) || existingGroup.adminUserIds.contains(userId))
-        GroupAlreadyExistsError(s"User $userId is already a member of the group").asLeft.toResult else ().asRight.toResult
+        GroupAlreadyExistsError(s"User $userId is already a member of the group").asLeft.toResult
+      else if (existingGroup.membershipAccessStatus.exists(mas =>
+        mas.pendingReviewMember.nonEmpty &&
+          mas.pendingReviewMember.exists(m => m.userId == userId)
+          && (status != "Approved" && status != "Rejected")))
+        GroupAlreadyExistsError(s"User $userId already has a pending membership request").asLeft.toResult
+      else ().asRight.toResult
       newGroup <- status match {
         case "Request" =>
           IO(existingGroup.pendingReviewMember(user, description, authPrincipal)).toResult

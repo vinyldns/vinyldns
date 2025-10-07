@@ -186,4 +186,54 @@ class GroupProtobufConversionsSpec extends AnyWordSpec with Matchers with GroupP
       roundTrip shouldBe status
     }
   }
+  "Converting MembershipAccess to protobufs" should {
+    "work with all fields present" in {
+      val membershipAccess = MembershipAccess(
+        userId = "test-user",
+        created = Instant.ofEpochSecond(1600000000),
+        submittedBy = "admin-user",
+        description = Some("Test description"),
+        status = "Request"
+      )
+
+      val roundTrip = fromPB(toPB(membershipAccess))
+
+      roundTrip shouldBe membershipAccess
+    }
+
+    "work with description = None" in {
+      val membershipAccess = MembershipAccess(
+        userId = "test-user",
+        created = Instant.ofEpochSecond(1600000000),
+        submittedBy = "admin-user",
+        description = None,
+        status = "Request"
+      )
+
+      val roundTrip = fromPB(toPB(membershipAccess))
+
+      roundTrip shouldBe membershipAccess
+    }
+
+    "preserve all fields correctly during conversion" in {
+      val membershipAccess = MembershipAccess(
+        userId = "test-user-123",
+        created = Instant.ofEpochSecond(1600000000),
+        submittedBy = "admin-user-456",
+        description = Some("This is a detailed description"),
+        status = "Approved"
+      )
+
+      val pb = toPB(membershipAccess)
+
+      pb.getUserId shouldBe "test-user-123"
+      pb.getCreated shouldBe Instant.ofEpochSecond(1600000000).toEpochMilli
+      pb.getSubmittedBy shouldBe "admin-user-456"
+      pb.getDescription shouldBe "This is a detailed description"
+      pb.getStatus shouldBe "Approved"
+
+      val result = fromPB(pb)
+      result shouldBe membershipAccess
+    }
+  }
 }
