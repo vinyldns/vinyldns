@@ -454,7 +454,8 @@ object RecordSetValidations {
         || updates.ttl != existing.ttl
         || updates.records != existing.records)
         && zone.shared
-        && auth.isSuper)
+        && auth.isSuper
+    )
 
   def validRecordNameFilterLength(recordNameFilter: String): Either[Throwable, Unit] =
     ensuring(onError = InvalidRequest(RecordNameFilterError)) {
