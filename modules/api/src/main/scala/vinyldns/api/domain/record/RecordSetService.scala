@@ -29,7 +29,7 @@ import cats.data._
 import cats.effect.IO
 import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS.ReverseMap
-import vinyldns.api.config.{ZoneAuthConfigs, DottedHostsConfig, HighValueDomainConfig}
+import vinyldns.api.config.{DottedHostsConfig, HighValueDomainConfig, ZoneAuthConfigs}
 import vinyldns.api.domain.DomainValidations.{validateIpv4Address, validateIpv6Address}
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.record.NameSort.NameSort
@@ -154,9 +154,11 @@ class RecordSetService(
       _ <- unchangedRecordName(existing, recordSet, zone).toResult
       _ <- unchangedRecordType(existing, recordSet).toResult
       _ <- unchangedZoneId(existing, recordSet).toResult
+      _ <- if(recordSet.recordSetGroupChange.isDefined)
+        isValidOwnerShipTransferStatus (recordSet.recordSetGroupChange).toResult else ().toResult
       _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
-        && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None")))
-        unchangedRecordSet(existing, recordSet).toResult else ().toResult
+        && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None"))) {
+        unchangedRecordSet (existing, recordSet).toResult} else ().toResult
       _ <- if(existing.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") == OwnerShipTransferStatus.Cancelled
         && !auth.isSuper) {
         recordSetOwnerShipApproveStatus(recordSet).toResult
@@ -173,12 +175,16 @@ class RecordSetService(
         && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None"))) ().toResult
       else canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
+      ownerTransferGroup <- getGroupInfo(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("None")))
       _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
         && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None")))
-        canUseOwnerGroup(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId).get, ownerGroup, auth).toResult
+        canUseOwnerGroup(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("None")), ownerTransferGroup, auth).toResult
       else if(approverOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
         && !auth.isSuper) canUseOwnerGroup(existing.ownerGroupId, ownerGroup, auth).toResult
       else canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
+      _ <- if(OwnerShipTransferStatus.PendingReview == recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>")
+      && existing.ownerGroupId == rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId).get)
+        isAlreadyOwnerGroupMember(existing.ownerGroupId.getOrElse("<none>")).toResult else ().toResult
       _ <- notPending(existing).toResult
       existingRecordsWithName <- recordSetRepository
         .getRecordSetsByName(zone.id, rsForValidations.name)
@@ -236,6 +242,15 @@ class RecordSetService(
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
 
+  def getGroupInfo(ids: Option[String]): Result[Option[Group]]= {
+    ids match {
+      case Some("None") => EitherT.pure[IO, Throwable](None)
+      case Some(value) => getGroupIfProvided(Some(value))
+      case None => EitherT.pure[IO, Throwable](None)
+    }
+
+  }
+
   //update ownership transfer is zone is shared
   def updateRecordSetGroupChangeStatus(recordSet: RecordSet, existing: RecordSet, zone: Zone): Result[RecordSet] = {
     val existingOwnerShipTransfer = existing.recordSetGroupChange.getOrElse(OwnerShipTransfer.apply(OwnerShipTransferStatus.None, Some("none")))
@@ -263,9 +278,10 @@ class RecordSetService(
               case _ => recordSet.copy(
                 recordSetGroupChange = Some(ownerShipTransfer.copy(
                   ownerShipTransferStatus = OwnerShipTransferStatus.None,
-                  requestedOwnerGroupId = Some("null"))))
+                  requestedOwnerGroupId = None)))
             }
           for {
+            _ <- canChangeFromPendingReview(existingOwnerShipTransfer.ownerShipTransferStatus, ownerShipTransfer.ownerShipTransferStatus).toResult
             recordSet <- recordSetOwnerApproval.toResult
           } yield recordSet
         }
@@ -276,10 +292,17 @@ class RecordSetService(
                 recordSet.copy(recordSetGroupChange = Some(ownerShipTransfer.copy(
                   ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,
                   requestedOwnerGroupId = existingOwnerShipTransfer.requestedOwnerGroupId)))
-              case OwnerShipTransferStatus.Requested | OwnerShipTransferStatus.PendingReview => recordSet.copy(
+              case OwnerShipTransferStatus.Requested | OwnerShipTransferStatus.PendingReview if existing.ownerGroupId.isDefined =>
+                recordSet.copy(
                 recordSetGroupChange = Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview)))
+              case OwnerShipTransferStatus.Requested if existing.ownerGroupId.isEmpty => recordSet.copy(
+                ownerGroupId = ownerShipTransfer.requestedOwnerGroupId,
+                recordSetGroupChange = Some(ownerShipTransfer.copy(
+                  ownerShipTransferStatus = OwnerShipTransferStatus.AutoApproved,
+                  requestedOwnerGroupId = ownerShipTransfer.requestedOwnerGroupId)))
             }
           for {
+            _ <- isValidCancelOwnerShipTransferStatus(existingOwnerShipTransfer.ownerShipTransferStatus, ownerShipTransfer.ownerShipTransferStatus).toResult
             recordSet <- recordSetOwnerRequest.toResult
           } yield recordSet
         }
@@ -288,11 +311,11 @@ class RecordSetService(
       } yield recordSet.copy(
         recordSetGroupChange = Some(ownerShipTransfer.copy(
           ownerShipTransferStatus = OwnerShipTransferStatus.None,
-          requestedOwnerGroupId = Some("null"))))
+          requestedOwnerGroupId = None)))
     else recordSet.copy(
       recordSetGroupChange = Some(ownerShipTransfer.copy(
         ownerShipTransferStatus = OwnerShipTransferStatus.None,
-        requestedOwnerGroupId = Some("null")))).toResult
+        requestedOwnerGroupId = None))).toResult
   }
 
   // For dotted hosts. Check if a record that may conflict with dotted host exist or not

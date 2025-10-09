@@ -1939,7 +1939,7 @@ def test_update_owner_group_transfer_auto_approved(shared_zone_test_context):
     update_rs = None
 
     try:
-        record_json = create_recordset(zone, "test_shared_admin_update_success", "A", [{"address": "1.1.1.1"}])
+        record_json = create_recordset(zone, "test_shared_admin_update_success_fail", "A", [{"address": "1.1.1.1"}])
         record_json["ownerGroupId"] = shared_group["id"]
         create_response = shared_client.create_recordset(record_json, status=202)
         update = shared_client.wait_until_recordset_change_status(create_response, "Complete")["recordSet"]
@@ -1949,10 +1949,8 @@ def test_update_owner_group_transfer_auto_approved(shared_zone_test_context):
                                        "requestedOwnerGroupId": ok_group["id"]}
 
         update["recordSetGroupChange"] = recordset_group_change_json
-        update_response = shared_client.update_recordset(update, status=202)
-        update_rs = shared_client.wait_until_recordset_change_status(update_response, "Complete")["recordSet"]
-        assert_that(update_rs["recordSetGroupChange"], is_(recordset_group_change_json))
-        assert_that(update_rs["ownerGroupId"], is_(ok_group["id"]))
+        error = shared_client.update_recordset(update, status=422)
+        assert_that(error, is_(f"Unable to AutoApproved the Ownership transfer status for the record: None"))
     finally:
         if update_rs:
             delete_result = shared_client.delete_recordset(zone["id"], update_rs["id"], status=202)
