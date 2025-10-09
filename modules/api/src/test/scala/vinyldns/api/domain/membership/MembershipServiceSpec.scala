@@ -1598,5 +1598,39 @@ class MembershipServiceSpec
       verify(mockGroupRepo, never()).save(any[DB], any[Group])
       verify(mockGroupChangeRepo, never()).save(any[DB], any[GroupChange])
     }
+
+    "return an error when the user already has a pending membership request" in {
+      val userId = "pendingUser"
+      val description = Some("Please add me to the group")
+      val status = "Request"
+      val groupId = "testGroup"
+
+      // Create a membership access with the user already in pending state
+      val pendingMemberAccess = MembershipAccess(
+        userId = userId,
+        submittedBy = "anotherUser",
+        status = "PendingReview",
+        description = Some("Previous request")
+      )
+
+      // Create a group with the user in pending review status
+      val groupWithPendingRequest = existingGroup.copy(
+        membershipAccessStatus = Some(MembershipAccessStatus(
+          pendingReviewMember = Set(pendingMemberAccess),
+          rejectedMember = Set(),
+          approvedMember = Set()
+        ))
+      )
+
+      doReturn(IO.pure(Some(groupWithPendingRequest))).when(mockGroupRepo).getGroup(groupId)
+      doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(userId)
+
+      val error = underTest.requestGroupMember(userId, description, status, groupId, okAuth).value.unsafeRunSync().swap.toOption.get
+
+      error shouldBe a[GroupAlreadyExistsError]
+      error.getMessage should include("already has a pending membership request")
+      verify(mockGroupRepo, never()).save(any[DB], any[Group])
+      verify(mockGroupChangeRepo, never()).save(any[DB], any[GroupChange])
+    }
   }
 }
