@@ -119,7 +119,6 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
         message
       }
     } yield ()
-  }
 
   def formatBatchChange(bc: BatchChange): String = {
     val sb = new StringBuilder

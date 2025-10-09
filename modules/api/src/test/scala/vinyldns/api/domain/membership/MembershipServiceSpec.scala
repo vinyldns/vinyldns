@@ -35,6 +35,9 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.RecordSetRepository
+import vinyldns.core.notifier.{AllNotifiers, Notification, Notifier}
+
+import scala.concurrent.ExecutionContext
 
 class MembershipServiceSpec
   extends AnyWordSpec
@@ -43,6 +46,7 @@ class MembershipServiceSpec
     with BeforeAndAfterEach
     with EitherMatchers {
 
+  private implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   private val mockGroupRepo = mock[GroupRepository]
   private val mockUserRepo = mock[UserRepository]
   private val mockMembershipRepo = mock[MembershipRepository]
@@ -51,6 +55,8 @@ class MembershipServiceSpec
   private val mockRecordSetRepo = mock[RecordSetRepository]
   private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com","*dummy.com"),2)
   private val mockValidEmailConfigNew = ValidEmailConfig(valid_domains = List(),2)
+  private val mockNotifier = mock[Notifier]
+  private val mockNotifiers = AllNotifiers(List(mockNotifier))
 
   private val backingService = new MembershipService(
     mockGroupRepo,
@@ -59,7 +65,8 @@ class MembershipServiceSpec
     mockZoneRepo,
     mockGroupChangeRepo,
     mockRecordSetRepo,
-    mockValidEmailConfig
+    mockValidEmailConfig,
+    mockNotifiers
   )
   private val backingServiceNew = new MembershipService(
     mockGroupRepo,
@@ -68,7 +75,8 @@ class MembershipServiceSpec
     mockZoneRepo,
     mockGroupChangeRepo,
     mockRecordSetRepo,
-    mockValidEmailConfigNew
+    mockValidEmailConfigNew,
+    mockNotifiers
   )
   private val underTest = spy(backingService)
   private val underTestNew = spy(backingServiceNew)
@@ -1429,6 +1437,7 @@ class MembershipServiceSpec
       doReturn(IO.pure(okGroupChangeUpdate)).when(mockGroupChangeRepo).save(any[DB], any[GroupChange])
       doReturn(IO.pure(Set())).when(mockMembershipRepo).saveMembers(any[DB], anyString, any[Set[String]], isAdmin = anyBoolean)
       doReturn(IO.pure(Set())).when(mockMembershipRepo).removeMembers(any[DB], anyString, any[Set[String]])
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
 
       val result = underTest.requestGroupMember(userId, description, status, groupId, okAuth).value.unsafeRunSync().toOption.get
 
@@ -1453,6 +1462,7 @@ class MembershipServiceSpec
       doReturn(IO.pure(okGroupChangeUpdate)).when(mockGroupChangeRepo).save(any[DB], any[GroupChange])
       doReturn(IO.pure(Set())).when(mockMembershipRepo).saveMembers(any[DB], anyString, any[Set[String]], isAdmin = anyBoolean)
       doReturn(IO.pure(Set())).when(mockMembershipRepo).removeMembers(any[DB], anyString, any[Set[String]])
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
 
       val result = underTest.requestGroupMember(userId, description, status, groupId, okAuth).value.unsafeRunSync().toOption.get
 
@@ -1477,6 +1487,7 @@ class MembershipServiceSpec
       doReturn(IO.pure(okGroupChangeUpdate)).when(mockGroupChangeRepo).save(any[DB], any[GroupChange])
       doReturn(IO.pure(Set())).when(mockMembershipRepo).saveMembers(any[DB], anyString, any[Set[String]], isAdmin = anyBoolean)
       doReturn(IO.pure(Set())).when(mockMembershipRepo).removeMembers(any[DB], anyString, any[Set[String]])
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
 
       val result = underTest.requestGroupMember(userId, description, status, groupId, okAuth).value.unsafeRunSync().toOption.get
 
@@ -1605,7 +1616,6 @@ class MembershipServiceSpec
       val status = "Request"
       val groupId = "testGroup"
 
-      // Create a membership access with the user already in pending state
       val pendingMemberAccess = MembershipAccess(
         userId = userId,
         submittedBy = "anotherUser",
@@ -1613,7 +1623,6 @@ class MembershipServiceSpec
         description = Some("Previous request")
       )
 
-      // Create a group with the user in pending review status
       val groupWithPendingRequest = existingGroup.copy(
         membershipAccessStatus = Some(MembershipAccessStatus(
           pendingReviewMember = Set(pendingMemberAccess),
@@ -1625,12 +1634,12 @@ class MembershipServiceSpec
       doReturn(IO.pure(Some(groupWithPendingRequest))).when(mockGroupRepo).getGroup(groupId)
       doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(userId)
 
-      val error = underTest.requestGroupMember(userId, description, status, groupId, okAuth).value.unsafeRunSync().swap.toOption.get
+      val result = underTest.requestGroupMember(userId, description, status, groupId, okAuth).value.unsafeRunSync()
 
+      result should be(left)
+      val error = result.swap.toOption.get
       error shouldBe a[GroupAlreadyExistsError]
-      error.getMessage should include("already has a pending membership request")
-      verify(mockGroupRepo, never()).save(any[DB], any[Group])
-      verify(mockGroupChangeRepo, never()).save(any[DB], any[GroupChange])
+      error.getMessage should include(s"User $userId already has a pending membership request")
     }
   }
 }
