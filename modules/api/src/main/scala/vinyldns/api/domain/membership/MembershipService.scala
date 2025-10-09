@@ -28,10 +28,11 @@ import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.Messages._
+import vinyldns.core.notifier.{AllNotifiers, Notification}
 import vinyldns.mysql.TransactionProvider
 
 object MembershipService {
-  def apply(dataAccessor: ApiDataAccessor,emailConfig:ValidEmailConfig): MembershipService =
+  def apply(dataAccessor: ApiDataAccessor,emailConfig:ValidEmailConfig,notifiers: AllNotifiers): MembershipService =
     new MembershipService(
       dataAccessor.groupRepository,
       dataAccessor.userRepository,
@@ -39,7 +40,8 @@ object MembershipService {
       dataAccessor.zoneRepository,
       dataAccessor.groupChangeRepository,
       dataAccessor.recordSetRepository,
-      emailConfig
+      emailConfig,
+      notifiers
     )
 }
 
@@ -50,8 +52,9 @@ class MembershipService(
     zoneRepo: ZoneRepository,
     groupChangeRepo: GroupChangeRepository,
     recordSetRepo: RecordSetRepository,
-    validDomains: ValidEmailConfig
-) extends MembershipServiceAlgebra with TransactionProvider {
+    validDomains: ValidEmailConfig,
+    notifiers: AllNotifiers
+                       ) extends MembershipServiceAlgebra with TransactionProvider {
 
   import MembershipValidations._
 
@@ -147,7 +150,9 @@ class MembershipService(
       addedNonAdmins = newGroup.memberIds.diff(existingGroup.memberIds).diff(addedAdmins) ++
         existingGroup.adminUserIds.diff(newGroup.adminUserIds).intersect(newGroup.memberIds)
       removedMembers = existingGroup.memberIds.diff(newGroup.memberIds)
-      _ <- updateGroupData(GroupChange.forUpdate(newGroup, existingGroup, authPrincipal), newGroup, existingGroup, addedAdmins, addedNonAdmins, removedMembers).toResult[Unit]
+      groupChange = GroupChange.forUpdate(newGroup, existingGroup, authPrincipal)
+      _ <- updateGroupData(groupChange, newGroup, existingGroup, addedAdmins, addedNonAdmins, removedMembers).toResult[Unit]
+      _ <- notifiers.notify(Notification(groupChange)).toResult[Unit]
     } yield newGroup
 
   def createGroupData(

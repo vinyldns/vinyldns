@@ -21,7 +21,7 @@ import cats.effect.IO
 import cats.implicits._
 import cats.effect.IO
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, SingleAddChange, SingleChange, SingleDeleteRRSetChange}
-import vinyldns.core.domain.membership.{GroupRepository, User, UserRepository}
+import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeType, GroupRepository, MembershipAccessStatus, User, UserRepository}
 import org.slf4j.LoggerFactory
 
 import javax.mail.internet.{InternetAddress, MimeMessage}
@@ -45,9 +45,9 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
     notification.change match {
       case bc: BatchChange => sendBatchChangeNotification(bc)
       case rsc: RecordSetChange => sendRecordSetOwnerTransferNotification(rsc)
+      case gc: GroupChange => sendGroupChangeNotification(gc)
       case _ => IO.unit
     }
-
 
   def send(toAddresses: Address*)(ccAddresses: Address*)(buildMessage: Message => Message): IO[Unit] = IO {
     val message = new MimeMessage(session)
@@ -127,7 +127,6 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       }
     } yield ()
   }
-
 
   def formatBatchChange(bc: BatchChange): String = {
     val sb = new StringBuilder
@@ -249,10 +248,126 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
     case _ => rd.toString
   }
 
+  def sendGroupChangeNotification(gc: GroupChange): IO[Unit] = {
+    groupRepository.getGroup(gc.newGroup.id).flatMap {
+      case Some(grp) =>
+        GroupWithEmail.apply(grp) match {
+          case Some(email) =>
+            send(email)() { message =>
+              message.setSubject(s"VinylDNS Group ${grp.name} change notification")
+              message.setContent(formatGroupChange(gc, grp), "text/html")
+              message
+            }
+          case None =>
+            IO {
+              logger.warn(s"Group ${grp.name} (${grp.id}) doesn't have an email address configured")
+            }
+        }
+      case None =>
+        IO {
+          logger.warn(s"Unable to find group: ${gc.newGroup.id}")
+        }
+    }
+  }
+
+  def formatGroupChange(gc: GroupChange, group: Group): String = {
+    val sb = new StringBuilder
+    sb.append(s"""<h1>Group Change Notification</h1>
+                 | <b>Group Name:</b> ${group.name} <br/>
+                 | <b>Group ID:</b> ${group.id} <br/>
+                 | <b>Change Type:</b> ${gc.changeType} <br/>
+                 | <b>Changed By:</b> ${gc.userId} <br/>
+                 | <b>Time:</b> ${DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL).withZone(ZoneId.systemDefault()).format(gc.created)} <br/>""".stripMargin)
+
+    if (gc.changeType == GroupChangeType.Update) {
+      val addedAdmins =
+        (gc.newGroup.adminUserIds.diff(gc.oldGroup.map(_.adminUserIds).getOrElse(Set.empty[String])))
+      val removedAdmins =
+        (gc.oldGroup.map(_.adminUserIds.diff(gc.newGroup.adminUserIds)))
+
+      val addedMembers =
+        (gc.newGroup.memberIds.diff(gc.oldGroup.map(_.memberIds).getOrElse(Set.empty[String])))
+      val removedMembers =
+        (gc.oldGroup.map(_.memberIds.diff(gc.newGroup.memberIds)))
+
+      if (addedAdmins.nonEmpty || removedAdmins.nonEmpty) {
+        sb.append("<h2>Administrator Changes</h2>")
+
+        if (addedAdmins.nonEmpty) {
+          sb.append("<b>New Administrators:</b><br/>")
+          sb.append("<ul>")
+          addedAdmins.foreach(admin => sb.append(s"<li>$admin</li>"))
+          sb.append("</ul>")
+        }
+
+        if (removedAdmins.nonEmpty) {
+          sb.append("<b>Removed Administrators:</b><br/>")
+          sb.append("<ul>")
+          removedAdmins.foreach(admin => sb.append(s"<li>$admin</li>"))
+          sb.append("</ul>")
+        }
+      }
+      if (addedMembers.nonEmpty || removedMembers.nonEmpty) {
+        sb.append("<h2>Member Changes</h2>")
+
+        if (addedMembers.nonEmpty) {
+          sb.append("<b>New Members:</b><br/>")
+          sb.append("<ul>")
+          addedMembers.foreach(member => sb.append(s"<li>$member</li>"))
+          sb.append("</ul>")
+        }
+        if (removedMembers.nonEmpty) {
+          sb.append("<b>Removed Members:</b><br/>")
+          sb.append("<ul>")
+          removedMembers.foreach(member => sb.append(s"<li>$member</li>"))
+          sb.append("</ul>")
+        }
+      }
+      val oldMas = gc.oldGroup.map(_.membershipAccessStatus.getOrElse(MembershipAccessStatus(Set(), Set(), Set())))
+      val newMas = gc.newGroup.membershipAccessStatus.getOrElse(MembershipAccessStatus(Set(), Set(), Set()))
+
+      val newPendingMembers = newMas.pendingReviewMember.diff(oldMas.map(_.pendingReviewMember).getOrElse(Set.empty))
+      val newApprovedMembers = newMas.approvedMember.diff(oldMas.map(_.approvedMember).getOrElse(Set.empty))
+      val newRejectedMembers = newMas.rejectedMember.diff(oldMas.map(_.rejectedMember).getOrElse(Set.empty))
+
+      if (newPendingMembers.nonEmpty || newApprovedMembers.nonEmpty || newRejectedMembers.nonEmpty) {
+        sb.append("<h2>Membership Access Changes</h2>")
+        if (newPendingMembers.nonEmpty) {
+          sb.append("<b>New Membership Requests:</b><br/>")
+          sb.append("<ul>")
+          newPendingMembers.foreach(m => sb.append(s"<li>${m.userId} (Requested by: ${m.submittedBy})</li>"))
+          sb.append("</ul>")
+        }
+        if (newApprovedMembers.nonEmpty) {
+          sb.append("<b>Approved Membership Requests:</b><br/>")
+          sb.append("<ul>")
+          newApprovedMembers.foreach(m => sb.append(s"<li>${m.userId}</li>"))
+          sb.append("</ul>")
+        }
+        if (newRejectedMembers.nonEmpty) {
+          sb.append("<b>Rejected Membership Requests:</b><br/>")
+          sb.append("<ul>")
+          newRejectedMembers.foreach(m => sb.append(s"<li>${m.userId}</li>"))
+          sb.append("</ul>")
+        }
+      }
+    }
+    sb.toString
+  }
+
+
   object UserWithEmail {
     def unapply(user: User): Option[Address] =
       for {
         email <- user.email
+        address <- Try(new InternetAddress(email)).toOption
+      } yield address
+  }
+
+  object GroupWithEmail {
+    def apply(group: Group): Option[Address] =
+      for {
+        email <- Some(group.email)
         address <- Try(new InternetAddress(email)).toOption
       } yield address
   }
