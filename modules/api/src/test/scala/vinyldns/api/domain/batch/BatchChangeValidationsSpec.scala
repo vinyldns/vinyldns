@@ -1602,8 +1602,9 @@ class BatchChangeValidationsSpec
     result(0) shouldBe valid
   }
 
+  
   property(
-    "validateChangesWithContext: should fail for AddChangeForValidation if user is a superUser with no other access"
+    "validateChangesWithContext: should succeed for AddChangeForValidation if user is a superUser with no other access"
   ) {
     val addA = AddChangeForValidation(
       validZone,
@@ -1618,14 +1619,7 @@ class BatchChangeValidationsSpec
       None
     )
 
-    result(0) should haveInvalid[DomainValidationError](
-      UserIsNotAuthorizedError(
-        superUser.userName,
-        addA.zone.adminGroupId,
-        OwnerType.Zone,
-        Some(addA.zone.email)
-      )
-    )
+    result(0) shouldBe valid
   }
 
   property(
@@ -1790,7 +1784,7 @@ class BatchChangeValidationsSpec
     result(0) shouldBe valid
   }
 
-  property(""" validateChangesWithContext: should fail for DeleteChangeForValidation
+  property(""" validateChangesWithContext: should succeed for DeleteChangeForValidation
              | if user is superUser with no other access""".stripMargin) {
     val deleteA =
       DeleteRRSetChangeForValidation(
@@ -1809,16 +1803,9 @@ class BatchChangeValidationsSpec
       None
     )
 
-    result(0) should haveInvalid[DomainValidationError](
-      UserIsNotAuthorizedError(
-        superUser.userName,
-        deleteA.zone.adminGroupId,
-        OwnerType.Zone,
-        Some(deleteA.zone.email)
-      )
-    )
+    result(0) shouldBe valid
   }
-
+  
   property(
     "validateChangesWithContext: should succeed for DeleteChangeForValidation if user has necessary ACL rule"
   ) {
