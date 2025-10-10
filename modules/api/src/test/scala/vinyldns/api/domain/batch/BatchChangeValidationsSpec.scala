@@ -1602,7 +1602,6 @@ class BatchChangeValidationsSpec
     result(0) shouldBe valid
   }
 
-  
   property(
     "validateChangesWithContext: should succeed for AddChangeForValidation if user is a superUser with no other access"
   ) {
