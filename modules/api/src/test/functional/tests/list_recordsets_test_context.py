@@ -31,7 +31,12 @@ class ListRecordSetsTestContext(object):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "list-records-user"}],
-            "admins": [{"id": "list-records-user"}]
+            "admins": [{"id": "list-records-user"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         self.group = self.client.create_group(group, status=200)
         zone_change = self.client.create_zone(
