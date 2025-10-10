@@ -1853,7 +1853,6 @@ def test_update_from_super_user_in_private_zone_succeeds_when_owner_group_is_onl
     dummy_group = shared_zone_test_context.dummy_group
     ok_zone = shared_zone_test_context.ok_zone
     create_rs = None
-
     try:
         record_json = create_recordset(ok_zone, "test_private_success", "A", [{"address": "1.1.1.1"}])
         record_json["ownerGroupId"] = ok_record_group["id"]
