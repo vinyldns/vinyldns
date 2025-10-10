@@ -558,7 +558,7 @@
                             ng-switch-when="false"
                             ng-disabled="recordModal.details.readOnly"
                             ng-class="recordModal.details.class"
-                            ng-options="group.id as group.name for group in myGroups | orderBy: 'name'"
+                            ng-options="group.id as group.name for group in myGroups | filter:{id: '!'+ currentRecord.ownerGroupId} | orderBy: 'name'"
                             required>
                         <option value="" selected="selected">Please choose a record owner group</option>
                     </select>
