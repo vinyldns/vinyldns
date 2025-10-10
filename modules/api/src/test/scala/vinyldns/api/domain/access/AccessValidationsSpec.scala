@@ -667,7 +667,7 @@ class AccessValidationsSpec
       result shouldBe AccessLevel.NoAccess
     }
 
-    "return AccessLevel.Read if the user is support only" in {
+    "return AccessLevel.Read if the user is support only" in{
       val result = accessValidationTest.getAccessLevel(
         supportUserAuth,
         "test",
@@ -678,7 +678,6 @@ class AccessValidationsSpec
       result shouldBe AccessLevel.Read
     }
     
-
     "return AccessLevel.Delete if the user is super user not in the admin group" in {
       val result = accessValidationTest.getAccessLevel(
         superUserAuth,
