@@ -677,6 +677,7 @@ class AccessValidationsSpec
       )
       result shouldBe AccessLevel.Read
     }
+    
 
     "return AccessLevel.Delete if the user is super user not in the admin group" in {
       val result = accessValidationTest.getAccessLevel(
