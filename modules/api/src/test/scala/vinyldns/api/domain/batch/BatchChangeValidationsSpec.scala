@@ -1606,18 +1606,17 @@ class BatchChangeValidationsSpec
     "validateChangesWithContext: should succeed for AddChangeForValidation if user is a superUser with no other access"
   ) {
     val addA = AddChangeForValidation(
-      validZone,
-      "valid",
-      AddChangeInput("valid.ok.", RecordType.A, None, ttl, AData("1.1.1.1")),
-      defaultTtl
-    )
-    val result = validateChangesWithContext(
-      ChangeForValidationMap(List(addA.validNel), ExistingRecordSets(recordSetList)),
-      AuthPrincipal(superUser, Seq.empty),
-      false,
-      None
-    )
-
+        validZone,
+        "valid",
+        AddChangeInput("valid.ok.", RecordType.A, None, ttl, AData("1.1.1.1")),
+        defaultTtl
+      )
+      val result = validateChangesWithContext(
+        ChangeForValidationMap(List(addA.validNel), ExistingRecordSets(recordSetList)),
+        AuthPrincipal(superUser, Seq.empty),
+        false,
+        None
+      ) 
     result(0) shouldBe valid
   }
 

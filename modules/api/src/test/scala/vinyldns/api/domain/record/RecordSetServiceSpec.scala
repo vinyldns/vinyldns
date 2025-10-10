@@ -1527,6 +1527,7 @@ class RecordSetServiceSpec
 
       result should be(right)
     }
+
   }
 
   "getRecordSet" should {
