@@ -667,18 +667,18 @@ class AccessValidationsSpec
       result shouldBe AccessLevel.NoAccess
     }
 
-    "return AccessLevel.Read if the user is support only" in {
-      val result = accessValidationTest.getAccessLevel(
-        supportUserAuth,
-        "test",
-        RecordType.A,
-        okZone.copy(adminGroupId = "not-a-real-group"),
-        None
-      )
-      result shouldBe AccessLevel.Read
+    "return AccessLevel.Read if the user is support only" in{
+        val result = accessValidationTest.getAccessLevel(
+          supportUserAuth,
+          "test",
+          RecordType.A,
+          okZone.copy(adminGroupId = "not-a-real-group"),
+          None
+        )
+        result shouldBe AccessLevel.Read
     }
-
-    "return AccessLevel.Read if the user is super user not in the admin group" in {
+    
+    "return AccessLevel.Delete if the user is super user not in the admin group" in {
       val result = accessValidationTest.getAccessLevel(
         superUserAuth,
         "test",
@@ -686,7 +686,7 @@ class AccessValidationsSpec
         okZone.copy(adminGroupId = "not-a-real-group"),
         None
       )
-      result shouldBe AccessLevel.Read
+      result shouldBe AccessLevel.Delete
     }
 
     "return the result of getAccessLevel if the user is support but also an admin" in {

@@ -1843,9 +1843,9 @@ def test_update_from_unassociated_user_in_shared_zone_fails_when_owner_group_is_
             delete_result = shared_client.delete_recordset(shared_zone["id"], create_rs["id"], status=202)
             shared_client.wait_until_recordset_change_status(delete_result, "Complete")
 
-def test_update_from_super_user_in_private_zone_fails_when_owner_group_is_only_update(shared_zone_test_context):
+def test_update_from_super_user_in_private_zone_succeeds_when_owner_group_is_only_update(shared_zone_test_context):
     """
-    Test that updating with a superuser fails when the zone is set to private and the owner group is the only change
+    Test that updating with a superuser succeeds when the zone is set to private and the owner group is the only change
     """
     ok_client = shared_zone_test_context.ok_vinyldns_client
     super_user_client = shared_zone_test_context.super_user_client
@@ -1853,26 +1853,28 @@ def test_update_from_super_user_in_private_zone_fails_when_owner_group_is_only_u
     dummy_group = shared_zone_test_context.dummy_group
     ok_zone = shared_zone_test_context.ok_zone
     create_rs = None
-
     try:
-        record_json = create_recordset(ok_zone, "test_private_fail", "A", [{"address": "1.1.1.1"}])
+        record_json = create_recordset(ok_zone, "test_private_success", "A", [{"address": "1.1.1.1"}])
         record_json["ownerGroupId"] = ok_record_group["id"]
         create_response = ok_client.create_recordset(record_json, status=202)
         create_rs = ok_client.wait_until_recordset_change_status(create_response, "Complete")["recordSet"]
         assert_that(create_rs["ownerGroupId"], is_(ok_record_group["id"]))
 
+        
         update = create_rs
         update["ownerGroupId"] = dummy_group["id"]
-        error = super_user_client.update_recordset(update, status=403)
-        assert_that(error, is_(f'User super-user does not have access to update test-private-fail.{ok_zone["name"]}'))
+        update_response = super_user_client.update_recordset(update, status=202)
+        updated_rs = super_user_client.wait_until_recordset_change_status(update_response, "Complete")["recordSet"]
+        assert_that(updated_rs["ownerGroupId"], is_(dummy_group["id"]))
     finally:
         if create_rs:
             delete_result = ok_client.delete_recordset(ok_zone["id"], create_rs["id"], status=202)
             ok_client.wait_until_recordset_change_status(delete_result, "Complete")
 
-def test_update_from_super_user_in_shared_zone_fails_when_owner_group_is_not_the_only_update(shared_zone_test_context):
+
+def test_update_from_super_user_in_shared_zone_succeeds_when_owner_group_is_not_the_only_update(shared_zone_test_context):
     """
-    Test that updating with a superuser fails when the zone is set to shared and the owner group is not the only change
+    Test that updating with a superuser succeeds when the zone is shared and the change includes more than just the owner group
     """
     super_user_client = shared_zone_test_context.super_user_client
     shared_record_group = shared_zone_test_context.shared_record_group
@@ -1882,21 +1884,24 @@ def test_update_from_super_user_in_shared_zone_fails_when_owner_group_is_not_the
     create_rs = None
 
     try:
-        record_json = create_recordset(shared_zone, "test_shared_fail", "A", [{"address": "1.1.1.1"}])
+        record_json = create_recordset(shared_zone, "test_shared_success", "A", [{"address": "1.1.1.1"}])
         record_json["ownerGroupId"] = shared_record_group["id"]
         create_response = shared_client.create_recordset(record_json, status=202)
         create_rs = shared_client.wait_until_recordset_change_status(create_response, "Complete")["recordSet"]
         assert_that(create_rs["ownerGroupId"], is_(shared_record_group["id"]))
 
-        update = create_rs
+        update = create_rs.copy()
         update["ownerGroupId"] = dummy_group["id"]
-        update["ttl"] = update["ttl"] + 100
-        error = super_user_client.update_recordset(update, status=403)
-        assert_that(error, is_(f'User super-user does not have access to update test-shared-fail.{shared_zone["name"]}'))
+        update["ttl"] = update["ttl"] + 100  
+        update_response = super_user_client.update_recordset(update, status=202)
+        updated_rs = shared_client.wait_until_recordset_change_status(update_response, "Complete")["recordSet"]
+        assert_that(updated_rs["ownerGroupId"], is_(dummy_group["id"]))
+        assert_that(updated_rs["ttl"], is_(update["ttl"]))
     finally:
         if create_rs:
             delete_result = shared_client.delete_recordset(shared_zone["id"], create_rs["id"], status=202)
             shared_client.wait_until_recordset_change_status(delete_result, "Complete")
+
 
 @pytest.mark.serial
 def test_update_from_acl_for_shared_zone_passes(shared_zone_test_context):

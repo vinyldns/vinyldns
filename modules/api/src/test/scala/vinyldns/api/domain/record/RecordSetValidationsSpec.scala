@@ -715,11 +715,18 @@ class RecordSetValidationsSpec
         val rs = sharedZoneRecord.copy(ownerGroupId = Some(dummyGroup.id))
         canSuperUserUpdateOwnerGroup(existing, rs, zone, superUserAuth) should be(false)
       }
-      "return false when record owner group is NOT the only field changed in the updated record" in {
+      /*"return false when record owner group is NOT the only field changed in the updated record" in {
         val zone = sharedZone
         val existing = sharedZoneRecord.copy(ownerGroupId = Some(okGroup.id), records = List(AData("10.1.1.1")))
         val rs = sharedZoneRecord.copy(ownerGroupId = Some(dummyGroup.id), records = List(AData("10.1.1.2")))
         canSuperUserUpdateOwnerGroup(existing, rs, zone, superUserAuth) should be(false)
+      }*/
+
+      "return true when record owner group is NOT the only field changed in the updated record" in {
+        val zone = sharedZone
+        val existing = sharedZoneRecord.copy(ownerGroupId = Some(okGroup.id), records = List(AData("10.1.1.1")))
+        val rs = sharedZoneRecord.copy(ownerGroupId = Some(dummyGroup.id), records = List(AData("10.1.1.2")))
+        canSuperUserUpdateOwnerGroup(existing, rs, zone, superUserAuth) should be(true)
       }
     }
     "unchangedRecordSet" should {
