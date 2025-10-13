@@ -1860,6 +1860,7 @@ def test_update_from_super_user_in_private_zone_succeeds_when_owner_group_is_onl
         create_rs = ok_client.wait_until_recordset_change_status(create_response, "Complete")["recordSet"]
         assert_that(create_rs["ownerGroupId"], is_(ok_record_group["id"]))
 
+        
         update = create_rs
         update["ownerGroupId"] = dummy_group["id"]
         update_response = super_user_client.update_recordset(update, status=202)
