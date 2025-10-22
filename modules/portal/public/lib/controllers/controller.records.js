@@ -355,8 +355,10 @@ angular.module('controller.records', [])
     $scope.submitUpdateRecord = function () {
         var record = angular.copy($scope.currentRecord);
         if(record.recordSetGroupChange.requestedOwnerGroupId != undefined){
-            record.recordSetGroupChange.requestedOwnerGroupId = angular.copy(record.ownerGroupId);
-        }
+             if (record.ownerGroupId != $scope.recordModal.previous.ownerGroupId && $scope.isZoneAdmin){
+                    record.recordSetGroupChange.requestedOwnerGroupId = angular.copy(record.ownerGroupId);
+             }
+        } else {record.recordSetGroupChange.requestedOwnerGroupId = angular.copy(record.ownerGroupId);}
         
         record['onlyFour'] = true;
         if ($scope.addRecordForm.$valid) {
