@@ -154,7 +154,7 @@ class RecordSetService(
       _ <- unchangedRecordName(existing, recordSet, zone).toResult
       _ <- unchangedRecordType(existing, recordSet).toResult
       _ <- unchangedZoneId(existing, recordSet).toResult
-      _ <- if(recordSet.recordSetGroupChange.isDefined)
+      _ <- if(recordSet.recordSetGroupChange.isDefined && (existing.recordSetGroupChange != recordSet.recordSetGroupChange))
         isValidOwnerShipTransferStatus (recordSet.recordSetGroupChange).toResult else ().toResult
       _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
         && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None"))) {
@@ -182,7 +182,7 @@ class RecordSetService(
       else if(approverOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
         && !auth.isSuper) canUseOwnerGroup(existing.ownerGroupId, ownerGroup, auth).toResult
       else canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
-      _ <- if(OwnerShipTransferStatus.PendingReview == recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>")
+      _ <- if((existing.recordSetGroupChange != recordSet.recordSetGroupChange) && OwnerShipTransferStatus.PendingReview == recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>")
       && existing.ownerGroupId == rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId).get)
         isAlreadyOwnerGroupMember(existing.ownerGroupId.getOrElse("<none>")).toResult else ().toResult
       _ <- notPending(existing).toResult
@@ -281,7 +281,9 @@ class RecordSetService(
                   requestedOwnerGroupId = None)))
             }
           for {
-            _ <- canChangeFromPendingReview(existingOwnerShipTransfer.ownerShipTransferStatus, ownerShipTransfer.ownerShipTransferStatus).toResult
+            _ <- if(existingOwnerShipTransfer != ownerShipTransfer){
+              canChangeFromPendingReview(existingOwnerShipTransfer.ownerShipTransferStatus, ownerShipTransfer.ownerShipTransferStatus).toResult}
+            else ().toResult
             recordSet <- recordSetOwnerApproval.toResult
           } yield recordSet
         }
@@ -302,8 +304,10 @@ class RecordSetService(
                   requestedOwnerGroupId = ownerShipTransfer.requestedOwnerGroupId)))
             }
           for {
-            _ <- isValidCancelOwnerShipTransferStatus(existingOwnerShipTransfer.ownerShipTransferStatus, ownerShipTransfer.ownerShipTransferStatus).toResult
-            recordSet <- recordSetOwnerRequest.toResult
+            _ <- if(existingOwnerShipTransfer != ownerShipTransfer){
+              isValidCancelOwnerShipTransferStatus(existingOwnerShipTransfer.ownerShipTransferStatus, ownerShipTransfer.ownerShipTransferStatus).toResult
+              }else ().toResult
+              recordSet <- recordSetOwnerRequest.toResult
           } yield recordSet
         }
       } else for {
