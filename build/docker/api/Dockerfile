@@ -12,7 +12,7 @@ RUN mkdir -p /opt/vinyldns/conf && \
       && cp artifacts/vinyldns-api.jar /opt/vinyldns/; \
     fi
 
-FROM openjdk:11-slim
+FROM openjdk:26-slim
 ARG DOCKER_FILE_PATH
 ARG VINYLDNS_VERSION
 
