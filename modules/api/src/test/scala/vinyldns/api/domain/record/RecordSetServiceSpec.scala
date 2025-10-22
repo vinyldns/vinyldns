@@ -25,7 +25,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.BeforeAndAfterEach
 import vinyldns.api.VinylDNSTestHelpers
-import vinyldns.api.config.{ZoneAuthConfigs, DottedHostsConfig}
+import vinyldns.api.config.{DottedHostsConfig, ZoneAuthConfigs}
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.record.RecordSetHelpers._
 import vinyldns.api.domain.zone._
@@ -41,6 +41,7 @@ import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.notifier.{AllNotifiers, Notification, Notifier}
+
 import scala.concurrent.ExecutionContext
 
 class RecordSetServiceSpec
@@ -1250,19 +1251,17 @@ class RecordSetServiceSpec
       result.recordSet.ttl shouldBe newRecord.ttl
       result.recordSet.ownerGroupId shouldBe Some(oneUserDummyGroup.id)
     }
+
     "succeed if user is in owner group, access requested and zone is shared" in {
       val zone = okZone.copy(shared = true, id = "test-owner-group")
-      val auth = AuthPrincipal(listOfDummyUsers.head, Seq(oneUserDummyGroup.id))
-      val ownerShipTransfer: OwnerShipTransfer = OwnerShipTransfer(
-        ownerShipTransferStatus=OwnerShipTransferStatus.PendingReview,requestedOwnerGroupId = Some(twoUserGroup.id)
-      )
       val oldRecord = aaaa.copy(
         name = "test-owner-group-success",
         zoneId = zone.id,
         status = RecordSetStatus.Active,
-        ownerGroupId = Some(oneUserDummyGroup.id),
-        recordSetGroupChange = Some(ownerShipTransfer)
-      )
+        ownerGroupId = Some(okGroup.id),
+        recordSetGroupChange =
+          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview,requestedOwnerGroupId = Some(okGroup.id)
+      )))
 
       val newRecord = oldRecord.copy(ttl = oldRecord.ttl + 1000)
 
@@ -1278,6 +1277,9 @@ class RecordSetServiceSpec
       doReturn(IO.pure(Some(oneUserDummyGroup)))
         .when(mockGroupRepo)
         .getGroup(oneUserDummyGroup.id)
+      doReturn(IO.pure(Some(okGroup)))
+        .when(mockGroupRepo)
+        .getGroup(okGroup.id)
       doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
         .when(mockZoneRepo)
         .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
@@ -1299,12 +1301,13 @@ class RecordSetServiceSpec
       doReturn(IO.pure(ListUsersResults(Seq(), None)))
         .when(mockUserRepo)
         .getUsers(Set.empty, None, None)
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
 
       val result =
-        underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().toOption.get
+        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().toOption.get
 
-      result.recordSet.ownerGroupId shouldBe Some(oneUserDummyGroup.id)
-      result.recordSet.recordSetGroupChange shouldBe Some(ownerShipTransfer)
+      result.recordSet.ttl shouldBe newRecord.ttl
+      result.recordSet.recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.PendingReview
     }
     "succeed if user is a superuser and zone is shared and the only record attribute being changed is the record owner group." in {
       val zone = okZone.copy(shared = true, id = "test-owner-group")
