@@ -124,7 +124,8 @@ angular.module('controller.records', [])
                 $scope.currentOwnerShipTransferApprover = true;
                 ownerShipTransferStatus = $scope.ownerShipTransferApproverStatus;
             } else {
-                const groupResponse = await groupsService.getGroupMemberList(record.recordSetGroupChange.requestedOwnerGroupId);
+                if(record.recordSetGroupChange.requestedOwnerGroupId !== undefined)
+                    {const groupResponse = await groupsService.getGroupMemberList(record.recordSetGroupChange.requestedOwnerGroupId);}
 
                 if ($scope.profile.isSuper || $scope.profile.isSupport) {
                     const status = record.recordSetGroupChange.ownerShipTransferStatus;
