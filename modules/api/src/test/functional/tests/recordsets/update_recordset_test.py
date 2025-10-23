@@ -2124,7 +2124,8 @@ def test_update_request_owner_group_transfer_cancelled(shared_zone_test_context)
         assert_that(update_rs["recordSetGroupChange"], is_(recordset_group_change_pending_review_json))
         assert_that(update_rs["ownerGroupId"], is_(shared_group["id"]))
 
-        recordset_group_change_json = {"ownerShipTransferStatus": "Cancelled"}
+        recordset_group_change_json = {"ownerShipTransferStatus": "Cancelled",
+                                       "requestedOwnerGroupId": ok_group["id"]}
         recordset_group_change_cancelled_json = {"ownerShipTransferStatus": "Cancelled",
                                                  "requestedOwnerGroupId": ok_group["id"]}
         update_rs["recordSetGroupChange"] = recordset_group_change_json
@@ -2138,6 +2139,145 @@ def test_update_request_owner_group_transfer_cancelled(shared_zone_test_context)
             delete_result = shared_client.delete_recordset(zone["id"], update_rs["id"], status=202)
             shared_client.wait_until_recordset_change_status(delete_result, "Complete")
 
+def test_update_request_owner_group_transfer_cancelled_not_a_member_fails(shared_zone_test_context):
+    """
+    Test cancelling ownerShip transfer request when user not a member of owner requested group fails
+    """
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.shared_zone
+    shared_group = shared_zone_test_context.shared_record_group
+    ok_group = shared_zone_test_context.ok_group
+    dummy_group = shared_zone_test_context.dummy_group
+
+    update_rs = None
+
+    try:
+        record_json = create_recordset(zone, "test_shared_admin_update_success", "A", [{"address": "1.1.1.1"}])
+        record_json["ownerGroupId"] = shared_group["id"]
+
+        create_response = shared_client.create_recordset(record_json, status=202)
+        update = shared_client.wait_until_recordset_change_status(create_response, "Complete")["recordSet"]
+        assert_that(update["ownerGroupId"], is_(shared_group["id"]))
+
+        recordset_group_change_json = {"ownerShipTransferStatus": "Requested",
+                                       "requestedOwnerGroupId": ok_group["id"]}
+        recordset_group_change_pending_review_json = {"ownerShipTransferStatus": "PendingReview",
+                                                      "requestedOwnerGroupId": ok_group["id"]}
+        update["recordSetGroupChange"] = recordset_group_change_json
+
+        update_response = ok_client.update_recordset(update, status=202)
+        update_rs = ok_client.wait_until_recordset_change_status(update_response, "Complete")["recordSet"]
+        assert_that(update_rs["recordSetGroupChange"], is_(recordset_group_change_pending_review_json))
+        assert_that(update_rs["ownerGroupId"], is_(shared_group["id"]))
+
+        recordset_group_change_json = {"ownerShipTransferStatus": "Cancelled",
+                                       "requestedOwnerGroupId": dummy_group["id"]}
+
+        update_rs["recordSetGroupChange"] = recordset_group_change_json
+        error = shared_client.update_recordset(update_rs, status=422)
+        assert_that(error, is_(f"Unauthorised to Cancel the ownership transfer"))
+
+    finally:
+        if update_rs:
+            delete_result = shared_client.delete_recordset(zone["id"], update_rs["id"], status=202)
+            shared_client.wait_until_recordset_change_status(delete_result, "Complete")
+
+def test_update_request_owner_group_transfer_cancelled_superuser(shared_zone_test_context):
+    """
+    Test cancelling ownerShip transfer request when user is a superuser
+    """
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    ok_client = shared_zone_test_context.ok_vinyldns_client
+    super_user_client = shared_zone_test_context.super_user_client
+    zone = shared_zone_test_context.shared_zone
+    shared_group = shared_zone_test_context.shared_record_group
+    ok_group = shared_zone_test_context.ok_group
+    dummy_group = shared_zone_test_context.dummy_group
+
+    update_rs = None
+
+    try:
+        record_json = create_recordset(zone, "test_shared_admin_update_success", "A", [{"address": "1.1.1.1"}])
+        record_json["ownerGroupId"] = shared_group["id"]
+
+        create_response = shared_client.create_recordset(record_json, status=202)
+        update = shared_client.wait_until_recordset_change_status(create_response, "Complete")["recordSet"]
+        assert_that(update["ownerGroupId"], is_(shared_group["id"]))
+
+        recordset_group_change_json = {"ownerShipTransferStatus": "Requested",
+                                       "requestedOwnerGroupId": ok_group["id"]}
+        recordset_group_change_pending_review_json = {"ownerShipTransferStatus": "PendingReview",
+                                                      "requestedOwnerGroupId": ok_group["id"]}
+        update["recordSetGroupChange"] = recordset_group_change_json
+
+        update_response = ok_client.update_recordset(update, status=202)
+        update_rs = ok_client.wait_until_recordset_change_status(update_response, "Complete")["recordSet"]
+        assert_that(update_rs["recordSetGroupChange"], is_(recordset_group_change_pending_review_json))
+        assert_that(update_rs["ownerGroupId"], is_(shared_group["id"]))
+
+        recordset_group_change_json = {"ownerShipTransferStatus": "Cancelled",
+                                       "requestedOwnerGroupId": dummy_group["id"]}
+
+        update_rs["recordSetGroupChange"] = recordset_group_change_json
+        recordset_group_change_cancelled_json = {"ownerShipTransferStatus": "Cancelled",
+                                                 "requestedOwnerGroupId": ok_group["id"]}
+
+        update_rs_response = super_user_client.update_recordset(update_rs, status=202)
+        update_rs_ownership = super_user_client.wait_until_recordset_change_status(update_rs_response, "Complete")["recordSet"]
+        assert_that(update_rs_ownership["recordSetGroupChange"], is_(recordset_group_change_cancelled_json))
+        assert_that(update_rs_ownership ["ownerGroupId"], is_(shared_group["id"]))
+
+    finally:
+        if update_rs:
+            delete_result = shared_client.delete_recordset(zone["id"], update_rs["id"], status=202)
+            shared_client.wait_until_recordset_change_status(delete_result, "Complete")
+
+def test_update_owner_group_transfer_approval_to_group_a_superuser(shared_zone_test_context):
+    """
+    Test approving ownerShip transfer request when user is a superuser
+    """
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    dummy_client = shared_zone_test_context.dummy_vinyldns_client
+    super_user_client = shared_zone_test_context.super_user_client
+    zone = shared_zone_test_context.shared_zone
+    shared_group = shared_zone_test_context.shared_record_group
+    dummy_group = shared_zone_test_context.dummy_group
+
+    update_rs = None
+
+    try:
+        record_json = create_recordset(zone, "test_shared_admin_update_success", "A", [{"address": "1.1.1.1"}])
+        record_json["ownerGroupId"] = dummy_group["id"]
+
+        create_response = dummy_client.create_recordset(record_json, status=202)
+        update = dummy_client.wait_until_recordset_change_status(create_response, "Complete")["recordSet"]
+        assert_that(update["ownerGroupId"], is_(dummy_group["id"]))
+
+        recordset_group_change_json = {"ownerShipTransferStatus": "Requested",
+                                       "requestedOwnerGroupId": shared_group["id"]}
+        recordset_group_change_pending_review_json = {"ownerShipTransferStatus": "PendingReview",
+                                                      "requestedOwnerGroupId": shared_group["id"]}
+        update["recordSetGroupChange"] = recordset_group_change_json
+
+        update_response = dummy_client.update_recordset(update, status=202)
+        update_rs = dummy_client.wait_until_recordset_change_status(update_response, "Complete")["recordSet"]
+        assert_that(update_rs["recordSetGroupChange"], is_(recordset_group_change_pending_review_json))
+        assert_that(update_rs["ownerGroupId"], is_(dummy_group["id"]))
+
+        recordset_group_change_approved_json = {"ownerShipTransferStatus": "ManuallyApproved",
+                                                "requestedOwnerGroupId": shared_group["id"]}
+
+        update_rs["recordSetGroupChange"] = recordset_group_change_approved_json
+        update_rs_response = super_user_client.update_recordset(update_rs, status=202)
+        update_rs_ownership = super_user_client.wait_until_recordset_change_status(update_rs_response, "Complete")["recordSet"]
+        assert_that(update_rs_ownership["recordSetGroupChange"], is_(recordset_group_change_approved_json))
+        assert_that(update_rs_ownership["ownerGroupId"], is_(shared_group["id"]))
+
+    finally:
+        if update_rs:
+            delete_result = shared_client.delete_recordset(zone["id"], update_rs["id"], status=202)
+            shared_client.wait_until_recordset_change_status(delete_result, "Complete")
 
 def test_update_owner_group_transfer_approval_to_group_a_user_is_not_in_fails(shared_zone_test_context):
     """
@@ -2298,7 +2438,8 @@ def test_update_owner_group_transfer_approved_when_request_cancelled_in_fails(sh
         assert_that(update_rs["recordSetGroupChange"], is_(recordset_group_change_pending_review_json))
         assert_that(update_rs["ownerGroupId"], is_(shared_group["id"]))
 
-        recordset_group_change_json = {"ownerShipTransferStatus": "Cancelled"}
+        recordset_group_change_json = {"ownerShipTransferStatus": "Cancelled",
+                                       "requestedOwnerGroupId": ok_group["id"]}
         recordset_group_change_cancelled_json = {"ownerShipTransferStatus": "Cancelled",
                                                  "requestedOwnerGroupId": ok_group["id"]}
         update_rs["recordSetGroupChange"] = recordset_group_change_json
@@ -2350,7 +2491,8 @@ def test_update_owner_group_transfer_rejected_when_request_cancelled_in_fails(sh
         assert_that(update_rs["recordSetGroupChange"], is_(recordset_group_change_pending_review_json))
         assert_that(update_rs["ownerGroupId"], is_(shared_group["id"]))
 
-        recordset_group_change_json = {"ownerShipTransferStatus": "Cancelled"}
+        recordset_group_change_json = {"ownerShipTransferStatus": "Cancelled",
+                                       "requestedOwnerGroupId": ok_group["id"]}
         recordset_group_change_cancelled_json = {"ownerShipTransferStatus": "Cancelled",
                                                  "requestedOwnerGroupId": ok_group["id"]}
         update_rs["recordSetGroupChange"] = recordset_group_change_json
@@ -2402,7 +2544,8 @@ def test_update_owner_group_transfer_auto_approved_when_request_cancelled_in_fai
         assert_that(update_rs["recordSetGroupChange"], is_(recordset_group_change_pending_review_json))
         assert_that(update_rs["ownerGroupId"], is_(shared_group["id"]))
 
-        recordset_group_change_json = {"ownerShipTransferStatus": "Cancelled"}
+        recordset_group_change_json = {"ownerShipTransferStatus": "Cancelled",
+                                       "requestedOwnerGroupId": ok_group["id"]}
         recordset_group_change_cancelled_json = {"ownerShipTransferStatus": "Cancelled",
                                                  "requestedOwnerGroupId": ok_group["id"]}
         update_rs["recordSetGroupChange"] = recordset_group_change_json
