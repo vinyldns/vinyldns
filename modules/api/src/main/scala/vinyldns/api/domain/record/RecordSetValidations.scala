@@ -411,14 +411,13 @@ object RecordSetValidations {
   def isAlreadyOwnerGroupMember(
                                  existing: RecordSet,
                                  recordSet: RecordSet
-                      ): Either[Throwable, Unit] = {
+                      ): Either[Throwable, Unit] =
     Either.cond(
-      existing.ownerGroupId != recordSet.recordSetGroupChange.flatMap(_.requestedOwnerGroupId),
+      recordSet.recordSetGroupChange.exists(change =>
+        existing.ownerGroupId != change.requestedOwnerGroupId || change.ownerShipTransferStatus == OwnerShipTransferStatus.Cancelled),
       (),
-    InvalidRequest(s"""Record owner group with id "$existing.ownerGroupId.getOrElse("<none>")" already owns the record, new request is not needed"""")
+      InvalidRequest(s"""Record owner group with id ${existing.ownerGroupId.getOrElse("<none>")} already owns the record, new request is not needed"""")
     )
-  }
-
 
   def isValidOwnerShipTransferStatus(
                                       ownerShipTransfer: Option[OwnerShipTransfer],
@@ -435,17 +434,25 @@ object RecordSetValidations {
                                           ): Either[Throwable, Unit] = {
     val approverOwnerShipTransferStatus = List(OwnerShipTransferStatus.ManuallyApproved , OwnerShipTransferStatus.AutoApproved, OwnerShipTransferStatus.ManuallyRejected)
     val isCancelCase = currentOwnerShipTransferStatus == OwnerShipTransferStatus.Cancelled
-    val isValidCancel =
-      !approverOwnerShipTransferStatus.contains(exitingOwnerShipTransferStatus) &&
-        exitingOwnerShipTransferStatus == OwnerShipTransferStatus.PendingReview
+    val isValidCancel = !approverOwnerShipTransferStatus.contains(exitingOwnerShipTransferStatus) &&
+                        exitingOwnerShipTransferStatus == OwnerShipTransferStatus.PendingReview
     Either.cond(
       !isCancelCase || isValidCancel,
       (),
-      InvalidRequest(
-        s"Unable to $currentOwnerShipTransferStatus the Ownership transfer status for the record : $exitingOwnerShipTransferStatus"
-      )
+      InvalidRequest(s"Unable to $currentOwnerShipTransferStatus the Ownership transfer status for the record : $exitingOwnerShipTransferStatus")
     )
   }
+
+  def canCancelOwnershipTransfer(
+                                      recordSet: RecordSet,
+                                      authPrincipal: AuthPrincipal
+                                    ): Either[Throwable, Unit] =
+    Either.cond(
+      recordSet.recordSetGroupChange.exists(owt => authPrincipal.isGroupMember(owt.requestedOwnerGroupId.getOrElse("none"))
+        && owt.ownerShipTransferStatus == OwnerShipTransferStatus.Cancelled || authPrincipal.isSuper),
+      (),
+      InvalidRequest(s"Unauthorised to Cancel the ownership transfer")
+    )
 
   def canChangeFromPendingReview(
                                   exitingOwnerShipTransferStatus: OwnerShipTransferStatus,

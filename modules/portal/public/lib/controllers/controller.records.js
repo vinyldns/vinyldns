@@ -124,12 +124,12 @@ angular.module('controller.records', [])
                 record.isCurrentRecordSetOwner = false;
                 $scope.currentOwnerShipTransferApprover = false;
                 ownerShipTransferStatus = $scope.ownerShipTransferRequestorStatus;
-             }else if (status === "PendingReview" || status === "Cancelled") {
+             }else if (status === "PendingReview") {
                 record.isCurrentRecordSetOwner = true;
                 $scope.currentOwnerShipTransferApprover = true;
                 ownerShipTransferStatus = $scope.ownerShipTransferApproverStatus;
              }
-           }else if (response.data.members.some(x => x.id === profileId)){
+           }else if(response.data.members.some(x => x.id === profileId)){
                ownerShipTransferStatus = $scope.ownerShipTransferApproverStatus;
                $scope.currentOwnerShipTransferApprover= true;
                record.isCurrentRecordSetOwner = true;

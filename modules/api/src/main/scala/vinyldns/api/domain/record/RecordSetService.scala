@@ -307,8 +307,8 @@ class RecordSetService(
                 _ <- isAlreadyOwnerGroupMember(existing, recordSet).toResult
                 _ <- isValidCancelOwnerShipTransferStatus(
                   existingOwnerShipTransfer.ownerShipTransferStatus,
-                  ownerShipTransfer.ownerShipTransferStatus
-                ).toResult
+                  ownerShipTransfer.ownerShipTransferStatus).toResult
+                _ <- canCancelOwnershipTransfer(recordSet,authPrincipal).toResult
               } yield ()
             } else ().toResult
             recordSet <- recordSetOwnerRequest.toResult
@@ -316,8 +316,12 @@ class RecordSetService(
         }
       } else for {
         _ <- unchangedRecordSetOwnershipStatus(recordSet, existing).toResult
-      } yield recordSet.copy(recordSetGroupChange = existing.recordSetGroupChange)
-    else recordSet.copy(recordSetGroupChange = existing.recordSetGroupChange).toResult
+      } yield recordSet.copy(
+        ownerGroupId = recordSet.ownerGroupId,
+        recordSetGroupChange = existing.recordSetGroupChange)
+    else recordSet.copy(
+      ownerGroupId = recordSet.ownerGroupId,
+      recordSetGroupChange = existing.recordSetGroupChange).toResult
   }
 
   // For dotted hosts. Check if a record that may conflict with dotted host exist or not
