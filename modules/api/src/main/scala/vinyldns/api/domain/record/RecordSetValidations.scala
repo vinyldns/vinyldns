@@ -409,17 +409,24 @@ object RecordSetValidations {
     }
 
   def isAlreadyOwnerGroupMember(
-                                 ownerGroupId: String
-                      ): Either[Throwable, Unit] =
-    InvalidRequest(s"""Record owner group with id "$ownerGroupId" already owns the record, new request is not needed"""").asLeft
+                                 existing: RecordSet,
+                                 recordSet: RecordSet
+                      ): Either[Throwable, Unit] = {
+    Either.cond(
+      existing.ownerGroupId != recordSet.recordSetGroupChange.flatMap(_.requestedOwnerGroupId),
+      (),
+    InvalidRequest(s"""Record owner group with id "$existing.ownerGroupId.getOrElse("<none>")" already owns the record, new request is not needed"""")
+    )
+  }
+
 
   def isValidOwnerShipTransferStatus(
                                       ownerShipTransfer: Option[OwnerShipTransfer],
                                ): Either[Throwable, Unit] =
     Either.cond(
-      ownerShipTransfer.map(_.ownerShipTransferStatus).getOrElse("none") != OwnerShipTransferStatus.PendingReview,
-    (),
-    InvalidRequest(s"Invalid Ownership transfer status: ${ownerShipTransfer.map(_.ownerShipTransferStatus).getOrElse("none")}")
+      !ownerShipTransfer.exists(_.ownerShipTransferStatus == OwnerShipTransferStatus.PendingReview),
+      (),
+      InvalidRequest(s"Invalid Ownership transfer status: ${ownerShipTransfer.map(_.ownerShipTransferStatus).getOrElse("none")}")
     )
 
   def isValidCancelOwnerShipTransferStatus(
