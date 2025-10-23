@@ -244,7 +244,6 @@ class RecordSetService(
       case Some(value) => getGroupIfProvided(Some(value))
       case None => EitherT.pure[IO, Throwable](None)
     }
-
   }
 
   //update ownership transfer is zone is shared
