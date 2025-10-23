@@ -248,7 +248,11 @@ class RecordSetService(
   }
 
   //update ownership transfer is zone is shared
-  def updateRecordSetGroupChangeStatus(recordSet: RecordSet, existing: RecordSet, zone: Zone, authPrincipal: AuthPrincipal): Result[RecordSet] = {
+  def updateRecordSetGroupChangeStatus(
+                                        recordSet: RecordSet,
+                                        existing: RecordSet,
+                                        zone: Zone,
+                                        authPrincipal: AuthPrincipal): Result[RecordSet] = {
     val existingOwnerShipTransfer = existing.recordSetGroupChange.getOrElse(OwnerShipTransfer.apply(OwnerShipTransferStatus.None, Some("none")))
     val ownerShipTransfer = recordSet.recordSetGroupChange.getOrElse(OwnerShipTransfer.apply(OwnerShipTransferStatus.None, Some("none")))
     if (recordSet.recordSetGroupChange.isDefined &&
@@ -277,8 +281,8 @@ class RecordSetService(
                   requestedOwnerGroupId = None)))
             }
           for {
-            _ <- if(existingOwnerShipTransfer != ownerShipTransfer && !(authPrincipal.isSuper && recordSet.ownerGroupId == existingOwnerShipTransfer.requestedOwnerGroupId)) {
-              canChangeFromPendingReview(existingOwnerShipTransfer.ownerShipTransferStatus, ownerShipTransfer.ownerShipTransferStatus).toResult}
+            _ <- if(existingOwnerShipTransfer != ownerShipTransfer ) {
+              canChangeFromPendingReview(recordSet,existing,authPrincipal).toResult}
             else ().toResult
             recordSet <- recordSetOwnerApproval.toResult
           } yield recordSet

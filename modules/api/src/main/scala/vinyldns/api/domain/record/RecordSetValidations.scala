@@ -448,21 +448,32 @@ object RecordSetValidations {
                                       authPrincipal: AuthPrincipal
                                     ): Either[Throwable, Unit] =
     Either.cond(
-      recordSet.recordSetGroupChange.exists(owt => authPrincipal.isGroupMember(owt.requestedOwnerGroupId.getOrElse("none"))
-        && owt.ownerShipTransferStatus == OwnerShipTransferStatus.Cancelled || authPrincipal.isSuper),
+      recordSet.recordSetGroupChange.forall { owt =>
+        owt.ownerShipTransferStatus != OwnerShipTransferStatus.Cancelled ||
+          authPrincipal.isSuper ||
+          authPrincipal.isGroupMember(owt.requestedOwnerGroupId.getOrElse("none"))},
       (),
-      InvalidRequest(s"Unauthorised to Cancel the ownership transfer")
+      InvalidRequest("Unauthorised to Cancel the ownership transfer")
     )
 
   def canChangeFromPendingReview(
-                                  exitingOwnerShipTransferStatus: OwnerShipTransferStatus,
-                                  currentOwnerShipTransferStatus: OwnerShipTransferStatus
-                                ): Either[Throwable, Unit] =
+                                  recordSet: RecordSet,
+                                  existing: RecordSet,
+                                  authPrincipal: AuthPrincipal
+                                ): Either[Throwable, Unit] = {
+    val existingOwnerShipTransferStatus = existing.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse(OwnerShipTransferStatus.None)
+    val currentOwnerShipTransferStatus = recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse(OwnerShipTransferStatus.None)
+    val requestedOwnerGroupId = existing.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("none"))
+
     Either.cond(
-      exitingOwnerShipTransferStatus == OwnerShipTransferStatus.PendingReview,
+      existingOwnerShipTransferStatus == OwnerShipTransferStatus.PendingReview &&
+        !(authPrincipal.isSuper && recordSet.ownerGroupId == requestedOwnerGroupId),
       (),
-      InvalidRequest(s"Unable to $currentOwnerShipTransferStatus the Ownership transfer status for the record: $exitingOwnerShipTransferStatus")
+      InvalidRequest(
+        s"Unable to $currentOwnerShipTransferStatus the Ownership transfer status for the record: $existingOwnerShipTransferStatus"
+      )
     )
+  }
 
   def unchangedRecordName(
       existing: RecordSet,

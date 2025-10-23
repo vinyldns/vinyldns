@@ -2399,7 +2399,6 @@ class RecordSetServiceSpec
       doReturn(IO.pure(ListUsersResults(Seq(), None)))
         .when(mockUserRepo)
         .getUsers(Set.empty, None, None)
-
       val result =
         underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().swap.toOption.get
 
@@ -2558,7 +2557,6 @@ class RecordSetServiceSpec
         status = RecordSetStatus.Active,
         ownerGroupId = Some(oneUserDummyGroup.id)
       )
-
       val newRecord = oldRecord.copy(recordSetGroupChange =
         Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Requested,requestedOwnerGroupId = Some(okGroup.id))))
 
@@ -2608,7 +2606,7 @@ class RecordSetServiceSpec
       result.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus) shouldBe Some(OwnerShipTransferStatus.PendingReview)
     }
 
-    "success if user not a member of owner group and tried to Cancel ownership transfer request" in {
+    "success if user a member of owner group and tried to Cancel ownership transfer request" in {
       val zone = okZone.copy(shared = true, id = "test-owner-group")
       val oldRecord = aaaa.copy(
         name = "test-owner-group-success",
@@ -2620,7 +2618,9 @@ class RecordSetServiceSpec
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled)))
+        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,
+          requestedOwnerGroupId = Some(okGroup.id))),
+      )
 
       doReturn(IO.pure(Some(zone)))
         .when(mockZoneRepo)
@@ -2662,6 +2662,128 @@ class RecordSetServiceSpec
 
       val result =
         underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().toOption.get
+
+      result.recordSet.ownerGroupId shouldBe Some(oneUserDummyGroup.id)
+      result.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.get) shouldBe Some(okGroup.id)
+      result.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus) shouldBe Some(OwnerShipTransferStatus.Cancelled)
+    }
+
+    "failed if user not a member of owner group and tried to Cancel ownership transfer request" in {
+      val zone = okZone.copy(shared = true, id = "test-owner-group")
+      val oldRecord = aaaa.copy(
+        name = "test-owner-group-success",
+        zoneId = zone.id,
+        status = RecordSetStatus.Active,
+        ownerGroupId = Some(oneUserDummyGroup.id),
+        recordSetGroupChange =
+          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview, requestedOwnerGroupId = Some(okGroup.id)))
+      )
+
+      val newRecord = oldRecord.copy(recordSetGroupChange =
+        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,
+          requestedOwnerGroupId = Some(dummyGroup.id))),
+      )
+
+      doReturn(IO.pure(Some(zone)))
+        .when(mockZoneRepo)
+        .getZone(zone.id)
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(newRecord.id)
+      doReturn(IO.pure(List(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(zone.id, newRecord.name)
+      doReturn(IO.pure(Some(oneUserDummyGroup)))
+        .when(mockGroupRepo)
+        .getGroup(oneUserDummyGroup.id)
+      doReturn(IO.pure(Some(okGroup)))
+        .when(mockGroupRepo)
+        .getGroup(okGroup.id)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
+
+      val result =
+        underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().swap.toOption.get
+
+      result shouldBe InvalidRequest("Unauthorised to Cancel the ownership transfer")
+    }
+
+    "success if user is a super privileged and tried to Cancel ownership transfer request" in {
+      val zone = okZone.copy(shared = true, id = "test-owner-group")
+      val oldRecord = aaaa.copy(
+        name = "test-owner-group-success",
+        zoneId = zone.id,
+        status = RecordSetStatus.Active,
+        ownerGroupId = Some(oneUserDummyGroup.id),
+        recordSetGroupChange =
+          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview, requestedOwnerGroupId = Some(okGroup.id)))
+      )
+
+      val newRecord = oldRecord.copy(recordSetGroupChange =
+        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,
+          requestedOwnerGroupId = Some(dummyGroup.id))),
+      )
+
+      doReturn(IO.pure(Some(zone)))
+        .when(mockZoneRepo)
+        .getZone(zone.id)
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(newRecord.id)
+      doReturn(IO.pure(List(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(zone.id, newRecord.name)
+      doReturn(IO.pure(Some(oneUserDummyGroup)))
+        .when(mockGroupRepo)
+        .getGroup(oneUserDummyGroup.id)
+      doReturn(IO.pure(Some(okGroup)))
+        .when(mockGroupRepo)
+        .getGroup(okGroup.id)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
+
+      val result =
+        underTest.updateRecordSet(newRecord, superUserAuth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().toOption.get
 
       result.recordSet.ownerGroupId shouldBe Some(oneUserDummyGroup.id)
       result.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.get) shouldBe Some(okGroup.id)
