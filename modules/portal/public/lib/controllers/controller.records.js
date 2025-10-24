@@ -120,7 +120,7 @@ angular.module('controller.records', [])
            var ownerShipTransferStatus;
            if($scope.profile.isSuper || $scope.profile.isSupport || $scope.profile.isZoneAdmin){
              const status = record.recordSetGroupChange.ownerShipTransferStatus;
-             if (status === "AutoApproved" || status === "ManuallyRejected" || status === "ManuallyApproved") {
+             if (status === "AutoApproved" || status === "ManuallyRejected" || status === "ManuallyApproved" || status === "None") {
                 record.isCurrentRecordSetOwner = false;
                 $scope.currentOwnerShipTransferApprover = false;
                 ownerShipTransferStatus = $scope.ownerShipTransferRequestorStatus;
@@ -150,7 +150,7 @@ angular.module('controller.records', [])
 
     function getGroup(groupId) {
         if (groupId != undefined && groupId != "null"){
-            $log.log('groupsService::getGroup-success');
+            $log.debug('groupsService::getGroup-success');
             function success(response) {
                  $scope.recordSetRequestedOwnerShipName = response.data.name;
             }
