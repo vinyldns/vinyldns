@@ -2301,7 +2301,7 @@ class RecordSetServiceSpec
         name = "test-owner-group-success",
         zoneId = zone.id,
         status = RecordSetStatus.Active,
-        ownerGroupId = None
+        ownerGroupId = Some(oneUserDummyGroup.id)
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
