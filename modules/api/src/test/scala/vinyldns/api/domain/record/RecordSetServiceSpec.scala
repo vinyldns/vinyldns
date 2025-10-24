@@ -2350,6 +2350,64 @@ class RecordSetServiceSpec
       result shouldBe InvalidRequest("Unable to AutoApproved the Ownership transfer status for the record: None")
     }
 
+    "fail if user request cancel for the owner group if approved" in {
+      val zone = okZone.copy(shared = true, id = "test-owner-group")
+      val auth = AuthPrincipal(listOfDummyUsers.head, Seq(oneUserDummyGroup.id))
+      val oldRecord = aaaa.copy(
+        name = "test-owner-group-success",
+        zoneId = zone.id,
+        status = RecordSetStatus.Active,
+        ownerGroupId = Some(okGroup.id),
+        recordSetGroupChange =
+          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.AutoApproved,requestedOwnerGroupId = Some(okGroup.id)))
+      )
+
+      val newRecord = oldRecord.copy(recordSetGroupChange =
+        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,requestedOwnerGroupId = Some(okGroup.id))))
+
+      doReturn(IO.pure(Some(zone)))
+        .when(mockZoneRepo)
+        .getZone(zone.id)
+      doReturn(IO.pure(Some(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSet(newRecord.id)
+      doReturn(IO.pure(List(oldRecord)))
+        .when(mockRecordRepo)
+        .getRecordSetsByName(zone.id, newRecord.name)
+      doReturn(IO.pure(Some(oneUserDummyGroup)))
+        .when(mockGroupRepo)
+        .getGroup(oneUserDummyGroup.id)
+      doReturn(IO.pure(Some(okGroup)))
+        .when(mockGroupRepo)
+        .getGroup(okGroup.id)
+      doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+        .when(mockZoneRepo)
+        .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(None))
+        .when(mockZoneRepo)
+        .getZoneByName(newRecord.name + "." + okZone.name)
+      doReturn(IO.pure(List()))
+        .when(mockRecordRepo)
+        .getRecordSetsByFQDNs(Set(newRecord.name + "." + okZone.name))
+      doReturn(IO.pure(Set()))
+        .when(mockZoneRepo)
+        .getZonesByFilters(Set.empty)
+      doReturn(IO.pure(Set()))
+        .when(mockGroupRepo)
+        .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo)
+        .getUsers(Set.empty, None, None)
+
+      val result =
+        underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().swap.toOption.get
+
+      result shouldBe InvalidRequest("Unable to cancel the Ownership transfer. Current status: AutoApproved")
+    }
+
     "fail if user request PendingReview for the owner group" in {
       val zone = okZone.copy(shared = true, id = "test-owner-group")
       val auth = AuthPrincipal(listOfDummyUsers.head, Seq(oneUserDummyGroup.id))

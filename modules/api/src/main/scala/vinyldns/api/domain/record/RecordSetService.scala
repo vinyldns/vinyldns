@@ -281,8 +281,11 @@ class RecordSetService(
             }
           for {
             _ <- if(existingOwnerShipTransfer != ownerShipTransfer ) {
-              canChangeFromPendingReview(recordSet,existing,authPrincipal).toResult}
-            else ().toResult
+              for{
+                _ <- canChangeFromPendingReview(recordSet,existing,authPrincipal).toResult
+                _ <- isValidOwnerShipTransferStatusApprove(existing.recordSetGroupChange,recordSet.recordSetGroupChange).toResult
+              }yield ()
+            } else ().toResult
             recordSet <- recordSetOwnerApproval.toResult
           } yield recordSet
         }
@@ -306,7 +309,7 @@ class RecordSetService(
           for {
             _ <- if (existingOwnerShipTransfer != ownerShipTransfer) {
               for {
-                _ <- isValidOwnerShipTransferStatus(recordSet.recordSetGroupChange).toResult
+                _ <- isValidOwnerShipTransferStatusPendingReview(recordSet.recordSetGroupChange).toResult
                 _ <- isAlreadyOwnerGroupMember(existing, recordSet).toResult
                 _ <- isValidCancelOwnerShipTransferStatus(
                   existingOwnerShipTransfer.ownerShipTransferStatus,
