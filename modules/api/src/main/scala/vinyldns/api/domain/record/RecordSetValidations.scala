@@ -441,7 +441,7 @@ object RecordSetValidations {
       requestedStatus == OwnerShipTransferStatus.ManuallyRejected
 
     Either.cond(
-      !(isInvalidApproval && existingStatus == OwnerShipTransferStatus.None),
+      !(isInvalidApproval && (existingStatus == OwnerShipTransferStatus.None || existingStatus == OwnerShipTransferStatus.Cancelled)),
       (),
       InvalidRequest(s"Unable to $requestedStatus the Ownership transfer status for the record: None")
     )
@@ -488,11 +488,10 @@ object RecordSetValidations {
                                 ): Either[Throwable, Unit] = {
     val existingOwnerShipTransferStatus = existing.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse(OwnerShipTransferStatus.None)
     val currentOwnerShipTransferStatus = recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse(OwnerShipTransferStatus.None)
-    val requestedOwnerGroupId = existing.recordSetGroupChange.map(_.requestedOwnerGroupId.getOrElse("none"))
 
     Either.cond(
-      existingOwnerShipTransferStatus == OwnerShipTransferStatus.PendingReview &&
-        !(authPrincipal.isSuper && recordSet.ownerGroupId == requestedOwnerGroupId),
+      (existingOwnerShipTransferStatus == OwnerShipTransferStatus.PendingReview || existingOwnerShipTransferStatus==OwnerShipTransferStatus.None)
+        && !(authPrincipal.isSuper && authPrincipal.isGroupMember(recordSet.ownerGroupId.getOrElse("none"))),
       (),
       InvalidRequest(
         s"Unauthorized to change ownership transfer status to '$currentOwnerShipTransferStatus'."
