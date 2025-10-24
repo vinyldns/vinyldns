@@ -2574,7 +2574,7 @@ class RecordSetServiceSpec
         .getGroup(okGroup.id)
 
       val result = underTest.updateRecordSet(newRecord, okAuth).value.unsafeRunSync().swap.toOption.get
-      result shouldBe an[InvalidRequest]
+      result shouldBe an[NotAuthorizedError]
     }
 
     "fail if user not a member of owner group and tried to Reject ownership transfer request" in {
@@ -2604,7 +2604,7 @@ class RecordSetServiceSpec
         .getGroup(okGroup.id)
 
       val result = underTest.updateRecordSet(newRecord, okAuth).value.unsafeRunSync().swap.toOption.get
-      result shouldBe an[InvalidRequest]
+      result shouldBe an[NotAuthorizedError]
     }
 
     "success if user not a member of owner group and tried to Request ownership transfer request" in {

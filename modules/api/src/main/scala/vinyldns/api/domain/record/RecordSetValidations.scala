@@ -491,17 +491,13 @@ object RecordSetValidations {
     val currentOwnerShipTransferStatus = recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse(OwnerShipTransferStatus.None)
 
     val isAuthorized =
-      (existingOwnerShipTransferStatus == OwnerShipTransferStatus.PendingReview || existingOwnerShipTransferStatus == OwnerShipTransferStatus.None) &&
+      (existingOwnerShipTransferStatus == OwnerShipTransferStatus.PendingReview ||
+        existingOwnerShipTransferStatus == OwnerShipTransferStatus.None) &&
         (authPrincipal.isSuper || authPrincipal.isGroupMember(recordSet.ownerGroupId.getOrElse("none")))
 
-    Either.cond(
-      isAuthorized,
-      (),
-      InvalidRequest(
-        s"Unauthorized to change ownership transfer status to '$currentOwnerShipTransferStatus'."
-      )
-    )
-
+    ensuring(
+      NotAuthorizedError(s"Unauthorized to change ownership transfer status to '$currentOwnerShipTransferStatus'")
+    )(isAuthorized)
   }
 
   def unchangedRecordName(
