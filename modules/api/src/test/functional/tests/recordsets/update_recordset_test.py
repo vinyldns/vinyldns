@@ -2313,8 +2313,8 @@ def test_update_owner_group_transfer_approval_to_group_a_user_is_not_in_fails(sh
         recordset_group_change_approved_json = {"ownerShipTransferStatus": "ManuallyApproved"}
 
         update_rs["recordSetGroupChange"] = recordset_group_change_approved_json
-        error = shared_client.update_recordset(update_rs, status=422)
-        assert_that(error, is_(f"User not in record owner group with id \"{dummy_group['id']}\""))
+        error = shared_client.update_recordset(update_rs, status=403)
+        assert_that(error, is_(f"Unauthorized to change ownership transfer status to 'ManuallyApproved'"))
 
     finally:
         if update_rs:
@@ -2355,8 +2355,8 @@ def test_update_owner_group_transfer_reject_to_group_a_user_is_not_in_fails(shar
 
         recordset_group_change_approved_json = {"ownerShipTransferStatus": "ManuallyRejected"}
         update_rs["recordSetGroupChange"] = recordset_group_change_approved_json
-        error = shared_client.update_recordset(update_rs, status=422)
-        assert_that(error, is_(f"User not in record owner group with id \"{dummy_group['id']}\""))
+        error = shared_client.update_recordset(update_rs, status=403)
+        assert_that(error, is_(f"Unauthorized to change ownership transfer status to 'ManuallyRejected'"))
 
     finally:
         if update_rs:
@@ -2398,8 +2398,8 @@ def test_update_owner_group_transfer_auto_approved_to_group_a_user_is_not_in_fai
         recordset_group_change_approved_json = {"ownerShipTransferStatus": "AutoApproved"}
 
         update_rs["recordSetGroupChange"] = recordset_group_change_approved_json
-        error = shared_client.update_recordset(update_rs, status=422)
-        assert_that(error, is_(f"Record owner group with id \"{dummy_group['id']}\" not found"))
+        error = shared_client.update_recordset(update_rs, status=403)
+        assert_that(error, is_(f"Unauthorized to change ownership transfer status to 'AutoApproved'"))
 
     finally:
         if update_rs:
