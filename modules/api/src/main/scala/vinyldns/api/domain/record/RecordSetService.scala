@@ -282,8 +282,8 @@ class RecordSetService(
           for {
             _ <- if(existingOwnerShipTransfer != ownerShipTransfer ) {
               for{
-                _ <- canChangeFromPendingReview(recordSet,existing,authPrincipal).toResult
                 _ <- isValidOwnerShipTransferStatusApprove(existing.recordSetGroupChange,recordSet.recordSetGroupChange).toResult
+                _ <- canChangeFromPendingReview(recordSet,authPrincipal).toResult
               }yield ()
             } else ().toResult
             recordSet <- recordSetOwnerApproval.toResult
