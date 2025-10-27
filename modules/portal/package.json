@@ -15,7 +15,8 @@
     "grunt-contrib-copy": "^1.0.0",
     "grunt-contrib-concat": "^2.0.0",
     "moment": "^2.24.0",
-    "puppeteer": "^3.0.0"
+    "puppeteer": "^3.0.0",
+    "bootstrap-multiselect": "^0.9.15"
   },
   "devDependencies": {
     "angular-mocks": "1.6.1",
