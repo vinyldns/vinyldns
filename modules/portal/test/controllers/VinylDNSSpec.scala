@@ -201,6 +201,396 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
     }
 
+    ".getNameServers" should {
+      "return the list of nameservers when requested - Ok(200)" in new WithApplication(app) {
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/zones/generate/nameservers" =>
+            defaultActionBuilder { Results.Ok(nameServers) }
+        }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.getNameservers(
+          FakeRequest(GET, s"/api/zones/generate/nameservers")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
+
+        status(result) must beEqualTo(OK)
+        hasCacheHeaders(result)
+        contentAsJson(result) must beEqualTo(nameServers)
+      }
+      "return unauthorized (401) when user is not logged in" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result = underTest.getNameservers(FakeRequest(GET, s"/api/zones/generate/nameservers"))
+
+        status(result) mustEqual 401
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+        hasCacheHeaders(result)
+      }
+      "return forbidden (403) when user account is locked" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockLockedUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth
+          )
+        val result = underTest.getNameservers(
+          FakeRequest(GET, s"/api/zones/generate/nameservers")
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
+
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
+      }
+      "return unauthorized (401) when request fails authentication" in new WithApplication(app) {
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/zones/generate/nameservers" =>
+            defaultActionBuilder { Results.Unauthorized("The supplied authentication is invalid") }
+        }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockUserAccessor,
+            client,
+            components,
+            crypto
+          )
+        val result = underTest.getNameservers(
+          FakeRequest(GET, s"/api/zones/generate/nameservers")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
+
+        status(result) must beEqualTo(UNAUTHORIZED)
+        hasCacheHeaders(result)
+      }
+    }
+
+    ".getGeneratedZones" should {
+      "return the list of nameservers when requested - Ok(200)" in new WithApplication(app) {
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/zones/generate/info" =>
+            defaultActionBuilder { Results.Ok(validGenerateZoneRequest) }
+        }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.getGeneratedZones(
+          FakeRequest(GET, s"/api/zones/generate/info")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
+
+        status(result) must beEqualTo(OK)
+        hasCacheHeaders(result)
+        contentAsJson(result) must beEqualTo(validGenerateZoneRequest)
+      }
+      "return unauthorized (401) when user is not logged in" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result = underTest.getGeneratedZones(FakeRequest(GET, s"/api/zones/generate/info"))
+
+        status(result) mustEqual 401
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+        hasCacheHeaders(result)
+      }
+      "return forbidden (403) when user account is locked" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockLockedUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth
+          )
+        val result = underTest.getGeneratedZones(
+          FakeRequest(GET, s"/api/zones/generate/info")
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
+
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
+      }
+      "return unauthorized (401) when request fails authentication" in new WithApplication(app) {
+        val client = MockWS {
+          case (GET, u) if u == s"http://localhost:9001/zones/generate/info" =>
+            defaultActionBuilder { Results.Unauthorized("The supplied authentication is invalid") }
+        }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockUserAccessor,
+            client,
+            components,
+            crypto
+          )
+        val result = underTest.getGeneratedZones(
+          FakeRequest(GET, s"/api/zones/generate/info")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
+
+        status(result) must beEqualTo(UNAUTHORIZED)
+        hasCacheHeaders(result)
+      }
+    }
+
+    ".deleteGeneratedZone" should {
+      "return ok with no content (204) when delete is successful" in new WithApplication(app) {
+        val client = MockWS {
+          case (DELETE, u) if u == s"http://localhost:9001/zones/generate/$validGenerateZoneId" =>
+            defaultActionBuilder { Results.NoContent }
+        }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result =
+          underTest.deleteGeneratedZone(validGenerateZoneId)(
+            FakeRequest(DELETE, s"/zones/generate/$validGenerateZoneId")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
+
+        status(result) must beEqualTo(NO_CONTENT)
+        hasCacheHeaders(result)
+      }
+      "return unauthorized (401) when user is not logged in" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result =
+          underTest.deleteGeneratedZone(validGenerateZoneId)(FakeRequest(DELETE, s"/zones/generate/$validGenerateZoneId"))
+
+        status(result) mustEqual 401
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+        hasCacheHeaders(result)
+      }
+      "return forbidden (403) when user account is locked" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockLockedUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth
+          )
+        val result =
+          underTest.deleteGeneratedZone(validGenerateZoneId)(
+            FakeRequest(DELETE, s"/zones/generate/$validGenerateZoneId")
+              .withSession(
+                "username" -> lockedFrodoUser.userName,
+                "accessKey" -> lockedFrodoUser.accessKey
+              )
+          )
+
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
+      }
+      "return authentication failed (401) when authentication fails in the backend" in new WithApplication(
+        app
+      ) {
+        val client = MockWS {
+          case (DELETE, u) if u == s"http://localhost:9001/zones/generate/$validGenerateZoneId" =>
+            defaultActionBuilder { Results.Unauthorized("Invalid credentials") }
+        }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result =
+          underTest.deleteGeneratedZone(validGenerateZoneId)(
+            FakeRequest(DELETE, s"/zones/generate/$validGenerateZoneId")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
+
+        status(result) must beEqualTo(UNAUTHORIZED)
+        hasCacheHeaders(result)
+      }
+      "return forbidden (403) when authorization fails in the backend" in new WithApplication(app) {
+        val client = MockWS {
+          case (DELETE, u) if u == s"http://localhost:9001/zones/generate/$validGenerateZoneId" =>
+            defaultActionBuilder {
+              Results.Forbidden("You do not have access to delete this group")
+            }
+        }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+
+        val underTest = withClient(client)
+        val result =
+          underTest.deleteGeneratedZone(validGenerateZoneId)(
+            FakeRequest(DELETE, s"/zones/generate/$validGenerateZoneId")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
+
+        status(result) must beEqualTo(FORBIDDEN)
+        hasCacheHeaders(result)
+      }
+      "return a not found (404) if the zone does not exist" in new WithApplication(app) {
+        val client = MockWS {
+          case (DELETE, "http://localhost:9001/zones/generate/not-zone-id") =>
+            defaultActionBuilder { Results.NotFound }
+        }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result =
+          underTest.deleteGeneratedZone("not-zone-id")(
+            FakeRequest(DELETE, "/zones/generate/not-zone-id")
+              .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+          )
+
+        status(result) must beEqualTo(NOT_FOUND)
+        hasCacheHeaders(result)
+      }
+    }
+
+    ".generateZone" should {
+      tag("slow")
+      "return the generate zone response on create - status ok (200)" in new WithApplication(app) {
+        val client = MockWS {
+          case (POST, "http://localhost:9001/zones/generate") =>
+            defaultActionBuilder { Results.Ok(validGenerateZoneRequest) }
+        }
+
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.generateZone()(
+          FakeRequest(POST, "/zones/generate")
+            .withJsonBody(validGenerateZoneRequest)
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
+
+        status(result) must beEqualTo(OK)
+        hasCacheHeaders(result)
+        contentAsJson(result) must beEqualTo(validGenerateZoneRequest)
+      }
+      "return bad request (400) if the request is not properly made" in new WithApplication(app) {
+        val client = MockWS {
+          case (POST, "http://localhost:9001/zones/generate") =>
+            defaultActionBuilder { Results.BadRequest("user id not found") }
+        }
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.generateZone()(
+          FakeRequest(POST, "/zones/generate")
+            .withJsonBody(invalidGenerateZoneRequest)
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
+
+        status(result) must beEqualTo(BAD_REQUEST)
+        hasCacheHeaders(result)
+      }
+      "return authentication failed (401) when auth fails in the backend" in new WithApplication(
+        app
+      ) {
+        val client = MockWS {
+          case (POST, "http://localhost:9001/zones/generate") =>
+            defaultActionBuilder { Results.Unauthorized("Invalid credentials") }
+        }
+
+        val mockUserAccessor = mock[UserAccountAccessor]
+        mockUserAccessor.get(anyString).returns(IO.pure(Some(frodoUser)))
+        mockUserAccessor.getUserByKey(anyString).returns(IO.pure(Some(frodoUser)))
+        val underTest = withClient(client)
+        val result = underTest.generateZone()(
+          FakeRequest(POST, "/zones/generate")
+            .withJsonBody(validGenerateZoneRequest)
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
+
+        status(result) must beEqualTo(UNAUTHORIZED)
+        hasCacheHeaders(result)
+      }
+      "return forbidden (403) if user account is locked" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockLockedUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth
+          )
+
+        val result = underTest.generateZone()(
+          FakeRequest(POST, "/zones/generate")
+            .withJsonBody(validGenerateZoneRequest)
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey)
+        )
+
+        status(result) mustEqual 403
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
+        hasCacheHeaders(result)
+      }
+      "return unauthorized (401) if user is not logged in" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest =
+          TestVinylDNS(
+            testConfigLdap,
+            mockLdapAuthenticator,
+            mockLockedUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth
+          )
+        val result = underTest.generateZone()(
+          FakeRequest(POST, "/zones/generate")
+            .withJsonBody(validGenerateZoneRequest)
+        )
+
+        status(result) must beEqualTo(401)
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+        hasCacheHeaders(result)
+      }
+    }
+
     ".regenerateCreds" should {
       "change the access key and secret for the current user" in new WithApplication(app) {
         authenticator.authenticate("frodo", "secondbreakfast").returns(Right(frodoDetails))
