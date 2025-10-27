@@ -25,10 +25,12 @@ import vinyldns.core.domain.membership.{LockStatus, User, UserChangeType}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.proto.VinylDNSProto
-
+import org.json4s._
+import org.json4s.JsonDSL._
 import scala.collection.JavaConverters._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
 import java.time.temporal.ChronoUnit
 
 class ProtobufConversionsSpec
@@ -78,6 +80,27 @@ class ProtobufConversionsSpec
     ZoneChangeStatus.Synced,
     Instant.now.truncatedTo(ChronoUnit.MILLIS),
     Some("hello")
+  )
+
+  private val zoneGenerationResponse = ZoneGenerationResponse(Some(200),Some("bind"), Some(("response" -> "success"): JValue), GenerateZoneChangeType.Create)
+
+  val bindProviderParams: Map[String, JValue] = Map(
+    "nameservers" -> JArray(List(JString("bind_ns"))),
+    "admin_email" -> JString("test@test.com"),
+    "ttl" -> JInt(3600),
+    "refresh" -> JInt(6048000),
+    "retry" -> JInt(86400),
+    "expire" -> JInt(24192000),
+    "negative_cache_ttl" -> JInt(6048000)
+  )
+
+  private val generateBindZone = GenerateZone(
+    "test.zone.actor.groupId",
+    "test@test.com",
+    "bind",
+    "test.zone.actor.zone",
+    providerParams = bindProviderParams,
+    response=Some(zoneGenerationResponse)
   )
   private val aRs = RecordSet(
     "id",
@@ -294,6 +317,13 @@ class ProtobufConversionsSpec
     }
   }
 
+  def generateZoneMatches(pb: VinylDNSProto.GenerateZone, gzn: GenerateZone): Unit = {
+    pb.getGroupId shouldBe gzn.groupId
+    pb.getProvider shouldBe gzn.provider
+    pb.getZoneName shouldBe gzn.zoneName
+    pb.getStatus shouldBe gzn.status.toString
+  }
+
   def rsMatches(pb: VinylDNSProto.RecordSet, rs: RecordSet): Assertion = {
     pb.getCreated shouldBe rs.created.toEpochMilli
     pb.getId shouldBe rs.id
@@ -481,6 +511,44 @@ class ProtobufConversionsSpec
 
       pb.getBackendId shouldBe "test-backend-id"
       fromPB(pb).backendId shouldBe defined
+    }
+  }
+
+
+  "Generation Zone conversion" should {
+    "convert to protobuf for a generate Zone including a connection" in {
+      val pb = toPB(generateBindZone)
+
+      generateZoneMatches(pb, generateBindZone)
+    }
+
+    "convert from a protobuf with only required fields" in {
+      // build a proto that does not have any optional fields
+      val pb = VinylDNSProto.GenerateZone
+        .newBuilder()
+        .setId(generateBindZone.id)
+        .setEmail(generateBindZone.email)
+        .setGroupId(generateBindZone.groupId)
+        .setProvider(generateBindZone.provider)
+        .setZoneName(generateBindZone.zoneName)
+        .setStatus(generateBindZone.status.toString)
+        .setCreated(generateBindZone.created.toEpochMilli)
+
+      val convertedNoOptional = fromPB(pb.build)
+
+      convertedNoOptional.id shouldBe generateBindZone.id
+      convertedNoOptional.groupId shouldBe generateBindZone.groupId
+      convertedNoOptional.provider shouldBe "bind"
+      convertedNoOptional.zoneName shouldBe generateBindZone.zoneName
+      convertedNoOptional.status shouldBe generateBindZone.status
+
+    }
+
+    "convert from protobuf to Generate Zone" in {
+      val pb = toPB(generateBindZone)
+      val z = fromPB(pb)
+
+      z shouldBe generateBindZone
     }
   }
 

@@ -148,7 +148,8 @@ trait TestApplicationData { this: Mockito =>
     """.stripMargin)
 
   val hobbitGroupChangeId = "b6018a9b-c893-40e9-aa25-4ccfee460c18"
-  val hobbitGroupChange: JsValue = Json.parse(s"""{
+  val hobbitGroupChange: JsValue = Json.parse(
+    s"""{
       | "newGroup": {
       | "id":          "$hobbitGroupId",
       | "name":        "hobbits",
@@ -198,9 +199,10 @@ trait TestApplicationData { this: Mockito =>
        |  "members":     [ { "id": "${frodoUser.id}" },  { "id": "sauron-userId" } ],
        |  "admins":      [ { "id": "sauron-userId" } ]
        |  }
-     """.stripMargin
-  )
-  val hobbitGroupRequest: JsValue = Json.parse(s"""{
+     """.stripMargin)
+
+  val hobbitGroupRequest: JsValue = Json.parse(
+    s"""{
       | "name":        "hobbits",
       | "email":       "hobbitAdmin@shire.me",
       | "description": "Hobbits of the shire",
@@ -225,6 +227,41 @@ trait TestApplicationData { this: Mockito =>
        |}
      """.stripMargin
   )
+
+  val validGenerateZoneId = "uuid-12345-abcdef"
+
+  val validGenerateZoneRequest: JsValue = Json.parse(
+    s"""
+      |{
+      |  "groupId": "powerdns-group-uuid",
+      |  "email": "hobbitAdmin@shire.me",
+      |  "provider": "powerdns",
+      |  "zoneName": "test.vinyldns.org.",
+      |  "providerParams": {
+      |    "kind": "Master",
+      |    "nameservers": [
+      |      { "id": "${frodoUser.id}" },
+      |      { "id": "samwise-userId" }
+      |    ]
+      |  }
+    |}
+""".stripMargin)
+
+  val invalidGenerateZoneRequest: JsValue = Json.parse(
+    s"""
+      |{
+      |  "groupId": "powerdns-group-uuid",
+      |  "email": "hobbitAdmin@shire.me",
+      |  "provider": "powerdns",
+      |  "zoneName": "test.vinyldns.org.",
+      |  "providerParams": {
+      |    "nameservers": [
+      |      { "id": "${frodoUser.id}" },
+      |      { "id": "samwise-userId" }
+      |    ]
+      |  }
+    |}
+""".stripMargin)
 
   val hobbitZoneId = "uuid-abcdef-12345"
   val hobbitZoneName = "hobbits"
@@ -314,18 +351,56 @@ trait TestApplicationData { this: Mockito =>
       | }
     """.stripMargin)
 
+  val zoneTemplateJson: String =
+    """
+    {
+      "provider": "powerdns",
+      "request-templates": {
+        "create-zone": {
+          "Kind": { "type": "Select", "value": "Native, Master, Slave, Forward" },
+          "Masters": { "type": "Multi-Select", "value": "172.17.42.1, 172.17.42.2" }
+        },
+        "delete-zone": {
+          "name": "{{zoneName}}"
+        },
+        "update-zone": {
+          "Kind": { "type": "Select", "value": "Native, Master, Slave, Forward" },
+          "Masters": { "type": "Multi-Select", "value": "172.17.42.1, 172.17.42.2" }
+        }
+      },
+      "required-fields": {
+        "create-zone": ["kind"],
+        "delete-zone": ["name"],
+        "update-zone": ["kind"]
+      }
+    }
+  """
+
   val groupList: JsObject = Json.obj("groups" -> Json.arr(hobbitGroup))
   val emptyGroupList: JsObject = Json.obj("groups" -> Json.arr())
 
   val frodoGroupList: JsObject = Json.obj("groups" -> Json.arr(hobbitGroup, ringbearerGroup))
 
+  val nameServers: JsObject = Json.obj(
+    "name-servers" -> Json.arr(
+      "172.17.42.1.",
+      "ns1.parent.com.",
+      "ns1.parent.com1.",
+      "ns1.parent.com2.",
+      "ns1.parent.com3.",
+      "ns1.parent.com4."
+    )
+  )
+
   val simulatedBackendPort: Int = 9001
 
   val testConfigLdap: Configuration =
-    Configuration.load(Environment.simple()) ++ Configuration.from(
-      Map(
-        "portal.vinyldns.backend.url" -> s"http://localhost:$simulatedBackendPort",
-        "oidc.enabled" -> false
+    Configuration.load(Environment.simple()).withFallback(
+      Configuration.from(
+        Map(
+          "portal.vinyldns.backend.url" -> s"http://localhost:$simulatedBackendPort",
+          "oidc.enabled" -> false
+        )
       )
     )
 

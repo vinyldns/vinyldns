@@ -17,4 +17,4 @@
 angular.module('directives.modals.module',
     ['directives.modals.element.module', 'directives.modals.invalid.module', 'directives.modals.modal.module',
     'directives.modals.record.module', 'directives.modals.body.module', 'directives.modals.footer.module',
-    'directives.modals.zoneconnection.module']);
+    'directives.modals.zoneconnection.module','directives.modals.zonecreation.module','directives.modals.zonecreatedview.module']);

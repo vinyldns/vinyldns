@@ -23,7 +23,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.{RecordData, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
-import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone}
+import vinyldns.core.domain.zone.{ACLRule, AccessLevel, GenerateZone, Zone}
 
 class AccessValidations(
     globalAcls: GlobalAcls = GlobalAcls(List.empty),
@@ -36,6 +36,14 @@ class AccessValidations(
     )(
       auth.isSystemAdmin || zone.shared || auth
         .isGroupMember(zone.adminGroupId) || userHasAclRules(auth, zone)
+    )
+
+  def canSeeGenerateZone(auth: AuthPrincipal, zone: GenerateZone): Either[Throwable, Unit] =
+    ensuring(
+      NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot access zone '${zone.zoneName}'")
+    )(
+      auth.isSystemAdmin || auth
+        .isGroupMember(zone.groupId)
     )
 
   def canSeeZoneChange(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
@@ -153,6 +161,13 @@ class AccessValidations(
     if (canChangeZone(auth, zone.name, zone.adminGroupId).isRight)
       AccessLevel.Delete
     else if (canSeeZone(auth, zone).isRight)
+      AccessLevel.Read
+    else AccessLevel.NoAccess
+
+  def getGenerateZoneAccess(auth: AuthPrincipal, zone: GenerateZone): AccessLevel =
+    if (canChangeZone(auth, zone.zoneName, zone.groupId).isRight)
+      AccessLevel.Delete
+    else if (canSeeGenerateZone(auth, zone).isRight)
       AccessLevel.Read
     else AccessLevel.NoAccess
 

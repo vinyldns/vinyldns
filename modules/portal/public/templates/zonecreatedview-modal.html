@@ -1,0 +1,78 @@
+<form name="viewCreatedZoneForm"  role="form" class="form-horizontal" novalidate>
+    <modal modal-id="zone_creation_view_modal" modal-title="Zone Details">
+        <modal-body>
+            <modal-element label="Zone Name">
+                <div class="form-group">
+                    <input type="text" class="form-control" ng-model="createZone.zoneName" name="namevalue" disabled />
+                </div>
+            </modal-element>
+
+            <modal-element label="Email">
+                <div class="form-group">
+                    <input type="text" class="form-control" ng-model="createZone.email" name="emailval" disabled />
+                </div>
+            </modal-element>
+
+            <modal-element label="Admin Group">
+                <div class="form-group">
+                    <input type="text" class="form-control"
+                           ng-disabled="true"
+                           ng-value="(myGroups | filter:{id: createZone.groupId})[0].name || ''" />
+                </div>
+            </modal-element>
+
+            <modal-element label="DNS Provider">
+                <div class="form-group">
+                    <input type="text" class="form-control" ng-model="createZone.provider" name="provider" disabled />
+                </div>
+            </modal-element>
+
+            <modal-element label="Name Servers">
+                <div ng-repeat="ns in createZone.providerParams.nameservers track by $index" class="form-group" style="margin-bottom: 10px;">
+                    <input type="text" class="form-control"
+                           ng-model="createZone.providerParams.nameservers[$index]"
+                           name="nameserver-{{$index}}"
+                           disabled />
+                </div>
+            </modal-element>
+
+            <!-- Dynamic Fields -->
+            <modal-element ng-repeat="field in zoneFields"
+                           label="{{ field.label }}"
+                           ng-if="createZone.providerParams[field.field] && createZone.providerParams[field.field].length">
+
+                <!-- Render multiple input fields if it's an array -Multi-Select -->
+                <div class="form-group" ng-if="field.type === 'Multi-Select'">
+                    <div ng-repeat="(idx, value) in createZone.providerParams[field.field] track by $index" style="margin-bottom: 10px;">
+                        <input type="text" class="form-control"
+                               ng-model="createZone.providerParams[field.field][idx]"
+                               name="{{ field.field + '-' + idx }}"
+                               disabled />
+                    </div>
+                </div>
+
+                <!-- Single value - Int, String, Select -->
+                <div class="form-group" ng-if="field.type !== 'Multi-Select'">
+                    <input type="text" class="form-control"
+                           ng-model="createZone.providerParams[field.field]"
+                           name="{{ field.field }}"
+                           disabled />
+                </div>
+            </modal-element>
+
+        </modal-body>
+
+        <modal-footer>
+            <button type="button" class="btn btn-default" data-dismiss="modal">
+                Close
+            </button>
+            <button id="delete-zone-button"
+                    class="btn btn-danger pull-right"
+                    ng-if="isDelete"
+                    ng-click="deleteCreatedZone()">
+                Delete
+            </button>
+        </modal-footer>
+    </modal>
+</form>
+
