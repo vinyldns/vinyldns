@@ -27,10 +27,10 @@ import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.Group
-import vinyldns.core.domain.record.{OwnerShipTransfer, OwnerShipTransferStatus, RecordSet, RecordType}
+import vinyldns.core.domain.record.{OwnershipTransfer, OwnershipTransferStatus, RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.Messages._
-import vinyldns.core.domain.record.OwnerShipTransferStatus.OwnerShipTransferStatus
+import vinyldns.core.domain.record.OwnershipTransferStatus.OwnershipTransferStatus
 
 import scala.util.matching.Regex
 
@@ -414,56 +414,56 @@ object RecordSetValidations {
                       ): Either[Throwable, Unit] =
     Either.cond(
       recordSet.recordSetGroupChange.exists(change =>
-        existing.ownerGroupId != change.requestedOwnerGroupId || change.ownerShipTransferStatus == OwnerShipTransferStatus.Cancelled),
+        existing.ownerGroupId != change.requestedOwnerGroupId || change.ownershipTransferStatus == OwnershipTransferStatus.Cancelled),
       (),
       InvalidRequest(s"""Record owner group with id ${existing.ownerGroupId.getOrElse("<none>")} already owns the record, new request is not needed"""")
     )
 
-  def isValidOwnerShipTransferStatusPendingReview(
-                                      ownerShipTransfer: Option[OwnerShipTransfer],
+  def isValidOwnershipTransferStatusPendingReview(
+                                      ownershipTransfer: Option[OwnershipTransfer],
                                ): Either[Throwable, Unit] =
     Either.cond(
-      !ownerShipTransfer.exists(_.ownerShipTransferStatus == OwnerShipTransferStatus.PendingReview),
+      !ownershipTransfer.exists(_.ownershipTransferStatus == OwnershipTransferStatus.PendingReview),
       (),
-      InvalidRequest(s"Invalid Ownership transfer status: ${ownerShipTransfer.map(_.ownerShipTransferStatus).getOrElse("none")}")
+      InvalidRequest(s"Invalid Ownership transfer status: ${ownershipTransfer.map(_.ownershipTransferStatus).getOrElse("none")}")
     )
 
-  def isValidOwnerShipTransferStatusApprove(
-                                                  existingOwnerShipTransfer: Option[OwnerShipTransfer],
-                                                  CurrentOwnerShipTransfer: Option[OwnerShipTransfer]
+  def isValidOwnershipTransferStatusApprove(
+                                                  existingOwnershipTransfer: Option[OwnershipTransfer],
+                                                  CurrentOwnershipTransfer: Option[OwnershipTransfer]
                                                 ): Either[Throwable, Unit] = {
-    val existingStatus = existingOwnerShipTransfer.map(_.ownerShipTransferStatus).getOrElse(OwnerShipTransferStatus.None)
-    val requestedStatus = CurrentOwnerShipTransfer.map(_.ownerShipTransferStatus).getOrElse(OwnerShipTransferStatus.None)
+    val existingStatus = existingOwnershipTransfer.map(_.ownershipTransferStatus).getOrElse(OwnershipTransferStatus.None)
+    val requestedStatus = CurrentOwnershipTransfer.map(_.ownershipTransferStatus).getOrElse(OwnershipTransferStatus.None)
 
     val isInvalidApproval =
-      requestedStatus == OwnerShipTransferStatus.AutoApproved ||
-      requestedStatus == OwnerShipTransferStatus.ManuallyApproved ||
-      requestedStatus == OwnerShipTransferStatus.ManuallyRejected
+      requestedStatus == OwnershipTransferStatus.AutoApproved ||
+      requestedStatus == OwnershipTransferStatus.ManuallyApproved ||
+      requestedStatus == OwnershipTransferStatus.ManuallyRejected
 
     Either.cond(
-      !(isInvalidApproval && (existingStatus == OwnerShipTransferStatus.None || existingStatus == OwnerShipTransferStatus.Cancelled)),
+      !(isInvalidApproval && (existingStatus == OwnershipTransferStatus.None || existingStatus == OwnershipTransferStatus.Cancelled)),
       (),
       InvalidRequest(s"Unable to $requestedStatus the Ownership transfer status for the record: None")
     )
   }
 
-  def isValidCancelOwnerShipTransferStatus(
-                                            exitingOwnerShipTransferStatus: OwnerShipTransferStatus,
-                                            currentOwnerShipTransferStatus: OwnerShipTransferStatus
+  def isValidCancelOwnershipTransferStatus(
+                                            exitingOwnershipTransferStatus: OwnershipTransferStatus,
+                                            currentOwnershipTransferStatus: OwnershipTransferStatus
                                           ): Either[Throwable, Unit] = {
     val approvedOrRejectedStatuses = List(
-      OwnerShipTransferStatus.ManuallyApproved,
-      OwnerShipTransferStatus.AutoApproved,
-      OwnerShipTransferStatus.ManuallyRejected
+      OwnershipTransferStatus.ManuallyApproved,
+      OwnershipTransferStatus.AutoApproved,
+      OwnershipTransferStatus.ManuallyRejected
     )
-    val isCancelRequest = currentOwnerShipTransferStatus == OwnerShipTransferStatus.Cancelled
-    val canCancel = exitingOwnerShipTransferStatus == OwnerShipTransferStatus.PendingReview &&
-      !approvedOrRejectedStatuses.contains(exitingOwnerShipTransferStatus)
+    val isCancelRequest = currentOwnershipTransferStatus == OwnershipTransferStatus.Cancelled
+    val canCancel = exitingOwnershipTransferStatus == OwnershipTransferStatus.PendingReview &&
+      !approvedOrRejectedStatuses.contains(exitingOwnershipTransferStatus)
     Either.cond(
       !isCancelRequest || canCancel,
       (),
       InvalidRequest(
-        s"Unable to cancel the Ownership transfer. Current status: $exitingOwnerShipTransferStatus"
+        s"Unable to cancel the Ownership transfer. Current status: $exitingOwnershipTransferStatus"
       )
     )
   }
@@ -474,7 +474,7 @@ object RecordSetValidations {
                                     ): Either[Throwable, Unit] =
     Either.cond(
       recordSet.recordSetGroupChange.forall { owt =>
-        owt.ownerShipTransferStatus != OwnerShipTransferStatus.Cancelled ||
+        owt.ownershipTransferStatus != OwnershipTransferStatus.Cancelled ||
           authPrincipal.isSuper ||
           authPrincipal.isGroupMember(owt.requestedOwnerGroupId.getOrElse("none"))},
       (),
@@ -486,9 +486,9 @@ object RecordSetValidations {
                                   authPrincipal: AuthPrincipal
                                 ): Either[Throwable, Unit] = {
 
-    val currentOwnerShipTransferStatus = recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse(OwnerShipTransferStatus.None)
+    val currentOwnershipTransferStatus = recordSet.recordSetGroupChange.map(_.ownershipTransferStatus).getOrElse(OwnershipTransferStatus.None)
     ensuring(
-      NotAuthorizedError(s"Unauthorized to change ownership transfer status to '$currentOwnerShipTransferStatus'")
+      NotAuthorizedError(s"Unauthorized to change ownership transfer status to '$currentOwnershipTransferStatus'")
     )(authPrincipal.isSuper || authPrincipal.isGroupMember(recordSet.ownerGroupId.getOrElse("none")))
   }
 
@@ -566,15 +566,15 @@ object RecordSetValidations {
       InvalidRequest("Cannot update RecordSet's if user not a member of ownership group. User can only request for ownership transfer")
     )
 
-  def recordSetOwnerShipApproveStatus(
+  def recordSetOwnershipApproveStatus(
                                        updates: RecordSet,
                                      ): Either[Throwable, Unit] =
     Either.cond(
-      updates.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") != OwnerShipTransferStatus.ManuallyApproved &&
-        updates.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") != OwnerShipTransferStatus.AutoApproved &&
-        updates.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") != OwnerShipTransferStatus.ManuallyRejected,
+      updates.recordSetGroupChange.map(_.ownershipTransferStatus).getOrElse("<none>") != OwnershipTransferStatus.ManuallyApproved &&
+        updates.recordSetGroupChange.map(_.ownershipTransferStatus).getOrElse("<none>") != OwnershipTransferStatus.AutoApproved &&
+        updates.recordSetGroupChange.map(_.ownershipTransferStatus).getOrElse("<none>") != OwnershipTransferStatus.ManuallyRejected,
       (),
-      InvalidRequest("Cannot update RecordSet OwnerShip Status when request is cancelled.")
+      InvalidRequest("Cannot update RecordSet Ownership Status when request is cancelled.")
     )
 
   def unchangedRecordSetOwnershipStatus(
@@ -584,6 +584,6 @@ object RecordSetValidations {
     Either.cond(
       updates.recordSetGroupChange == existing.recordSetGroupChange || existing.recordSetGroupChange.isEmpty,
       (),
-      InvalidRequest("Cannot update RecordSet OwnerShip Status when zone is not shared.")
+      InvalidRequest("Cannot update RecordSet Ownership Status when zone is not shared.")
     )
 }

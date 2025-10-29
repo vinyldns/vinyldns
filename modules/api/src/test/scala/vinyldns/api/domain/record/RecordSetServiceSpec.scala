@@ -1260,7 +1260,7 @@ class RecordSetServiceSpec
         status = RecordSetStatus.Active,
         ownerGroupId = Some(okGroup.id),
         recordSetGroupChange =
-          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview,requestedOwnerGroupId = Some(okGroup.id)
+          Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.PendingReview,requestedOwnerGroupId = Some(okGroup.id)
       )))
 
       val newRecord = oldRecord.copy(ttl = oldRecord.ttl + 1000)
@@ -1307,7 +1307,7 @@ class RecordSetServiceSpec
         underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().toOption.get
 
       result.recordSet.ttl shouldBe newRecord.ttl
-      result.recordSet.recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.PendingReview
+      result.recordSet.recordSetGroupChange.get.ownershipTransferStatus shouldBe OwnershipTransferStatus.PendingReview
     }
     "succeed if user is a superuser and zone is shared and the only record attribute being changed is the record owner group." in {
       val zone = okZone.copy(shared = true, id = "test-owner-group")
@@ -2293,7 +2293,7 @@ class RecordSetServiceSpec
         "thing.com."
     }
   }
-  "ownerShipTransfer" should {
+  "ownershipTransfer" should {
     "fail if user request AutoApproved for the owner group" in {
       val zone = okZone.copy(shared = true, id = "test-owner-group")
       val auth = AuthPrincipal(listOfDummyUsers.head, Seq(oneUserDummyGroup.id))
@@ -2304,7 +2304,7 @@ class RecordSetServiceSpec
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.AutoApproved,requestedOwnerGroupId = Some(okGroup.id))))
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.AutoApproved,requestedOwnerGroupId = Some(okGroup.id))))
 
       doReturn(IO.pure(Some(zone)))
         .when(mockZoneRepo)
@@ -2358,11 +2358,11 @@ class RecordSetServiceSpec
         status = RecordSetStatus.Active,
         ownerGroupId = Some(okGroup.id),
         recordSetGroupChange =
-          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.AutoApproved,requestedOwnerGroupId = Some(okGroup.id)))
+          Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.AutoApproved,requestedOwnerGroupId = Some(okGroup.id)))
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,requestedOwnerGroupId = Some(okGroup.id))))
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.Cancelled,requestedOwnerGroupId = Some(okGroup.id))))
 
       doReturn(IO.pure(Some(zone)))
         .when(mockZoneRepo)
@@ -2418,7 +2418,7 @@ class RecordSetServiceSpec
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview,requestedOwnerGroupId = Some(okGroup.id))))
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.PendingReview,requestedOwnerGroupId = Some(okGroup.id))))
 
       doReturn(IO.pure(Some(zone)))
         .when(mockZoneRepo)
@@ -2472,7 +2472,7 @@ class RecordSetServiceSpec
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Requested, requestedOwnerGroupId = Some(okGroup.id))))
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.Requested, requestedOwnerGroupId = Some(okGroup.id))))
       doReturn(IO.pure(Some(zone)))
         .when(mockZoneRepo)
         .getZone(zone.id)
@@ -2497,7 +2497,7 @@ class RecordSetServiceSpec
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Requested, requestedOwnerGroupId = Some(okGroup.id))))
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.Requested, requestedOwnerGroupId = Some(okGroup.id))))
       doReturn(IO.pure(Some(zone)))
         .when(mockZoneRepo)
         .getZone(zone.id)
@@ -2525,7 +2525,7 @@ class RecordSetServiceSpec
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview, requestedOwnerGroupId = Some(okGroup.id))))
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.PendingReview, requestedOwnerGroupId = Some(okGroup.id))))
       doReturn(IO.pure(Some(zone)))
         .when(mockZoneRepo)
         .getZone(zone.id)
@@ -2554,11 +2554,11 @@ class RecordSetServiceSpec
         status = RecordSetStatus.Active,
         ownerGroupId = Some(oneUserDummyGroup.id),
         recordSetGroupChange =
-          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview,requestedOwnerGroupId = Some(okGroup.id)))
+          Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.PendingReview,requestedOwnerGroupId = Some(okGroup.id)))
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyApproved)))
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.ManuallyApproved)))
       doReturn(IO.pure(Some(zone)))
         .when(mockZoneRepo)
         .getZone(zone.id)
@@ -2584,11 +2584,11 @@ class RecordSetServiceSpec
         status = RecordSetStatus.Active,
         ownerGroupId = Some(oneUserDummyGroup.id),
         recordSetGroupChange =
-          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview,requestedOwnerGroupId = Some(okGroup.id)))
+          Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.PendingReview,requestedOwnerGroupId = Some(okGroup.id)))
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyRejected)))
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.ManuallyRejected)))
       doReturn(IO.pure(Some(zone)))
         .when(mockZoneRepo)
         .getZone(zone.id)
@@ -2615,7 +2615,7 @@ class RecordSetServiceSpec
         ownerGroupId = Some(oneUserDummyGroup.id)
       )
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Requested,requestedOwnerGroupId = Some(okGroup.id))))
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.Requested,requestedOwnerGroupId = Some(okGroup.id))))
 
       doReturn(IO.pure(Some(zone)))
         .when(mockZoneRepo)
@@ -2660,7 +2660,7 @@ class RecordSetServiceSpec
 
       result.recordSet.ownerGroupId shouldBe Some(oneUserDummyGroup.id)
       result.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.get) shouldBe Some(okGroup.id)
-      result.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus) shouldBe Some(OwnerShipTransferStatus.PendingReview)
+      result.recordSet.recordSetGroupChange.map(_.ownershipTransferStatus) shouldBe Some(OwnershipTransferStatus.PendingReview)
     }
 
     "success if user a member of owner group and tried to Cancel ownership transfer request" in {
@@ -2671,11 +2671,11 @@ class RecordSetServiceSpec
         status = RecordSetStatus.Active,
         ownerGroupId = Some(oneUserDummyGroup.id),
         recordSetGroupChange =
-          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview, requestedOwnerGroupId = Some(okGroup.id)))
+          Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.PendingReview, requestedOwnerGroupId = Some(okGroup.id)))
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.Cancelled,
           requestedOwnerGroupId = Some(okGroup.id))),
       )
 
@@ -2722,7 +2722,7 @@ class RecordSetServiceSpec
 
       result.recordSet.ownerGroupId shouldBe Some(oneUserDummyGroup.id)
       result.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.get) shouldBe Some(okGroup.id)
-      result.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus) shouldBe Some(OwnerShipTransferStatus.Cancelled)
+      result.recordSet.recordSetGroupChange.map(_.ownershipTransferStatus) shouldBe Some(OwnershipTransferStatus.Cancelled)
     }
 
     "failed if user not a member of owner group and tried to Cancel ownership transfer request" in {
@@ -2733,11 +2733,11 @@ class RecordSetServiceSpec
         status = RecordSetStatus.Active,
         ownerGroupId = Some(oneUserDummyGroup.id),
         recordSetGroupChange =
-          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview, requestedOwnerGroupId = Some(okGroup.id)))
+          Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.PendingReview, requestedOwnerGroupId = Some(okGroup.id)))
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.Cancelled,
           requestedOwnerGroupId = Some(dummyGroup.id))),
       )
 
@@ -2793,11 +2793,11 @@ class RecordSetServiceSpec
         status = RecordSetStatus.Active,
         ownerGroupId = Some(oneUserDummyGroup.id),
         recordSetGroupChange =
-          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview, requestedOwnerGroupId = Some(okGroup.id)))
+          Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.PendingReview, requestedOwnerGroupId = Some(okGroup.id)))
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.Cancelled,
           requestedOwnerGroupId = Some(dummyGroup.id))),
       )
 
@@ -2844,7 +2844,7 @@ class RecordSetServiceSpec
 
       result.recordSet.ownerGroupId shouldBe Some(oneUserDummyGroup.id)
       result.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.get) shouldBe Some(okGroup.id)
-      result.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus) shouldBe Some(OwnerShipTransferStatus.Cancelled)
+      result.recordSet.recordSetGroupChange.map(_.ownershipTransferStatus) shouldBe Some(OwnershipTransferStatus.Cancelled)
     }
 
     "fail if user not a member of owner group and tried to update ttl while requesting ownership transfer" in {
@@ -2854,7 +2854,7 @@ class RecordSetServiceSpec
       val newRecord = oldRecord.copy(
         ttl = oldRecord.ttl + 1000,
         recordSetGroupChange =
-          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Requested,requestedOwnerGroupId = Some(okGroup.id))))
+          Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.Requested,requestedOwnerGroupId = Some(okGroup.id))))
 
       doReturn(IO.pure(Some(okZone)))
         .when(mockZoneRepo)
@@ -2871,12 +2871,12 @@ class RecordSetServiceSpec
       val zone = okZone.copy(shared = true, id = "test-owner-group")
       val oldRecord =
         aaaa.copy(zoneId = zone.id, status = RecordSetStatus.Active,  ownerGroupId = Some(oneUserDummyGroup.id),recordSetGroupChange =
-          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview, requestedOwnerGroupId = Some(okGroup.id)))
+          Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.PendingReview, requestedOwnerGroupId = Some(okGroup.id)))
         )
       val newRecord = oldRecord.copy(
         records = List(AAAAData("1:2:3:4:5:6:7:9")),
         recordSetGroupChange =
-          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled)))
+          Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.Cancelled)))
 
       doReturn(IO.pure(Some(okZone)))
         .when(mockZoneRepo)
@@ -2899,11 +2899,11 @@ class RecordSetServiceSpec
         status = RecordSetStatus.Active,
         ownerGroupId = Some(oneUserDummyGroup.id),
         recordSetGroupChange =
-          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,requestedOwnerGroupId = Some(okGroup.id)))
+          Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.Cancelled,requestedOwnerGroupId = Some(okGroup.id)))
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyApproved)))
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.ManuallyApproved)))
 
       doReturn(IO.pure(Some(okZone)))
         .when(mockZoneRepo)
@@ -2926,11 +2926,11 @@ class RecordSetServiceSpec
         status = RecordSetStatus.Active,
         ownerGroupId = Some(oneUserDummyGroup.id),
         recordSetGroupChange =
-          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,requestedOwnerGroupId = Some(okGroup.id)))
+          Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.Cancelled,requestedOwnerGroupId = Some(okGroup.id)))
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyRejected)))
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.ManuallyRejected)))
 
       doReturn(IO.pure(Some(okZone)))
         .when(mockZoneRepo)
@@ -2953,11 +2953,11 @@ class RecordSetServiceSpec
         status = RecordSetStatus.Active,
         ownerGroupId = Some(oneUserDummyGroup.id),
         recordSetGroupChange =
-          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,requestedOwnerGroupId = Some(okGroup.id)))
+          Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.Cancelled,requestedOwnerGroupId = Some(okGroup.id)))
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.AutoApproved)))
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.AutoApproved)))
 
       doReturn(IO.pure(Some(okZone)))
         .when(mockZoneRepo)
@@ -2979,11 +2979,11 @@ class RecordSetServiceSpec
         status = RecordSetStatus.Active,
         ownerGroupId = Some(oneUserDummyGroup.id),
         recordSetGroupChange =
-          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview,requestedOwnerGroupId = Some(okGroup.id)))
+          Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.PendingReview,requestedOwnerGroupId = Some(okGroup.id)))
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyApproved)))
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.ManuallyApproved)))
 
       doReturn(IO.pure(Some(zone)))
         .when(mockZoneRepo)
@@ -3029,7 +3029,7 @@ class RecordSetServiceSpec
 
       result.recordSet.ownerGroupId shouldBe Some(okGroup.id)
       result.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.get) shouldBe Some(okGroup.id)
-      result.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus) shouldBe Some(OwnerShipTransferStatus.ManuallyApproved)
+      result.recordSet.recordSetGroupChange.map(_.ownershipTransferStatus) shouldBe Some(OwnershipTransferStatus.ManuallyApproved)
     }
 
     "success if user Reject a ownership transfer request Manually" in {
@@ -3041,11 +3041,11 @@ class RecordSetServiceSpec
         status = RecordSetStatus.Active,
         ownerGroupId = Some(oneUserDummyGroup.id),
         recordSetGroupChange =
-          Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview,requestedOwnerGroupId = Some(okGroup.id)))
+          Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.PendingReview,requestedOwnerGroupId = Some(okGroup.id)))
       )
 
       val newRecord = oldRecord.copy(recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyRejected)))
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.ManuallyRejected)))
 
       doReturn(IO.pure(Some(zone)))
         .when(mockZoneRepo)
@@ -3091,7 +3091,7 @@ class RecordSetServiceSpec
 
       result.recordSet.ownerGroupId shouldBe Some(oneUserDummyGroup.id)
       result.recordSet.recordSetGroupChange.map(_.requestedOwnerGroupId.get) shouldBe Some(okGroup.id)
-      result.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus) shouldBe Some(OwnerShipTransferStatus.ManuallyRejected)
+      result.recordSet.recordSetGroupChange.map(_.ownershipTransferStatus) shouldBe Some(OwnershipTransferStatus.ManuallyRejected)
     }
   }
 }

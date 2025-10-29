@@ -27,7 +27,7 @@ import vinyldns.api.domain.zone._
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
-import vinyldns.core.domain.record.{NameSort, OwnerShipTransferStatus, RecordSet, RecordType, RecordTypeSort}
+import vinyldns.core.domain.record.{NameSort, OwnershipTransferStatus, RecordSet, RecordType, RecordTypeSort}
 import vinyldns.core.domain.zone.ZoneCommandResult
 import akka.http.scaladsl.model.HttpEntity
 import spray.json._
@@ -226,10 +226,10 @@ class RecordSetRoute(
               // Check if both fields exist and process accordingly
               json.fields.get("recordSetGroupChange")
                 .flatMap(groupChange => if (groupChange != JsNull) {
-                  groupChange.asJsObject.fields.get("ownerShipTransferStatus")
+                  groupChange.asJsObject.fields.get("ownershipTransferStatus")
                 } else None ) match {
                 case Some(status) =>
-                  OwnerShipTransferStatus.isStatus(status.toString) match {
+                  OwnershipTransferStatus.isStatus(status.toString) match {
                     case false =>
                       complete(
                         StatusCodes.Accepted,
