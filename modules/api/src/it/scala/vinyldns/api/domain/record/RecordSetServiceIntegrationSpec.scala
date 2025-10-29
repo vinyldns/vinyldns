@@ -20,6 +20,7 @@ import cats.effect._
 import cats.implicits._
 import cats.scalatest.EitherMatchers
 import org.mockito.Matchers.any
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.mockito.Mockito._
@@ -33,6 +34,7 @@ import vinyldns.api.config.VinylDNSConfig
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
+import vinyldns.core.TestMembershipData.okGroup
 import vinyldns.mysql.TransactionProvider
 import vinyldns.core.TestZoneData.testConnection
 import vinyldns.core.domain.{Encrypted, Fqdn, HighValueDomainError}
@@ -587,12 +589,49 @@ class RecordSetServiceIntegrationSpec
     "cancel the ownership transfer request, if user not require ownership transfer further" in {
       val newRecord = sharedTestRecordPendingReviewOwnerShip.copy(recordSetGroupChange =
         Some(OwnerShipTransfer(
-          ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled)))
+          ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,
+          requestedOwnerGroupId = Some(group.id))))
 
       doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
 
       val result = testRecordSetService
         .updateRecordSet(newRecord, auth)
+        .value
+        .unsafeRunSync()
+
+      val change = rightValue(result).asInstanceOf[RecordSetChange]
+      change.recordSet.name shouldBe "shared-record-ownerShip-pendingReview"
+      change.recordSet.ownerGroupId.get shouldBe sharedGroup.id
+      change.recordSet.recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.Cancelled
+      change.recordSet.recordSetGroupChange.get.requestedOwnerGroupId.get shouldBe group.id
+    }
+
+    "fail to cancel the ownership transfer request, if user not a member in requested owner group" in {
+      val newRecord = sharedTestRecordPendingReviewOwnerShip.copy(recordSetGroupChange =
+        Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,
+          requestedOwnerGroupId = Some(okGroup.id))))
+
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth)
+        .value
+        .unsafeRunSync()
+
+      leftValue(result) shouldBe a[InvalidRequest]
+    }
+
+    "cancel the ownership transfer request, if super user require ownership transfer further" in {
+      val newRecord = sharedTestRecordPendingReviewOwnerShip.copy(recordSetGroupChange =
+        Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,
+          requestedOwnerGroupId = Some(okGroup.id))))
+
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
+
+      val result = testRecordSetService
+        .updateRecordSet(newRecord, auth.copy(signedInUser = auth.signedInUser.copy(isSuper = true)))
         .value
         .unsafeRunSync()
 

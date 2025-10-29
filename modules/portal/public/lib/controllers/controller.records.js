@@ -115,47 +115,42 @@ angular.module('controller.records', [])
       * Modal control functions
       */
 
-    $scope.recordSetGroupOwnerShipStatus = async function recordSetGroupOwnerShipStatus(groupId, profileId, record) {
-        try {
-            let ownerShipTransferStatus;
-            const response = await groupsService.getGroupMemberList(groupId);
-            if (response.data.members.some(x => x.id === profileId)) {
+    $scope.recordSetGroupOwnerShipStatus = function recordSetGroupOwnerShipStatus(groupId, profileId, record) {
+        function success(response) {
+           var ownerShipTransferStatus;
+           if($scope.profile.isSuper || $scope.profile.isSupport || $scope.profile.isZoneAdmin){
+             const status = record.recordSetGroupChange.ownerShipTransferStatus;
+             if (status === "AutoApproved" || status === "ManuallyRejected" || status === "ManuallyApproved" || status === "None") {
+                record.isCurrentRecordSetOwner = false;
+                $scope.currentOwnerShipTransferApprover = false;
+                ownerShipTransferStatus = $scope.ownerShipTransferRequestorStatus;
+             }else if (status === "PendingReview") {
                 record.isCurrentRecordSetOwner = true;
                 $scope.currentOwnerShipTransferApprover = true;
                 ownerShipTransferStatus = $scope.ownerShipTransferApproverStatus;
-            } else {
-                const groupResponse = await groupsService.getGroupMemberList(record.recordSetGroupChange.requestedOwnerGroupId);
-
-                if ($scope.profile.isSuper || $scope.profile.isSupport) {
-                    const status = record.recordSetGroupChange.ownerShipTransferStatus;
-                    if (status === "AutoApproved" || status === "ManuallyRejected" || status === "ManuallyApproved") {
-                        record.isCurrentRecordSetOwner = false;
-                        $scope.currentOwnerShipTransferApprover = false;
-                        ownerShipTransferStatus = $scope.ownerShipTransferRequestorStatus;
-                    } else if (status === "PendingReview") {
-                        record.isCurrentRecordSetOwner = true;
-                        $scope.currentOwnerShipTransferApprover = true;
-                        ownerShipTransferStatus = $scope.ownerShipTransferApproverStatus;
-                    }
-                } else if (groupResponse.data.members[0].id !== $scope.profile.id && record.recordSetGroupChange.ownerShipTransferStatus === "PendingReview") {
-                    ownerShipTransferStatus = null;
-                    $scope.currentOwnerShipTransferApprover = false;
-                } else {
-                    $scope.currentOwnerShipTransferApprover = false;
-                    record.isCurrentRecordSetOwner = false;
-                    ownerShipTransferStatus = $scope.ownerShipTransferRequestorStatus;
-                }
-            }
-            $scope.ownerShipTransferStatus = ownerShipTransferStatus;
-
-        } catch (error) {
-            handleError(error, 'groupsService::getGroupMemberList-failure');
+             }
+           }else if(response.data.members.some(x => x.id === profileId)){
+               ownerShipTransferStatus = $scope.ownerShipTransferApproverStatus;
+               $scope.currentOwnerShipTransferApprover= true;
+               record.isCurrentRecordSetOwner = true;
+           }else{
+               ownerShipTransferStatus = $scope.ownerShipTransferRequestorStatus;
+               $scope.currentOwnerShipTransferApprover= false;
+               record.isCurrentRecordSetOwner= false;
+           }
+           $scope.ownerShipTransferStatus = ownerShipTransferStatus
         }
+        return groupsService
+            .getGroupMemberList(groupId)
+            .then(success)
+            .catch(function (error) {
+                handleError(error, 'groupsService::getGroupMemberList-failure');
+            });
     };
 
     function getGroup(groupId) {
         if (groupId != undefined && groupId != "null"){
-            $log.log('groupsService::getGroup-success');
+            $log.debug('groupsService::getGroup-success');
             function success(response) {
                  $scope.recordSetRequestedOwnerShipName = response.data.name;
             }
@@ -355,8 +350,10 @@ angular.module('controller.records', [])
     $scope.submitUpdateRecord = function () {
         var record = angular.copy($scope.currentRecord);
         if(record.recordSetGroupChange.requestedOwnerGroupId != undefined){
-            record.recordSetGroupChange.requestedOwnerGroupId = angular.copy(record.ownerGroupId);
-        }
+             if (record.ownerGroupId != $scope.recordModal.previous.ownerGroupId && $scope.isZoneAdmin){
+                    record.recordSetGroupChange.requestedOwnerGroupId = angular.copy(record.ownerGroupId);
+             }
+        } else {record.recordSetGroupChange.requestedOwnerGroupId = angular.copy(record.ownerGroupId);}
         
         record['onlyFour'] = true;
         if ($scope.addRecordForm.$valid) {
