@@ -56,7 +56,7 @@ Requested `ownershipTransferStatus` in RecordSets:
 }
 ```
 
-Cancelled `ownerShipTransferStatus` in RecordSets:
+Cancelled `ownershipTransferStatus` in RecordSets:
 
 ```json
 {
