@@ -229,20 +229,24 @@ angular.module('controller.zones', [])
     };
 
     $scope.getUpdateZoneTemplate = function(provider) {
+        if (!$scope.createZone) {
+                $scope.createZone = {};
+        }
         return zonesService.getCreateZoneTemplate(provider).then(function(results) {
+            const createZoneFields = JSON.parse(results.data["request-templates"]["create-zone"]);
             const updateZoneFields = results.data["request-templates"]["update-zone"];
             $scope.UpdateRequiredFields = results.data["required-fields"]["update-zone"];
             const updateZone = JSON.parse(updateZoneFields);
             $scope.updateZoneTemplate = updateZone;
             $scope.isEditMode = true;
 
-            $scope.zoneFields = Object.entries(updateZone).map(([label, config]) => {
+            $scope.zoneFields = Object.entries(createZoneFields).map(([label, config]) => {
                 const field = label.replace(/ /g, '').toLowerCase();
                 const isSelect = config.type.toLowerCase().includes('select');
                 const value = isSelect ? config.value.split(',').map(v => v.trim()) : config.value;
 
                 // Only initialize if undefined
-                if ($scope.createZone[field] === undefined) {
+                if ($scope.createZone[field] === undefined || $scope.createZone[field] === null) {
                     $scope.createZone[field] = config.type.toLowerCase() === 'multi-select' ? [] : '';
                 }
 
