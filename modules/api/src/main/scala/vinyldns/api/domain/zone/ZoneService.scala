@@ -299,7 +299,13 @@ class ZoneService(
         providerParams = generatedZone.providerParams
       )
 
-      endpoint = buildGenerateZoneEndpoint(providerConfig.endpoints("delete-zone"), request)
+      deleteEndpointUrl = providerConfig.endpoints("delete-zone")
+      endpoint = if (generatedZone.provider == "bind") {
+        val encodedZoneName = java.net.URLEncoder.encode(generatedZone.zoneName, "UTF-8")
+        s"$deleteEndpointUrl?zoneName=$encodedZoneName"
+      } else {
+        buildGenerateZoneEndpoint(deleteEndpointUrl, request)
+      }
 
       dnsProviderConn <- createConnection(endpoint).toResult
       dnsConnResponse <- createDnsZoneService(providerConfig.apiKey, "delete-zone", None, dnsProviderConn).toResult
