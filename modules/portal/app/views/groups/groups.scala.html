@@ -244,7 +244,7 @@
 <div class="modal" id="modal_new_group" tabindex="-1" role="dialog" aria-labelledby="largeModalHead" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <form class="form-horizontal" name="createGroupForm" ng-submit="createGroupForm.$valid &&
-        createGroup(currentGroup.name, currentGroup.email, currentGroup.description);"
+        createGroup(currentGroup.name, currentGroup.email, currentGroup.description, currentGroup.customMessage);"
               novalidate>
             <div class="modal-content" id="group-form">
                 <div class="modal-header">
@@ -315,6 +315,17 @@
                               A short description of the group, if more info is needed other than the name.
                             </span>
                         </modal-element>
+                        <modal-element label="Custom Message">
+                            <input id="group-custom-message"
+                                   name="custom-message"
+                                   class="form-control"
+                                   ng-model="currentGroup.customMessage"
+                                   type="text">
+                            </input>
+                            <span class="help-block">
+                              A custom message to be displayed in the group.
+                            </span>
+                        </modal-element>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -332,7 +343,7 @@
 <div class="modal" id="modal_edit_group" tabindex="-1" role="dialog" aria-labelledby="largeModalHead" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <form class="form-horizontal" name="submitEditGroupForm" ng-submit="submitEditGroupForm.$valid &&
-        submitEditGroup(currentGroup.name, currentGroup.email, currentGroup.description);"
+        submitEditGroup(currentGroup.name, currentGroup.email, currentGroup.description, currentGroup.customMessage);"
               novalidate>
             <div class="modal-content" id="edit-group-form">
                 <div class="modal-header">
@@ -394,6 +405,18 @@
                             </input>
                             <span class="help-block">
                               A short description of the group, if more info is needed other than the name.
+                            </span>
+                        </modal-element>
+                        <modal-element label="Custom Message">
+                            <input id="edit-group-custom-message"
+                                   name="custom-message"
+                                   class="form-control"
+                                   ng-model="currentGroup.customMessage"
+                                   ng-change="checkForChanges()"
+                                   type="text">
+                            </input>
+                            <span class="help-block">
+                              A custom message to be displayed in the group.
                             </span>
                         </modal-element>
                     </div>

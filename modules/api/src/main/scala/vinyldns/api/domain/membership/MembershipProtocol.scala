@@ -31,6 +31,7 @@ final case class GroupInfo(
     name: String,
     email: String,
     description: Option[String] = None,
+    customMessage: Option[String] = None,
     created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     status: GroupStatus = GroupStatus.Active,
     members: Set[UserId] = Set.empty,
@@ -45,6 +46,7 @@ object GroupInfo {
     name = group.name,
     email = group.email,
     description = group.description,
+    customMessage = group.customMessage,
     created = if (abridged) null else group.created,
     status = if (abridged) null else group.status,
     members = (if (abridged && authPrincipal.isDefined) group.memberIds.filter(x => authPrincipal.get.userId == x && authPrincipal.get.isGroupMember(group.id))

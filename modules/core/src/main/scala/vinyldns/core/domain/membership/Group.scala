@@ -35,7 +35,8 @@ case class Group(
     created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     status: GroupStatus = GroupStatus.Active,
     memberIds: Set[String] = Set.empty,
-    adminUserIds: Set[String] = Set.empty
+    adminUserIds: Set[String] = Set.empty,
+    customMessage: Option[String] = None
 ) {
   def addMember(user: User): Group =
     this.copy(memberIds = memberIds + user.id)
@@ -70,12 +71,14 @@ case class Group(
       emailUpdate: String,
       descriptionUpdate: Option[String],
       memberIdsUpdate: Set[String],
-      adminUserIdsUpdate: Set[String]
+      adminUserIdsUpdate: Set[String],
+      customMessageUpdate: Option[String]
   ): Group =
     this.copy(
       name = nameUpdate,
       email = emailUpdate,
       description = descriptionUpdate,
+      customMessage = customMessageUpdate,
       memberIds = memberIdsUpdate ++ adminUserIdsUpdate,
       adminUserIds = adminUserIdsUpdate
     )

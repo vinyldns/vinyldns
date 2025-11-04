@@ -72,7 +72,8 @@ class MembershipRoute(
             input.email,
             input.description,
             memberIds = (input.members ++ input.admins).map(_.id),
-            adminUserIds = input.admins.map(_.id)
+            adminUserIds = input.admins.map(_.id),
+            customMessage = input.customMessage
           )
           membershipService.createGroup(group, authPrincipal)
         } { group =>
@@ -124,6 +125,7 @@ class MembershipRoute(
               input.name,
               input.email,
               input.description,
+              input.customMessage,
               (input.members ++ input.admins).map(_.id),
               input.admins.map(_.id),
               authPrincipal

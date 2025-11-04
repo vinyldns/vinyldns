@@ -32,6 +32,7 @@ trait MembershipServiceAlgebra {
       name: String,
       email: String,
       description: Option[String],
+      customMessage: Option[String],
       memberIds: Set[String],
       adminUserIds: Set[String],
       authPrincipal: AuthPrincipal
