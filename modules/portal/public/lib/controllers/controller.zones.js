@@ -129,15 +129,13 @@ angular.module('controller.zones', [])
     };
 
     $(document).ready(function () {
-      $('#zone-nameservers').multiselect({
-        includeSelectAllOption: true,
-        enableFiltering: true,
-        buttonWidth: '100%'
-      });
+        $('#zone-nameservers').select2({
+            placeholder: "Select nameservers",
+            allowClear: true,
+            width: '100%'
+        });
     });
-
-
-
+    
     $scope.updateNameserverSelection = function(ns) {
       if ($scope.nameserverSelection[ns]) {
         if ($scope.createZone.providerParams.nameservers.indexOf(ns) === -1) {
