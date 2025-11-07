@@ -50,7 +50,7 @@ describe('Controller: ZonesController', function () {
             });
         };
 
-        $.fn.multiselect = function () { return this; };
+        $.fn.select2 = function () { return this; };
         zonesService.getZones = function() {
             return $q.when({
                 data: {
