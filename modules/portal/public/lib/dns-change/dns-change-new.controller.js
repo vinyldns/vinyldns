@@ -42,6 +42,13 @@
             $scope.allowManualReview = false;
             $scope.confirmationPrompt = "Are you sure you want to submit this batch change request?";
             $scope.manualReviewEnabled;
+            $scope.naptrFlags = ["U", "S", "A", "P"];
+
+            // Initialize Bootstrap tooltips
+            $(document).ready(function() {
+                $('[data-toggle="tooltip"]').tooltip();
+            });
+
 
             $scope.addSingleChange = function() {
                 $scope.newBatch.changes.push({changeType: "Add", type: "A+PTR"});
@@ -89,6 +96,13 @@
                             var newEntry = {changeType: entry.changeType, type: "PTR", ttl: entry.ttl, inputName: entry.record.address, record: {ptrdname: entry.inputName}}
                             payload.changes.splice(i+1, 0, newEntry)
                         }
+                        if(entry.type == 'NAPTR') {
+                            // Since regexp can be left empty
+                            if(entry.record.regexp == undefined){
+                                var newEntry = {changeType: entry.changeType, type: "NAPTR", ttl: entry.ttl, inputName: entry.inputName, record: {order: entry.record.order, preference: entry.record.preference, flags: entry.record.flags, service: entry.record.service, regexp: '', replacement: entry.record.replacement}}
+                                payload.changes[i] = newEntry;
+                            }
+                        }
                         if(entry.changeType == 'DeleteRecordSet' && entry.record) {
                             var recordDataEmpty = true;
                             for (var attr in entry.record) {
@@ -108,7 +122,7 @@
                     $scope.alerts.push(alert);
                     $timeout(function(){
                         location.href = "/dnschanges/" + response.data.id;
-                     }, 2000);
+                    }, 2000);
                     $scope.batch = response.data;
                 }
 
@@ -153,32 +167,56 @@
                 $scope.alerts.push(alert);
             }
 
-            $scope.uploadCSV = function(file) {
-                parseFile(file).then(function(dataLength){
-                    $scope.alerts.push({type: 'success', content: 'Successfully imported ' + dataLength + ' changes.' });
+            function resetFileInput() {
+              $scope.csvInput = null;
+              var inputElement = document.getElementById('batchChangeCsv');
+              if (inputElement) {
+                inputElement.value = null;
+              }
+              if ($scope.createBatchChangeForm && $scope.createBatchChangeForm.batchChangeCsv) {
+                $scope.createBatchChangeForm.batchChangeCsv.$setViewValue(null);
+                $scope.createBatchChangeForm.batchChangeCsv.$render();
+              }
+            }
+
+            $scope.uploadCSV = function(file, batchChangeLimit) {
+                parseFile(file, batchChangeLimit).then(function(dataLength){
+                    $scope.alerts.push({type: 'success', content: 'Successfully imported ' + dataLength + ' DNS changes.' });
+                    resetFileInput();
                 }, function(error) {
                     $scope.alerts.push({type: 'danger', content: error});
                 });
 
-                function parseFile(file) {
+                function parseFile(file, batchChangeLimit) {
                   return $q(function(resolve, reject) {
+                     if (!file || !file.name) {
+                        $log.debug('No file selected or file has no name property');
+                      }
+                    else if (!file.name.endsWith('.csv')) {
+                      reject("Import failed. File should be of ‘.csv’ type.");
+                    }
+                    else {
                       var reader = new FileReader();
                       reader.onload = function(e) {
-                          var rows = e.target.result.split("\n");
-                          if (rows[0].trim() == "Change Type,Record Type,Input Name,TTL,Record Data") {
-                            $scope.newBatch.changes = [];
-                            for(var i = 1; i < rows.length; i++) {
-                              var lengthCheck = rows[i].replace(/,+/g, '').trim().length
-                              if (lengthCheck == 0) { continue; }
-                              parseRow(rows[i])
-                            }
-                            $scope.$apply()
-                            resolve($scope.newBatch.changes.length);
-                          } else {
-                            reject("Import failed. Not a valid file. File should be of ‘.csv’ type.");
+                        var rows = e.target.result.split("\n");
+                        if(rows.length - 1  > batchChangeLimit)
+                        {reject("Import failed. Cannot add more than " + batchChangeLimit + " records per DNS change.");
+                        } else {
+                        if (rows[0].trim() == "Change Type,Record Type,Input Name,TTL,Record Data") {
+                          $scope.newBatch.changes = [];
+                          for(var i = 1; i < rows.length; i++) {
+                            var lengthCheck = rows[i].replace(/,+/g, '').trim().length
+                            if (lengthCheck == 0) { continue; }
+                            parseRow(rows[i])
                           }
-                      }
+                          $scope.$apply()
+                          resolve($scope.newBatch.changes.length);
+                        }  else {
+                          reject("Import failed. CSV header must be: Change Type,Record Type,Input Name,TTL,Record Data");
+                        }
+                      }}
                       reader.readAsText(file);
+                    }
                   });
                 }
 
@@ -219,6 +257,21 @@
                                 change[headers[j]] = {"ptrdname": rowContent[j].trim()}
                             } else if (change["type"] == "TXT") {
                                 change[headers[j]] = {"text": rowContent[j].trim()}
+                            } else if (change["type"] == "NS") {
+                                change[headers[j]] = {"nsdname": rowContent[j].trim()}
+                            } else if (change["type"] == "MX") {
+                                var mxData = rowContent[j].trim().split(' ');
+                                change[headers[j]] = {"preference": parseInt(mxData[0]), "exchange": mxData[1]}
+                            } else if (change["type"] == "NAPTR") {
+                                var naptrData = rowContent[j].trim().split(' ');
+                                if(naptrData.length == 6){
+                                    change[headers[j]] = {"order": parseInt(naptrData[0]), "preference": parseInt(naptrData[1]), "flags": naptrData[2], "service": naptrData[3], "regexp": naptrData[4], "replacement": naptrData[5]}
+                                } else {
+                                    change[headers[j]] = {"order": parseInt(naptrData[0]), "preference": parseInt(naptrData[1]), "flags": naptrData[2], "service": naptrData[3], "regexp": '', "replacement": naptrData[4]}
+                                }
+                            } else if (change["type"] == "SRV") {
+                                var srvData = rowContent[j].trim().split(' ');
+                                change[headers[j]] = {"priority": parseInt(srvData[0]), "weight": parseInt(srvData[1]), "port": parseInt(srvData[2]), "target": srvData[3]}
                             }
                         } else {
                             change[headers[j]] = rowContent[j].trim()

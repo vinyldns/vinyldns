@@ -19,6 +19,7 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, StatusCodes}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.json4s.JsonDSL._
@@ -28,7 +29,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.Interfaces._
 import vinyldns.api.config.LimitsConfig
-import vinyldns.api.domain.record.{ListRecordSetChangesResponse, RecordSetServiceAlgebra}
+import vinyldns.api.domain.record.{ListFailedRecordSetChangesResponse, ListRecordSetChangesResponse, ListRecordSetHistoryResponse, RecordSetServiceAlgebra}
 import vinyldns.api.domain.zone._
 import vinyldns.core.TestMembershipData.okAuth
 import vinyldns.core.domain.Fqdn
@@ -36,6 +37,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordType._
+import vinyldns.core.domain.record.RecordTypeSort.{ASC, DESC, RecordTypeSort}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 
@@ -54,6 +56,7 @@ class RecordSetRoutingSpec
   private val notAuthorizedZone = Zone("notAuth", "test@test.com")
   private val syncingZone = Zone("syncing", "test@test.com")
   private val invalidChangeZone = Zone("invalidChange", "test@test.com")
+  private val recordSetCount = RecordSetCount(5)
 
   private val rsAlreadyExists = RecordSet(
     okZone.id,
@@ -407,6 +410,19 @@ class RecordSetRoutingSpec
     maxItems = 100
   )
 
+  private val changeWithUserName =
+    List(RecordSetChangeInfo(rsChange1, Some("ok")))
+  private val listRecordSetChangeHistoryResponse = ListRecordSetHistoryResponse(
+    Some(okZone.id),
+    changeWithUserName,
+    nextId = None,
+    startFrom = None,
+    maxItems = 100
+  )
+
+  private val failedChangesWithUserName =
+    List(rsChange1.copy(status = RecordSetChangeStatus.Failed) , rsChange2.copy(status = RecordSetChangeStatus.Failed))
+
   class TestService extends RecordSetServiceAlgebra {
 
     def evaluate(
@@ -522,7 +538,8 @@ class RecordSetRoutingSpec
                         recordTypeFilter: Option[Set[RecordType]],
                         recordOwnerGroupFilter: Option[String],
                         nameSort: NameSort,
-                        authPrincipal: AuthPrincipal
+                        authPrincipal: AuthPrincipal,
+                        recordTypeSort: RecordTypeSort
                       ): Result[ListGlobalRecordSetsResponse] = {
       if (recordTypeFilter.contains(Set(CNAME))) {
         Right(
@@ -564,6 +581,20 @@ class RecordSetRoutingSpec
       }
     }.toResult
 
+    def listFailedRecordSetChanges(
+                                    authPrincipal: AuthPrincipal,
+                                    zoneId:Option[String],
+                                    startFrom: Int,
+                                    maxItems: Int
+                                  ): Result[ListFailedRecordSetChangesResponse] = {
+      zoneId match {
+        case Some(zoneNotFound.id) => Left(ZoneNotFoundError(s"$zoneId"))
+        case Some(notAuthorizedZone.id) => Left(NotAuthorizedError("no way"))
+        case _ => authPrincipal match {
+          case _ => Right(ListFailedRecordSetChangesResponse(failedChangesWithUserName,0,startFrom,maxItems))
+        }
+      }}.toResult
+
     def searchRecordSets(
                            startFrom: Option[String],
                            maxItems: Option[Int],
@@ -571,7 +602,8 @@ class RecordSetRoutingSpec
                            recordTypeFilter: Option[Set[RecordType]],
                            recordOwnerGroupFilter: Option[String],
                            nameSort: NameSort,
-                           authPrincipal: AuthPrincipal
+                           authPrincipal: AuthPrincipal,
+                           recordTypeSort: RecordTypeSort
                          ): Result[ListGlobalRecordSetsResponse] = {
       if (recordTypeFilter.contains(Set(CNAME))) {
         Right(
@@ -621,10 +653,49 @@ class RecordSetRoutingSpec
                               recordTypeFilter: Option[Set[RecordType]],
                               recordOwnerGroupFilter: Option[String],
                               nameSort: NameSort,
-                              authPrincipal: AuthPrincipal
+                              authPrincipal: AuthPrincipal,
+                              recordTypeSort: RecordTypeSort
                             ): Result[ListRecordSetsByZoneResponse] = {
       zoneId match {
         case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        // NameSort will be in ASC by default
+        case okZone.id if recordTypeSort==DESC =>
+          Right(
+            ListRecordSetsByZoneResponse(
+              List(
+                RecordSetListInfo(RecordSetInfo(soa, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(cname, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(aaaa, None), AccessLevel.Read)
+              ),
+              startFrom,
+              None,
+              maxItems,
+              recordNameFilter,
+              recordTypeFilter,
+              None,
+              nameSort,
+              recordTypeSort
+            )
+          )
+        // NameSort will be in ASC by default
+        case okZone.id if recordTypeSort==ASC=>
+          Right(
+            ListRecordSetsByZoneResponse(
+              List(
+                RecordSetListInfo(RecordSetInfo(aaaa, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(cname, None), AccessLevel.Read),
+                RecordSetListInfo(RecordSetInfo(soa, None), AccessLevel.Read)
+              ),
+              startFrom,
+              None,
+              maxItems,
+              recordNameFilter,
+              recordTypeFilter,
+              None,
+              nameSort,
+              recordTypeSort
+            )
+          )
         case okZone.id if recordTypeFilter.contains(Set(CNAME)) =>
           Right(
             ListRecordSetsByZoneResponse(
@@ -637,7 +708,8 @@ class RecordSetRoutingSpec
               recordNameFilter,
               recordTypeFilter,
               recordOwnerGroupFilter,
-              nameSort
+              nameSort,
+              recordTypeSort=RecordTypeSort.ASC
             )
           )
         case okZone.id if recordTypeFilter.isEmpty =>
@@ -654,7 +726,8 @@ class RecordSetRoutingSpec
               recordNameFilter,
               recordTypeFilter,
               None,
-              nameSort
+              nameSort,
+              recordTypeSort=RecordTypeSort.ASC
             )
           )
       }
@@ -673,9 +746,20 @@ class RecordSetRoutingSpec
       }
     }.toResult
 
+    def getRecordSetCount(
+                           zoneId: String,
+                           authPrincipal: AuthPrincipal
+                         ): Result[RecordSetCount] = {
+      zoneId match {
+        case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        case notAuthorizedZone.id => Left(NotAuthorizedError("no way"))
+        case _ => Right(recordSetCount)
+      }
+    }.toResult
+
     def listRecordSetChanges(
                               zoneId: String,
-                              startFrom: Option[String],
+                              startFrom: Option[Int],
                               maxItems: Int,
                               authPrincipal: AuthPrincipal
                             ): Result[ListRecordSetChangesResponse] = {
@@ -683,6 +767,21 @@ class RecordSetRoutingSpec
         case zoneNotFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case notAuthorizedZone.id => Left(NotAuthorizedError("no way"))
         case _ => Right(listRecordSetChangesResponse)
+      }
+    }.toResult
+
+    def listRecordSetChangeHistory(
+                              zoneId: Option[String],
+                              startFrom: Option[Int],
+                              maxItems: Int,
+                              fqdn: Option[String],
+                              recordType: Option[RecordType],
+                              authPrincipal: AuthPrincipal
+                            ): Result[ListRecordSetHistoryResponse] = {
+      zoneId match {
+        case Some(zoneNotFound.id) => Left(ZoneNotFoundError(s"$zoneId"))
+        case Some(notAuthorizedZone.id) => Left(NotAuthorizedError("no way"))
+        case _ => Right(listRecordSetChangeHistoryResponse)
       }
     }.toResult
 
@@ -817,6 +916,46 @@ class RecordSetRoutingSpec
       }
       Get(s"/zones/${okZone.id}/recordsetchanges?maxItems=0") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.BadRequest
+      }
+    }
+  }
+
+  "GET recordset change history" should {
+    "return the recordset change" in {
+      Get(s"/recordsetchange/history?zoneId=${okZone.id}&fqdn=rs1.ok.&recordType=A") ~> recordSetRoute ~> check {
+        val response = responseAs[ListRecordSetHistoryResponse]
+
+        response.zoneId shouldBe Some(okZone.id)
+        (response.recordSetChanges.map(_.id) should contain)
+          .only(rsChange1.id)
+      }
+    }
+
+    "return an error when the record fqdn and type is not defined" in {
+      Get(s"/recordsetchange/history") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+
+    "return a Bad Request when maxItems is out of Bounds" in {
+      Get(s"/recordsetchange/history?maxItems=101") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+      Get(s"/recordsetchange/history?maxItems=0") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+  }
+
+  "GET failed record set changes" should {
+    "return the failed record set changes" in {
+      val rsChangeFailed1 = rsChange1.copy(status = RecordSetChangeStatus.Failed)
+      val rsChangeFailed2 = rsChange2.copy(status = RecordSetChangeStatus.Failed)
+
+      Get(s"/metrics/health/zones/${okZone.id}/recordsetchangesfailure") ~> recordSetRoute ~> check {
+        val changes = responseAs[ListFailedRecordSetChangesResponse]
+        changes.failedRecordSetChanges.map(_.id) shouldBe List(rsChangeFailed1.id, rsChangeFailed2.id)
+
       }
     }
   }
@@ -1050,6 +1189,38 @@ class RecordSetRoutingSpec
         val resultRs = responseAs[ListRecordSetsByZoneResponse]
         (resultRs.recordSets.map(_.id) should contain)
           .only(rs3.id, rs2.id, rs1.id)
+      }
+    }
+
+    "return all recordSets types in descending order" in {
+
+      Get(s"/zones/${okZone.id}/recordsets?recordTypeSort=desc") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+
+        val resultRs = responseAs[ListRecordSetsByZoneResponse]
+        (resultRs.recordSets.map(_.typ) shouldBe List(soa.typ, cname.typ, aaaa.typ))
+      }
+    }
+
+    "return all recordSets types in ascending order" in {
+
+      Get(s"/zones/${okZone.id}/recordsets?recordTypeSort=asc") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+
+        val resultRs = responseAs[ListRecordSetsByZoneResponse]
+        (resultRs.recordSets.map(_.typ) shouldBe List(aaaa.typ, cname.typ, soa.typ))
+
+      }
+    }
+
+    "return all record name in ascending order when name and type sort simultaneously" in {
+
+      Get(s"/zones/${okZone.id}/recordsets?nameSort=desc&recordTypeSort=asc") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+
+        val resultRs = responseAs[ListRecordSetsByZoneResponse]
+        (resultRs.recordSets.map(_.name) shouldBe List(aaaa.name, cname.name, soa.name))
+
       }
     }
 
@@ -1451,11 +1622,11 @@ class RecordSetRoutingSpec
     }
 
     "return errors for invalid NAPTR record data" in {
+      val validFlags = List("U", "S", "A", "P")
       validateErrors(
         testRecordType(
           RecordType.NAPTR,
           ("replacement" -> Random.alphanumeric.take(260).mkString) ~~
-            // should check regex better
             ("regexp" -> Random.alphanumeric.take(260).mkString) ~~
             ("service" -> Random.alphanumeric.take(260).mkString) ~~
             ("flags" -> Random.alphanumeric.take(2).mkString) ~~
@@ -1464,18 +1635,18 @@ class RecordSetRoutingSpec
         ),
         "NAPTR.order must be an unsigned 16 bit number",
         "NAPTR.preference must be an unsigned 16 bit number",
-        "NAPTR.flags must be less than 2 characters",
+        "Invalid NAPTR.flag. Valid NAPTR flag value must be U, S, A or P",
         "NAPTR.service must be less than 255 characters",
-        "NAPTR.regexp must be less than 255 characters",
+        "Invalid NAPTR.regexp. Valid NAPTR regexp value must start and end with '!' or can be empty",
         "NAPTR.replacement must be less than 255 characters"
       )
       validateErrors(
         testRecordType(
           RecordType.NAPTR,
-          ("regexp" -> Random.alphanumeric.take(10).mkString) ~~
+          ("regexp" -> "") ~~
             ("service" -> Random.alphanumeric.take(10).mkString) ~~
             ("replacement" -> Random.alphanumeric.take(10).mkString) ~~
-            ("flags" -> Random.alphanumeric.take(1).mkString) ~~
+            ("flags" -> validFlags.take(1).mkString) ~~
             ("order" -> -1) ~~
             ("preference" -> -1)
         ),
@@ -1533,6 +1704,21 @@ class RecordSetRoutingSpec
         testRecordType(RecordType.TXT, "text" -> Random.alphanumeric.take(70000).mkString),
         "TXT record must be less than 64764 characters"
       )
+    }
+  }
+  "GET recordset count by zone" should {
+    "return recordset count" in {
+      Get(s"/zones/${okZone.id}/recordsetcount") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val resultRs = responseAs[RecordSetCount]
+        resultRs shouldBe recordSetCount
+      }
+    }
+
+    "return a 404 Not Found when the zone doesn't exist" in {
+      Get(s"/zones/${zoneNotFound.id}/recordsetcount") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
     }
   }
 }

@@ -26,7 +26,7 @@ import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{CreateZoneInput, UpdateZoneInput, ZoneConnection}
 import vinyldns.core.TestRecordSetData._
-import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.Messages._
 
 class VinylDNSJsonProtocolSpec
@@ -43,7 +43,7 @@ class VinylDNSJsonProtocolSpec
       ZoneConnection(
         "primaryConnection",
         "primaryConnectionKeyName",
-        "primaryConnectionKey",
+        Encrypted("primaryConnectionKey"),
         "10.1.1.1"
       )
     ),
@@ -51,7 +51,7 @@ class VinylDNSJsonProtocolSpec
       ZoneConnection(
         "transferConnection",
         "transferConnectionKeyName",
-        "transferConnectionKey",
+        Encrypted("transferConnectionKey"),
         "10.1.1.2"
       )
     ),
@@ -66,7 +66,7 @@ class VinylDNSJsonProtocolSpec
       ZoneConnection(
         "primaryConnection",
         "primaryConnectionKeyName",
-        "primaryConnectionKey",
+        Encrypted("primaryConnectionKey"),
         "10.1.1.1"
       )
     ),
@@ -74,7 +74,7 @@ class VinylDNSJsonProtocolSpec
       ZoneConnection(
         "transferConnection",
         "transferConnectionKeyName",
-        "transferConnectionKey",
+        Encrypted("transferConnectionKey"),
         "10.1.1.2"
       )
     ),
@@ -309,6 +309,25 @@ class VinylDNSJsonProtocolSpec
           ("adminGroupId" -> true)
 
       assertThrows[MappingException](updateZoneInput.extract[UpdateZoneInput])
+    }
+  }
+
+  "EncryptedSerializer" should {
+    "parse a secret key to Encrypted type" in {
+      val secretKeyInput: JValue = "primaryConnectionKey"
+
+      val actual = secretKeyInput.extract[Encrypted]
+      val expected = Encrypted("primaryConnectionKey")
+      actual shouldBe expected
+    }
+
+    "throw an error if there is a type mismatch during deserialization" in {
+      val secretKeyInput: JObject =
+        "key" -> List(
+          "primaryConnectionKey"
+        )
+
+      assertThrows[MappingException](secretKeyInput.extract[Encrypted])
     }
   }
 
@@ -660,6 +679,206 @@ class VinylDNSJsonProtocolSpec
 
       val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
       thrown.msg should include("Digest Type 0 is not a supported DS record digest type")
+    }
+    "auto-approve a owner ship transfer request" in {
+      val recordSetJValue: JValue =
+        ("zoneId" -> "1") ~~
+          ("name" -> "TestRecordName") ~~
+          ("type" -> "CNAME") ~~
+          ("ttl" -> 1000) ~~
+          ("status" -> "Pending") ~~
+          ("records" -> List("cname" -> "cname.data ")) ~~
+          ("recordSetGroupChange" -> Some("ownerShipTransferStatus" -> "AutoApproved"))
+
+
+      val expected = RecordSet(
+        "1",
+        "TestRecordName",
+        RecordType.CNAME,
+        1000,
+        RecordSetStatus.Pending,
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
+        records = List(CNAMEData(Fqdn("cname.data."))),
+        recordSetGroupChange = Some(OwnerShipTransfer(ownerShipTransferStatus = OwnerShipTransferStatus.AutoApproved))
+
+      )
+
+      val actual = recordSetJValue.extract[RecordSet]
+      anonymize(actual) shouldBe anonymize(expected)
+      anonymize(actual).recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.AutoApproved
+    }
+
+    "manually-approve a owner ship transfer request" in {
+      val recordSetJValue: JValue =
+        ("zoneId" -> "1") ~~
+          ("name" -> "TestRecordName") ~~
+          ("type" -> "CNAME") ~~
+          ("ttl" -> 1000) ~~
+          ("status" -> "Pending") ~~
+          ("records" -> List("cname" -> "cname.data ")) ~~
+          ("ownerGroupId" -> "updated-admin-group-id") ~~
+          ("recordSetGroupChange" -> Some(("ownerShipTransferStatus" -> "ManuallyApproved")~~
+            ("requestedOwnerGroupId" -> "updated-admin-group-id")))
+
+
+      val expected = RecordSet(
+        "1",
+        "TestRecordName",
+        RecordType.CNAME,
+        1000,
+        RecordSetStatus.Pending,
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
+        records = List(CNAMEData(Fqdn("cname.data."))),
+        ownerGroupId = Some("updated-admin-group-id"),
+        recordSetGroupChange = Some(OwnerShipTransfer(ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyApproved,requestedOwnerGroupId = Some("updated-admin-group-id")))
+
+      )
+
+      val actual = recordSetJValue.extract[RecordSet]
+      anonymize(actual) shouldBe anonymize(expected)
+      anonymize(actual).recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.ManuallyApproved
+      anonymize(actual).recordSetGroupChange.get.requestedOwnerGroupId shouldBe Some("updated-admin-group-id")
+      anonymize(actual).ownerGroupId shouldBe Some("updated-admin-group-id")
+    }
+
+    "request a owner ship transfer" in {
+      val recordSetJValue: JValue =
+        ("zoneId" -> "1") ~~
+          ("name" -> "TestRecordName") ~~
+          ("type" -> "CNAME") ~~
+          ("ttl" -> 1000) ~~
+          ("status" -> "Pending") ~~
+          ("records" -> List("cname" -> "cname.data ")) ~~
+          ("ownerGroupId" -> "updated-ok-group-id") ~~
+          ("recordSetGroupChange" -> Some(("ownerShipTransferStatus" -> "Requested")~~
+            ("requestedOwnerGroupId" -> "updated-admin-group-id")))
+
+
+      val expected = RecordSet(
+        "1",
+        "TestRecordName",
+        RecordType.CNAME,
+        1000,
+        RecordSetStatus.Pending,
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
+        records = List(CNAMEData(Fqdn("cname.data."))),
+        ownerGroupId = Some("updated-ok-group-id"),
+        recordSetGroupChange = Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.Requested,
+          requestedOwnerGroupId = Some("updated-admin-group-id")))
+
+      )
+
+      val actual = recordSetJValue.extract[RecordSet]
+      anonymize(actual) shouldBe anonymize(expected)
+      anonymize(actual).recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.Requested
+      anonymize(actual).recordSetGroupChange.get.requestedOwnerGroupId shouldBe Some("updated-admin-group-id")
+      anonymize(actual).ownerGroupId shouldBe Some("updated-ok-group-id")
+    }
+
+    "request a owner ship transfer which will change to pending review" in {
+      val recordSetJValue: JValue =
+        ("zoneId" -> "1") ~~
+          ("name" -> "TestRecordName") ~~
+          ("type" -> "CNAME") ~~
+          ("ttl" -> 1000) ~~
+          ("status" -> "Pending") ~~
+          ("records" -> List("cname" -> "cname.data ")) ~~
+          ("ownerGroupId" -> "updated-ok-group-id") ~~
+          ("recordSetGroupChange" -> Some(("ownerShipTransferStatus" -> "PendingReview")~~
+            ("requestedOwnerGroupId" -> "updated-admin-group-id")))
+
+
+      val expected = RecordSet(
+        "1",
+        "TestRecordName",
+        RecordType.CNAME,
+        1000,
+        RecordSetStatus.Pending,
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
+        records = List(CNAMEData(Fqdn("cname.data."))),
+        ownerGroupId = Some("updated-ok-group-id"),
+        recordSetGroupChange = Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview,
+          requestedOwnerGroupId = Some("updated-admin-group-id")))
+
+      )
+
+      val actual = recordSetJValue.extract[RecordSet]
+      anonymize(actual) shouldBe anonymize(expected)
+      anonymize(actual).recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.PendingReview
+      anonymize(actual).recordSetGroupChange.get.requestedOwnerGroupId shouldBe Some("updated-admin-group-id")
+      anonymize(actual).ownerGroupId shouldBe Some("updated-ok-group-id")
+    }
+
+    "cancel a owner ship transfer request" in {
+      val recordSetJValue: JValue =
+        ("zoneId" -> "1") ~~
+          ("name" -> "TestRecordName") ~~
+          ("type" -> "CNAME") ~~
+          ("ttl" -> 1000) ~~
+          ("status" -> "Pending") ~~
+          ("records" -> List("cname" -> "cname.data ")) ~~
+          ("ownerGroupId" -> "updated-ok-group-id") ~~
+          ("recordSetGroupChange" -> Some(("ownerShipTransferStatus" -> "Cancelled")~~
+            ("requestedOwnerGroupId" -> "updated-admin-group-id")))
+
+
+      val expected = RecordSet(
+        "1",
+        "TestRecordName",
+        RecordType.CNAME,
+        1000,
+        RecordSetStatus.Pending,
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
+        records = List(CNAMEData(Fqdn("cname.data."))),
+        ownerGroupId = Some("updated-ok-group-id"),
+        recordSetGroupChange = Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,
+          requestedOwnerGroupId = Some("updated-admin-group-id")))
+
+      )
+
+      val actual = recordSetJValue.extract[RecordSet]
+      anonymize(actual) shouldBe anonymize(expected)
+      anonymize(actual).recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.Cancelled
+      anonymize(actual).recordSetGroupChange.get.requestedOwnerGroupId shouldBe Some("updated-admin-group-id")
+      anonymize(actual).ownerGroupId shouldBe Some("updated-ok-group-id")
+    }
+
+    "manually-reject a owner ship transfer request" in {
+      val recordSetJValue: JValue =
+        ("zoneId" -> "1") ~~
+          ("name" -> "TestRecordName") ~~
+          ("type" -> "CNAME") ~~
+          ("ttl" -> 1000) ~~
+          ("status" -> "Pending") ~~
+          ("records" -> List("cname" -> "cname.data ")) ~~
+          ("ownerGroupId" -> "updated-ok-group-id") ~~
+          ("recordSetGroupChange" -> Some(("ownerShipTransferStatus" -> "ManuallyRejected")~~
+            ("requestedOwnerGroupId" -> "updated-admin-group-id")))
+
+
+      val expected = RecordSet(
+        "1",
+        "TestRecordName",
+        RecordType.CNAME,
+        1000,
+        RecordSetStatus.Pending,
+        LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
+        records = List(CNAMEData(Fqdn("cname.data."))),
+        ownerGroupId = Some("updated-ok-group-id"),
+        recordSetGroupChange = Some(OwnerShipTransfer(
+          ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyRejected,
+          requestedOwnerGroupId = Some("updated-admin-group-id")))
+
+      )
+
+      val actual = recordSetJValue.extract[RecordSet]
+      anonymize(actual) shouldBe anonymize(expected)
+      anonymize(actual).recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.ManuallyRejected
+      anonymize(actual).recordSetGroupChange.get.requestedOwnerGroupId shouldBe Some("updated-admin-group-id")
+      anonymize(actual).ownerGroupId shouldBe Some("updated-ok-group-id")
     }
   }
 }

@@ -1065,6 +1065,24 @@ def test_create_dotted_cname_record_succeeds_if_all_dotted_hosts_config_satisfie
             client.wait_until_recordset_change_status(delete_result, "Complete")
 
 
+def test_create_IPv4_cname_record_fails(shared_zone_test_context):
+    """
+    Test that creating a CNAME record set as IPv4 address records returns an error.
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.parent_zone
+    apex_cname_rs = {
+        "zoneId": zone["id"],
+        "name": "test_create_cname_with_ipaddress",
+        "type": "CNAME",
+        "ttl": 500,
+        "records": [{"cname": "1.2.3.4"}]
+    }
+
+    error = client.create_recordset(apex_cname_rs, status=400)
+    assert_that(error, is_(f'Invalid CNAME: 1.2.3.4, valid CNAME record data cannot be an IP address.'))
+
+
 def test_create_cname_with_multiple_records(shared_zone_test_context):
     """
     Test that creating a CNAME record set with multiple records returns an error

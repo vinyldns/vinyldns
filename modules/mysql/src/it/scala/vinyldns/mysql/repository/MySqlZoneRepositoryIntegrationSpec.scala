@@ -28,6 +28,7 @@ import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.zone._
 import vinyldns.core.TestZoneData.okZone
 import vinyldns.core.TestMembershipData._
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
 import vinyldns.mysql.TestMySqlInstance.groupRepository
@@ -340,6 +341,57 @@ class MySqlZoneRepositoryIntegrationSpec
       groupRepository.delete(okGroup).unsafeRunSync()
     }
 
+    "check pagination while filtering zones by admin group" in {
+
+      executeWithinTransaction { db: DB =>
+        groupRepository.save(db, okGroup)
+      }.unsafeRunSync()
+
+      val group = groupRepository.getGroupsByName(okGroup.name).unsafeRunSync()
+      val groupId = group.head.id
+
+      // store all of the zones
+      val privateZone = okZone.copy(
+        name = "private-zone.",
+        id = UUID.randomUUID().toString,
+        acl = ZoneACL(),
+        adminGroupId = groupId
+      )
+
+      val sharedZone = okZone.copy(
+        name = "shared-zone.",
+        id = UUID.randomUUID().toString,
+        acl = ZoneACL(),
+        shared = true,
+        adminGroupId = groupId
+      )
+
+      val testZones = Seq(privateZone, sharedZone)
+
+      val f = saveZones(testZones)
+
+      // query for all zones for the ok user, should have all of the zones returned
+      val okUserAuth = AuthPrincipal(
+        signedInUser = okUser,
+        memberGroupIds = groups.map(_.id)
+      )
+
+      f.unsafeRunSync()
+
+      val page1 = repo
+        .listZonesByAdminGroupIds(okUserAuth, None, 1, Set(groupId), ignoreAccess = true)
+        .unsafeRunSync()
+      page1.zones.head shouldBe testZones.head
+
+      val page2 = repo
+        .listZonesByAdminGroupIds(okUserAuth, page1.nextId, 1, Set(groupId), ignoreAccess = true)
+        .unsafeRunSync()
+      page2.zones.head shouldBe testZones.last
+
+      // delete the group created to test
+      groupRepository.delete(okGroup).unsafeRunSync()
+    }
+
     "get empty list when no matching admin group name is found while filtering zones by group name" in {
 
       executeWithinTransaction { db: DB =>
@@ -435,7 +487,7 @@ class MySqlZoneRepositoryIntegrationSpec
 
     "return an empty list of zones if the user is not authorized to any" in {
       val unauthorized = AuthPrincipal(
-        signedInUser = User("not-authorized", "not-authorized", "not-authorized"),
+        signedInUser = User("not-authorized", "not-authorized", Encrypted("not-authorized")),
         memberGroupIds = Seq.empty
       )
 
@@ -551,10 +603,53 @@ class MySqlZoneRepositoryIntegrationSpec
       f.unsafeRunSync().zones should contain theSameElementsAs expectedZones
     }
 
+    "apply the reverse zone filter as a super user" in {
+
+      val testZones = Seq(
+        testZone("system-test."),
+        testZone("system-test.ip6.arpa."),
+        testZone("system-temp.in-addr.arpa."),
+        testZone("nomatch.in-addr.arpa.")
+      )
+
+      val expectedZones = Seq(testZones(0))
+
+      val f =
+        for {
+          _ <- saveZones(testZones)
+          retrieved <- repo.listZones(superUserAuth, includeReverse = false)
+        } yield retrieved
+
+      f.unsafeRunSync().zones should contain theSameElementsAs expectedZones
+    }
+
+    "apply the zone filter and reverse zone filter as a super user" in {
+
+      val testZones = Seq(
+        testZone("system-test."),
+        testZone("system-temp.ip6.arpa."),
+        testZone("system-test.ip6.arpa."),
+        testZone("system-temp.in-addr.arpa."),
+        testZone("no-match.")
+      )
+
+      val expectedZones = Seq(testZones(0)).sortBy(_.name)
+
+      val auth = AuthPrincipal(dummyUser, Seq("foo"))
+
+      val f =
+        for {
+          _ <- saveZones(testZones)
+          retrieved <- repo.listZones(auth, zoneNameFilter = Some("system*"), includeReverse = false)
+        } yield retrieved
+
+      (f.unsafeRunSync().zones should contain).theSameElementsInOrderAs(expectedZones)
+    }
+
     "apply the zone filter as a normal user" in {
 
       val testZones = Seq(
-        testZone("system-test.", adminGroupId = "foo"),
+        testZone("system-test.ip6.arpa.", adminGroupId = "foo"),
         testZone("system-temp.", adminGroupId = "foo"),
         testZone("system-nomatch.", adminGroupId = "bar")
       )
@@ -588,6 +683,52 @@ class MySqlZoneRepositoryIntegrationSpec
         for {
           _ <- saveZones(testZones)
           retrieved <- repo.listZones(auth, zoneNameFilter = Some("SyStEm*"))
+        } yield retrieved
+
+      (f.unsafeRunSync().zones should contain).theSameElementsInOrderAs(expectedZones)
+    }
+
+    "apply the zone filter and reverse zone filter as a normal user" in {
+
+      val testZones = Seq(
+        testZone("system-test.ip6.arpa.", adminGroupId = "foo"),
+        testZone("system-temp.", adminGroupId = "foo"),
+        testZone("system-temp.in-addr.arpa.", adminGroupId = "foo"),
+        testZone("system-nomatch.", adminGroupId = "bar")
+      )
+
+      val expectedZones = Seq(testZones(1)).sortBy(_.name)
+
+      val auth = AuthPrincipal(dummyUser, Seq("foo"))
+
+      val f =
+        for {
+          _ <- saveZones(testZones)
+          retrieved <- repo.listZones(auth, zoneNameFilter = Some("system*"), includeReverse = false)
+        } yield retrieved
+
+      (f.unsafeRunSync().zones should contain).theSameElementsInOrderAs(expectedZones)
+    }
+
+    "apply the reverse zone filter as a normal user" in {
+
+      val testZones = Seq(
+        testZone("system-test.ip6.arpa.", adminGroupId = "foo"),
+        testZone("system-test.in-addr.arpa.", adminGroupId = "foo"),
+        testZone("system-temp.in-addr.arpa.", adminGroupId = "foo"),
+        testZone("system-match.", adminGroupId = "foo"),
+        testZone("system-nomatch.", adminGroupId = "bar"),
+        testZone("system-nomatch.in-addr.arpa.", adminGroupId = "bar")
+      )
+
+      val expectedZones = Seq(testZones(3)).sortBy(_.name)
+
+      val auth = AuthPrincipal(dummyUser, Seq("foo"))
+
+      val f =
+        for {
+          _ <- saveZones(testZones)
+          retrieved <- repo.listZones(auth, includeReverse = false)
         } yield retrieved
 
       (f.unsafeRunSync().zones should contain).theSameElementsInOrderAs(expectedZones)
@@ -811,12 +952,13 @@ class MySqlZoneRepositoryIntegrationSpec
     "check if an id has an ACL rule for at least one of the zones" in {
 
       val zoneId = UUID.randomUUID().toString
+      val adminId = UUID.randomUUID().toString
 
       val testZones = (1 until 3).map { num =>
         okZone.copy(
           name = num.toString + ".",
           id = zoneId,
-          adminGroupId = testZoneAdminGroupId,
+          adminGroupId = adminId,
           acl = testZoneAcl
         )
       }
@@ -824,7 +966,7 @@ class MySqlZoneRepositoryIntegrationSpec
       val f =
         for {
           _ <- saveZones(testZones)
-          zones <- repo.getFirstOwnedZoneAclGroupId(testZoneAdminGroupId)
+          zones <- repo.getFirstOwnedZoneAclGroupId(adminId)
         } yield zones
 
       f.unsafeRunSync() shouldBe Some(zoneId)
@@ -847,6 +989,22 @@ class MySqlZoneRepositoryIntegrationSpec
         } yield zones
 
       f.unsafeRunSync() shouldBe None
+    }
+
+    "return zones which have zone sync scheduled" in {
+      // okZone with recurrence schedule
+      repo.save(okZone).unsafeRunSync() shouldBe Right(okZone)
+      val updatedOkZone = okZone.copy(recurrenceSchedule = Some("0/5 0 0 ? * * *"))
+      repo.save(updatedOkZone).unsafeRunSync() shouldBe Right(updatedOkZone)
+      repo.getZoneByName(updatedOkZone.name).unsafeRunSync().get.recurrenceSchedule shouldBe Some("0/5 0 0 ? * * *")
+
+      // dummyZone without recurrence schedule
+      val dummyZone = okZone.copy(name = "dummy.", id = "5615c19c-cb00-4734-9acd-fbfdca0e6fce")
+      repo.save(dummyZone).unsafeRunSync() shouldBe Right(dummyZone)
+      repo.getZoneByName(dummyZone.name).unsafeRunSync().get.recurrenceSchedule shouldBe None
+
+      // Only get zone with recurrence schedule
+      repo.getAllZonesWithSyncSchedule.unsafeRunSync() shouldBe Set(updatedOkZone)
     }
   }
 }

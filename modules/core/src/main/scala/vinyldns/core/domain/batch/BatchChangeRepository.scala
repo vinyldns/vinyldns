@@ -18,6 +18,7 @@ package vinyldns.core.domain.batch
 
 import cats.effect.IO
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
+import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
 import vinyldns.core.repository.Repository
 
 // $COVERAGE-OFF$
@@ -29,8 +30,12 @@ trait BatchChangeRepository extends Repository {
 
   def getBatchChangeSummaries(
       userId: Option[String],
+      userName: Option[String] = None,
+      dateTimeStartRange: Option[String] = None,
+      dateTimeEndRange: Option[String] = None,
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
+      batchStatus: Option[BatchChangeStatus] = None,
       approvalStatus: Option[BatchChangeApprovalStatus] = None
   ): IO[BatchChangeSummaryList]
 

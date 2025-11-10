@@ -28,7 +28,7 @@ object ZoneChangeStatus extends Enumeration {
 
 object ZoneChangeType extends Enumeration {
   type ZoneChangeType = Value
-  val Create, Update, Delete, Sync = Value
+  val Create, Update, Delete, Sync, AutomatedSync = Value
 }
 
 import vinyldns.core.domain.zone.ZoneChangeStatus._

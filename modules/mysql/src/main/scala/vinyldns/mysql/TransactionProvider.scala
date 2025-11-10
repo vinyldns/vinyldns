@@ -19,7 +19,7 @@ package vinyldns.mysql
 import cats.effect.IO
 import org.slf4j.{Logger, LoggerFactory}
 import scalikejdbc.{ConnectionPool, DB}
-
+import java.io.{PrintWriter, StringWriter}
 import java.sql.SQLException
 import java.util.UUID
 
@@ -52,7 +52,9 @@ trait TransactionProvider {
           result
         } catch {
           case e: Throwable =>
-            logger.error(s"Encountered error executing function within a database transaction ($txId). Rolling back transaction.", e)
+            val errorMessage = new StringWriter
+            e.printStackTrace(new PrintWriter(errorMessage))
+            logger.error(s"Encountered error executing function within a database transaction ($txId). Rolling back transaction. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
             db.rollbackIfActive()
             throw e
         } finally {

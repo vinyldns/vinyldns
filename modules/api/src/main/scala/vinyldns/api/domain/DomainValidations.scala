@@ -27,6 +27,7 @@ import scala.util.matching.Regex
   Object to house common domain validations
  */
 object DomainValidations {
+
   val validReverseZoneFQDNRegex: Regex =
     """^(?:([0-9a-zA-Z\-\/_]{1,63}|[0-9a-zA-Z\-\/_]{1}[0-9a-zA-Z\-\/_]{0,61}[0-9a-zA-Z\-\/_]{1}|[*.]{2}[0-9a-zA-Z\-\/_]{0,60}[0-9a-zA-Z\-\/_]{1})\.)*$""".r
   val validForwardZoneFQDNRegex: Regex =
@@ -58,16 +59,23 @@ object DomainValidations {
   val TTL_MIN_LENGTH: Int = 30
   val TXT_TEXT_MIN_LENGTH: Int = 1
   val TXT_TEXT_MAX_LENGTH: Int = 64764
-  val MX_PREFERENCE_MIN_VALUE: Int = 0
-  val MX_PREFERENCE_MAX_VALUE: Int = 65535
+  val INTEGER_MIN_VALUE: Int = 0
+  val INTEGER_MAX_VALUE: Int = 65535
+
+  // Cname check - Cname should not be IP address
+  def validateCname(name: Fqdn, isReverse: Boolean): ValidatedNel[DomainValidationError, Fqdn] =
+    validateIpv4Address(name.fqdn.dropRight(1)).isValid match {
+      case true => InvalidIPv4CName(name.toString).invalidNel
+      case false => validateIsReverseCname(name, isReverse)
+    }
 
   def validateHostName(name: Fqdn): ValidatedNel[DomainValidationError, Fqdn] =
     validateHostName(name.fqdn).map(_ => name)
 
-  def validateCname(name: Fqdn, isReverse: Boolean): ValidatedNel[DomainValidationError, Fqdn] =
-      validateCname(name.fqdn, isReverse).map(_ => name)
+  def validateIsReverseCname(name: Fqdn, isReverse: Boolean): ValidatedNel[DomainValidationError, Fqdn] =
+    validateIsReverseCname(name.fqdn, isReverse).map(_ => name)
 
-  def validateCname(name: String, isReverse: Boolean): ValidatedNel[DomainValidationError, String] = {
+  def validateIsReverseCname(name: String, isReverse: Boolean): ValidatedNel[DomainValidationError, String] = {
     isReverse match {
       case true =>
         val checkRegex = validReverseZoneFQDNRegex
@@ -152,7 +160,15 @@ object DomainValidations {
   def validateTxtTextLength(value: String): ValidatedNel[DomainValidationError, String] =
     validateStringLength(value, Some(TXT_TEXT_MIN_LENGTH), TXT_TEXT_MAX_LENGTH)
 
-  def validateMxPreference(pref: Int): ValidatedNel[DomainValidationError, Int] =
-    if (pref >= MX_PREFERENCE_MIN_VALUE && pref <= MX_PREFERENCE_MAX_VALUE) pref.validNel
-    else InvalidMxPreference(pref, MX_PREFERENCE_MIN_VALUE, MX_PREFERENCE_MAX_VALUE).invalidNel[Int]
+  def validateMX_NAPTR_SRVData(number: Int, recordDataType: String, recordType: String): ValidatedNel[DomainValidationError, Int] =
+    if (number >= INTEGER_MIN_VALUE && number <= INTEGER_MAX_VALUE) number.validNel
+    else InvalidMX_NAPTR_SRVData(number, INTEGER_MIN_VALUE, INTEGER_MAX_VALUE, recordDataType, recordType).invalidNel[Int]
+
+  def validateNaptrFlag(value: String): ValidatedNel[DomainValidationError, String] =
+    if (value == "U" || value == "S" || value == "A" || value == "P") value.validNel
+    else InvalidNaptrFlag(value).invalidNel[String]
+
+  def validateNaptrRegexp(value: String): ValidatedNel[DomainValidationError, String] =
+    if ((value.startsWith("!") && value.endsWith("!")) || value == "") value.validNel
+    else InvalidNaptrRegexp(value).invalidNel[String]
 }

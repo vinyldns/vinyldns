@@ -12,7 +12,7 @@ The max number of batch changes that are returned from a single request has been
 
 #### HTTP REQUEST
 
-> GET zones/batchrecordchanges?startFrom={response.nextId}&maxItems={1-100}&ignoreAccess={true &#124; false}&approval_status={BatchChangeApprovalStatus}
+> GET zones/batchrecordchanges?startFrom={response.nextId}&maxItems={1-100}&ignoreAccess={true &#124; false}&approvalStatus={batchChangeApprovalStatus}&userName={submitterUserName}&dateTimeRangeStart={dateTimeRangeStart}&dateTimeRangeEnd={dateTimeRangeEnd}
 
 #### HTTP REQUEST PARAMS
 
@@ -22,6 +22,9 @@ startFrom     | int           | no          | In order to advance through pages 
 maxItems      | int           | no          | The number of items to return in the page. Valid values are 1 - 100.  Defaults to 100 if not provided. |
 ignoreAccess  | boolean       | no          | Flag determining whether to retrieve only batch changes made by calling user or to retrieve all changes. Only affects system administrators (ie. support and super users). Defaults to `false` if not provided. |
 approvalStatus| BatchChangeApprovalStatus| no | Filter batch changes based on approval status. Can be one of **AutoApproved**, **PendingReview**, **ManuallyApproved**, **Rejected**, or **Cancelled**. |
+userName      | string        | no          | Filter batch changes based on submitter user name |
+dateTimeRangeStart    | string        | no          | Start date time value to filter batch changes based on date time range |
+dateTimeRangeEnd      | string        | no          | End date time value to filter batch changes based on date time range |
 
 #### HTTP RESPONSE TYPES
 
@@ -42,6 +45,9 @@ nextId        | int         | `startFrom` parameter of next page request, will n
 maxItems      | integer     | `maxItems` sent in request, default is 100. |
 ignoreAccess  | boolean     | `ignoreAccess` sent in request, default is `false`. |
 approvalStatus | BatchChangeApprovalStatus | `approvalStatus` sent in request, will not be returned if not provided. |
+userName      | string      | `userName` sent in request, will not be returned if not provided. |
+dateTimeRangeStart | string | `dateTimeRangeStart` sent in request, will not be returned if not provided. |
+dateTimeRangeEnd   | string | `dateTimeRangeEnd` sent in request, will not be returned if not provided. |
 
 ##### BatchChangeSummary <a id="batchchangesummary-info" />
 

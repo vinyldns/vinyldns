@@ -20,7 +20,7 @@ recordNameFilter | string     | yes         | Characters that are part of the re
 recordTypeFilter | Array of RecordType | no | An array of record types to filter for listing record sets.  Refer to [recordset mode](recordset-model.html) for supported types.  Invalid record types will be ignored.  If left empty or no valid record types are provided, then all record types will be returned. |
 recordOwnerGroupFilter | string | no        | Owner group ID for record set. |
 nameSort      | string        | no          | Name sort order for record sets returned by list record set response.  Valid values are `ASC` (ascending; default) and `DESC` (descending). |
-startFrom     | *any*         | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
+startFrom     | string        | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
 maxItems      | integer       | no          | The number of items to return in the page.  Valid values are 1 to 100. Defaults to 100 if not provided. |
 
 #### HTTP RESPONSE TYPES
@@ -35,8 +35,8 @@ Code          | description |
 name          | type          | description |
  ------------ | ------------- | :---------- |
 recordSets    | Array of RecordSets | refer to [recordset model](recordset-model.html) |
-startFrom     | *any*         | startFrom sent in request, will not be returned if not provided |
-nextId        | *any*         | nextId, used as startFrom parameter of next page request, will not be returned if record sets are exhausted |
+startFrom     | string        | startFrom sent in request, will not be returned if not provided |
+nextId        | string        | nextId, used as startFrom parameter of next page request, will not be returned if record sets are exhausted |
 maxItems      | integer       | `maxItems` sent in request, default is 100 |
 recordNameFilter    | string  | name filter sent in request |
 recordTypeFilter    | Array of RecordType | record type filter sent in request |

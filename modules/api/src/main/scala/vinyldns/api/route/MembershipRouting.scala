@@ -49,6 +49,7 @@ class MembershipRoute(
     case InvalidGroupError(msg) => complete(StatusCodes.BadRequest, msg)
     case UserNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
     case InvalidGroupRequestError(msg) => complete(StatusCodes.BadRequest, msg)
+    case EmailValidationError(msg) => complete(StatusCodes.BadRequest, msg)
   }
 
   val membershipRoute: Route = path("groups" / Segment) { groupId =>
@@ -161,8 +162,8 @@ class MembershipRoute(
     } ~
     path("groups" / Segment / "activity") { groupId =>
       (get & monitor("Endpoint.groupActivity")) {
-        parameters("startFrom".?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
-          (startFrom: Option[String], maxItems: Int) =>
+        parameters("startFrom".as[Int].?, "maxItems".as[Int].?(DEFAULT_MAX_ITEMS)) {
+          (startFrom: Option[Int], maxItems: Int) =>
             handleRejections(invalidQueryHandler) {
               validate(
                 0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
@@ -186,6 +187,13 @@ class MembershipRoute(
         }
       }
     } ~
+    path("groups" / "valid" / "domains") {
+      (get & monitor("Endpoint.validdomains")) {
+        authenticateAndExecute(membershipService.listEmailDomains) { emailDomains =>
+          complete(StatusCodes.OK, emailDomains)
+        }
+      }
+    } ~
     path("users" / Segment / "lock") { id =>
       (put & monitor("Endpoint.lockUser")) {
         authenticateAndExecute(membershipService.updateUserLockStatus(id, LockStatus.Locked, _)) {
@@ -204,9 +212,9 @@ class MembershipRoute(
     } ~
     path("users" / Segment) { id =>
       (get & monitor("Endpoint.getUser")) {
-        authenticateAndExecute(membershipService.getUser(id, _)) {
+        authenticateAndExecute(membershipService.getUserDetails(id, _)) {
           user =>
-            complete(StatusCodes.OK, UserResponseInfo(user))
+            complete(StatusCodes.OK, user)
         }
       }
     }

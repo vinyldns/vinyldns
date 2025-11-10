@@ -510,6 +510,57 @@ def get_change_MX_json(input_name, ttl=200, preference=None, exchange=None, chan
     return json
 
 
+def get_change_NS_json(input_name, ttl=200, nsdname=None, change_type="Add"):
+    json = {
+        "changeType": change_type,
+        "inputName": input_name,
+        "type": "NS"
+    }
+    if change_type == "Add":
+        json["ttl"] = ttl
+        json["record"] = {
+            "nsdname": nsdname
+        }
+    return json
+
+
+def get_change_SRV_json(input_name, ttl=200, priority=None, weight=None, port=None, target=None, change_type="Add"):
+    json = {
+        "changeType": change_type,
+        "inputName": input_name,
+        "type": "SRV",
+    }
+    if change_type == "Add":
+        json["ttl"] = ttl
+        json["record"] = {
+            "priority": priority,
+            "weight": weight,
+            "port": port,
+            "target": target
+        }
+    return json
+
+
+def get_change_NAPTR_json(input_name, ttl=200, order=None, preference=None, flags=None, service=None, regexp=None, replacement=None, change_type="Add"):
+    json = {
+        "changeType": change_type,
+        "inputName": input_name,
+        "type": "NAPTR",
+
+    }
+    if change_type == "Add":
+        json["ttl"] = ttl
+        json["record"] = {
+            "order": order,
+            "preference": preference,
+            "flags": flags,
+            "service": service,
+            "regexp": regexp,
+            "replacement": replacement
+        }
+    return json
+
+
 def create_recordset(zone, rname, recordset_type, rdata_list, ttl=200, ownergroup_id=None):
     recordset_data = {
         "zoneId": zone["id"],

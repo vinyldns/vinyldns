@@ -27,6 +27,8 @@ trait AccessValidationsAlgebra {
 
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit]
 
+  def canSeeZoneChange(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit]
+
   def canChangeZone(
       auth: AuthPrincipal,
       zoneName: String,
@@ -47,6 +49,7 @@ trait AccessValidationsAlgebra {
       recordType: RecordType,
       zone: Zone,
       recordOwnerGroupId: Option[String],
+      superUserCanUpdateOwnerGroup: Boolean = false,
       newRecordData: List[RecordData] = List.empty
   ): Either[Throwable, Unit]
 

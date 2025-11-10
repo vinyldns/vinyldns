@@ -17,6 +17,24 @@
                     The email distribution list for the zone.  Typically the distribution email for the org that owns
                     the zone.
                 </span>
+                <div>
+                    <h5>
+                        <a data-toggle="collapse" data-target="#collapseConnectZoneInstruction" aria-expanded="false" aria-controls="collapseInstruction">
+                            <span class="badge" id="validDomainsConnectZone" ng-show="validEmailDomains && validEmailDomains.length>0">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
+                        </a>
+                    </h5>
+                </div>
+                <div class="collapse" id="collapseConnectZoneInstruction">
+                    <div class="well">
+                        <p>
+                            List Of Valid Email Domains:
+                        <li ng-repeat="validDomains in validEmailDomains">
+                            {{validDomains}}
+                        </li>
+                        </p>
+                        <hr/>
+                    </div>
+                </div>
             </modal-element>
             <modal-element label="Admin Group" invalid-when="addZoneConnectionForm.$submitted && addZoneConnectionForm.admingroup.$invalid">
                 <select id="zone-admin-group" name="admingroup" class="form-control" ng-model="currentZone.adminGroupId" required>

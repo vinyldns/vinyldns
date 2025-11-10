@@ -52,6 +52,8 @@ message Zone {
   optional string backendId = 15;
   optional bool allowDottedHosts = 16 [default = false];
   optional int32 allowDottedLimits = 17 [default = 0];
+  optional string recurrenceSchedule = 16;
+  optional string scheduleRequestor = 17;
 }
 
 message AData {
@@ -142,7 +144,13 @@ message RecordSet {
   repeated RecordData record = 9;
   required string account = 10;
   optional string ownerGroupId = 11;
-  optional string fqdn = 12;
+  optional ownerShipTransfer recordSetGroupChange = 12;
+  optional string fqdn = 13;
+}
+
+message ownerShipTransfer {
+ optional string requestedOwnerGroupId = 1;
+ optional string ownerShipTransferStatus = 2;
 }
 
 message RecordSetChange {

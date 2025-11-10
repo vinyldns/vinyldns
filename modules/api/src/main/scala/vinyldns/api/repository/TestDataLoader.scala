@@ -22,6 +22,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.slf4j.{Logger, LoggerFactory}
 import scalikejdbc.DB
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.zone._
 import vinyldns.mysql.TransactionProvider
@@ -39,7 +40,7 @@ object TestDataLoader extends TransactionProvider {
     id = "testuser",
     created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "testUserAccessKey",
-    secretKey = "testUserSecretKey",
+    secretKey = Encrypted("testUserSecretKey"),
     firstName = Some("Test"),
     lastName = Some("User"),
     email = Some("test@test.com"),
@@ -50,7 +51,7 @@ object TestDataLoader extends TransactionProvider {
     id = "ok",
     created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "okAccessKey",
-    secretKey = "okSecretKey",
+    secretKey = Encrypted("okSecretKey"),
     firstName = Some("ok"),
     lastName = Some("ok"),
     email = Some("test@test.com"),
@@ -61,7 +62,7 @@ object TestDataLoader extends TransactionProvider {
     id = "dummy",
     created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "dummyAccessKey",
-    secretKey = "dummySecretKey",
+    secretKey = Encrypted("dummySecretKey"),
     isTest = true
   )
   final val sharedZoneUser = User(
@@ -69,7 +70,7 @@ object TestDataLoader extends TransactionProvider {
     id = "sharedZoneUser",
     created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "sharedZoneUserAccessKey",
-    secretKey = "sharedZoneUserSecretKey",
+    secretKey = Encrypted("sharedZoneUserSecretKey"),
     firstName = Some("sharedZoneUser"),
     lastName = Some("sharedZoneUser"),
     email = Some("test@test.com"),
@@ -80,7 +81,7 @@ object TestDataLoader extends TransactionProvider {
     id = "locked",
     created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "lockedAccessKey",
-    secretKey = "lockedSecretKey",
+    secretKey = Encrypted("lockedSecretKey"),
     firstName = Some("Locked"),
     lastName = Some("User"),
     email = Some("testlocked@test.com"),
@@ -93,7 +94,7 @@ object TestDataLoader extends TransactionProvider {
       id = "dummy%03d".format(runner),
       created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
       accessKey = "dummy",
-      secretKey = "dummy",
+      secretKey = Encrypted("dummy"),
       isTest = true
     )
   }
@@ -102,7 +103,7 @@ object TestDataLoader extends TransactionProvider {
     id = "list-group-user",
     created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "listGroupAccessKey",
-    secretKey = "listGroupSecretKey",
+    secretKey = Encrypted("listGroupSecretKey"),
     firstName = Some("list-group"),
     lastName = Some("list-group"),
     email = Some("test@test.com"),
@@ -114,7 +115,7 @@ object TestDataLoader extends TransactionProvider {
     id = "list-zones-user",
     created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "listZonesAccessKey",
-    secretKey = "listZonesSecretKey",
+    secretKey = Encrypted("listZonesSecretKey"),
     firstName = Some("list-zones"),
     lastName = Some("list-zones"),
     email = Some("test@test.com"),
@@ -126,7 +127,7 @@ object TestDataLoader extends TransactionProvider {
     id = "history-id",
     created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "history-key",
-    secretKey = "history-secret",
+    secretKey = Encrypted("history-secret"),
     firstName = Some("history-first"),
     lastName = Some("history-last"),
     email = Some("history@history.com"),
@@ -138,7 +139,7 @@ object TestDataLoader extends TransactionProvider {
     id = "list-records-user",
     created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "listRecordsAccessKey",
-    secretKey = "listRecordsSecretKey",
+    secretKey = Encrypted("listRecordsSecretKey"),
     firstName = Some("list-records"),
     lastName = Some("list-records"),
     email = Some("test@test.com"),
@@ -150,7 +151,7 @@ object TestDataLoader extends TransactionProvider {
     id = "list-batch-summaries-id",
     created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "listBatchSummariesAccessKey",
-    secretKey = "listBatchSummariesSecretKey",
+    secretKey = Encrypted("listBatchSummariesSecretKey"),
     firstName = Some("list-batch-summaries"),
     lastName = Some("list-batch-summaries"),
     email = Some("test@test.com"),
@@ -170,7 +171,7 @@ object TestDataLoader extends TransactionProvider {
     id = "list-zero-summaries-id",
     created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "listZeroSummariesAccessKey",
-    secretKey = "listZeroSummariesSecretKey",
+    secretKey = Encrypted("listZeroSummariesSecretKey"),
     firstName = Some("list-zero-summaries"),
     lastName = Some("list-zero-summaries"),
     email = Some("test@test.com"),
@@ -182,7 +183,7 @@ object TestDataLoader extends TransactionProvider {
     id = "support-user-id",
     created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "supportUserAccessKey",
-    secretKey = "supportUserSecretKey",
+    secretKey = Encrypted("supportUserSecretKey"),
     firstName = Some("support-user"),
     lastName = Some("support-user"),
     email = Some("test@test.com"),
@@ -196,6 +197,7 @@ object TestDataLoader extends TransactionProvider {
     created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "superUserAccessKey",
     secretKey = "superUserSecretKey",
+    secretKey = Encrypted("superUserSecretKey"),
     firstName = Some("super-user"),
     lastName = Some("super-user"),
     email = Some("test@test.com"),
@@ -290,6 +292,8 @@ object TestDataLoader extends TransactionProvider {
       _ <- (testUser :: okUser :: dummyUser :: sharedZoneUser :: lockedUser :: listGroupUser :: listZonesUser ::
         listBatchChangeSummariesUser :: listZeroBatchChangeSummariesUser :: zoneHistoryUser :: supportUser :: superUser ::
         listRecordsUser :: listOfDummyUsers).map { user =>
+        listBatchChangeSummariesUser :: listZeroBatchChangeSummariesUser :: zoneHistoryUser :: supportUser ::
+        superUser :: listRecordsUser :: listOfDummyUsers).map { user =>
         userRepo.save(user)
       }.parSequence
       // if the test shared zones exist already, clean them out

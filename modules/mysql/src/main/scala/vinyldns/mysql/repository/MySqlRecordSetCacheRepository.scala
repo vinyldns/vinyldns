@@ -28,8 +28,8 @@ import vinyldns.core.domain.record.NameSort.{ASC, NameSort}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.mysql.repository.MySqlRecordSetRepository.{PagingKey, fromRecordType, toFQDN}
 import vinyldns.proto.VinylDNSProto
-
-import scala.util.{Try, Success, Failure}
+import java.io.{PrintWriter, StringWriter}
+import scala.util.{Failure, Success, Try}
 
 class MySqlRecordSetCacheRepository
   extends RecordSetCacheRepository
@@ -139,7 +139,9 @@ class MySqlRecordSetCacheRepository
         }
         logger.info(s"Deleted $numDeleted records from zone $zoneName (zone id: $zone_id)")
       }.handleErrorWith { error =>
-        logger.error(s"Failed deleting records from zone $zoneName (zone id: $zone_id)", error)
+        val errorMessage = new StringWriter
+        error.printStackTrace(new PrintWriter(errorMessage))
+        logger.error(s"Failed deleting records from zone $zoneName (zone id: $zone_id). Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}")
         IO.raiseError(error)
       }
     }
@@ -360,13 +362,16 @@ class MySqlRecordSetCacheRepository
         val recordsetDataJoin = sqls"RIGHT JOIN recordset ON recordset.id=recordset_data.recordset_id "
         val recordsetDataJoinQuery = initialQuery.append(recordsetDataJoin)
 
+        // Add GROUP BY clause to group by recordset_data.recordset_id and recordset_data.type
+        val groupByClause = sqls"GROUP BY recordset_data.recordset_id, recordset_data.type "
+
         val appendOpts = if (opts.nonEmpty) {
           val setDelimiter = SQLSyntax.join(opts, sqls"AND")
           val addWhere = sqls"WHERE"
           addWhere.append(setDelimiter)
         } else sqls""
 
-        val appendQueries = recordsetDataJoinQuery.append(appendOpts)
+        val appendQueries = recordsetDataJoinQuery.append(appendOpts).append(groupByClause)
 
         val finalQuery = appendQueries.append(finalQualifiers)
         DB.readOnly { implicit s =>
@@ -394,7 +399,8 @@ class MySqlRecordSetCacheRepository
             maxItems = maxItems,
             recordNameFilter = recordNameFilter,
             recordTypeFilter = recordTypeFilter,
-            nameSort = nameSort)
+            nameSort = nameSort,
+            recordTypeSort = RecordTypeSort.NONE)
         }
       }
     }

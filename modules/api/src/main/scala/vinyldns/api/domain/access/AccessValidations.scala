@@ -38,6 +38,13 @@ class AccessValidations(
         .isGroupMember(zone.adminGroupId) || userHasAclRules(auth, zone)
     )
 
+  def canSeeZoneChange(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
+    ensuring(
+      NotAuthorizedError(s"User ${auth.signedInUser.userName} cannot access zone '${zone.name}' changes")
+    )(
+      auth.isSystemAdmin || zone.shared || auth.isGroupMember(zone.adminGroupId)
+    )
+
   def canChangeZone(
       auth: AuthPrincipal,
       zoneName: String,
@@ -73,6 +80,7 @@ class AccessValidations(
       recordType: RecordType,
       zone: Zone,
       recordOwnerGroupId: Option[String],
+      superUserCanUpdateOwnerGroup: Boolean = false,
       newRecordData: List[RecordData] = List.empty
   ): Either[Throwable, Unit] = {
     val accessLevel =
@@ -82,7 +90,7 @@ class AccessValidations(
         s"User ${auth.signedInUser.userName} does not have access to update " +
           s"$recordName.${zone.name}"
       )
-    )(accessLevel == AccessLevel.Delete || accessLevel == AccessLevel.Write)
+    )(accessLevel == AccessLevel.Delete || accessLevel == AccessLevel.Write || superUserCanUpdateOwnerGroup)
   }
 
   def canDeleteRecordSet(
@@ -222,7 +230,9 @@ class AccessValidations(
       AccessLevel.Delete
     case support if support.isSystemAdmin =>
       val aclAccess = getAccessFromAcl(auth, recordName, recordType, zone)
-      if (aclAccess == AccessLevel.NoAccess) AccessLevel.Read else aclAccess
+      if (aclAccess == AccessLevel.NoAccess)
+        AccessLevel.Read
+      else aclAccess
     case globalAclUser
         if globalAcls.isAuthorized(globalAclUser, recordName, recordType, zone, recordData) =>
       AccessLevel.Delete

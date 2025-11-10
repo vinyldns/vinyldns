@@ -27,6 +27,7 @@ import vinyldns.core.domain.zone.{AccessLevel, Zone, ZoneCommandResult, ZoneRepo
 import vinyldns.core.queue.MessageQueue
 import cats.data._
 import cats.effect.IO
+import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS.ReverseMap
 import vinyldns.api.config.{DottedHostsConfig, HighValueDomainConfig, ZoneAuthConfigs}
 import vinyldns.api.domain.DomainValidations.{validateIpv4Address, validateIpv6Address}
@@ -35,6 +36,8 @@ import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
+import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
+import vinyldns.core.notifier.{AllNotifiers, Notification}
 
 import scala.util.matching.Regex
 
@@ -48,7 +51,8 @@ object RecordSetService {
              highValueDomainConfig: HighValueDomainConfig,
              dottedHostsConfig: DottedHostsConfig,
              approvedNameServers: List[Regex],
-             useRecordSetCache: Boolean
+             useRecordSetCache: Boolean,
+             notifiers: AllNotifiers
            ): RecordSetService =
     new RecordSetService(
       dataAccessor.zoneRepository,
@@ -64,7 +68,9 @@ object RecordSetService {
       highValueDomainConfig,
       dottedHostsConfig,
       approvedNameServers,
-      useRecordSetCache
+      useRecordSetCache,
+      notifiers
+
     )
 }
 
@@ -82,11 +88,17 @@ class RecordSetService(
                         highValueDomainConfig: HighValueDomainConfig,
                         dottedHostsConfig: DottedHostsConfig,
                         approvedNameServers: List[Regex],
-                        useRecordSetCache: Boolean
+                        useRecordSetCache: Boolean,
+                        notifiers: AllNotifiers
                       ) extends RecordSetServiceAlgebra {
 
   import RecordSetValidations._
   import accessValidation._
+
+  val logger: Logger = LoggerFactory.getLogger(classOf[RecordSetService])
+
+  val approverOwnerShipTransferStatus = List(OwnerShipTransferStatus.ManuallyApproved , OwnerShipTransferStatus.AutoApproved, OwnerShipTransferStatus.ManuallyRejected)
+  val requestorOwnerShipTransferStatus = List(OwnerShipTransferStatus.Cancelled , OwnerShipTransferStatus.Requested, OwnerShipTransferStatus.PendingReview)
 
   def addRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
@@ -145,13 +157,31 @@ class RecordSetService(
       _ <- unchangedRecordName(existing, recordSet, zone).toResult
       _ <- unchangedRecordType(existing, recordSet).toResult
       _ <- unchangedZoneId(existing, recordSet).toResult
+      _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
+        && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None")))
+        unchangedRecordSet(existing, recordSet).toResult else ().toResult
+      _ <- if(existing.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") == OwnerShipTransferStatus.Cancelled
+        && !auth.isSuper) {
+        recordSetOwnerShipApproveStatus(recordSet).toResult
+      } else ().toResult
+      _ = logger.info(s"updated recordsetgroupchange: ${recordSet.recordSetGroupChange}")
+      _ = logger.info(s"existing recordsetgroupchange: ${existing.recordSetGroupChange}")
+      recordSet <- updateRecordSetGroupChangeStatus(recordSet, existing, zone)
       change <- RecordSetChangeGenerator.forUpdate(existing, recordSet, zone, Some(auth)).toResult
       // because changes happen to the RS in forUpdate itself, converting 1st and validating on that
       rsForValidations = change.recordSet
+      superUserCanUpdateOwnerGroup = canSuperUserUpdateOwnerGroup(existing, recordSet, zone, auth)
       _ <- isNotHighValueDomain(recordSet, zone, highValueDomainConfig).toResult
-      _ <- canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
+      _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
+        && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None"))) ().toResult
+      else canUpdateRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId, superUserCanUpdateOwnerGroup).toResult
       ownerGroup <- getGroupIfProvided(rsForValidations.ownerGroupId)
-      _ <- canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
+      _ <- if(requestorOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
+        && !auth.isSuper && !auth.isGroupMember(existing.ownerGroupId.getOrElse("None")))
+        canUseOwnerGroup(rsForValidations.recordSetGroupChange.map(_.requestedOwnerGroupId).get, ownerGroup, auth).toResult
+      else if(approverOwnerShipTransferStatus.contains(recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>"))
+        && !auth.isSuper) canUseOwnerGroup(existing.ownerGroupId, ownerGroup, auth).toResult
+      else canUseOwnerGroup(rsForValidations.ownerGroupId, ownerGroup, auth).toResult
       _ <- notPending(existing).toResult
       existingRecordsWithName <- recordSetRepository
         .getRecordSetsByName(zone.id, rsForValidations.name)
@@ -187,6 +217,11 @@ class RecordSetService(
       _ <- if(existing.name == rsForValidations.name) ().toResult else if(allowedZoneList.contains(zone.name) || isAllowed== true) checkAllowedDots(allowedDotsLimit, rsForValidations, zone).toResult else ().toResult
       _ <- if(allowedZoneList.contains(zone.name)) isNotApexEndsWithDot(rsForValidations, zone).toResult else ().toResult
       _ <- messageQueue.send(change).toResult[Unit]
+      _ <- if(recordSet.recordSetGroupChange != None &&
+        recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") != OwnerShipTransferStatus.None &&
+        recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") != OwnerShipTransferStatus.AutoApproved)
+        notifiers.notify(Notification(change)).toResult
+      else ().toResult
     } yield change
 
   def deleteRecordSet(
@@ -204,6 +239,65 @@ class RecordSetService(
       change <- RecordSetChangeGenerator.forDelete(existing, zone, Some(auth)).toResult
       _ <- messageQueue.send(change).toResult[Unit]
     } yield change
+
+  //update ownership transfer is zone is shared
+  def updateRecordSetGroupChangeStatus(recordSet: RecordSet, existing: RecordSet, zone: Zone): Result[RecordSet] = {
+    val existingOwnerShipTransfer = existing.recordSetGroupChange.getOrElse(OwnerShipTransfer.apply(OwnerShipTransferStatus.None, Some("none")))
+    val ownerShipTransfer = recordSet.recordSetGroupChange.getOrElse(OwnerShipTransfer.apply(OwnerShipTransferStatus.None, Some("none")))
+    if (recordSet.recordSetGroupChange != None &&
+      ownerShipTransfer.ownerShipTransferStatus != OwnerShipTransferStatus.None)
+      if (zone.shared){
+        if (approverOwnerShipTransferStatus.contains(ownerShipTransfer.ownerShipTransferStatus)) {
+          val recordSetOwnerApproval =
+            ownerShipTransfer.ownerShipTransferStatus match {
+              case OwnerShipTransferStatus.ManuallyApproved =>
+                recordSet.copy(ownerGroupId = existingOwnerShipTransfer.requestedOwnerGroupId,
+                  recordSetGroupChange = Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyApproved,
+                    requestedOwnerGroupId = existingOwnerShipTransfer.requestedOwnerGroupId)))
+              case OwnerShipTransferStatus.ManuallyRejected =>
+                recordSet.copy(
+                  recordSetGroupChange = Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyRejected,
+                    requestedOwnerGroupId = existingOwnerShipTransfer.requestedOwnerGroupId)))
+              case OwnerShipTransferStatus.AutoApproved =>
+                recordSet.copy(
+                  ownerGroupId = ownerShipTransfer.requestedOwnerGroupId,
+                  recordSetGroupChange = Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.AutoApproved,
+                    requestedOwnerGroupId = ownerShipTransfer.requestedOwnerGroupId)))
+
+              case _ => recordSet.copy(
+                recordSetGroupChange = Some(ownerShipTransfer.copy(
+                  ownerShipTransferStatus = OwnerShipTransferStatus.None,
+                  requestedOwnerGroupId = Some("null"))))
+            }
+          for {
+            recordSet <- recordSetOwnerApproval.toResult
+          } yield recordSet
+        }
+        else {
+          val recordSetOwnerRequest =
+            ownerShipTransfer.ownerShipTransferStatus match {
+              case OwnerShipTransferStatus.Cancelled =>
+                recordSet.copy(recordSetGroupChange = Some(ownerShipTransfer.copy(
+                  ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,
+                  requestedOwnerGroupId = existingOwnerShipTransfer.requestedOwnerGroupId)))
+              case OwnerShipTransferStatus.Requested | OwnerShipTransferStatus.PendingReview => recordSet.copy(
+                recordSetGroupChange = Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview)))
+            }
+          for {
+            recordSet <- recordSetOwnerRequest.toResult
+          } yield recordSet
+        }
+      } else for {
+        _ <- unchangedRecordSetOwnershipStatus(recordSet, existing).toResult
+      } yield recordSet.copy(
+        recordSetGroupChange = Some(ownerShipTransfer.copy(
+          ownerShipTransferStatus = OwnerShipTransferStatus.None,
+          requestedOwnerGroupId = Some("null"))))
+    else recordSet.copy(
+      recordSetGroupChange = Some(ownerShipTransfer.copy(
+        ownerShipTransferStatus = OwnerShipTransferStatus.None,
+        requestedOwnerGroupId = Some("null")))).toResult
+  }
 
   // For dotted hosts. Check if a record that may conflict with dotted host exist or not
   def recordFQDNDoesNotExist(newRecordSet: RecordSet, zone: Zone): IO[Boolean] = {
@@ -386,6 +480,14 @@ class RecordSetService(
       groupName <- getGroupName(recordSet.ownerGroupId)
     } yield RecordSetInfo(recordSet, groupName)
 
+  def getRecordSetCount(zoneId: String, authPrincipal: AuthPrincipal): Result[RecordSetCount] = {
+    for {
+      zone <- getZone(zoneId)
+      _ <- canSeeZone(authPrincipal, zone).toResult
+      count  <- recordSetRepository.getRecordSetCount(zoneId).toResult
+    } yield RecordSetCount(count)
+  }
+
   def getRecordSetByZone(
                           recordSetId: String,
                           zoneId: String,
@@ -411,7 +513,8 @@ class RecordSetService(
                       recordTypeFilter: Option[Set[RecordType]],
                       recordOwnerGroupFilter: Option[String],
                       nameSort: NameSort,
-                      authPrincipal: AuthPrincipal
+                      authPrincipal: AuthPrincipal,
+                      recordTypeSort: RecordTypeSort
                     ): Result[ListGlobalRecordSetsResponse] =
     for {
       _ <- validRecordNameFilterLength(recordNameFilter).toResult
@@ -424,7 +527,8 @@ class RecordSetService(
           Some(formattedRecordNameFilter),
           recordTypeFilter,
           recordOwnerGroupFilter,
-          nameSort
+          nameSort,
+          recordTypeSort
         )
         .toResult[ListRecordSetResults]
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
@@ -462,7 +566,8 @@ class RecordSetService(
                         recordTypeFilter: Option[Set[RecordType]],
                         recordOwnerGroupFilter: Option[String],
                         nameSort: NameSort,
-                        authPrincipal: AuthPrincipal
+                        authPrincipal: AuthPrincipal,
+                        recordTypeSort: RecordTypeSort
                       ): Result[ListGlobalRecordSetsResponse] = {
     for {
       _ <- validRecordNameFilterLength(recordNameFilter).toResult
@@ -487,7 +592,8 @@ class RecordSetService(
           Some(formattedRecordNameFilter),
           recordTypeFilter,
           recordOwnerGroupFilter,
-          nameSort
+          nameSort,
+          recordTypeSort
         ).toResult[ListRecordSetResults]
       }
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
@@ -515,7 +621,8 @@ class RecordSetService(
                             recordTypeFilter: Option[Set[RecordType]],
                             recordOwnerGroupFilter: Option[String],
                             nameSort: NameSort,
-                            authPrincipal: AuthPrincipal
+                            authPrincipal: AuthPrincipal,
+                            recordTypeSort: RecordTypeSort
                           ): Result[ListRecordSetsByZoneResponse] =
     for {
       zone <- getZone(zoneId)
@@ -528,7 +635,8 @@ class RecordSetService(
           recordNameFilter,
           recordTypeFilter,
           recordOwnerGroupFilter,
-          nameSort
+          nameSort,
+          recordTypeSort
         )
         .toResult[ListRecordSetResults]
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
@@ -543,7 +651,8 @@ class RecordSetService(
       recordSetResults.recordNameFilter,
       recordSetResults.recordTypeFilter,
       recordSetResults.recordOwnerGroupFilter,
-      recordSetResults.nameSort
+      recordSetResults.nameSort,
+      recordSetResults.recordTypeSort
     )
 
   def getRecordSetChange(
@@ -572,18 +681,61 @@ class RecordSetService(
 
   def listRecordSetChanges(
                             zoneId: String,
-                            startFrom: Option[String] = None,
+                            startFrom: Option[Int] = None,
                             maxItems: Int = 100,
                             authPrincipal: AuthPrincipal
                           ): Result[ListRecordSetChangesResponse] =
+      for {
+        zone <- getZone(zoneId)
+        _ <- canSeeZone(authPrincipal, zone).toResult
+        recordSetChangesResults <- recordChangeRepository
+          .listRecordSetChanges(Some(zone.id), startFrom, maxItems, None, None)
+          .toResult[ListRecordSetChangesResults]
+        recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
+      } yield ListRecordSetChangesResponse(zoneId, recordSetChangesResults, recordSetChangesInfo)
+
+  def listRecordSetChangeHistory(
+                            zoneId: Option[String] = None,
+                            startFrom: Option[Int] = None,
+                            maxItems: Int = 100,
+                            fqdn: Option[String] = None,
+                            recordType: Option[RecordType] = None,
+                            authPrincipal: AuthPrincipal
+                          ): Result[ListRecordSetHistoryResponse] =
     for {
-      zone <- getZone(zoneId)
+      zone <- getZone(zoneId.get)
       _ <- canSeeZone(authPrincipal, zone).toResult
       recordSetChangesResults <- recordChangeRepository
-        .listRecordSetChanges(zone.id, startFrom, maxItems)
+        .listRecordSetChanges(zoneId, startFrom, maxItems, fqdn, recordType)
         .toResult[ListRecordSetChangesResults]
       recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
-    } yield ListRecordSetChangesResponse(zoneId, recordSetChangesResults, recordSetChangesInfo)
+    } yield ListRecordSetHistoryResponse(zoneId, recordSetChangesResults, recordSetChangesInfo)
+
+  def listFailedRecordSetChanges(
+                                  authPrincipal: AuthPrincipal,
+                                  zoneId: Option[String] = None,
+                                  startFrom: Int= 0,
+                                  maxItems: Int = 100
+                                ): Result[ListFailedRecordSetChangesResponse] =
+    for {
+      recordSetChangesFailedResults <- recordChangeRepository
+        .listFailedRecordSetChanges(zoneId, maxItems, startFrom)
+        .toResult[ListFailedRecordSetChangesResults]
+      _ <- zoneAccess(recordSetChangesFailedResults.items, authPrincipal).toResult
+    } yield
+      ListFailedRecordSetChangesResponse(
+        recordSetChangesFailedResults.items,
+        recordSetChangesFailedResults.nextId,
+        startFrom,
+        maxItems)
+
+  def zoneAccess(
+                  RecordSetCh: List[RecordSetChange],
+                  auth: AuthPrincipal
+                ): List[Result[Unit]] =
+    RecordSetCh.map { zn =>
+      canSeeZone(auth, zn.zone).toResult
+    }
 
   def getZone(zoneId: String): Result[Zone] =
     zoneRepository

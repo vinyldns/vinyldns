@@ -16,7 +16,6 @@
 
 package vinyldns.api.domain.batch
 
-import java.net.InetAddress
 import java.util.UUID
 
 import vinyldns.api.domain.ReverseZoneHelpers
@@ -24,13 +23,13 @@ import vinyldns.api.domain.batch.BatchChangeInterfaces.ValidatedBatch
 import vinyldns.api.domain.batch.BatchTransformations.LogicalChangeType.LogicalChangeType
 import vinyldns.api.backend.dns.DnsConversions.getIPv6FullReverseName
 import vinyldns.core.domain.batch._
-import vinyldns.core.domain.record.{AAAAData, RecordData, RecordSet, RecordSetChange}
+import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.domain.record.RecordType.RecordType
 
 object SupportedBatchChangeRecordTypes {
-  val supportedTypes = Set(A, AAAA, CNAME, PTR, TXT, MX)
+  val supportedTypes = Set(A, AAAA, CNAME, PTR, TXT, MX, NS, SRV, NAPTR)
   def get: Set[RecordType] = supportedTypes
 }
 
@@ -82,6 +81,7 @@ object BatchTransformations {
     val recordKey = RecordKey(zone.id, recordName, inputChange.typ)
     def asStoredChange(changeId: Option[String] = None): SingleChange
     def isAddChangeForValidation: Boolean
+    def withUpdatedInputChange(inputChange: ChangeInput): ChangeForValidation
   }
 
   object ChangeForValidation {
@@ -118,7 +118,7 @@ object BatchTransformations {
         ttl,
         inputChange.record,
         SingleChangeStatus.Pending,
-        None,
+        inputChange.systemMessage,
         None,
         None,
         List.empty,
@@ -127,6 +127,10 @@ object BatchTransformations {
     }
 
     def isAddChangeForValidation: Boolean = true
+
+    def withUpdatedInputChange(inputChange: ChangeInput): ChangeForValidation = {
+      this.copy(inputChange = inputChange.asInstanceOf[AddChangeInput])
+    }
   }
 
   final case class DeleteRRSetChangeForValidation(
@@ -143,7 +147,7 @@ object BatchTransformations {
         inputChange.typ,
         inputChange.record,
         SingleChangeStatus.Pending,
-        None,
+        inputChange.systemMessage,
         None,
         None,
         List.empty,
@@ -151,6 +155,10 @@ object BatchTransformations {
       )
 
     def isAddChangeForValidation: Boolean = false
+
+    def withUpdatedInputChange(inputChange: ChangeInput): ChangeForValidation = {
+      this.copy(inputChange = inputChange.asInstanceOf[DeleteRRSetChangeInput])
+    }
   }
 
   final case class BatchConversionOutput(
@@ -180,6 +188,9 @@ object BatchTransformations {
     def getProposedAdds(recordKey: RecordKey): Set[RecordData] =
       innerMap.get(recordKey).map(_.proposedAdds).toSet.flatten
 
+    def getProposedDeletes(recordKey: RecordKey): Set[RecordData] =
+      innerMap.get(recordKey).map(_.proposedDeletes).toSet.flatten
+
     // The new, net record data factoring in existing records, deletes and adds
     // If record is not edited in batch, will fallback to look up record in existing
     // records
@@ -194,13 +205,6 @@ object BatchTransformations {
   }
 
   object ValidationChanges {
-    def matchRecordData(existingRecord: RecordData, recordData: String): Boolean =
-      existingRecord match {
-        case AAAAData(address) =>
-          InetAddress.getByName(address).getHostName ==
-            InetAddress.getByName(recordData).getHostName
-        case _ => false
-      }
 
     def apply(
         changes: List[ChangeForValidation],
@@ -220,16 +224,11 @@ object BatchTransformations {
           case DeleteRRSetChangeForValidation(
               _,
               _,
-              DeleteRRSetChangeInput(_, AAAA, Some(AAAAData(address)))
-              ) =>
-            existingRecords.filter(r => matchRecordData(r, address))
-          case DeleteRRSetChangeForValidation(
-              _,
-              _,
-              DeleteRRSetChangeInput(_, _, Some(recordData))
+              DeleteRRSetChangeInput(_, _, _, Some(recordData))
               ) =>
             Set(recordData)
-          case _: DeleteRRSetChangeForValidation => existingRecords
+          case _: DeleteRRSetChangeForValidation =>
+            existingRecords
         }
         .toSet
         .flatten
@@ -237,26 +236,45 @@ object BatchTransformations {
       // New proposed record data (assuming all validations pass)
       val proposedRecordData = existingRecords -- deleteChangeSet ++ addChangeRecordDataSet
 
-      // Note: "Update" where an Add and DeleteRecordSet is provided for a DNS record that does not exist will be
-      // treated as a logical Add since the delete validation will fail (on record does not exist)
       val logicalChangeType = (addChangeRecordDataSet.nonEmpty, deleteChangeSet.nonEmpty) match {
-        case (true, true) => LogicalChangeType.Update
-        case (true, false) => LogicalChangeType.Add
-        case (false, true) =>
-          if ((existingRecords -- deleteChangeSet).isEmpty) {
-            LogicalChangeType.FullDelete
+        case (true, true) =>
+          if (existingRecords.isEmpty) {
+            // Note: "Add" where an Add and DeleteRecordSet is provided for a DNS record that does not exist.
+            // Adds the record if it doesn't exist and ignores the delete.
+            LogicalChangeType.Add
           } else {
+            // Note: "Update" where an Add and DeleteRecordSet is provided for a DNS record that exist, but record data for DeleteRecordSet does not exist.
+            // Updates the record and ignores the delete.
             LogicalChangeType.Update
           }
-        case (false, false) => LogicalChangeType.NotEditedInBatch
+        case (true, false) => LogicalChangeType.Add
+        case (false, true) =>
+          if (existingRecords == deleteChangeSet) {
+            LogicalChangeType.FullDelete
+          } else if (existingRecords.nonEmpty) {
+            LogicalChangeType.Update
+          } else {
+            LogicalChangeType.OutOfSync
+          }
+        case (false, false) =>
+          if(changes.exists {
+            case _: DeleteRRSetChangeForValidation => true
+            case _ => false
+            }
+          ){
+            LogicalChangeType.OutOfSync
+          } else {
+            LogicalChangeType.NotEditedInBatch
+          }
       }
 
-      new ValidationChanges(addChangeRecordDataSet, proposedRecordData, logicalChangeType)
+      new ValidationChanges(addChangeRecordDataSet, deleteChangeSet, proposedRecordData, logicalChangeType)
     }
   }
 
   final case class ValidationChanges(
       proposedAdds: Set[RecordData],
+      proposedDeletes: Set[RecordData],
       proposedRecordData: Set[RecordData],
       logicalChangeType: LogicalChangeType
   )
@@ -269,6 +287,6 @@ object BatchTransformations {
 
   object LogicalChangeType extends Enumeration {
     type LogicalChangeType = Value
-    val Add, FullDelete, Update, NotEditedInBatch = Value
+    val Add, FullDelete, Update, NotEditedInBatch, OutOfSync = Value
   }
 }

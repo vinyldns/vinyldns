@@ -16,13 +16,9 @@
 
 package vinyldns.route53.backend
 
+import java.util.UUID
 import cats.data.OptionT
 import cats.effect.IO
-import com.amazonaws.auth.{
-  AWSStaticCredentialsProvider,
-  BasicAWSCredentials,
-  DefaultAWSCredentialsProviderChain
-}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.handlers.AsyncHandler
 import com.amazonaws.services.route53.{AmazonRoute53Async, AmazonRoute53AsyncClientBuilder}
@@ -83,7 +79,7 @@ class Route53Backend(
         val found = result.getHostedZones.asScala.toList.headOption.map { hz =>
           val hzid = parseHostedZoneId(hz.getId)
 
-          // adds the hozted zone name and id to our cache if not present
+          // adds the hosted zone name and id to our cache if not present
           zoneMap.putIfAbsent(hz.getName, hzid)
           hzid
         }
@@ -106,10 +102,17 @@ class Route53Backend(
     * @return A list of record sets matching the name, empty if not found
     */
   def resolve(name: String, zoneName: String, typ: RecordType): IO[List[RecordSet]] = {
+    val fqdn = Fqdn.merge(name, zoneName).fqdn
+    def filterResourceRecordSet(
+        rrs: java.util.List[ResourceRecordSet],
+        rrType: RRType
+    ): java.util.List[ResourceRecordSet] =
+      rrs.asScala.filter { r =>
+        r.getName == fqdn && RRType.fromValue(r.getType) == rrType
+      }.asJava
     for {
       hostedZoneId <- lookupHostedZone(zoneName)
       awsRRType <- OptionT.fromOption[IO](toRoute53RecordType(typ))
-      fqdn = Fqdn.merge(name, zoneName).fqdn
       result <- OptionT.liftF {
         r53(
           new ListResourceRecordSetsRequest()
@@ -119,7 +122,10 @@ class Route53Backend(
           client.listResourceRecordSetsAsync
         )
       }
-    } yield toVinylRecordSets(result.getResourceRecordSets, zoneName: String)
+    } yield toVinylRecordSets(
+      filterResourceRecordSet(result.getResourceRecordSets, awsRRType),
+      zoneName: String
+    )
   }.getOrElse(Nil)
 
   /**
@@ -278,21 +284,23 @@ object Route53Backend {
       r53ClientBuilder.withEndpointConfiguration(
         new EndpointConfiguration(config.serviceEndpoint, config.signingRegion)
       )
-      // If either of accessKey or secretKey are empty in conf file; then use AWSCredentialsProviderChain to figure out
-      // credentials.
-      // https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/auth/DefaultAWSCredentialsProviderChain.html
-      val credProvider = config.accessKey
-        .zip(config.secretKey)
-        .map {
-          case (key, secret) =>
-            new AWSStaticCredentialsProvider(
-              new BasicAWSCredentials(key, secret)
-            )
+
+      val r53CredBuilder = Route53Credentials.builder
+      for {
+        accessKey <- config.accessKey
+        secretKey <- config.secretKey
+      } r53CredBuilder.basicCredentials(accessKey, secretKey)
+
+      for (role <- config.roleArn) {
+        config.externalId match {
+          case Some(externalId) =>
+            r53CredBuilder.withRole(role, UUID.randomUUID().toString, externalId)
+          case None => r53CredBuilder.withRole(role, UUID.randomUUID().toString)
         }
-        .headOption
-        .getOrElse {
-          new DefaultAWSCredentialsProviderChain()
-        }
+      }
+
+      val credProvider = r53CredBuilder.build().provider
+
       r53ClientBuilder.withCredentials(credProvider).build()
     }
 

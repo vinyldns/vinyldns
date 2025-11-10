@@ -16,7 +16,6 @@
 
 package vinyldns.api.domain.batch
 
-import java.net.InetAddress
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import cats.data._
@@ -27,11 +26,16 @@ import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
+import vinyldns.api.domain.zone.ZoneRecordValidations.isStringInRegexList
 import vinyldns.api.domain.zone.ZoneRecordValidations
+import vinyldns.core.Messages.{nonExistentRecordDataDeleteMessage, nonExistentRecordDeleteMessage}
+import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record._
 import vinyldns.core.domain._
 import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, OwnerType, RecordKey, RecordKeyData}
 import vinyldns.core.domain.membership.Group
+import vinyldns.core.domain.zone.Zone
+import scala.util.matching.Regex
 
 trait BatchChangeValidationsAlgebra {
 
@@ -81,7 +85,8 @@ class BatchChangeValidations(
     highValueDomainConfig: HighValueDomainConfig,
     manualReviewConfig: ManualReviewConfig,
     batchChangeConfig: BatchChangeConfig,
-    scheduledChangesConfig: ScheduledChangesConfig
+    scheduledChangesConfig: ScheduledChangesConfig,
+    approvedNameServers: List[Regex]
 ) extends BatchChangeValidationsAlgebra {
 
   import RecordType._
@@ -214,8 +219,8 @@ class BatchChangeValidations(
   }
 
   def validateDeleteRRSetChangeInput(
-      deleteRRSetChangeInput: DeleteRRSetChangeInput,
-      isApproved: Boolean
+    deleteRRSetChangeInput: DeleteRRSetChangeInput,
+    isApproved: Boolean
   ): SingleValidation[Unit] = {
     val validRecord = deleteRRSetChangeInput.record match {
       case Some(recordData) => validateRecordData(recordData, deleteRRSetChangeInput)
@@ -241,14 +246,17 @@ class BatchChangeValidations(
       case ptr: PTRData => validateHostName(ptr.ptrdname).asUnit
       case txt: TXTData => validateTxtTextLength(txt.text).asUnit
       case mx: MXData =>
-        validateMxPreference(mx.preference).asUnit |+| validateHostName(mx.exchange).asUnit
+        validateMX_NAPTR_SRVData(mx.preference, "preference", "MX").asUnit |+| validateHostName(mx.exchange).asUnit
+      case ns: NSData => validateHostName(ns.nsdname).asUnit
+      case naptr: NAPTRData => validateMX_NAPTR_SRVData(naptr.preference, "preference", "NAPTR").asUnit |+| validateMX_NAPTR_SRVData(naptr.order, "order", "NAPTR").asUnit |+| validateHostName(naptr.replacement).asUnit |+| validateNaptrFlag(naptr.flags).asUnit |+| validateNaptrRegexp(naptr.regexp).asUnit
+      case srv: SRVData => validateMX_NAPTR_SRVData(srv.priority, "priority", "SRV").asUnit |+| validateMX_NAPTR_SRVData(srv.port, "port", "SRV").asUnit |+| validateMX_NAPTR_SRVData(srv.weight, "weight", "SRV").asUnit |+| validateHostName(srv.target).asUnit
       case other =>
         InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel[Unit]
     }
 
   def validateInputName(change: ChangeInput, isApproved: Boolean): SingleValidation[Unit] = {
     val typedChecks = change.typ match {
-      case A | AAAA | MX =>
+      case A | AAAA | MX | NS | NAPTR | SRV =>
         validateHostName(change.inputName).asUnit |+| notInReverseZone(change)
       case CNAME | TXT =>
         validateHostName(change.inputName).asUnit
@@ -307,35 +315,34 @@ class BatchChangeValidations(
     else
       ().validNel
 
-  def matchRecordData(existingRecordSetData: List[RecordData], recordData: RecordData): Boolean =
-    existingRecordSetData.exists { rd =>
-      (rd, recordData) match {
-        case (AAAAData(rdAddress), AAAAData(proposedAddress)) =>
-          InetAddress.getByName(proposedAddress).getHostName == InetAddress
-            .getByName(rdAddress)
-            .getHostName
-        case _ => rd == recordData
-      }
+  def matchRecordData(existingRecordSetData: List[RecordData], recordData: RecordData): Boolean = {
+    existingRecordSetData.par.exists { rd =>
+      rd == recordData
     }
+  }
 
   def ensureRecordExists(
-      change: ChangeForValidation,
-      groupedChanges: ChangeForValidationMap
-  ): SingleValidation[Unit] =
+    change: ChangeForValidation,
+    groupedChanges: ChangeForValidationMap
+  ): Boolean = {
     change match {
       // For DeleteRecord inputs, need to verify that the record data actually exists
-      case DeleteRRSetChangeForValidation(
-          _,
-          _,
-          DeleteRRSetChangeInput(inputName, _, Some(recordData))
-          )
-          if !groupedChanges
-            .getExistingRecordSet(change.recordKey)
-            .exists(rs => matchRecordData(rs.records, recordData)) =>
-        DeleteRecordDataDoesNotExist(inputName, recordData).invalidNel
+      case DeleteRRSetChangeForValidation(_, _, DeleteRRSetChangeInput(_, _, _, Some(recordData)))
+        if !groupedChanges
+          .getExistingRecordSet(change.recordKey)
+          .exists(rs => matchRecordData(rs.records, recordData)) =>
+        false
       case _ =>
-        ().validNel
+        true
     }
+  }
+
+  def updateSystemMessage(changeInput: ChangeInput, systemMessage: String): ChangeInput = {
+    changeInput match {
+      case dci: DeleteRRSetChangeInput => dci.copy(systemMessage = Some(systemMessage))
+      case _ => changeInput
+    }
+  }
 
   def validateDeleteWithContext(
       change: ChangeForValidation,
@@ -344,15 +351,34 @@ class BatchChangeValidations(
       isApproved: Boolean
   ): SingleValidation[ChangeForValidation] = {
 
-    val validations =
-      groupedChanges.getExistingRecordSet(change.recordKey) match {
-        case Some(rs) =>
-          userCanDeleteRecordSet(change, auth, rs.ownerGroupId, rs.records) |+|
-            zoneDoesNotRequireManualReview(change, isApproved) |+|
-            ensureRecordExists(change, groupedChanges)
-        case None => RecordDoesNotExist(change.inputChange.inputName).validNel
-      }
-    validations.map(_ => change)
+    val recordData = change match {
+      case AddChangeForValidation(_, _, inputChange, _, _) => inputChange.record.toString
+      case DeleteRRSetChangeForValidation(_, _, inputChange) => inputChange.record.map(_.toString).getOrElse("")
+    }
+
+    val addInBatch = groupedChanges.getProposedAdds(change.recordKey)
+    val isSameRecordUpdateInBatch = recordData.nonEmpty && addInBatch.contains(RecordData.fromString(recordData, change.inputChange.typ).get)
+
+    // Perform the system message update based on the condition
+    val updatedChange = if (groupedChanges.getExistingRecordSet(change.recordKey).isEmpty && !isSameRecordUpdateInBatch) {
+      val updatedChangeInput = updateSystemMessage(change.inputChange, nonExistentRecordDeleteMessage)
+      change.withUpdatedInputChange(updatedChangeInput)
+    } else if (!ensureRecordExists(change, groupedChanges)) {
+      val updatedChangeInput = updateSystemMessage(change.inputChange, nonExistentRecordDataDeleteMessage)
+      change.withUpdatedInputChange(updatedChangeInput)
+    } else {
+      change
+    }
+
+    val validations = groupedChanges.getExistingRecordSet(updatedChange.recordKey) match {
+      case Some(rs) =>
+        userCanDeleteRecordSet(updatedChange, auth, rs.ownerGroupId, rs.records) |+|
+          zoneDoesNotRequireManualReview(updatedChange, isApproved)
+      case None =>
+        if (isSameRecordUpdateInBatch) InvalidUpdateRequest(updatedChange.inputChange.inputName).invalidNel else ().validNel
+    }
+
+    validations.map(_ => updatedChange)
   }
 
   def validateAddUpdateWithContext(
@@ -381,7 +407,7 @@ class BatchChangeValidations(
             ) |+|
             zoneDoesNotRequireManualReview(change, isApproved)
         case None =>
-          RecordDoesNotExist(change.inputChange.inputName).invalidNel
+          InvalidUpdateRequest(change.inputChange.inputName).invalidNel
       }
     }
 
@@ -396,18 +422,38 @@ class BatchChangeValidations(
       auth: AuthPrincipal,
       isApproved: Boolean
   ): SingleValidation[ChangeForValidation] = {
+
+    // To handle add and delete for the record with same record data is present in the batch
+    val recordData = change match {
+      case AddChangeForValidation(_, _, inputChange, _, _) => inputChange.record.toString
+      case DeleteRRSetChangeForValidation(_, _, inputChange) => inputChange.record.map(_.toString).getOrElse("")
+    }
+
+    val addInBatch = groupedChanges.getProposedAdds(change.recordKey)
+    val isSameRecordUpdateInBatch = recordData.nonEmpty && addInBatch.contains(RecordData.fromString(recordData, change.inputChange.typ).get)
+
+    // Perform the system message update based on the condition
+    val updatedChange = if (groupedChanges.getExistingRecordSet(change.recordKey).isEmpty && !isSameRecordUpdateInBatch) {
+      val updatedChangeInput = updateSystemMessage(change.inputChange, nonExistentRecordDeleteMessage)
+      change.withUpdatedInputChange(updatedChangeInput)
+    } else if (!ensureRecordExists(change, groupedChanges)) {
+      val updatedChangeInput = updateSystemMessage(change.inputChange, nonExistentRecordDataDeleteMessage)
+      change.withUpdatedInputChange(updatedChangeInput)
+    } else {
+      change
+    }
+
     val validations =
-      groupedChanges.getExistingRecordSet(change.recordKey) match {
+      groupedChanges.getExistingRecordSet(updatedChange.recordKey) match {
         case Some(rs) =>
-          val adds = groupedChanges.getProposedAdds(change.recordKey).toList
-          userCanUpdateRecordSet(change, auth, rs.ownerGroupId, adds) |+|
-            zoneDoesNotRequireManualReview(change, isApproved) |+|
-            ensureRecordExists(change, groupedChanges)
+          val adds = groupedChanges.getProposedAdds(updatedChange.recordKey).toList
+          userCanUpdateRecordSet(updatedChange, auth, rs.ownerGroupId, adds) |+|
+            zoneDoesNotRequireManualReview(updatedChange, isApproved)
         case None =>
-          RecordDoesNotExist(change.inputChange.inputName).validNel
+          if(isSameRecordUpdateInBatch) InvalidUpdateRequest(updatedChange.inputChange.inputName).invalidNel else ().validNel
       }
 
-    validations.map(_ => change)
+    validations.map(_ => updatedChange)
   }
 
   def validateAddWithContext(
@@ -418,8 +464,10 @@ class BatchChangeValidations(
     ownerGroupId: Option[String]
   ): SingleValidation[ChangeForValidation] = {
     val typedValidations = change.inputChange.typ match {
-      case A | AAAA | MX =>
+      case A | AAAA | MX | SRV | NAPTR =>
         newRecordSetIsNotDotted(change)
+      case NS =>
+        newRecordSetIsNotDotted(change) |+| nsValidations(change.inputChange.record, change.recordName, change.zone, approvedNameServers)
       case CNAME =>
         cnameHasUniqueNameInBatch(change, groupedChanges) |+|
           newRecordSetIsNotDotted(change)
@@ -429,8 +477,29 @@ class BatchChangeValidations(
         InvalidBatchRecordType(other.toString, SupportedBatchChangeRecordTypes.get).invalidNel
     }
 
+    // To handle add and delete for the record with same record data is present in the batch
+    val recordData = change match {
+      case AddChangeForValidation(_, _, inputChange, _, _) => inputChange.record.toString
+    }
+
+    val deletes = groupedChanges.getProposedDeletes(change.recordKey)
+    val isDeleteExists = deletes.nonEmpty
+    val isSameRecordUpdateInBatch = if(recordData.nonEmpty){
+      if(deletes.contains(RecordData.fromString(recordData, change.inputChange.typ).get)) true else false
+    } else false
+
+    val commonValidations: SingleValidation[Unit] = {
+      groupedChanges.getExistingRecordSet(change.recordKey) match {
+        case Some(_) =>
+          ().validNel
+        case None =>
+          if(isSameRecordUpdateInBatch) InvalidUpdateRequest(change.inputChange.inputName).invalidNel else ().validNel
+      }
+    }
+
     val validations =
       typedValidations |+|
+        commonValidations |+|
         noIncompatibleRecordExists(change, groupedChanges) |+|
         userCanAddRecordSet(change, auth) |+|
         recordDoesNotExist(
@@ -440,7 +509,7 @@ class BatchChangeValidations(
           change.inputChange.typ,
           change.inputChange.record,
           groupedChanges,
-          isApproved
+          isDeleteExists
         ) |+|
         ownerGroupProvidedIfNeeded(change, None, ownerGroupId) |+|
         zoneDoesNotRequireManualReview(change, isApproved)
@@ -483,13 +552,14 @@ class BatchChangeValidations(
       typ: RecordType,
       recordData: RecordData,
       groupedChanges: ChangeForValidationMap,
-      isApproved: Boolean
+      isDeleteExist: Boolean
   ): SingleValidation[Unit] = {
     val record = groupedChanges.getExistingRecordSetData(RecordKeyData(zoneId, recordName, typ, recordData))
     if(record.isDefined) {
       record.get.records.contains(recordData) match {
         case true => ().validNel
-        case false => RecordAlreadyExists(inputName, recordData, isApproved).invalidNel}
+        case false => if(isDeleteExist) ().validNel else RecordAlreadyExists(inputName).invalidNel
+      }
     } else ().validNel
     }
 
@@ -561,6 +631,7 @@ class BatchChangeValidations(
         input.inputChange.typ,
         input.zone,
         ownerGroupId,
+        false,
         addRecords
       )
     result
@@ -696,5 +767,47 @@ class BatchChangeValidations(
         change.zone.name,
         change.inputChange.inputName
       )
+    }
+
+  def nsValidations(
+     newRecordSetData: RecordData,
+     newRecordSetName: String,
+     zone: Zone,
+     approvedNameServers: List[Regex]
+  ): SingleValidation[Unit] = {
+
+      isNotOrigin(
+        newRecordSetName,
+        zone,
+        s"Record with name $newRecordSetName is an NS record at apex and cannot be added"
+      )
+      containsApprovedNameServers(newRecordSetData, approvedNameServers)
+  }
+
+  def isNotOrigin(recordSet: String, zone: Zone, err: String): SingleValidation[Unit] =
+    if(!isOriginRecord(recordSet, omitTrailingDot(zone.name))) ().validNel else InvalidBatchRequest(err).invalidNel
+
+  def isOriginRecord(recordSetName: String, zoneName: String): Boolean =
+    recordSetName == "@" || omitTrailingDot(recordSetName) == omitTrailingDot(zoneName)
+
+  def containsApprovedNameServers(
+     nsRecordSet: RecordData,
+     approvedNameServers: List[Regex]
+  ): SingleValidation[Unit] = {
+    val nsData = nsRecordSet match {
+      case ns: NSData => ns
+      case _ => ??? // this would never be the case
+    }
+    isApprovedNameServer(approvedNameServers, nsData)
+  }
+
+  def isApprovedNameServer(
+    approvedServerList: List[Regex],
+    nsData: NSData
+  ): SingleValidation[Unit] =
+    if (isStringInRegexList(approvedServerList, nsData.nsdname.fqdn)) {
+      ().validNel
+    } else {
+      NotApprovedNSError(nsData.nsdname.fqdn).invalidNel
     }
 }

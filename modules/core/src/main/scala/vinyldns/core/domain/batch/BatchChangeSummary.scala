@@ -91,5 +91,9 @@ case class BatchChangeSummaryList(
     nextId: Option[Int] = None,
     maxItems: Int = 100,
     ignoreAccess: Boolean = false,
-    approvalStatus: Option[BatchChangeApprovalStatus] = None
+    batchStatus: Option[BatchChangeStatus] = None,
+    approvalStatus: Option[BatchChangeApprovalStatus] = None,
+    userName: Option[String] = None,
+    dateTimeStartRange: Option[String] = None,
+    dateTimeEndRange: Option[String] = None,
 )

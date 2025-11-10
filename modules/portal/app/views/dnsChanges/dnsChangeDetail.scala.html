@@ -41,7 +41,13 @@
 
         <div class="row">
             <div class="col-md-12">
-                <p><strong>ID:</strong> {{batch.id}}</p>
+                <p><strong>ID:</strong> {{batch.id}}
+                    <span class="small-copy-button" ng-click="copyToClipboard()"
+                          data-toggle="tooltip" data-placement="top" title="Copy Batch ID to clipboard">
+                        <i class="fa fa-clone"></i>
+                    </span>
+                    <button class="btn-right-corner" ng-click="exportToCSV(batch.id)">Export CSV</button>
+                </p>
                 <p><strong>Submitted:</strong> {{batch.createdTimestamp}}</p>
                 <p ng-if="'@rootAccountName' != batch.userName"><strong>Submitter:</strong> {{batch.userName}}</p>
                 <p ng-if="batch.comments"><strong>Description:</strong> {{batch.comments}}</p>
@@ -147,6 +153,27 @@
                                             <li class="wrap-long-text">Exchange: {{change.record.exchange}}</li>
                                         </ul>
                                     </td>
+                                    <td ng-if="change.type=='NS'">
+                                        {{change.record.nsdname}}
+                                    </td>
+                                    <td ng-if="change.type=='NAPTR'">
+                                        <ul>
+                                            <li class="wrap-long-text">Order: {{change.record.order}}</li>
+                                            <li class="wrap-long-text">Preference: {{change.record.preference}}</li>
+                                            <li class="wrap-long-text">Flags: {{change.record.flags}}</li>
+                                            <li class="wrap-long-text">Service: {{change.record.service}}</li>
+                                            <li class="wrap-long-text">Regexp: {{change.record.regexp}}</li>
+                                            <li class="wrap-long-text">Replacement: {{change.record.replacement}}</li>
+                                        </ul>
+                                    </td>
+                                    <td ng-if="change.type=='SRV'">
+                                        <ul>
+                                            <li class="wrap-long-text">Priority: {{change.record.priority}}</li>
+                                            <li class="wrap-long-text">Weight: {{change.record.weight}}</li>
+                                            <li class="wrap-long-text">Port: {{change.record.port}}</li>
+                                            <li class="wrap-long-text">Target: {{change.record.target}}</li>
+                                        </ul>
+                                    </td>
                                 <!--end record data name based on record type-->
                                 <td>{{change.ttl}}</td>
                                 <td>
@@ -165,9 +192,17 @@
                                         {{error.message ? error.message : error}} </p>{{change.systemMessage}}</div>
                                     <div ng-if="batch.approvalStatus =='ManuallyRejected' || batch.approvalStatus =='Cancelled'">
                                     </div>
-                                    <div ng-if="batch.approvalStatus == 'AutoApproved'
+                                    <div ng-if="change.systemMessage == undefined && batch.approvalStatus == 'AutoApproved'
                                              && change.status =='Complete'">
-                                        ℹ️ No further action is required.</div>
+                                        ℹ️ No further action is required.
+                                    </div>
+                                    <div ng-if="(change.systemMessage != '' && change.systemMessage != undefined)  && batch.approvalStatus == 'AutoApproved'
+                                             && change.status =='Complete'">
+                                        ℹ️ {{change.systemMessage}}
+                                    </div>
+                                    <div ng-if="(change.systemMessage != '' && change.systemMessage != undefined)  && change.status =='Failed'">
+                                        {{change.systemMessage}}
+                                    </div>
                                 </td>
                             </tr>
                             </tbody>

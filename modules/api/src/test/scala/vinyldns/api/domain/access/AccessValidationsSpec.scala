@@ -26,7 +26,7 @@ import vinyldns.api.domain.zone.{NotAuthorizedError, RecordSetInfo, RecordSetLis
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
-import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record._
@@ -95,7 +95,7 @@ class AccessValidationsSpec
     VinylDNSTestHelpers.sharedApprovedTypes
   )
 
-  private val testUser = User("test", "test", "test", isTest = true)
+  private val testUser = User("test", "test", Encrypted("test"), isTest = true)
 
   "canSeeZone" should {
     "return a NotAuthorizedError if the user is not admin or super user with no acl rules" in {
@@ -116,6 +116,41 @@ class AccessValidationsSpec
       val zoneIn = zoneNotAuthorized.copy(acl = ZoneACL(Set(rule)))
 
       accessValidationTest.canSeeZone(okAuth, zoneIn) should be(right)
+    }
+
+    "return true if the user is a support admin" in {
+      val supportAuth = okAuth.copy(
+        signedInUser = okAuth.signedInUser.copy(isSupport = true),
+        memberGroupIds = Seq.empty
+      )
+      accessValidationTest.canSeeZone(supportAuth, okZone) should be(right)
+    }
+
+    "return true if the zone is shared and user does not have other access" in {
+      accessValidationTest.canSeeZone(okAuth, sharedZone) should be(right)
+    }
+  }
+
+  "canSeeZoneChange" should {
+    "return a NotAuthorizedError if the user is not admin or super user with no acl rules" in {
+      val error = leftValue(accessValidationTest.canSeeZoneChange(okAuth, zoneNotAuthorized))
+      error shouldBe a[NotAuthorizedError]
+    }
+
+    "return true if the user is an admin or super user" in {
+      val auth = okAuth.copy(
+        signedInUser = okAuth.signedInUser.copy(isSuper = true),
+        memberGroupIds = Seq.empty
+      )
+      accessValidationTest.canSeeZoneChange(auth, okZone) should be(right)
+    }
+
+    "return false if there is an acl rule for the user in the zone" in {
+      val rule = ACLRule(AccessLevel.Read, userId = Some(okAuth.userId))
+      val zoneIn = zoneNotAuthorized.copy(acl = ZoneACL(Set(rule)))
+
+      val error = leftValue(accessValidationTest.canSeeZoneChange(okAuth, zoneIn))
+      error shouldBe a[NotAuthorizedError]
     }
 
     "return true if the user is a support admin" in {
@@ -255,6 +290,7 @@ class AccessValidationsSpec
       ) should be(right)
     }
   }
+
   "canUpdateRecordSet" should {
     "return a NotAuthorizedError if the user has AccessLevel.NoAccess" in {
       val error = leftValue(
@@ -290,6 +326,13 @@ class AccessValidationsSpec
       accessValidationTest.canUpdateRecordSet(userAuth, "test", RecordType.A, zoneIn, None) should be(
         right
       )
+    }
+
+    "return true if the user has AccessLevel.Read or AccessLevel.NoAccess and superUserCanUpdateOwnerGroup is true" in {
+      accessValidationTest.canUpdateRecordSet(userAuthRead, "test", RecordType.A, zoneInRead,
+        None, superUserCanUpdateOwnerGroup = true) should be(right)
+      accessValidationTest.canUpdateRecordSet(userAuthNone, "test", RecordType.A, zoneInNone,
+        None, superUserCanUpdateOwnerGroup = true) should be(right)
     }
 
     "return true if the user is in the owner group and the zone is shared" in {
@@ -365,7 +408,7 @@ class AccessValidationsSpec
         RecordType.PTR,
         zoneIp4,
         None,
-        List(PTRData(Fqdn("test.foo.comcast.net")))
+        newRecordData = List(PTRData(Fqdn("test.foo.comcast.net")))
       ) should be(right)
     }
   }

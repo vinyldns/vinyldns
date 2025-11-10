@@ -25,6 +25,8 @@ trait MembershipServiceAlgebra {
 
   def createGroup(inputGroup: Group, authPrincipal: AuthPrincipal): Result[Group]
 
+  def listEmailDomains(authPrincipal: AuthPrincipal):Result[List[String]]
+
   def updateGroup(
       groupId: String,
       name: String,
@@ -61,7 +63,7 @@ trait MembershipServiceAlgebra {
 
   def getGroupActivity(
       groupId: String,
-      startFrom: Option[String],
+      startFrom: Option[Int],
       maxItems: Int,
       authPrincipal: AuthPrincipal
   ): Result[ListGroupChangesResponse]
@@ -76,4 +78,9 @@ trait MembershipServiceAlgebra {
       userIdentifier: String,
       authPrincipal: AuthPrincipal
   ): Result[User]
+
+  def getUserDetails(
+               userIdentifier: String,
+               authPrincipal: AuthPrincipal
+             ): Result[UserResponseInfo]
 }

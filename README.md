@@ -145,9 +145,9 @@ See the [Contributing Guide](CONTRIBUTING.md).
 
 The current maintainers (people who can merge pull requests) are:
 
-- Ryan Emerle ([@remerle](https://github.com/remerle))
-- Sriram Ramakrishnan ([@sramakr](https://github.com/sramakr))
-- Jim Wakemen ([@jwakemen](https://github.com/jwakemen))
+- Arpit Shah ([@arpit4ever](https://github.com/arpit4ever))
+- Nick Spadaccino ([@nspadaccino](https://github.com/nspadaccino))
+- Jayaraj Velkumar ([@Jay07GIT](https://github.com/Jay07GIT))
 
 See [AUTHORS.md](AUTHORS.md) for the full list of contributors to VinylDNS.
 
@@ -161,10 +161,6 @@ world!
 Given the Apache 2.0 license of VinylDNS, we specifically want to call out the following libraries and their
 corresponding licenses shown below.
 
-- [logback-classic](https://github.com/qos-ch/logback)
-    - [Eclipse Public License 1.0](https://www.eclipse.org/legal/epl-v10.html)
-- [logback-core](https://github.com/qos-ch/logback)
-    - [Eclipse Public License 1.0](https://www.eclipse.org/legal/epl-v10.html)
 - [h2 database](http://h2database.com)
     - [Mozilla Public License, version 2.0](https://www.mozilla.org/MPL/2.0/)
 - [pureconfig](https://github.com/pureconfig/pureconfig)

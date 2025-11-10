@@ -20,6 +20,7 @@ import cats.data.Validated.{Invalid, Valid}
 import cats.data._
 import cats.effect._
 import cats.implicits._
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.slf4j.{Logger, LoggerFactory}
@@ -33,6 +34,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
 import vinyldns.core.domain.batch._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
+import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
 import vinyldns.core.domain.{CnameAtZoneApexError, SingleChangeError, UserIsNotAuthorizedError, ZoneDiscoveryError}
 import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
 import vinyldns.core.domain.record.RecordType._
@@ -340,7 +342,7 @@ class BatchChangeService(
   ): ValidatedBatch[ChangeForValidation] =
     changes.mapValid { change =>
       change.typ match {
-        case A | AAAA | CNAME | MX | TXT => forwardZoneDiscovery(change, zoneMap)
+        case A | AAAA | CNAME | MX | TXT | NS | NAPTR | SRV => forwardZoneDiscovery(change, zoneMap)
         case PTR if validateIpv4Address(change.inputName).isValid =>
           ptrIpv4ZoneDiscovery(change, zoneMap)
         case PTR if validateIpv6Address(change.inputName).isValid =>
@@ -470,14 +472,15 @@ class BatchChangeService(
     val hardErrorsPresent = allErrors.exists(_.isFatal)
     val noErrors = allErrors.isEmpty
     val isScheduled = batchChangeInput.scheduledTime.isDefined && this.scheduledChangesEnabled
+    val isNSRecordsPresent = batchChangeInput.changes.exists(_.typ == NS)
 
     if (hardErrorsPresent) {
       // Always error out
       errorResponse
-    } else if (noErrors && !isScheduled) {
+    } else if (noErrors && !isScheduled && !isNSRecordsPresent) {
       // There are no errors and this is not scheduled, so process immediately
       processNowResponse
-    } else if (this.manualReviewEnabled && allowManualReview) {
+    } else if (this.manualReviewEnabled && allowManualReview || isNSRecordsPresent) {
       if ((noErrors && isScheduled) || batchChangeInput.ownerGroupId.isDefined) {
         // There are no errors and this is scheduled
         // or we have soft errors and owner group is defined
@@ -579,15 +582,22 @@ class BatchChangeService(
 
   def listBatchChangeSummaries(
       auth: AuthPrincipal,
+      userName: Option[String] = None,
+      dateTimeStartRange: Option[String] = None,
+      dateTimeEndRange: Option[String] = None,
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
       ignoreAccess: Boolean = false,
+      batchStatus: Option[BatchChangeStatus] = None,
       approvalStatus: Option[BatchChangeApprovalStatus] = None
   ): BatchResult[BatchChangeSummaryList] = {
     val userId = if (ignoreAccess && auth.isSystemAdmin) None else Some(auth.userId)
+    val submitterUserName = if(userName.isDefined && userName.get.isEmpty) None else userName
+    val startDateTime = if(dateTimeStartRange.isDefined && dateTimeStartRange.get.isEmpty) None else dateTimeStartRange
+    val endDateTime = if(dateTimeEndRange.isDefined && dateTimeEndRange.get.isEmpty) None else dateTimeEndRange
     for {
       listResults <- batchChangeRepo
-        .getBatchChangeSummaries(userId, startFrom, maxItems, approvalStatus)
+        .getBatchChangeSummaries(userId, submitterUserName, startDateTime, endDateTime, startFrom, maxItems, batchStatus, approvalStatus)
         .toBatchResult
       rsOwnerGroupIds = listResults.batchChanges.flatMap(_.ownerGroupId).toSet
       rsOwnerGroups <- groupRepository.getGroups(rsOwnerGroupIds).toBatchResult
@@ -604,7 +614,10 @@ class BatchChangeService(
       listWithGroupNames = listResults.copy(
         batchChanges = summariesWithReviewerUserNames,
         ignoreAccess = ignoreAccess,
-        approvalStatus = approvalStatus
+        approvalStatus = approvalStatus,
+        userName = userName,
+        dateTimeStartRange = dateTimeStartRange,
+        dateTimeEndRange = dateTimeEndRange
       )
     } yield listWithGroupNames
   }

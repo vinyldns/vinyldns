@@ -16,6 +16,8 @@
 
 package vinyldns.core.domain.record
 
+import vinyldns.core.domain.record.OwnerShipTransferStatus.OwnerShipTransferStatus
+
 import java.util.UUID
 
 import java.time.Instant
@@ -33,6 +35,11 @@ object RecordSetStatus extends Enumeration {
   val Active, Inactive, Pending, PendingUpdate, PendingDelete = Value
 }
 
+object OwnerShipTransferStatus extends Enumeration {
+  type OwnerShipTransferStatus = Value
+  val AutoApproved, Cancelled, ManuallyApproved, ManuallyRejected, Requested, PendingReview, None  = Value
+}
+
 import RecordSetStatus._
 import RecordType._
 
@@ -48,6 +55,7 @@ case class RecordSet(
     id: String = UUID.randomUUID().toString,
     account: String = "system",
     ownerGroupId: Option[String] = None,
+    recordSetGroupChange: Option[OwnerShipTransfer] = None,
     fqdn: Option[String] = None
 ) {
 
@@ -69,10 +77,25 @@ case class RecordSet(
     sb.append("account=\"").append(account).append("\"; ")
     sb.append("status=\"").append(status.toString).append("\"; ")
     sb.append("records=\"").append(records.toString).append("\"; ")
-    sb.append("ownerGroupId=\"").append(ownerGroupId).append("\"")
+    sb.append("ownerGroupId=\"").append(ownerGroupId).append("\"; ")
+    sb.append("recordSetGroupChange=\"").append(recordSetGroupChange.toString).append("\"; ")
     sb.append("fqdn=\"").append(fqdn).append("\"")
     sb.append("]")
 
     sb.toString
   }
 }
+case class OwnerShipTransfer(
+                              ownerShipTransferStatus: OwnerShipTransferStatus,
+                              requestedOwnerGroupId: Option[String] = None
+                            ){
+
+  override def toString: String = {
+    val sb = new StringBuilder
+    sb.append("OwnerShipTransfer: [")
+    sb.append("ownerShipTransferStatus=\"").append(ownerShipTransferStatus.toString).append("\"; ")
+    sb.append("requestedOwnerGroupId=\"").append(requestedOwnerGroupId.toString).append("\"")
+    sb.append("]")
+    sb.toString
+  }}
+
