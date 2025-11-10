@@ -489,10 +489,10 @@ class ZoneServiceSpec
       val doubleAuth = AuthPrincipal(TestDataLoader.okUser, Seq(okGroup.id, okGroup.id))
 
       val resultChange: ZoneChange =
-          underTest
-            .updateZone(newZone, doubleAuth)
-            .map(_.asInstanceOf[ZoneChange])
-            .value.unsafeRunSync().toOption.get
+        underTest
+          .updateZone(newZone, doubleAuth)
+          .map(_.asInstanceOf[ZoneChange])
+          .value.unsafeRunSync().toOption.get
 
       resultChange.zone.id shouldBe oldZone.id
       resultChange.zone.connection shouldBe oldZone.connection
@@ -800,7 +800,37 @@ class ZoneServiceSpec
       result.right.value shouldBe expectedZoneInfo
     }
   }
+  "DottedHosts" should {
+    "flag should able to modify by the super user" in {
+      val result: Boolean = underTest.allowDottedHostsUpdateZones(superUserAuth, updateZoneAuthorized.copy(allowDottedHosts = true, allowDottedLimits = 4)).value.unsafeRunSync().toOption.getOrElse(false)
+      result shouldBe true
+    }
+    "flag should not able to modify by the non super user" in {
+      val result: Boolean = underTest.allowDottedHostsUpdateZones(abcAuth, updateZoneAuthorized.copy(allowDottedHosts = true, allowDottedLimits = 4)).value.unsafeRunSync().toOption.getOrElse(false)
+      result shouldBe false
+    }
+    "flag should able to add by the super user" in {
+      val result: Boolean = underTest.allowDottedHostsCreateZones(superUserAuth, createZoneAuthorized.copy(allowDottedHosts = true, allowDottedLimits = 4)).value.unsafeRunSync().toOption.getOrElse(false)
+      result shouldBe true
+    }
+    "flag should not able to add by the non super user" in {
+      val result: Boolean = underTest.allowDottedHostsCreateZones(abcAuth, createZoneAuthorized.copy(allowDottedHosts = true, allowDottedLimits = 4)).value.unsafeRunSync().toOption.getOrElse(false)
+      result shouldBe false
+    }
+    "flag in acl should able to update " in {
+      val result: ZoneACL = underTest.updateZoneAcl(updateZoneAuthorized.copy(allowDottedHosts = true, allowDottedLimits = 4 ,
+        acl = ZoneACL(Set(userAclRule.copy(allowDottedHosts = true, accessLevel = AccessLevel.Write)))), superUserAuth).value.unsafeRunSync().toOption.get
+      result.rules.map(_.allowDottedHosts) shouldBe Set(true)
+      result.rules.map(_.accessLevel) shouldBe Set(AccessLevel.Write)
+    }
 
+    "flag in acl should not able to update" in {
+      val result: ZoneACL = underTest.createZoneAcl(createZoneAuthorized.copy(allowDottedHosts = false, allowDottedLimits = 4,
+        acl = ZoneACL(Set(userAclRule.copy(allowDottedHosts = true, accessLevel = AccessLevel.Write)))), abcAuth).value.unsafeRunSync().toOption.get
+      result.rules.map(_.allowDottedHosts) shouldBe Set(false)
+    }
+
+  }
   "Getting a zone details" should {
     "fail with no zone returned" in {
       doReturn(IO.pure(None)).when(mockZoneRepo).getZone("notAZoneId")

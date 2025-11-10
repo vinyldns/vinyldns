@@ -307,6 +307,7 @@ describe('Service: zoneService', function () {
     it('toVinylAclRule returns rule in correct format with accessLevel No Access', function() {
        var mockAclRule = {
            accessLevel: 'No Access',
+           allowDottedHosts: false,
            description: 'description',
            recordMask: 'mask',
            recordTypes: ['A', 'AAAA'],
@@ -314,6 +315,7 @@ describe('Service: zoneService', function () {
        };
        var expectedAclRule = {
            accessLevel: 'NoAccess',
+           allowDottedHosts: false,
            description: 'description',
            recordMask: 'mask',
            recordTypes: ['A', 'AAAA'],
@@ -326,6 +328,7 @@ describe('Service: zoneService', function () {
     it('toVinylAclRule returns rule in correct format with priority User', function() {
         var mockAclRule = {
             accessLevel: 'Read',
+            allowDottedHosts: false,
             description: 'description',
             recordMask: 'mask',
             recordTypes: ['A', 'AAAA'],
@@ -336,6 +339,7 @@ describe('Service: zoneService', function () {
         };
         var expectedAclRule = {
             accessLevel: 'Read',
+            allowDottedHosts: false,
             description: 'description',
             recordMask: 'mask',
             recordTypes: ['A', 'AAAA'],
@@ -349,6 +353,7 @@ describe('Service: zoneService', function () {
     it('toVinylAclRule returns rule in correct format with priority Group', function() {
         var mockAclRule = {
             accessLevel: 'Read',
+            allowDottedHosts: false,
             description: 'description',
             recordMask: 'mask',
             recordTypes: ['A', 'AAAA'],
@@ -359,6 +364,7 @@ describe('Service: zoneService', function () {
         };
         var expectedAclRule = {
             accessLevel: 'Read',
+            allowDottedHosts: false,
             description: 'description',
             recordMask: 'mask',
             recordTypes: ['A', 'AAAA'],
@@ -372,6 +378,7 @@ describe('Service: zoneService', function () {
     it('toDisplayAclRule return rule in correct format when it has groupId', function() {
         var mockAclRule = {
             accessLevel: 'Read',
+            allowDottedHosts: false,
             description: 'description',
             recordMask: 'mask',
             recordTypes: ['A', 'AAAA'],
@@ -380,6 +387,7 @@ describe('Service: zoneService', function () {
         };
         var expectedAclRule = {
             accessLevel: 'Read',
+            allowDottedHosts: false,
             description: 'description',
             recordMask: 'mask',
             recordTypes: ['A', 'AAAA'],
@@ -394,6 +402,7 @@ describe('Service: zoneService', function () {
     it('toDisplayAclRule return rule in correct format when it has userId', function() {
         var mockAclRule = {
             accessLevel: 'Read',
+            allowDottedHosts: false,
             description: 'description',
             recordMask: 'mask',
             recordTypes: ['A', 'AAAA'],
@@ -402,6 +411,7 @@ describe('Service: zoneService', function () {
         };
         var expectedAclRule = {
             accessLevel: 'Read',
+            allowDottedHosts: false,
             description: 'description',
             recordMask: 'mask',
             recordTypes: ['A', 'AAAA'],
@@ -417,6 +427,7 @@ describe('Service: zoneService', function () {
     it('toDisplayAclRule return rule in correct format when it has NoAccess', function() {
         var mockAclRule = {
             accessLevel: 'NoAccess',
+            allowDottedHosts: false,
             description: 'description',
             recordMask: 'mask',
             recordTypes: ['A', 'AAAA'],
@@ -424,6 +435,7 @@ describe('Service: zoneService', function () {
         };
         var expectedAclRule = {
             accessLevel: 'No Access',
+            allowDottedHosts: false,
             description: 'description',
             recordMask: 'mask',
             recordTypes: ['A', 'AAAA'],

@@ -43,6 +43,7 @@ class ProtobufConversionsSpec
 
   private val userAclRule = ACLRule(
     AccessLevel.Read,
+    false,
     Some("desc"),
     Some("johnny"),
     None,
@@ -52,6 +53,7 @@ class ProtobufConversionsSpec
 
   private val groupAclRule = ACLRule(
     AccessLevel.Read,
+    false,
     Some("desc"),
     None,
     Some("group"),

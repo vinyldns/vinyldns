@@ -65,11 +65,19 @@ object TestMembershipData {
   )
 
   val dummyGroup: Group = Group(
-    "dummy",
+    "someGroup",
     "test@test.com",
     Some("has the dummy users"),
     adminUserIds = listOfDummyUsers.map(_.id).toSet,
     memberIds = listOfDummyUsers.map(_.id).toSet
+  )
+
+  val dotteddummyGroup: Group = Group(
+    "dottedGroup",
+    "test@test.com",
+    Some("has the dummy users"),
+    adminUserIds = Set(xyzUser.id),
+    memberIds = Set(xyzUser.id)
   )
 
   val twoUserGroup: Group = Group(

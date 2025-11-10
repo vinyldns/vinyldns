@@ -33,6 +33,8 @@ class SharedZoneTestContext(object):
         self.test_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "testUserAccessKey", "testUserSecretKey")
         self.history_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "history-key", "history-secret")
         self.non_user_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "not-exist-key", "not-exist-secret")
+        self.clients = [self.ok_vinyldns_client, self.dummy_vinyldns_client, self.shared_zone_vinyldns_client, self.support_user_client, self.super_user_client,
+                        self.unassociated_client, self.test_user_client, self.history_client, self.non_user_client]
         self.clients = [self.ok_vinyldns_client, self.dummy_vinyldns_client, self.shared_zone_vinyldns_client,
                         self.support_user_client, self.super_user_client, self.unassociated_client,
                         self.test_user_client, self.history_client, self.non_user_client]
@@ -44,6 +46,7 @@ class SharedZoneTestContext(object):
 
         self.dummy_group = None
         self.ok_group = None
+        self.super_group = None
         self.shared_record_group = None
         self.history_group = None
         self.group_activity_created = None
@@ -87,6 +90,18 @@ class SharedZoneTestContext(object):
             self.ok_group = self.ok_vinyldns_client.create_group(ok_group, status=200)
             # in theory this shouldn"t be needed, but getting "user is not in group' errors on zone creation
             self.confirm_member_in_group(self.ok_vinyldns_client, self.ok_group)
+
+            super_group = {
+                "name": f"super-group{partition_id}",
+                "email": "test@test.com",
+                "description": "this is a description",
+                "members": [{"id": "super-user-id"}],
+                "admins": [{"id": "super-user-id"}]
+            }
+
+            self.super_group = self.ok_vinyldns_client.create_group(super_group, status=200)
+            # in theory this shouldn"t be needed, but getting "user is not in group' errors on zone creation
+            self.confirm_member_in_group(self.super_user_client, self.super_group)
 
             dummy_group = {
                 "name": f"dummy-group{partition_id}",
@@ -151,8 +166,19 @@ class SharedZoneTestContext(object):
                     "name": f"ok{partition_id}.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHosts": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
+                    "acl": {
+                        "rules": [
+                            {
+                                "accessLevel": "Delete",
+                                "description": "some_test_rule",
+                                "userId": "ok",
+                                "recordTypes": ["A", "CNAME"]
+                            }
+                        ]
+                    },
                     "connection": {
                         "name": "ok.",
                         "keyName": VinylDNSTestContext.dns_key_name,
@@ -209,6 +235,7 @@ class SharedZoneTestContext(object):
                     "name": f"{partition_id}.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "connection": {
@@ -234,6 +261,7 @@ class SharedZoneTestContext(object):
                     "name": f"0.0.0.1.{partition_id}.9.e.f.c.c.7.2.9.6.d.f.ip6.arpa.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "backendId": "func-test-backend"
@@ -247,6 +275,7 @@ class SharedZoneTestContext(object):
                     "name": f"{partition_id}.10.in-addr.arpa.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "connection": {
@@ -273,6 +302,7 @@ class SharedZoneTestContext(object):
                     "name": f"{partition_id}.0.192.in-addr.arpa.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "connection": {
@@ -298,6 +328,7 @@ class SharedZoneTestContext(object):
                     "name": f"192/30.{partition_id}.0.192.in-addr.arpa.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "connection": {
@@ -323,6 +354,7 @@ class SharedZoneTestContext(object):
                     "name": f"system-test{partition_id}.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "connection": {
@@ -349,12 +381,14 @@ class SharedZoneTestContext(object):
                     "name": f"parent.com{partition_id}.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "acl": {
                         "rules": [
                             {
                                 "accessLevel": "Delete",
+                                "allowDottedHosts": False,
                                 "description": "some_test_rule",
                                 "userId": "dummy"
                             }
@@ -383,6 +417,7 @@ class SharedZoneTestContext(object):
                     "name": f"example.com{partition_id}.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "connection": {
@@ -408,6 +443,7 @@ class SharedZoneTestContext(object):
                     "name": f"zone.requires.review{partition_id}.",
                     "email": "test@test.com",
                     "shared": False,
+                    "allowDottedHost": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
                     "backendId": "func-test-backend"
@@ -420,6 +456,7 @@ class SharedZoneTestContext(object):
                     "name": f"shared{partition_id}.",
                     "email": "test@test.com",
                     "shared": True,
+                    "allowDottedHost": False,
                     "adminGroupId": self.shared_record_group["id"],
                     "isTest": True,
                     "connection": {

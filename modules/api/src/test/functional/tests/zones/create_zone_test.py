@@ -204,6 +204,43 @@ def test_create_missing_zone_data(shared_zone_test_context):
     assert_that(errors, contains_inanyorder("Missing Zone.name", "Missing Zone.email", "Missing Zone.adminGroupId"))
 
 
+def test_create_dotted_zone_without_super_admin_access(shared_zone_test_context):
+    """
+    Test that creating a dotted hosts zone without providing super admin access returns errors
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+
+    zone = {
+        "name": f"one-time{shared_zone_test_context.partition_id}.",
+        "email": "test@test.com",
+        "shared": False,
+        "allowDottedHosts": True,
+        "allowDottedLimits": 3,
+        "adminGroupId": shared_zone_test_context.super_group["id"],
+        "isTest": True,
+        "acl": {
+            "rules": [
+                {
+                    "accessLevel": "Delete",
+                    "description": "some_test_rule",
+                    "userId": "ok",
+                    "allowDottedHosts": True,
+                    "recordTypes": ["CNAME"]
+                }
+            ]
+        },
+        "connection": {
+            "name": "vinyldns.",
+            "keyName": VinylDNSTestContext.dns_key_name,
+            "key": VinylDNSTestContext.dns_key,
+            "primaryServer": VinylDNSTestContext.name_server_ip
+        }
+    }
+
+    errors = client.create_zone(zone, status=403)
+    assert_that(errors, is_("Not Authorised: User is not VinylDNS Admin"))
+
+
 def test_create_invalid_zone_data(shared_zone_test_context):
     """
     Test that creating a zone with invalid data returns errors

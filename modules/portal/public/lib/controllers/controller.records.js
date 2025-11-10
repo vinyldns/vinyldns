@@ -138,7 +138,7 @@ angular.module('controller.records', [])
 
     function getGroup(groupId) {
         if (groupId != undefined && groupId != "null"){
-            $log.log('groupsService::getGroup-success');
+            $log.debug('groupsService::getGroup-success');
             function success(response) {
                  $scope.recordSetRequestedOwnerShipName = response.data.name;
 
@@ -526,6 +526,7 @@ angular.module('controller.records', [])
     }
 
     function determineAdmin(){
+        $scope.isSuper = $scope.profile.isSuper;
         $scope.isZoneAdmin = $scope.profile.isSuper || isInAdminGroup();
         $scope.canReadZone = canReadZone();
         $scope.canViewZone = $scope.canReadZone || $scope.isZoneAdmin || $scope.zoneInfo.shared;

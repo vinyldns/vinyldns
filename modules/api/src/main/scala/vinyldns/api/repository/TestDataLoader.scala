@@ -289,8 +289,8 @@ object TestDataLoader extends TransactionProvider {
 
     for {
       _ <- (testUser :: okUser :: dummyUser :: sharedZoneUser :: lockedUser :: listGroupUser :: listZonesUser ::
-        listBatchChangeSummariesUser :: listZeroBatchChangeSummariesUser :: zoneHistoryUser :: supportUser ::
-        superUser :: listRecordsUser :: listOfDummyUsers).map { user =>
+        listBatchChangeSummariesUser :: listZeroBatchChangeSummariesUser :: zoneHistoryUser :: supportUser :: superUser ::
+        listRecordsUser :: listOfDummyUsers).map { user =>
         userRepo.save(user)
       }.parSequence
       // if the test shared zones exist already, clean them out

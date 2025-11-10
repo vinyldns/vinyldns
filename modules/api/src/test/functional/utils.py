@@ -216,6 +216,7 @@ def parse_record(record_string):
 def generate_acl_rule(access_level, **kw):
     acl_rule = {
         "accessLevel": access_level,
+        "allowDottedHosts": False ,
         "description": "some_test_rule"
     }
     if "userId" in kw:

@@ -20,6 +20,7 @@ import cats.effect.IO
 import cats.implicits._
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.api.Interfaces
+import vinyldns.api.domain.membership.MembershipValidations.isSuperAdmin
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.crypto.CryptoAlgebra
@@ -83,6 +84,8 @@ class ZoneService(
       auth: AuthPrincipal
   ): Result[ZoneCommandResult] =
     for {
+      createAclDottedHosts <- createZoneAcl(createZoneInput, auth)
+      allowDottedHosts <- allowDottedHostsCreateZones(auth, createZoneInput)
       _ <- isValidZoneAcl(createZoneInput.acl).toResult
       _ <- membershipService.emailValidation(createZoneInput.email)
       _ <- connectionValidator.isValidBackendId(createZoneInput.backendId).toResult
@@ -93,8 +96,8 @@ class ZoneService(
       isCronStringValid = if(createZoneInput.recurrenceSchedule.isDefined) isValidCronString(createZoneInput.recurrenceSchedule.get) else true
       _ <- validateCronString(isCronStringValid).toResult
       _ <- canChangeZone(auth, createZoneInput.name, createZoneInput.adminGroupId).toResult
+      zoneToCreate = Zone(createZoneInput.copy(allowDottedHosts=allowDottedHosts, acl = createAclDottedHosts), auth.isTestUser)
       createdZoneInput = if(createZoneInput.recurrenceSchedule.isDefined) createZoneInput.copy(scheduleRequestor = Some(auth.signedInUser.userName)) else createZoneInput
-      zoneToCreate = Zone(createdZoneInput, auth.isTestUser)
       _ <- connectionValidator.validateZoneConnections(zoneToCreate)
       createZoneChange <- ZoneChangeGenerator.forAdd(zoneToCreate, auth).toResult
       _ <- messageQueue.send(createZoneChange).toResult[Unit]
@@ -102,6 +105,8 @@ class ZoneService(
 
   def updateZone(updateZoneInput: UpdateZoneInput, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
+      updateAclDottedHosts <- updateZoneAcl(updateZoneInput, auth)
+      allowDottedHosts <- allowDottedHostsUpdateZones(auth, updateZoneInput)
       _ <- isValidZoneAcl(updateZoneInput.acl).toResult
       _ <- membershipService.emailValidation(updateZoneInput.email)
       _ <- connectionValidator.isValidBackendId(updateZoneInput.backendId).toResult
@@ -118,8 +123,8 @@ class ZoneService(
       _ <- adminGroupExists(updateZoneInput.adminGroupId)
       // if admin group changes, this confirms user has access to new group
       _ <- canChangeZone(auth, updateZoneInput.name, updateZoneInput.adminGroupId).toResult
+      zoneWithUpdates = Zone(updateZoneInput.copy(allowDottedHosts = allowDottedHosts, acl = updateAclDottedHosts), existingZone)
       updatedZoneInput = if(updateZoneInput.recurrenceSchedule.isDefined) updateZoneInput.copy(scheduleRequestor = Some(auth.signedInUser.userName)) else updateZoneInput
-      zoneWithUpdates = Zone(updatedZoneInput, existingZone)
       _ <- validateZoneConnectionIfChanged(zoneWithUpdates, existingZone)
       updateZoneChange <- ZoneChangeGenerator
         .forUpdate(zoneWithUpdates, existingZone, auth, crypto)
@@ -417,6 +422,34 @@ class ZoneService(
       }
       .toResult
 
+  def allowDottedHostsUpdateZones(authPrincipal: AuthPrincipal, updateZoneInput: UpdateZoneInput): Result[Boolean] =
+    if (updateZoneInput.allowDottedHosts == true || updateZoneInput.allowDottedLimits>0){
+    isSuperAdmin(authPrincipal).isRight match {
+      case true => updateZoneInput.allowDottedHosts.toResult
+      case false => NotAuthorizedError("Not Authorised: User is not VinylDNS Admin").asLeft.toResult
+    }} else updateZoneInput.allowDottedHosts.toResult
+
+  def allowDottedHostsCreateZones(authPrincipal: AuthPrincipal, createZoneInput: CreateZoneInput): Result[Boolean] =
+    if (createZoneInput.allowDottedHosts == true || createZoneInput.allowDottedLimits>0){
+      isSuperAdmin(authPrincipal).isRight match {
+      case true => createZoneInput.allowDottedHosts.toResult
+      case false => NotAuthorizedError("Not Authorised: User is not VinylDNS Admin").asLeft.toResult
+      }} else createZoneInput.allowDottedHosts.toResult
+
+  def updateZoneAcl(updateZoneInput: UpdateZoneInput, authPrincipal: AuthPrincipal): Result[ZoneACL] = {
+    updateZoneInput.allowDottedHosts match {
+      case true =>
+        if (isSuperAdmin(authPrincipal).isRight){ZoneACL(updateZoneInput.acl.rules)}.toResult
+      else   NotAuthorizedError("Not Authorised: User is not VinylDNS Admin").asLeft.toResult
+      case false => ZoneACL(updateZoneInput.acl.rules.map(_.copy(allowDottedHosts = false))).toResult}
+  }
+
+  def createZoneAcl(createZoneInput: CreateZoneInput, authPrincipal: AuthPrincipal): Result[ZoneACL] = {
+    createZoneInput.allowDottedHosts match {
+      case true => if (isSuperAdmin(authPrincipal).isRight){ZoneACL(createZoneInput.acl.rules)}.toResult
+      else   NotAuthorizedError("Not Authorised: User is not VinylDNS Admin").asLeft.toResult
+      case false => ZoneACL(createZoneInput.acl.rules.map(_.copy(allowDottedHosts = false))).toResult}
+  }
   def canScheduleZoneSync(auth: AuthPrincipal): Either[Throwable, Unit] =
     ensuring(
       NotAuthorizedError(s"User '${auth.signedInUser.userName}' is not authorized to schedule zone sync in this zone.")

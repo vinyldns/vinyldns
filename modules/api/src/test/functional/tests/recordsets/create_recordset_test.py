@@ -557,6 +557,390 @@ def test_create_dotted_a_record_succeeds_if_all_dotted_hosts_config_satisfied(sh
             client.wait_until_recordset_change_status(delete_result, "Complete")
 
 
+@pytest.mark.serial
+def test_create_dotted_a_record_succeeds_if_all_dotted_hosts_satisfied(shared_zone_test_context):
+    """
+    Test that creating a A record set with dotted host record name succeeds
+    Here the zone, user (in group) and record type is allowed. Hence the test succeeds
+    """
+
+    client = shared_zone_test_context.super_user_client
+    zone = {
+            "name": f"one-time.",
+            "email": "test@test.com",
+            "shared": False,
+            "allowDottedHosts": True,
+            "allowDottedLimits": 4,
+            "adminGroupId": shared_zone_test_context.super_group["id"],
+            "isTest": True,
+            "acl": {
+                "rules": [
+                    {
+                        "accessLevel": "Delete",
+                        "description": "some_test_rule",
+                        "userId": "super-user-id",
+                        "allowDottedHosts": True,
+                        "recordTypes": ["A", "CNAME"]
+                    }
+                ]
+            },
+            "connection": {
+                "name": "vinyldns.",
+                "keyName": VinylDNSTestContext.dns_key_name,
+                "key": VinylDNSTestContext.dns_key,
+                "primaryServer": VinylDNSTestContext.name_server_ip
+            }
+        }
+    zone_change = client.create_zone(zone, status=202)
+    zone = zone_change["zone"]
+    client.wait_until_zone_active(zone_change["zone"]["id"])
+
+    dotted_host_a_record = {
+        "zoneId": zone["id"],
+        "name": "dot.ted",
+        "type": "A",
+        "ttl": 500,
+        "records": [{"address": "127.0.0.1"}]
+    }
+    dotted_a_record = None
+    try:
+        dotted_cname_response = client.create_recordset(dotted_host_a_record, status=202)
+        dotted_a_record = client.wait_until_recordset_change_status(dotted_cname_response, "Complete")["recordSet"]
+        assert_that(dotted_a_record["name"], is_(dotted_host_a_record["name"]))
+    finally:
+        if dotted_a_record:
+            delete_result = client.delete_recordset(dotted_a_record["zoneId"], dotted_a_record["id"], status=202)
+            client.wait_until_recordset_change_status(delete_result, "Complete")
+
+
+@pytest.mark.serial
+def test_create_dotted_a_record_succeeds_if_no_of_dot_not_within_range(shared_zone_test_context):
+    """
+    Test that creating a A record set with dotted host record name failed when no of dots not within allowDottedLimits range.
+    Here given no of dots are not within allowDottedLimits range. Hence the test failed.
+    """
+
+    client = shared_zone_test_context.super_user_client
+    zone = {
+        "name": f"one-time{shared_zone_test_context.partition_id}.",
+        "email": "test@test.com",
+        "shared": False,
+        "allowDottedHosts": True,
+        "allowDottedLimits": 4,
+        "adminGroupId": shared_zone_test_context.super_group["id"],
+        "isTest": True,
+        "acl": {
+            "rules": [
+                {
+                    "accessLevel": "Delete",
+                    "description": "some_test_rule",
+                    "userId": "super-user-id",
+                    "allowDottedHosts": True,
+                    "recordTypes": ["A", "CNAME"]
+                }
+            ]
+        },
+        "connection": {
+            "name": "vinyldns.",
+            "keyName": VinylDNSTestContext.dns_key_name,
+            "key": VinylDNSTestContext.dns_key,
+            "primaryServer": VinylDNSTestContext.name_server_ip
+        }
+    }
+    zone_change = client.create_zone(zone, status=202)
+    zone = zone_change["zone"]
+    client.wait_until_zone_active(zone_change["zone"]["id"])
+
+    dotted_host_a_record = {
+        "zoneId": zone["id"],
+        "name": "dot.ted.dot.ted.dot.ted.dot",
+        "type": "A",
+        "ttl": 500,
+        "records": [{"address": "127.0.0.1"}]
+    }
+    try:
+        error = client.create_recordset(dotted_host_a_record, status=422)
+        assert_that(error, is_("RecordSet with name " + dotted_host_a_record["name"] + " has more dots than that is "
+                            "allowed for this zone which is, 'dots-limit = 4'."))
+    finally:
+        if "id" in zone:
+            client.abandon_zones([zone["id"]], status=202)
+
+@pytest.mark.serial
+def test_create_dotted_cname_record_failed_if_record_type_in_acl_not_satisfied(shared_zone_test_context):
+    """
+    Test that creating a CNAME record set with dotted host record name failed if CNAME is not mentioned in acl
+    Here the CNAME is not allowed to create dotted hosts. Hence the test failed
+    """
+
+    client = shared_zone_test_context.super_user_client
+    zone = {
+        "name": f"one-time{shared_zone_test_context.partition_id}.",
+        "email": "test@test.com",
+        "shared": False,
+        "allowDottedHosts": True,
+        "allowDottedLimits": 5,
+        "adminGroupId": shared_zone_test_context.super_group["id"],
+        "isTest": True,
+        "acl": {
+            "rules": [
+                {
+                    "accessLevel": "Delete",
+                    "description": "some_test_rule",
+                    "userId": "super-user-id",
+                    "allowDottedHosts": True,
+                    "recordTypes": ["A"]
+                }
+            ]
+        },
+        "connection": {
+            "name": "vinyldns.",
+            "keyName": VinylDNSTestContext.dns_key_name,
+            "key": VinylDNSTestContext.dns_key,
+            "primaryServer": VinylDNSTestContext.name_server_ip
+        }
+    }
+    zone_change = client.create_zone(zone, status=202)
+    zone = zone_change["zone"]
+    client.wait_until_zone_active(zone_change["zone"]["id"])
+
+    dotted_host_a_record = {
+        "zoneId": zone["id"],
+        "name": "dot.ted",
+        "type": "CNAME",
+        "ttl": 500,
+        "records": [{"cname": "foo.bar."}]
+    }
+
+    try:
+        error = client.create_recordset(dotted_host_a_record, status=422)
+        assert_that(error, is_("Record with name dot.ted and type CNAME is a dotted host which is not allowed in "
+                               "zone " + zone["name"]))
+    finally:
+        if "id" in zone:
+            client.abandon_zones([zone["id"]], status=202)
+
+
+@pytest.mark.serial
+def test_create_dotted_hosts_failed_if_dotted_not_allowed(shared_zone_test_context):
+    """
+    Test that creating a A record set with dotted host record name failed if allowDottedHosts is false
+    Here the zone is not allowed. Hence the test failed
+    """
+
+    client = shared_zone_test_context.super_user_client
+    zone = {
+        "name": f"one-time{shared_zone_test_context.partition_id}.",
+        "email": "test@test.com",
+        "shared": False,
+        "allowDottedHosts": False,
+        "allowDottedLimits": 5,
+        "adminGroupId": shared_zone_test_context.super_group["id"],
+        "isTest": True,
+        "acl": {
+            "rules": [
+                {
+                    "accessLevel": "Delete",
+                    "description": "some_test_rule",
+                    "userId": "super-user-id",
+                    "allowDottedHosts": False,
+                    "recordTypes": ["CNAME"]
+                }
+            ]
+        },
+        "connection": {
+            "name": "vinyldns.",
+            "keyName": VinylDNSTestContext.dns_key_name,
+            "key": VinylDNSTestContext.dns_key,
+            "primaryServer": VinylDNSTestContext.name_server_ip
+        }
+    }
+    zone_change = client.create_zone(zone, status=202)
+    zone = zone_change["zone"]
+    client.wait_until_zone_active(zone_change["zone"]["id"])
+
+    dotted_host_a_record = {
+        "zoneId": zone["id"],
+        "name": "dot.ted",
+        "type": "CNAME",
+        "ttl": 500,
+        "records": [{"cname": "foo.bar."}]
+    }
+
+    try:
+        error = client.create_recordset(dotted_host_a_record, status=422)
+        assert_that(error, is_("Record with name dot.ted and type CNAME is a dotted host which is not allowed in "
+                               "zone " + zone["name"]))
+    finally:
+        if "id" in zone:
+            client.abandon_zones([zone["id"]], status=202)
+
+
+@pytest.mark.serial
+def test_create_dotted_hosts_failed_if_dotted_limit_not_allowed(shared_zone_test_context):
+    """
+    Test that creating a A record set with dotted host record name failed if allowDottedLimits is 0
+    Here the zone is not allowed. Hence the test failed
+    """
+
+    client = shared_zone_test_context.super_user_client
+    zone = {
+        "name": f"one-time{shared_zone_test_context.partition_id}.",
+        "email": "test@test.com",
+        "shared": False,
+        "allowDottedHosts": True,
+        "allowDottedLimits": 0,
+        "adminGroupId": shared_zone_test_context.super_group["id"],
+        "isTest": True,
+        "acl": {
+            "rules": [
+                {
+                    "accessLevel": "Delete",
+                    "description": "some_test_rule",
+                    "userId": "super-user-id",
+                    "allowDottedHosts": True,
+                    "recordTypes": ["CNAME"]
+                }
+            ]
+        },
+        "connection": {
+            "name": "vinyldns.",
+            "keyName": VinylDNSTestContext.dns_key_name,
+            "key": VinylDNSTestContext.dns_key,
+            "primaryServer": VinylDNSTestContext.name_server_ip
+        }
+    }
+    zone_change = client.create_zone(zone, status=202)
+    zone = zone_change["zone"]
+    client.wait_until_zone_active(zone_change["zone"]["id"])
+
+    dotted_host_a_record = {
+        "zoneId": zone["id"],
+        "name": "dot.ted",
+        "type": "CNAME",
+        "ttl": 500,
+        "records": [{"cname": "foo.bar."}]
+    }
+
+    try:
+        error = client.create_recordset(dotted_host_a_record, status=422)
+        assert_that(error, is_("Record with name dot.ted and type CNAME is a dotted host which is not allowed in "
+                               "zone " + zone["name"]))
+    finally:
+        if "id" in zone:
+            client.abandon_zones([zone["id"]], status=202)
+
+
+@pytest.mark.serial
+def test_create_dotted_hosts_failed_if_dotted_not_allowed_in_acl(shared_zone_test_context):
+    """
+    Test that creating a A record set with dotted host record name failed if allowDottedHosts is false in ACL
+    Here the zone acl is not allowed. Hence the test failed
+    """
+
+    client = shared_zone_test_context.super_user_client
+    zone = {
+        "name": f"one-time{shared_zone_test_context.partition_id}.",
+        "email": "test@test.com",
+        "shared": False,
+        "allowDottedHosts": True,
+        "allowDottedLimits": 4,
+        "adminGroupId": shared_zone_test_context.super_group["id"],
+        "isTest": True,
+        "acl": {
+            "rules": [
+                {
+                    "accessLevel": "Delete",
+                    "description": "some_test_rule",
+                    "userId": "super-user-id",
+                    "allowDottedHosts": False,
+                    "recordTypes": ["CNAME"]
+                }
+            ]
+        },
+        "connection": {
+            "name": "vinyldns.",
+            "keyName": VinylDNSTestContext.dns_key_name,
+            "key": VinylDNSTestContext.dns_key,
+            "primaryServer": VinylDNSTestContext.name_server_ip
+        }
+    }
+    zone_change = client.create_zone(zone, status=202)
+    zone = zone_change["zone"]
+    client.wait_until_zone_active(zone_change["zone"]["id"])
+
+    dotted_host_a_record = {
+        "zoneId": zone["id"],
+        "name": "dot.ted",
+        "type": "CNAME",
+        "ttl": 500,
+        "records": [{"cname": "foo.bar."}]
+    }
+
+    try:
+        error = client.create_recordset(dotted_host_a_record, status=422)
+        assert_that(error, is_("Record with name dot.ted and type CNAME is a dotted host which is not allowed in "
+                               "zone " + zone["name"]))
+    finally:
+        if "id" in zone:
+            client.abandon_zones([zone["id"]], status=202)
+
+
+@pytest.mark.serial
+def test_create_dotted_hosts_failed_if_dotted_not_allowed_for_user(shared_zone_test_context):
+    """
+    Test that creating a A record set with dotted host record name failed if user does not have access to create
+    Here the user is not allowed. Hence the test failed
+    """
+
+    client = shared_zone_test_context.super_user_client
+    zone = {
+        "name": f"one-time{shared_zone_test_context.partition_id}.",
+        "email": "test@test.com",
+        "shared": False,
+        "allowDottedHosts": True,
+        "allowDottedLimits": 4,
+        "adminGroupId": shared_zone_test_context.super_group["id"],
+        "isTest": True,
+        "acl": {
+            "rules": [
+                {
+                    "accessLevel": "Delete",
+                    "description": "some_test_rule",
+                    "userId": "ok",
+                    "allowDottedHosts": True,
+                    "recordTypes": ["CNAME"]
+                }
+            ]
+        },
+        "connection": {
+            "name": "vinyldns.",
+            "keyName": VinylDNSTestContext.dns_key_name,
+            "key": VinylDNSTestContext.dns_key,
+            "primaryServer": VinylDNSTestContext.name_server_ip
+        }
+    }
+    zone_change = client.create_zone(zone, status=202)
+    zone = zone_change["zone"]
+    client.wait_until_zone_active(zone_change["zone"]["id"])
+
+    dotted_host_a_record = {
+        "zoneId": zone["id"],
+        "name": "dot.ted",
+        "type": "CNAME",
+        "ttl": 500,
+        "records": [{"cname": "foo.bar."}]
+    }
+
+    try:
+        error = client.create_recordset(dotted_host_a_record, status=422)
+        assert_that(error, is_("Record with name dot.ted and type CNAME is a dotted host which is not allowed in "
+                               "zone " + zone["name"]))
+    finally:
+        if "id" in zone:
+            client.abandon_zones([zone["id"]], status=202)
+
+
 def test_create_dotted_a_record_fails_if_all_dotted_hosts_config_not_satisfied(shared_zone_test_context):
     """
     Test that creating a A record set with dotted host record name fails
@@ -576,7 +960,7 @@ def test_create_dotted_a_record_fails_if_all_dotted_hosts_config_not_satisfied(s
 
     error = client.create_recordset(dotted_host_a_record, status=422)
     assert_that(error, is_("RecordSet with name " + dotted_host_a_record["name"] + " has more dots than that is "
-                           "allowed in config for this zone which is, 'dots-limit = 3'."))
+                           "allowed for this zone which is, 'dots-limit = 3'."))
 
 
 def test_create_dotted_a_record_apex_succeeds(shared_zone_test_context):

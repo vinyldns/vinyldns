@@ -853,6 +853,240 @@ class RecordSetServiceSpec
     result shouldBe an[InvalidRequest]
   }
 
+  "succeed if the record is dotted and zone, user, record type is in allowed dotted hosts" in {
+    val record =
+      cname.copy(name = "new.name", zoneId = dottedZoneAllowed.id, status = RecordSetStatus.Active)
+
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
+
+    val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(dottedZone, VinylDNSTestHelpers.dottedHostsConfig)
+
+    doReturn(IO.pure(Some(dottedZoneAllowed))).when(mockZoneRepo).getZone(dottedZoneAllowed.id)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSets(dottedZoneAllowed.id, record.name, record.typ)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByName(dottedZoneAllowed.id, record.name)
+    doReturn(IO.pure(Set(dottedZoneAllowed, abcZone, xyzZone, dotZone)))
+      .when(mockZoneRepo)
+      .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(Set.empty)
+    doReturn(IO.pure(None))
+      .when(mockZoneRepo)
+      .getZoneByName(record.name + "." + dottedZone.name)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByFQDNs(Set(record.name + "." + dottedZone.name))
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(record.name.split('.').map(x => x + "." + dottedZone.name).toSet)
+    doReturn(IO.pure(Set(dummyGroup)))
+      .when(mockGroupRepo)
+      .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+    doReturn(IO.pure(ListUsersResults(listOfDummyUsers.toSeq, None)))
+      .when(mockUserRepo)
+      .getUsers(dummyGroup.memberIds, None, None)
+    doReturn(IO.pure(Set(dummyGroup)))
+      .when(mockGroupRepo)
+      .getGroups(Set("someGroup"))
+
+    // passes as all three properties within dotted hosts config (allowed zones, users and record types) are satisfied
+    val result: RecordSetChange =
+      underTest.addRecordSet(record, xyzAuth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().toOption.get
+
+    result.recordSet.name shouldBe record.name
+  }
+
+
+
+  "failed if the record is dotted and zone is not allowed dotted hosts" in {
+
+    val zone = okZone.copy(allowDottedHosts = false)
+
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
+
+    val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(dottedZone, VinylDNSTestHelpers.dottedHostsConfig)
+
+    val record =
+      aaaa.copy(name = "new.name", zoneId = okZone.id, status = RecordSetStatus.Active)
+
+    doReturn(IO.pure(Some(zone))).when(mockZoneRepo).getZone(zone.id)
+
+
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSets(zone.id, record.name, record.typ)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByName(okZone.id, record.name)
+    doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+      .when(mockZoneRepo)
+      .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(Set.empty)
+    doReturn(IO.pure(None))
+      .when(mockZoneRepo)
+      .getZoneByName(record.name + "." + zone.name)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByFQDNs(Set(record.name + "." + zone.name))
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(record.name.split('.').map(x => x + "." + zone.name).toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockGroupRepo)
+      .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+    doReturn(IO.pure(ListUsersResults(Seq(), None)))
+      .when(mockUserRepo)
+      .getUsers(Set.empty, None, None)
+
+    val result = underTest.addRecordSet(record, xyzAuth).value.unsafeRunSync().swap.toOption.get
+    result shouldBe an[InvalidRequest]
+  }
+
+  "failed if the record is dotted and zone,user in group, record type is in allowed dotted hosts but no. of dots allowed is zero" in {
+
+    val zone = okZone.copy(allowDottedLimits = 0, allowDottedHosts = true)
+
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
+
+    val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(dottedZone, VinylDNSTestHelpers.dottedHostsConfig)
+
+    val record =
+      aaaa.copy(name = "new.name", zoneId = zone.id, status = RecordSetStatus.Active)
+    doReturn(IO.pure(Some(zone))).when(mockZoneRepo).getZone(zone.id)
+
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSets(zone.id, record.name, record.typ)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByName(okZone.id, record.name)
+    doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+      .when(mockZoneRepo)
+      .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(Set.empty)
+    doReturn(IO.pure(None))
+      .when(mockZoneRepo)
+      .getZoneByName(record.name + "." + zone.name)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByFQDNs(Set(record.name + "." + zone.name))
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(record.name.split('.').map(x => x + "." + zone.name).toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockGroupRepo)
+      .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+    doReturn(IO.pure(ListUsersResults(Seq(), None)))
+      .when(mockUserRepo)
+      .getUsers(Set.empty, None, None)
+
+    val result = underTest.addRecordSet(record, xyzAuth).value.unsafeRunSync().swap.toOption.get
+    result shouldBe an[InvalidRequest]
+  }
+
+  "failed if the record is dotted and zone,user in group, record type is in allowed dotted hosts but user not have write access in ACL" in {
+    val dottedHostAclRule: ZoneACL = ZoneACL(Set(ACLRule( AccessLevel.Read, true, userId = Some("xyz"), groupId = Some("someGroup"), recordTypes= Set(RecordType.AAAA))))
+    val zone = okZone.copy(allowDottedLimits = 4, allowDottedHosts = true, acl = dottedHostAclRule)
+
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
+
+    val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(dottedZone, VinylDNSTestHelpers.dottedHostsConfig)
+
+    val record =
+      aaaa.copy(name = "new.name", zoneId = zone.id, status = RecordSetStatus.Active)
+
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSets(zone.id, record.name, record.typ)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByName(okZone.id, record.name)
+    doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+      .when(mockZoneRepo)
+      .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(Set.empty)
+    doReturn(IO.pure(None))
+      .when(mockZoneRepo)
+      .getZoneByName(record.name + "." + zone.name)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByFQDNs(Set(record.name + "." + zone.name))
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(record.name.split('.').map(x => x + "." + zone.name).toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockGroupRepo)
+      .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+    doReturn(IO.pure(ListUsersResults(Seq(), None)))
+      .when(mockUserRepo)
+      .getUsers(Set.empty, None, None)
+
+    val result = underTest.addRecordSet(record, xyzAuth).value.unsafeRunSync().swap.toOption.get
+    result shouldBe an[InvalidRequest]
+  }
+
+  "Success if the record is dotted and zone, user in group, record type is in allowed dotted hosts" in {
+    val dottedHostAclRule: ZoneACL = ZoneACL(Set(ACLRule( AccessLevel.Write, true, userId = Some("xyz"), groupId = Some("someGroup"), recordTypes= Set(RecordType.AAAA))))
+    val zone = okZone.copy(allowDottedLimits = 4, allowDottedHosts = true, acl = dottedHostAclRule)
+
+    val dottedHostsConfigZonesAllowed: List[String] = VinylDNSTestHelpers.dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
+
+    val dottedHostsConfigGroupsAllowed: List[String] = getDottedHostsConfigGroupsAllowed(dottedZone, VinylDNSTestHelpers.dottedHostsConfig)
+
+    val record =
+      aaaa.copy(name = "new.name.dotted", zoneId = zone.id, status = RecordSetStatus.Active)
+
+    doReturn(IO.pure(Some(zone))).when(mockZoneRepo).getZone(zone.id)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSets(zone.id, record.name, record.typ)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByName(okZone.id, record.name)
+    doReturn(IO.pure(Set(dottedZone, abcZone, xyzZone, dotZone)))
+      .when(mockZoneRepo)
+      .getZonesByNames(dottedHostsConfigZonesAllowed.toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(Set.empty)
+    doReturn(IO.pure(None))
+      .when(mockZoneRepo)
+      .getZoneByName(record.name + "." + zone.name)
+    doReturn(IO.pure(List()))
+      .when(mockRecordRepo)
+      .getRecordSetsByFQDNs(Set(record.name + "." + zone.name))
+    doReturn(IO.pure(Set()))
+      .when(mockZoneRepo)
+      .getZonesByFilters(record.name.split('.').map(x => x + "." + zone.name).toSet)
+    doReturn(IO.pure(Set()))
+      .when(mockGroupRepo)
+      .getGroupsByName(dottedHostsConfigGroupsAllowed.toSet)
+    doReturn(IO.pure(ListUsersResults(Seq(), None)))
+      .when(mockUserRepo)
+      .getUsers(Set.empty, None, None)
+    doReturn(IO.pure(ListUsersResults(Seq(xyzUser), None)))
+      .when(mockUserRepo)
+      .getUsers(dotteddummyGroup.memberIds, None, None)
+    doReturn(IO.pure(Set(dotteddummyGroup)))
+      .when(mockGroupRepo)
+      .getGroups(Set("someGroup"))
+
+    val result =
+      underTest.addRecordSet(record, xyzAuth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().toOption.get
+
+    result.zone shouldBe zone
+  }
+
   "updateRecordSet" should {
     "return the recordSet change as the result" in {
       val oldRecord = aaaa.copy(zoneId = okZone.id, status = RecordSetStatus.Active)
