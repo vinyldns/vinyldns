@@ -667,7 +667,7 @@ def test_create_dotted_a_record_succeeds_if_no_of_dot_not_within_range(shared_zo
             client.abandon_zones([zone["id"]], status=202)
 
 @pytest.mark.serial
-def test_create_dotted_a_record_failed_if_record_type_in_acl_not_satisfied(shared_zone_test_context):
+def test_create_dotted_cname_record_failed_if_record_type_in_acl_not_satisfied(shared_zone_test_context):
     """
     Test that creating a CNAME record set with dotted host record name failed if CNAME is not mentioned in acl
     Here the CNAME is not allowed to create dotted hosts. Hence the test failed

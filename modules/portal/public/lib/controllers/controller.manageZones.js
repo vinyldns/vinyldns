@@ -368,8 +368,6 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
             $log.debug('recordsService::getZone-success');
             $scope.zoneInfo = response.data.zone;
             $scope.updateZoneInfo = angular.copy($scope.zoneInfo);
-            $log.log('wqewweq::getZone-success', $scope.updateZoneInfo);
-            $log.log('sfsafd::getZone-success', $scope.zoneInfo);
             $scope.updateZoneInfo.hiddenKey = '';
             $scope.updateZoneInfo.hiddenTransferKey = '';
             $scope.zoneSyncSchedule.isChecked = false;
