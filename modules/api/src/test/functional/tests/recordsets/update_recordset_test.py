@@ -256,6 +256,49 @@ def test_update_record_in_zone_user_owns(shared_zone_test_context):
                 pass
 
 
+def test_update_record_in_zone_user_not_part_of_owner_group(shared_zone_test_context):
+    """
+    Test zone admin user can update a record that user not part of owner group of record for private zone
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    super_zone = copy.deepcopy(shared_zone_test_context.ok_zone)
+    super_zone["shared"] = False
+
+    rs = None
+    try:
+        rs = client.create_recordset(
+            {
+                "zoneId": super_zone["id"],
+                "name": "test_update_record_in_zone_user_not_part_of_owner_group",
+                "type": "A",
+                "ttl": 100,
+                "records": [
+                    {
+                        "address": "10.1.1.1"
+                    }
+                ]
+            }, status=202
+        )["recordSet"]
+        client.wait_until_recordset_exists(rs["zoneId"], rs["id"])
+        rs["ttl"] = rs["ttl"] + 1000
+        rs["ownerGroupId"] = shared_zone_test_context.dummy_group["id"]
+        result1 = client.update_recordset(rs, status=202, retries=3)
+        result_rs1 = client.wait_until_recordset_change_status(result1, "Complete")["recordSet"]
+        assert_that(result_rs1["ttl"], is_(rs["ttl"]))
+        rs["ttl"] = rs["ttl"] + 200
+        result2 = client.update_recordset(rs, status=202, retries=3)
+        result_rs2 = client.wait_until_recordset_change_status(result2, "Complete")["recordSet"]
+        assert_that(result_rs2["ttl"], is_(rs["ttl"]))
+
+    finally:
+        if rs:
+            try:
+                client.delete_recordset(rs["zoneId"], rs["id"], status=(202, 404))
+                client.wait_until_recordset_deleted(rs["zoneId"], rs["id"])
+            finally:
+                pass
+
+
 def test_update_recordset_no_authorization(shared_zone_test_context):
     """
     Test updating a record set without authorization
