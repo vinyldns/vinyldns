@@ -196,7 +196,6 @@ object TestDataLoader extends TransactionProvider {
     id = "super-user-id",
     created = Instant.now.truncatedTo(ChronoUnit.SECONDS),
     accessKey = "superUserAccessKey",
-    secretKey = "superUserSecretKey",
     secretKey = Encrypted("superUserSecretKey"),
     firstName = Some("super-user"),
     lastName = Some("super-user"),
@@ -292,8 +291,6 @@ object TestDataLoader extends TransactionProvider {
       _ <- (testUser :: okUser :: dummyUser :: sharedZoneUser :: lockedUser :: listGroupUser :: listZonesUser ::
         listBatchChangeSummariesUser :: listZeroBatchChangeSummariesUser :: zoneHistoryUser :: supportUser :: superUser ::
         listRecordsUser :: listOfDummyUsers).map { user =>
-        listBatchChangeSummariesUser :: listZeroBatchChangeSummariesUser :: zoneHistoryUser :: supportUser ::
-        superUser :: listRecordsUser :: listOfDummyUsers).map { user =>
         userRepo.save(user)
       }.parSequence
       // if the test shared zones exist already, clean them out

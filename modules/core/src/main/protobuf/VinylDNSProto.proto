@@ -52,8 +52,8 @@ message Zone {
   optional string backendId = 15;
   optional bool allowDottedHosts = 16 [default = false];
   optional int32 allowDottedLimits = 17 [default = 0];
-  optional string recurrenceSchedule = 16;
-  optional string scheduleRequestor = 17;
+  optional string recurrenceSchedule = 18;
+  optional string scheduleRequestor = 19;
 }
 
 message AData {
