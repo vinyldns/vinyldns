@@ -80,6 +80,7 @@ def test_update_zone_success_wildcard(shared_zone_test_context):
 
         acl_rule = {
             "accessLevel": "Read",
+            "allowDottedHosts": False,
             "description": "test-acl-updated-by-updatezn",
             "userId": "ok",
             "recordMask": "www-*",
@@ -139,6 +140,7 @@ def test_update_zone_success_number_of_dots(shared_zone_test_context):
 
         acl_rule = {
             "accessLevel": "Read",
+            "allowDottedHosts": False,
             "description": "test-acl-updated-by-updatezn",
             "userId": "ok",
             "recordMask": "www-*",
@@ -182,6 +184,8 @@ def test_update_zone_success_number_of_dots(shared_zone_test_context):
         assert_that(uz["updated"], is_not(none()))
 
         acl = uz["acl"]
+        print("dfasfasfsaf                        ", acl)
+        print("dfasfasfsaf                        ", acl_rule)
         verify_acl_rule_is_present_once(acl_rule, acl)
     finally:
         if result_zone:
