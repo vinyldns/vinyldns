@@ -255,7 +255,7 @@ class RecordSetService(
     val existingOwnerShipTransfer = existing.recordSetGroupChange.getOrElse(OwnerShipTransfer.apply(OwnerShipTransferStatus.None, Some("none")))
     val ownerShipTransfer = recordSet.recordSetGroupChange.getOrElse(OwnerShipTransfer.apply(OwnerShipTransferStatus.None, Some("none")))
     if (recordSet.recordSetGroupChange.isDefined &&
-      ownerShipTransfer.ownerShipTransferStatus != OwnerShipTransferStatus.None)
+      ownerShipTransfer.ownerShipTransferStatus != OwnerShipTransferStatus.None && existingOwnerShipTransfer != ownerShipTransfer)
       if (zone.shared){
         if (approverOwnerShipTransferStatus.contains(ownerShipTransfer.ownerShipTransferStatus)) {
           val recordSetOwnerApproval =
