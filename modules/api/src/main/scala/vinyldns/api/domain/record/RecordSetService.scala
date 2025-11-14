@@ -273,7 +273,6 @@ class RecordSetService(
                   ownerGroupId = ownershipTransfer.requestedOwnerGroupId,
                   recordSetGroupChange = Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.AutoApproved,
                     requestedOwnerGroupId = ownershipTransfer.requestedOwnerGroupId)))
-
               case _ => recordSet.copy(
                 recordSetGroupChange = Some(ownershipTransfer.copy(
                   ownershipTransferStatus = OwnershipTransferStatus.None,

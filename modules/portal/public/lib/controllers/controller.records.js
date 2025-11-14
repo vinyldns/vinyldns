@@ -61,6 +61,10 @@ angular.module('controller.records', [])
    	$scope.ownershipTransferApproverStatus = [{value: 'ManuallyApproved' , label: 'Approve'},
                                            {value: 'ManuallyRejected',  label: 'Reject'}];
 
+   	$scope.adminOwnershipTransferApproverStatus = [{value: 'ManuallyApproved' , label: 'Approve'},
+                                           {value: 'ManuallyRejected',  label: 'Reject'},
+                                           {value: 'Cancelled',  label: 'Cancel'}];
+
 	$scope.ownershipTransferRequestorStatus = [{value: 'Requested',  label: 'Request'},
 	                                        {value: 'Cancelled',  label: 'Cancel'}];
 
@@ -118,8 +122,8 @@ angular.module('controller.records', [])
     $scope.recordSetGroupOwnershipStatus = function recordSetGroupOwnershipStatus(groupId, profileId, record) {
         function success(response) {
            var ownershipTransferStatus;
+           const status = record.recordSetGroupChange.ownershipTransferStatus;
            if($scope.profile.isSuper || $scope.profile.isSupport || $scope.profile.isZoneAdmin){
-             const status = record.recordSetGroupChange.ownershipTransferStatus;
              if (status === "AutoApproved" ||
                  status === "ManuallyRejected" ||
                  status === "ManuallyApproved" ||
@@ -131,13 +135,16 @@ angular.module('controller.records', [])
              }else if (status === "PendingReview") {
                 record.isCurrentRecordSetOwner = true;
                 $scope.currentOwnershipTransferApprover = true;
-                ownershipTransferStatus = $scope.ownershipTransferApproverStatus;
+                ownershipTransferStatus = $scope.adminOwnershipTransferApproverStatus;
              }
            }else if(response.data.members.some(x => x.id === profileId)){
                ownershipTransferStatus = $scope.ownershipTransferApproverStatus;
                $scope.currentOwnershipTransferApprover= true;
                record.isCurrentRecordSetOwner = true;
-           }else{
+           }else if(response.data.members.some(x => x.id !== profileId) && status === "PendingReview"){
+               return;
+           }
+           else{
                ownershipTransferStatus = $scope.ownershipTransferRequestorStatus;
                $scope.currentOwnershipTransferApprover= false;
                record.isCurrentRecordSetOwner= false;
