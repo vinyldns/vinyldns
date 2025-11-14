@@ -57,6 +57,7 @@ angular.module('controller.records', [])
     $scope.canViewZone = false;
     var loadZonesPromise;
     var loadRecordsPromise;
+    $scope.isNotRequestedGroupMember = false;
 
    	$scope.ownershipTransferApproverStatus = [{value: 'ManuallyApproved' , label: 'Approve'},
                                            {value: 'ManuallyRejected',  label: 'Reject'}];
@@ -119,38 +120,59 @@ angular.module('controller.records', [])
       * Modal control functions
       */
 
+    function isNotRequestedGroupMemberResponse(record, profileId) {
+        if (record.recordSetGroupChange && record.recordSetGroupChange.requestedOwnerGroupId) {
+            return groupsService
+                .getGroupMemberList(record.recordSetGroupChange.requestedOwnerGroupId)
+                .then(response => {
+                    if (response && response.data && Array.isArray(response.data.members)) {
+                        $scope.isNotRequestedGroupMember = response.data.members.some(x => x.id !== profileId);
+                    } else {
+                        $log.debug("Group data or members list is missing:", response);
+                    }
+                    return $scope.isNotRequestedGroupMember;
+                })
+                .catch(error => {
+                    handleError(error, 'groupsService::getIsNotRequestedGroupMember-failure');
+                    return false;
+                });
+        } else {
+            return Promise.resolve(false);
+        }
+    }
+
     $scope.recordSetGroupOwnershipStatus = function recordSetGroupOwnershipStatus(groupId, profileId, record) {
         function success(response) {
            var ownershipTransferStatus;
            const status = record.recordSetGroupChange.ownershipTransferStatus;
-           if($scope.profile.isSuper || $scope.profile.isSupport || $scope.profile.isZoneAdmin){
-             if (status === "AutoApproved" ||
-                 status === "ManuallyRejected" ||
-                 status === "ManuallyApproved" ||
-                 status === "None" ||
-                 status === "Cancelled") {
-                record.isCurrentRecordSetOwner = false;
-                $scope.currentOwnershipTransferApprover = false;
-                ownershipTransferStatus = $scope.ownershipTransferRequestorStatus;
-             }else if (status === "PendingReview") {
-                record.isCurrentRecordSetOwner = true;
-                $scope.currentOwnershipTransferApprover = true;
-                ownershipTransferStatus = $scope.adminOwnershipTransferApproverStatus;
-             }
-           }else if(response.data.members.some(x => x.id === profileId)){
-               ownershipTransferStatus = $scope.ownershipTransferApproverStatus;
-               $scope.currentOwnershipTransferApprover= true;
-               record.isCurrentRecordSetOwner = true;
-           }else if(response.data.members.some(x => x.id !== profileId) && status === "PendingReview"){
-               return;
-           }
-           else{
-               ownershipTransferStatus = $scope.ownershipTransferRequestorStatus;
-               $scope.currentOwnershipTransferApprover= false;
-               record.isCurrentRecordSetOwner= false;
-           }
-           $scope.ownershipTransferStatus = ownershipTransferStatus
-        }
+           isNotRequestedGroupMemberResponse(record, profileId).then(result => {
+               if($scope.profile.isSuper || $scope.profile.isSupport || $scope.profile.isZoneAdmin){
+                 if (status === "AutoApproved" ||
+                     status === "ManuallyRejected" ||
+                     status === "ManuallyApproved" ||
+                     status === "None" ||
+                     status === "Cancelled") {
+                    record.isCurrentRecordSetOwner = false;
+                    $scope.currentOwnershipTransferApprover = false;
+                    ownershipTransferStatus = $scope.ownershipTransferRequestorStatus;
+                 }else if (status === "PendingReview") {
+                    record.isCurrentRecordSetOwner = true;
+                    $scope.currentOwnershipTransferApprover = true;
+                    ownershipTransferStatus = $scope.adminOwnershipTransferApproverStatus;
+                 }
+               }else if(response.data.members.some(x => x.id === profileId)){
+                   ownershipTransferStatus = $scope.ownershipTransferApproverStatus;
+                   $scope.currentOwnershipTransferApprover= true;
+                   record.isCurrentRecordSetOwner = true;
+               }else if ($scope.isNotRequestedGroupMember && status === "PendingReview"){return;}
+               else{
+                   ownershipTransferStatus = $scope.ownershipTransferRequestorStatus;
+                   $scope.currentOwnershipTransferApprover= false;
+                   record.isCurrentRecordSetOwner= false;
+               }
+               $scope.ownershipTransferStatus = ownershipTransferStatus
+           })
+        };
         return groupsService
             .getGroupMemberList(groupId)
             .then(success)
