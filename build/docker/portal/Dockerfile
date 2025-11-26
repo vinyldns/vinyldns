@@ -20,7 +20,7 @@ RUN mkdir -p /opt/vinyldns/conf && \
        rm -rf /opt/vinyldns/vinyldns-portal*; \
     fi
 
-FROM openjdk:26-slim
+FROM eclipse-temurin:21-jre-ubi9-minimal
 ARG DOCKER_FILE_PATH
 ARG VINYLDNS_VERSION
 
@@ -38,7 +38,7 @@ VOLUME ["/opt/vinyldns/lib_extra/", "/opt/vinyldns/conf/"]
 
 EXPOSE 9001
 
-ENV JVM_OPTS=""
+ENV JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
 ENV INIT_SCRIPT="/bin/true"
 ENTRYPOINT ["/bin/bash","-c", "${INIT_SCRIPT} && java ${JVM_OPTS} -Dvinyldns.version=$(cat /opt/vinyldns/version) \
                                -Dlog4j.configurationFile=/opt/vinyldns/conf/log4j2.xml \
