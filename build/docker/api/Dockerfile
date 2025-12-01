@@ -12,14 +12,17 @@ RUN mkdir -p /opt/vinyldns/conf && \
       && cp artifacts/vinyldns-api.jar /opt/vinyldns/; \
     fi
 
-FROM eclipse-temurin:21-jre-ubi9-minimal
+FROM eclipse-temurin:25
 ARG DOCKER_FILE_PATH
 ARG VINYLDNS_VERSION
 
 RUN test -n "VINYLDNS_VERSION" || (echo "VINYLDNS_VERSION  not set" && false) && \
     test -n "DOCKER_FILE_PATH" || (echo "DOCKER_FILE_PATH  not set" && false) && \
     mkdir -p /opt/vinyldns/lib_extra && \
-    echo "${VINYLDNS_VERSION}" > /opt/vinyldns/version
+    echo "${VINYLDNS_VERSION}" > /opt/vinyldns/version && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends curl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=base-build /opt/vinyldns /opt/vinyldns
 COPY ${DOCKER_FILE_PATH}/application.conf /opt/vinyldns/conf
