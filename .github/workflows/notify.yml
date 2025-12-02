@@ -11,45 +11,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send Slack Notification On Success
-        uses: slackapi/slack-github-action@v1.18.0
+        uses: slackapi/slack-github-action@v2.1.1
         if: github.event.workflow_run.conclusion == 'success'
         with:
-          # For posting a rich message using Block Kit
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
-            {
-              "text": "GitHub Action ${{ github.event.workflow.name }} completed successfully!\nAction: ${{ github.event.workflow_run.html_url }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":check_mark: GitHub Action `${{ github.event.workflow.name }}` completed successfully!\nAction: ${{ github.event.workflow_run.html_url }}"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+            channel: ${{ secrets.SLACK_CHANNEL_ID }}
+            text: "GitHub Action ${{ github.event.workflow.name }} completed successfully! Action: ${{ github.event.workflow_run.html_url }}"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: ":white_check_mark: GitHub Action `${{ github.event.workflow.name }}` completed successfully!\nAction: ${{ github.event.workflow_run.html_url }}"
 
       - name: Send Slack Notification on Failure
-        uses: slackapi/slack-github-action@v1.18.0
+        uses: slackapi/slack-github-action@v2.1.1
         if: github.event.workflow_run.conclusion != 'success'
         with:
-          # For posting a rich message using Block Kit
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
-            {
-              "text": "GitHub Action ${{ github.event.workflow.name }} FAILED!\nAction: ${{ github.event.workflow_run.html_url }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":x: GitHub Action `${{ github.event.workflow.name }}` FAILED!\nAction: ${{ github.event.workflow_run.html_url }}"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+            channel: ${{ secrets.SLACK_CHANNEL_ID }}
+            text: "GitHub Action ${{ github.event.workflow.name }} FAILED! Action: ${{ github.event.workflow_run.html_url }}"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: ":x: GitHub Action `${{ github.event.workflow.name }}` FAILED!\nAction: ${{ github.event.workflow_run.html_url }}"
