@@ -144,10 +144,11 @@ angular.module('controller.records', [])
     $scope.recordSetGroupOwnershipStatus = function recordSetGroupOwnershipStatus(groupId, profileId, record) {
         function success(response) {
            var ownershipTransferStatus;
-           const status = record.recordSetGroupChange.ownershipTransferStatus;
+           const status = record.recordSetGroupChange && record.recordSetGroupChange.ownershipTransferStatus 
+                          ? record.recordSetGroupChange.ownershipTransferStatus : "None";
            isNotRequestedGroupMemberResponse(record, profileId).then(result => {
-               if($scope.profile.isSuper || $scope.profile.isSupport || $scope.profile.isZoneAdmin){
-                 if (status === "AutoApproved" ||
+            if($scope.profile.isSuper || $scope.profile.isSupport || $scope.profile.isZoneAdmin){
+                if (status === "AutoApproved" ||
                      status === "ManuallyRejected" ||
                      status === "ManuallyApproved" ||
                      status === "None" ||
@@ -373,6 +374,13 @@ angular.module('controller.records', [])
     $scope.submitCreateRecord = function() {
         var record = angular.copy($scope.currentRecord);
         record['onlyFour'] = true;
+        if (!record.recordSetGroupChange) {
+            record.recordSetGroupChange = {
+                ownershipTransferStatus: "AutoApproved"
+        };
+        } else {
+            record.recordSetGroupChange = angular.copy(record.recordSetGroupChange);
+        }
 
         if ($scope.addRecordForm.$valid) {
             createRecordSet(record);
