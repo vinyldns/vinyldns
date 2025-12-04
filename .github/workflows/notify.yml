@@ -19,11 +19,6 @@ jobs:
           payload: |
             channel: ${{ secrets.SLACK_CHANNEL_ID }}
             text: "GitHub Action ${{ github.event.workflow.name }} completed successfully! Action: ${{ github.event.workflow_run.html_url }}"
-            blocks:
-              - type: section
-                text:
-                  type: mrkdwn
-                  text: ":white_check_mark: GitHub Action `${{ github.event.workflow.name }}` completed successfully!\nAction: ${{ github.event.workflow_run.html_url }}"
 
       - name: Send Slack Notification on Failure
         uses: slackapi/slack-github-action@v2.1.1
@@ -34,8 +29,3 @@ jobs:
           payload: |
             channel: ${{ secrets.SLACK_CHANNEL_ID }}
             text: "GitHub Action ${{ github.event.workflow.name }} FAILED! Action: ${{ github.event.workflow_run.html_url }}"
-            blocks:
-              - type: section
-                text:
-                  type: mrkdwn
-                  text: ":x: GitHub Action `${{ github.event.workflow.name }}` FAILED!\nAction: ${{ github.event.workflow_run.html_url }}"
