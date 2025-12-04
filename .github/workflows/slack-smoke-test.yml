@@ -1,0 +1,18 @@
+# .github/workflows/slack-smoke-test.yml
+name: Slack Smoke Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-slack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post test message to Slack
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: ${{ secrets.SLACK_CHANNEL_ID }}
+            text: "Slack smoke test from GitHub Actions in fork `${{ github.repository }}` on ref `${{ github.ref_name }}` :test_tube:"
