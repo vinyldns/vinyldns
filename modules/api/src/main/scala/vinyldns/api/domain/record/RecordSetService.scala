@@ -215,11 +215,11 @@ class RecordSetService(
       _ <- if(allowedZoneList.contains(zone.name)) isNotApexEndsWithDot(rsForValidations, zone).toResult else ().toResult
       _ <- messageQueue.send(change).toResult[Unit]
       _ <- if(recordSet.recordSetGroupChange.isDefined &&
-        recordSet.recordSetGroupChange.exists(rsgc =>
-          rsgc.ownershipTransferStatus != OwnershipTransferStatus.None &&
-            rsgc.ownershipTransferStatus != OwnershipTransferStatus.AutoApproved))
-        notifiers.notify(Notification(change)).toResult
-      else ().toResult
+              recordSet.recordSetGroupChange.exists(rsgc =>
+                  rsgc.ownershipTransferStatus != OwnershipTransferStatus.None
+                  && rsgc.ownershipTransferStatus != OwnershipTransferStatus.AutoApproved))
+              notifiers.notify(Notification(change)).toResult
+           else ().toResult
     } yield change
 
   def deleteRecordSet(
@@ -255,7 +255,7 @@ class RecordSetService(
     val existingOwnershipTransfer = existing.recordSetGroupChange.getOrElse(OwnershipTransfer.apply(OwnershipTransferStatus.None, Some("none")))
     val ownershipTransfer = recordSet.recordSetGroupChange.getOrElse(OwnershipTransfer.apply(OwnershipTransferStatus.None, Some("none")))
     if (recordSet.recordSetGroupChange.isDefined &&
-      ownershipTransfer.ownershipTransferStatus != OwnershipTransferStatus.None)
+      ownershipTransfer.ownershipTransferStatus != OwnershipTransferStatus.None && existingOwnershipTransfer != ownershipTransfer)
       if (zone.shared){
         if (approverOwnershipTransferStatus.contains(ownershipTransfer.ownershipTransferStatus)) {
           val recordSetOwnerApproval =
@@ -273,7 +273,6 @@ class RecordSetService(
                   ownerGroupId = ownershipTransfer.requestedOwnerGroupId,
                   recordSetGroupChange = Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.AutoApproved,
                     requestedOwnerGroupId = ownershipTransfer.requestedOwnerGroupId)))
-
               case _ => recordSet.copy(
                 recordSetGroupChange = Some(ownershipTransfer.copy(
                   ownershipTransferStatus = OwnershipTransferStatus.None,
@@ -323,11 +322,11 @@ class RecordSetService(
       } else for {
         _ <- unchangedRecordSetOwnershipStatus(recordSet, existing).toResult
       } yield recordSet.copy(
-        ownerGroupId = recordSet.ownerGroupId,
-        recordSetGroupChange = existing.recordSetGroupChange)
+                ownerGroupId = recordSet.ownerGroupId,
+                recordSetGroupChange = existing.recordSetGroupChange)
     else recordSet.copy(
-      ownerGroupId = recordSet.ownerGroupId,
-      recordSetGroupChange = existing.recordSetGroupChange).toResult
+           ownerGroupId = recordSet.ownerGroupId,
+           recordSetGroupChange = existing.recordSetGroupChange).toResult
   }
 
   // For dotted hosts. Check if a record that may conflict with dotted host exist or not

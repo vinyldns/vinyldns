@@ -473,12 +473,28 @@
                     Owner Group transfer status is required for records in shared zones
                 </modal-invalid>
             </modal-element>
-            <modal-element label="Requested Record Owner Group"
+            <modal-element label="Ownership Transfer Group"
                            invalid-when="addRecordForm.$submitted && addRecordForm.recordSetGroupChange.requestedOwnerGroupId.$invalid"
-                           ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone && recordModal.previous.recordSetGroupChange.ownershipTransferStatus=='PendingReview'">
+                           ng-if="recordModal.sharedDisplayEnabled
+                                && recordModal.sharedZone
+                                && currentRecord.recordSetGroupChange.requestedOwnerGroupId != 'null'
+                                && currentRecord.recordSetGroupChange.requestedOwnerGroupId != undefined">
                 <input name="requestedOwnerGroupName"
                        class="form-control"
                        ng-model="recordSetRequestedOwnershipName"
+                       ng-class="recordModal.details.class"
+                       ng-readonly="recordModal.basics.readOnly"
+                       placeholder="">
+            </modal-element>
+            <modal-element label="Ownership Transfer Status"
+                           invalid-when="addRecordForm.$submitted && addRecordForm.recordSetGroupChange.ownershipTransferStatus.$invalid"
+                           ng-if="recordModal.sharedDisplayEnabled
+                                && recordModal.sharedZone
+                                && currentRecord.recordSetGroupChange.ownershipTransferStatus != 'None'
+                                && currentRecord.recordSetGroupChange.ownershipTransferStatus != undefined">
+                <input name="ownerGroupStatus"
+                       class="form-control"
+                       ng-model="currentRecord.recordSetGroupChange.ownershipTransferStatus"
                        ng-class="recordModal.details.class"
                        ng-readonly="recordModal.basics.readOnly"
                        placeholder="">
