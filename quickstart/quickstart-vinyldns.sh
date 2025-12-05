@@ -30,6 +30,7 @@ function usage() {
   echo -e "\t-t, --timeout      the time to wait (in seconds) for the Portal and API to start (default: 60)"
   echo -e "\t-u, --update       remove the local quickstart images to force a rebuild"
   echo -e "\t-v, --version-tag  specify Docker image tag version (default: latest)"
+  echo -e "\t-l, --local        build the VinylDNS API and Portal artifacts locally before starting containers"
   echo
   echo -e "\t-h, --help         show this help"
 }
@@ -86,6 +87,7 @@ CLEAN=0
 ENV_FILE="${DIR}/.env"
 SHELL_REQUESTED=0
 EXPLICIT_VERSION=0
+LOCAL=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
   -t | --timeout)
@@ -147,6 +149,10 @@ while [[ $# -gt 0 ]]; do
     shift
     shift
     ;;
+  -l | --local)
+    LOCAL=true
+    shift
+    ;;
   *)
     usage
     exit
@@ -203,6 +209,34 @@ if [[ $UPDATE -eq 1 ]]; then
   echo "${F_GREEN}Successfully removed all local VinylDNS Docker images and running containers tagged ${F_RESET}'${VINYLDNS_IMAGE_VERSION}'${F_YELLOW}...${F_RESET}"
   if [ -z "${BUILD}" ]; then
     echo "${F_LRED}You may need to re-run with the '--build' flag...${F_RESET}"
+  fi
+fi
+
+if [ "$LOCAL" = true ]; then
+  if [ ! -f "${DIR}/../artifacts/vinyldns-api.jar" ]; then
+    echo "Building VinylDNS API JAR locally..."
+    (
+      cd "${DIR}/.." || exit 1
+      sbt -Dbuild.scalafmtOnCompile=false \
+          -Dbuild.lintOnCompile=false \
+          build-api
+    )
+    echo "Local VinylDNS API JAR built successfully: artifacts/vinyldns-api.jar"
+  else
+    echo "Using existing VinylDNS API JAR: artifacts/vinyldns-api.jar"
+  fi
+
+  if [ ! -f "${DIR}/../artifacts/vinyldns-portal.zip" ]; then
+    echo "Building VinylDNS Portal artifact locally..."
+    (
+      cd "${DIR}/.." || exit 1
+      sbt -Dbuild.scalafmtOnCompile=false \
+          -Dbuild.lintOnCompile=false \
+          build-portal
+    )
+    echo "Local VinylDNS Portal artifact built successfully: artifacts/vinyldns-portal.zip"
+  else
+    echo "Using existing VinylDNS Portal artifact: artifacts/vinyldns-portal.zip"
   fi
 fi
 
