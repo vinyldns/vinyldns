@@ -85,6 +85,7 @@ UPDATE=0
 CLEAN=0
 ENV_FILE="${DIR}/.env"
 SHELL_REQUESTED=0
+EXPLICIT_VERSION=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
   -t | --timeout)
@@ -139,6 +140,7 @@ while [[ $# -gt 0 ]]; do
     shift
     ;;
   -v | --version-tag)
+    EXPLICIT_VERSION=1
     export VINYLDNS_VERSION=$2
     export VINYLDNS_BASE_VERSION=${VINYLDNS_VERSION}
     export VINYLDNS_IMAGE_VERSION=${VINYLDNS_VERSION}
@@ -162,12 +164,16 @@ if [[ $SHELL_REQUESTED -eq 1 ]]; then
   exit
 fi
 
-# The version of VinylDNS docker image to run
-export VINYLDNS_VERSION=latest
+# The version of VinylDNS docker image to run (if not explicitly set)
+if [[ -z "${VINYLDNS_VERSION:-}" ]]; then
+  export VINYLDNS_VERSION=latest
+fi
 # The base/starting version of VinylDNS docker build image to use (vinyldns/build:<version>)
 export VINYLDNS_BASE_VERSION=latest
 # The version of the images to build
-export VINYLDNS_IMAGE_VERSION=${VINYLDNS_VERSION}
+if [[ -z "${VINYLDNS_IMAGE_VERSION:-}" ]]; then
+  export VINYLDNS_IMAGE_VERSION=${VINYLDNS_VERSION}
+fi
 
 # Make the list of services unique
 SERVICE=$(echo "$SERVICE" | uniq)
@@ -180,9 +186,11 @@ if [[ $RESET_DOCKER -eq 1 ]] || [[ $CLEAN -eq 1 ]]; then
   fi
 fi
 
-if [ -n "${BUILD}" ] || [ -n "$(docker images vinyldns/portal:local-dev --format '{{.Repository}}:{{.Tag}}')" ]; then
-  VINYLDNS_IMAGE_VERSION="local-dev"
-  export VINYLDNS_VERSION=${VINYLDNS_IMAGE_VERSION}
+if [[ $EXPLICIT_VERSION -eq 0 ]]; then
+  if [ -n "${BUILD}" ] || [ -n "$(docker images vinyldns/portal:local-dev --format '{{.Repository}}:{{.Tag}}')" ]; then
+    VINYLDNS_IMAGE_VERSION="local-dev"
+    export VINYLDNS_VERSION=${VINYLDNS_IMAGE_VERSION}
+  fi
 fi
 
 # Update images if requested
