@@ -20,14 +20,17 @@ RUN mkdir -p /opt/vinyldns/conf && \
        rm -rf /opt/vinyldns/vinyldns-portal*; \
     fi
 
-FROM openjdk:11-slim
+FROM eclipse-temurin:25
 ARG DOCKER_FILE_PATH
 ARG VINYLDNS_VERSION
 
 RUN test -n "VINYLDNS_VERSION" || (echo "VINYLDNS_VERSION  not set" && false) && \
     test -n "DOCKER_FILE_PATH" || (echo "DOCKER_FILE_PATH  not set" && false) && \
     mkdir -p /opt/vinyldns/lib_extra && \
-    echo "${VINYLDNS_VERSION}" > /opt/vinyldns/version
+    echo "${VINYLDNS_VERSION}" > /opt/vinyldns/version && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends curl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY --from=base-build /opt/vinyldns /opt/vinyldns
 COPY ${DOCKER_FILE_PATH}/application.conf /opt/vinyldns/conf
@@ -38,7 +41,7 @@ VOLUME ["/opt/vinyldns/lib_extra/", "/opt/vinyldns/conf/"]
 
 EXPOSE 9001
 
-ENV JVM_OPTS=""
+ENV JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
 ENV INIT_SCRIPT="/bin/true"
 ENTRYPOINT ["/bin/bash","-c", "${INIT_SCRIPT} && java ${JVM_OPTS} -Dvinyldns.version=$(cat /opt/vinyldns/version) \
                                -Dlog4j.configurationFile=/opt/vinyldns/conf/log4j2.xml \
