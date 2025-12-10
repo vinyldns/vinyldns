@@ -2117,7 +2117,7 @@ class RecordSetServiceSpec
         .getRecordSetChange(okZone.id, pendingCreateAAAA.id)
 
       val actual: RecordSetChange =
-        underTest.getRecordSetChange(okZone.id, pendingCreateAAAA.id, okAuth).value.unsafeRunSync().toOption.get
+        underTest.getRecordSetChange(okZone.id, pendingCreateAAAA.recordSet.id, pendingCreateAAAA.id, okAuth).value.unsafeRunSync().toOption.get
       actual shouldBe pendingCreateAAAA
     }
 
@@ -2127,7 +2127,7 @@ class RecordSetServiceSpec
         .getRecordSetChange(sharedZone.id, pendingCreateSharedRecord.id)
 
       val actual: RecordSetChange =
-          underTest.getRecordSetChange(sharedZone.id, pendingCreateSharedRecord.id, okAuth).value.unsafeRunSync().toOption.get
+          underTest.getRecordSetChange(sharedZone.id, pendingCreateSharedRecord.recordSet.id, pendingCreateSharedRecord.id, okAuth).value.unsafeRunSync().toOption.get
 
       actual shouldBe pendingCreateSharedRecord
     }
@@ -2137,7 +2137,7 @@ class RecordSetServiceSpec
         .when(mockRecordChangeRepo)
         .getRecordSetChange(okZone.id, pendingCreateAAAA.id)
       val error =
-        underTest.getRecordSetChange(okZone.id, pendingCreateAAAA.id, okAuth).value.unsafeRunSync().swap.toOption.get
+        underTest.getRecordSetChange(okZone.id, aaaa.id, pendingCreateAAAA.id, okAuth).value.unsafeRunSync().swap.toOption.get
       error shouldBe a[RecordSetChangeNotFoundError]
     }
 
@@ -2174,7 +2174,7 @@ class RecordSetServiceSpec
         .getRecordSetChange(zoneActive.id, pendingCreateAAAA.id)
 
       val error =
-        underTest.getRecordSetChange(zoneActive.id, pendingCreateAAAA.id, dummyAuth).value.unsafeRunSync().swap.toOption.get
+        underTest.getRecordSetChange(zoneActive.id, pendingCreateAAAA.recordSet.id, pendingCreateAAAA.id, dummyAuth).value.unsafeRunSync().swap.toOption.get
 
       error shouldBe a[NotAuthorizedError]
     }
@@ -2189,6 +2189,7 @@ class RecordSetServiceSpec
         underTest
           .getRecordSetChange(
             zoneNotAuthorized.id,
+            pendingCreateSharedRecordNotSharedZone.recordSet.id,
             pendingCreateSharedRecordNotSharedZone.id,
             okAuth
           )
