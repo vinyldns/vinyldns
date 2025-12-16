@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-angular.module('directives.modals.module',
-    ['directives.modals.element.module', 'directives.modals.invalid.module', 'directives.modals.modal.module',
-    'directives.modals.record.module', 'directives.modals.body.module', 'directives.modals.footer.module',
-    'directives.modals.zoneconnection.module','directives.modals.zonecreation.module','directives.modals.zonecreatedview.module']);
+angular.module('directives.modals.zonecreatedview.module', [])
+    .directive('zonecreatedview', function() {
+        return {
+            restrict: 'E',
+            replace: true,
+            templateUrl: "/public/templates/zonecreatedview-modal.html"
+        }
+    });
