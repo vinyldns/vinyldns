@@ -21,6 +21,7 @@ import java.time.temporal.ChronoUnit
 import vinyldns.core.TestZoneData._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import vinyldns.core.TestMembershipData.okGroup
 
 class ZoneSpec extends AnyWordSpec with Matchers {
 
@@ -68,6 +69,39 @@ class ZoneSpec extends AnyWordSpec with Matchers {
       val result = zone2.deleteACLRule(groupAclRule)
 
       (result.acl.rules should contain).only(userAclRule)
+    }
+  }
+
+  "Generate Zone" should {
+    "toString should output a generate zone properly" in {
+      val result = generateBindZone.toString
+
+      result should include("id=\"" + generateBindZone.id + "\"")
+      result should include("groupId=\"" + generateBindZone.groupId + "\"")
+      result should include("provider=\"" + generateBindZone.provider + "\"")
+      result should include("zoneName=\"" + generateBindZone.zoneName + "\"")
+      result should include("status=\"" + generateBindZone.status + "\"")
+      result should include("created=\"" + generateBindZone.created + "\"")
+    }
+
+    "update a GenerateZone instance from UpdateGenerateZoneInput" in {
+      val result = GenerateZone(updateBindZone, generateBindZone)
+
+      result.groupId shouldEqual okGroup.id
+      result.provider shouldEqual "bind"
+      result.zoneName shouldEqual okZone.name
+      result.providerParams shouldEqual bindProviderParams
+      result.response shouldEqual Some(bindZoneGenerationResponse)
+      result.id shouldEqual "bindZoneId"
+    }
+    "update a GenerateZone instance from ZoneGenerationInput" in {
+      val result = GenerateZone(inputBindZone)
+
+      result.groupId shouldEqual okGroup.id
+      result.provider shouldEqual "bind"
+      result.zoneName shouldEqual okZone.name
+      result.providerParams shouldEqual bindProviderParams
+      result.response shouldEqual Some(bindZoneGenerationResponse)
     }
   }
 }

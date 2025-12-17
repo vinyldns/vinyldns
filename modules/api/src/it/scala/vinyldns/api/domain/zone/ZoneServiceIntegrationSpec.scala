@@ -18,6 +18,8 @@ package vinyldns.api.domain.zone
 
 import cats.data.NonEmptyList
 import cats.effect._
+import org.json4s.{JArray, JInt, JString, JValue}
+import org.json4s.JsonDSL._
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -35,8 +37,8 @@ import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.mysql.TransactionProvider
 import vinyldns.api.{MySqlApiIntegrationSpec, ResultHelpers}
-import vinyldns.core.TestMembershipData.{okAuth, okUser}
-import vinyldns.core.TestZoneData.okZone
+import vinyldns.core.TestMembershipData.{abcAuth, okAuth, okGroup, okUser}
+import vinyldns.core.TestZoneData.{abcZone, okZone}
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -65,9 +67,77 @@ class ZoneServiceIntegrationSpec
   private val recordSetRepo = recordSetRepository
   private val zoneRepo: ZoneRepository = zoneRepository
   private val mockMembershipService = mock[MembershipService]
+  val mockDnsProviderApiConnection = DnsProviderApiConnection(
+    providers = Map(
+      "powerdns" -> DnsProviderConfig(
+        endpoints = Map(
+          "create-zone" -> "http://localhost:19005/api/v1/servers/localhost/zones",
+          "delete-zone" -> "http://localhost:19005/api/v1/servers/localhost/zones/{{zoneName}}",
+          "update-zone" -> "http://localhost:19005/api/v1/servers/localhost/zones/{{zoneName}}"
+        ),
+        requestTemplates = Map(
+          "create-zone" -> """
+        {
+          "name": "{{zoneName}}",
+          "kind": "{{kind}}",
+          "masters": "{{masters}}",
+          "nameservers": "{{nameservers}}"
+        }
+        """,
+          "update-zone" -> """
+        {
+          "name": "{{zoneName}}",
+          "kind": "{{kind}}",
+          "masters": "{{masters}}",
+          "nameservers": "{{nameservers}}"
+        }
+        """
+        ),
+        schemas = Map(
+          "create-zone" -> """{ "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "PowerDNS Create Zone", "type": "object", "required": ["kind", "nameservers"], "properties": { "kind": { "type": "string", "enum": ["Native", "Master"] }, "nameservers": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^[a-zA-Z0-9.-]+\\.$" } }, "masters": { "type": "array", "items": { "type": "string" } } }, "additionalProperties": false }""",
+          "update-zone" -> """{ "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "PowerDNS Update Zone", "type": "object", "properties": { "kind": { "type": "string", "enum": ["Native", "Master"] }, "masters": { "type": "array", "items": { "type": "string" } } }, "additionalProperties": false }"""
+        ),
+        apiKey = "test-api-key"
+      )
+    ),
+
+    nameServers = List("ns1.example.com.", "ns2.example.com."),
+    allowedProviders = List("powerdns")
+  )
+
+  private val mockGenerateZoneRepository: GenerateZoneRepository = generateZoneRepository
   private var testZoneService: ZoneServiceAlgebra = _
 
   private val badAuth = AuthPrincipal(okUser, Seq())
+
+  val bindZoneGenerationResponse: ZoneGenerationResponse =
+    ZoneGenerationResponse(Some(200),Some("bind"), Some(("response" -> "success"): JValue), GenerateZoneChangeType.Create)
+  val pdnsZoneGenerationResponse: ZoneGenerationResponse =
+    ZoneGenerationResponse(Some(200),Some("powerdns"), Some(("response" -> "success"): JValue), GenerateZoneChangeType.Create)
+
+  val bindProviderParams: Map[String, JValue] = Map(
+    "nameservers" -> JArray(List(JString("bind_ns"))),
+    "admin_email" -> JString("test@test.com"),
+    "ttl" -> JInt(3600),
+    "refresh" -> JInt(6048000),
+    "retry" -> JInt(86400),
+    "expire" -> JInt(24192000),
+    "negative_cache_ttl" -> JInt(6048000)
+  )
+
+  val powerDNSProviderParams: Map[String, JValue] = Map(
+    "nameservers" -> JArray(List(JString("bind_ns"))),
+    "kind"-> JString("Master"),
+  )
+
+  private val generateBindZoneAuthorized = GenerateZone(
+    okGroup.id,
+    "test@test.com",
+    "bind",
+    okZone.name,
+    providerParams = bindProviderParams,
+    response=Some(bindZoneGenerationResponse)
+  )
 
   private val testRecordSOA = RecordSet(
     zoneId = okZone.id,
@@ -107,8 +177,10 @@ class ZoneServiceIntegrationSpec
   override protected def beforeEach(): Unit = {
     clearRecordSetRepo()
     clearZoneRepo()
+    clearGenerateZoneRepo()
 
     waitForSuccess(zoneRepo.save(okZone))
+    waitForSuccess(mockGenerateZoneRepository.save(generateBindZoneAuthorized))
     // Seeding records in DB
     executeWithinTransaction { db: DB =>
       IO {
@@ -130,7 +202,9 @@ class ZoneServiceIntegrationSpec
       new AccessValidations(),
       mockBackendResolver,
       NoOpCrypto.instance,
-      mockMembershipService
+      mockMembershipService,
+      mockDnsProviderApiConnection,
+      mockGenerateZoneRepository
     )
   }
 
@@ -169,6 +243,47 @@ class ZoneServiceIntegrationSpec
         change.zone.id shouldBe okZone.id
         change.changeType shouldBe ZoneChangeType.Delete
       }
+    }
+  }
+
+  "Generate Zone" should {
+    "return a zone with appropriate response" in {
+      val result =
+        testZoneService
+          .getGenerateZoneByName(okZone.name, okAuth)
+          .value
+          .unsafeRunSync()
+      result shouldBe Right(generateBindZoneAuthorized)
+    }
+
+    "return a ZoneNotFoundError for zone does not exists" in {
+      val result =
+        testZoneService
+          .getGenerateZoneByName(abcZone.name, abcAuth)
+          .value
+          .unsafeRunSync()
+      result shouldBe Left(ZoneNotFoundError("Zone with name abc.zone.recordsets. does not exists"))
+    }
+
+    "return a name servers with appropriate response" in {
+      val result =
+        testZoneService
+          .dnsNameServers()
+          .value
+          .unsafeRunSync()
+      result shouldBe Right(
+        List("ns1.example.com.", "ns2.example.com.")
+      )
+    }
+    "return a allowed providers with appropriate response" in {
+      val result =
+        testZoneService
+          .allowedDNSProviders()
+          .value
+          .unsafeRunSync()
+      result shouldBe Right(
+        List("powerdns")
+      )
     }
   }
 

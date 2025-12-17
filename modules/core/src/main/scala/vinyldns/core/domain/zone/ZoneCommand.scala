@@ -21,3 +21,5 @@ trait ZoneCommand {
 }
 
 trait ZoneCommandResult
+
+trait GenerateZoneCommandResult

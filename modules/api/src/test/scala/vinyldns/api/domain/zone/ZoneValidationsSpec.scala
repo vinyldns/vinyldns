@@ -123,4 +123,15 @@ class ZoneValidationsSpec
       isValidZoneAcl(zoneAcl) should be(right)
     }
   }
+  "isValidGenerateZoneConnection" should {
+    "fail if any zone provider connection is invalid" in {
+      val isInValidGenerateZoneConnection = isValidGenerateZoneConn (500, "Connection invalid")
+      isInValidGenerateZoneConnection should be(left)
+
+    }
+    "succeed if all zone provider connection are valid" in {
+      val isValidGenerateZoneConnection = isValidGenerateZoneConn (200, "Connection Success")
+      isValidGenerateZoneConnection should be(right)
+    }
+  }
 }
