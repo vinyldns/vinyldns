@@ -51,6 +51,8 @@ services:
       args:
         VINYLDNS_VERSION: "${VINYLDNS_IMAGE_VERSION}"
         DOCKER_FILE_PATH: "build/docker/api"
+    environment:
+      WAIT_FOR_LOCALSTACK: "true"
     volumes:
       - ../build/docker/api/application.conf:/opt/vinyldns/conf/application.conf
       - ../build/docker/api/log4j2.xml:/opt/vinyldns/conf/log4j2.xml

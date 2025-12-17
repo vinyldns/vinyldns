@@ -55,6 +55,8 @@ options:
         url: portal/connections.html
       - title: Search Zones
         url: portal/search-zones.html
+      - title: RecordSets Ownership Transfer
+        url: portal/recordsets-ownership-transfer.html
 
   - title: Credentials
     url: portal/credentials.html

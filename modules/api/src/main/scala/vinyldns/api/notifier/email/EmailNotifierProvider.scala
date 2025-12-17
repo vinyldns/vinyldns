@@ -22,7 +22,8 @@ import pureconfig._
 import pureconfig.generic.auto._
 import pureconfig.module.catseffect.syntax._
 import cats.effect.{Blocker, ContextShift, IO}
-import javax.mail.Session
+
+import javax.mail._
 
 class EmailNotifierProvider extends NotifierProvider {
   import EmailNotifierConfig._
@@ -39,6 +40,14 @@ class EmailNotifierProvider extends NotifierProvider {
     } yield new EmailNotifier(emailConfig, session, userRepository, groupRepository)
 
   def createSession(config: EmailNotifierConfig): IO[Session] = IO {
-    Session.getInstance(config.smtp)
+    val username = config.smtp.getProperty("mail.smtp.username")
+    val password = config.smtp.getProperty("mail.smtp.password")
+    val auth = config.smtp.getProperty("mail.smtp.auth")
+    if (auth=="true") {
+      Session.getInstance(config.smtp, new Authenticator() {
+        override protected def getPasswordAuthentication: PasswordAuthentication =
+          new PasswordAuthentication(username, password)
+      })
+    } else Session.getInstance(config.smtp)
   }
 }

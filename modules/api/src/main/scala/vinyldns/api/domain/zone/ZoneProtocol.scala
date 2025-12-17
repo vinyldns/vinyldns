@@ -219,7 +219,7 @@ case class RecordSetListInfo(
                               accessLevel: AccessLevel,
                               ownerGroupId: Option[String],
                               ownerGroupName: Option[String],
-                              recordSetGroupChange: Option[OwnerShipTransfer],
+                              recordSetGroupChange: Option[OwnershipTransfer],
                               fqdn: Option[String]
                             )
 
@@ -257,7 +257,7 @@ case class RecordSetInfo(
                           account: String,
                           ownerGroupId: Option[String],
                           ownerGroupName: Option[String],
-                          recordSetGroupChange: Option[OwnerShipTransfer],
+                          recordSetGroupChange: Option[OwnershipTransfer],
                           fqdn: Option[String]
                         )
 
@@ -294,7 +294,7 @@ case class RecordSetGlobalInfo(
                                 account: String,
                                 ownerGroupId: Option[String],
                                 ownerGroupName: Option[String],
-                                recordSetGroupChange: Option[OwnerShipTransfer],
+                                recordSetGroupChange: Option[OwnershipTransfer],
                                 fqdn: Option[String],
                                 zoneName: String,
                                 zoneShared: Boolean

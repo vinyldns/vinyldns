@@ -31,8 +31,8 @@ import vinyldns.core.domain.{EncryptFromJson, Encrypted, Fqdn}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.core.Messages._
-import vinyldns.core.domain.record.OwnerShipTransferStatus
-import vinyldns.core.domain.record.OwnerShipTransferStatus.OwnerShipTransferStatus
+import vinyldns.core.domain.record.OwnershipTransferStatus
+import vinyldns.core.domain.record.OwnershipTransferStatus.OwnershipTransferStatus
 
 trait DnsJsonProtocol extends JsonValidation {
   import vinyldns.core.domain.record.RecordType._
@@ -45,7 +45,7 @@ trait DnsJsonProtocol extends JsonValidation {
     AlgorithmSerializer,
     EncryptedSerializer,
     RecordSetSerializer,
-    ownerShipTransferSerializer,
+    ownershipTransferSerializer,
     RecordSetListInfoSerializer,
     RecordSetGlobalInfoSerializer,
     RecordSetInfoSerializer,
@@ -274,7 +274,7 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "id").default[String](UUID.randomUUID().toString),
         (js \ "account").default[String]("system"),
         (js \ "ownerGroupId").optional[String],
-        (js \ "recordSetGroupChange").optional[OwnerShipTransfer],
+        (js \ "recordSetGroupChange").optional[OwnershipTransfer],
         (js \ "fqdn").optional[String]
         ).mapN(RecordSet.apply)
 
@@ -304,15 +304,15 @@ trait DnsJsonProtocol extends JsonValidation {
   }
 
 
-  case object ownerShipTransferSerializer extends ValidationSerializer[OwnerShipTransfer] {
-    override def fromJson(js: JValue): ValidatedNel[String, OwnerShipTransfer] =
+  case object ownershipTransferSerializer extends ValidationSerializer[OwnershipTransfer] {
+    override def fromJson(js: JValue): ValidatedNel[String, OwnershipTransfer] =
       (
-        (js \ "ownerShipTransferStatus").required[OwnerShipTransferStatus]("Missing ownerShipTransfer.ownerShipTransferStatus"),
+        (js \ "ownershipTransferStatus").required[OwnershipTransferStatus]("Missing ownershipTransfer.ownershipTransferStatus"),
         (js \ "requestedOwnerGroupId").optional[String],
-        ).mapN(OwnerShipTransfer.apply)
+        ).mapN(OwnershipTransfer.apply)
 
-    override def toJson(rsa: OwnerShipTransfer): JValue =
-      ("ownerShipTransferStatus" -> Extraction.decompose(rsa.ownerShipTransferStatus)) ~
+    override def toJson(rsa: OwnershipTransfer): JValue =
+      ("ownershipTransferStatus" -> Extraction.decompose(rsa.ownershipTransferStatus)) ~
         ("requestedOwnerGroupId" -> Extraction.decompose(rsa.requestedOwnerGroupId))
   }
 
