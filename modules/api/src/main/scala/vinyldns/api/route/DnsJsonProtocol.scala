@@ -52,7 +52,7 @@ trait DnsJsonProtocol extends JsonValidation {
     RecordSetChangeSerializer,
     JsonEnumV(ZoneStatus),
     JsonEnumV(GenerateZoneStatus),
-    JsonEnumV(OwnerShipTransferStatus),
+    JsonEnumV(OwnershipTransferStatus),
     JsonEnumV(ZoneChangeStatus),
     JsonEnumV(RecordSetStatus),
     JsonEnumV(RecordSetChangeStatus),
