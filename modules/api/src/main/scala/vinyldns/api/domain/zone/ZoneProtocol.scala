@@ -21,7 +21,7 @@ import vinyldns.core.domain.record.RecordSetChangeStatus.RecordSetChangeStatus
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{OwnerShipTransfer, RecordData, RecordSet, RecordSetChange}
+import vinyldns.core.domain.record.{OwnershipTransfer, RecordData, RecordSet, RecordSetChange}
 import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, GenerateZone, GenerateZoneStatus, Zone, ZoneACL, ZoneChange, ZoneConnection, ZoneGenerationResponse}
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone.GenerateZoneStatus.GenerateZoneStatus
