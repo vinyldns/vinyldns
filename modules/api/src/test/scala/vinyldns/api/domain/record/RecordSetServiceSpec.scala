@@ -2141,6 +2141,15 @@ class RecordSetServiceSpec
       error shouldBe a[RecordSetChangeNotFoundError]
     }
 
+    "return a RecordSetChangeNotFoundError if recordId is incorrect" in {
+      doReturn(IO.pure(Some(pendingCreateAAAA)))
+        .when(mockRecordChangeRepo)
+        .getRecordSetChange(okZone.id, pendingCreateAAAA.id)
+      val error =
+        underTest.getRecordSetChange(okZone.id, abcRecord.id, pendingCreateAAAA.id, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[RecordSetChangeNotFoundError]
+    }
+
     "return a RecordSets Count" in {
       doReturn(IO.pure(Some(okZone)))
         .when(mockZoneRepo)
