@@ -152,7 +152,7 @@ jobs:
               text: lines.join("\n")
             };
 
-            return JSON.stringify(payload);
+            return payload;
 
       - name: Send Slack Notification
         id: slack
