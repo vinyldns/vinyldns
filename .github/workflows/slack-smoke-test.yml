@@ -12,20 +12,6 @@ jobs:
         id: slack
         uses: slackapi/slack-github-action@v2.1.1
         with:
-          errors: true# .github/workflows/slack-smoke-test.yml
-name: Slack Smoke Test
-
-on:
-  workflow_dispatch:
-
-jobs:
-  test-slack:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Post test message to Slack
-        id: slack
-        uses: slackapi/slack-github-action@v2.1.1
-        with:
           errors: true
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -51,40 +37,6 @@ jobs:
                     text: |
                       *SHA:*
                       `${{ github.sha }}`
-              - type: actions
-                elements:
-                  - type: button
-                    text:
-                      type: plain_text
-                      text: Run
-                    url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-      - name: Log Slack API response
-        if: always()
-        run: |
-          echo "slack ok: ${{ steps.slack.outputs.ok }}"
-          echo "slack response: ${{ steps.slack.outputs.response }}"
-
-          method: chat.postMessage
-          token: ${{ secrets.SLACK_BOT_TOKEN }}
-          payload: |
-            channel: ${{ secrets.SLACK_CHANNEL_ID }}
-            text: "Slack Smoke Test — SUCCESS\nRepo: ${{ github.repository }}\nRef: ${{ github.ref_name }} @ ${{ github.sha }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            blocks:
-              - type: header
-                text:
-                  type: plain_text
-                  text: Slack Smoke Test — SUCCESS
-              - type: context
-                elements:
-                  - type: mrkdwn
-                    text: "*Repo:* `${{ github.repository }}`  •  *Trigger:* `${{ github.event_name }}`  •  *Actor:* `${{ github.actor }}`
-              - type: section
-                fields:
-                  - type: mrkdwn
-                    text: "*Ref:*\n`${{ github.ref_name }}`
-                  - type: mrkdwn
-                    text: "*SHA:*\n`${{ github.sha }}`
               - type: actions
                 elements:
                   - type: button
