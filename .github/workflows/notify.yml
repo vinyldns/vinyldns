@@ -37,6 +37,10 @@ jobs:
               context.payload.workflow_run?.name ||
               "Workflow";
 
+            // Target repo for API calls (can be overridden via workflow_dispatch input)
+            let targetOwner = repo.owner.login;
+            let targetRepoName = repo.name;
+
             if (context.eventName === "workflow_dispatch") {
               const runIdRaw = context.payload.inputs?.["run-id"] ?? "";
               const runId = Number(runIdRaw);
@@ -46,28 +50,26 @@ jobs:
 
               // Allow overriding repo for testing (e.g. "vinyldns/vinyldns")
               const repoInput = context.payload.inputs?.repo || "";
-              let targetOwner = repo.owner.login;
-              let targetRepo = repo.name;
               if (repoInput && repoInput.includes("/")) {
-                [targetOwner, targetRepo] = repoInput.split("/");
+                [targetOwner, targetRepoName] = repoInput.split("/");
               }
 
               const run = await github.rest.actions.getWorkflowRun({
                 owner: targetOwner,
-                repo: targetRepo,
+                repo: targetRepoName,
                 run_id: runId
               });
               wr = run.data;
 
               const wf = await github.rest.actions.getWorkflow({
                 owner: targetOwner,
-                repo: targetRepo,
+                repo: targetRepoName,
                 workflow_id: wr.workflow_id
               });
               workflowName = wf.data.name || workflowName;
             }
 
-            const repoFull = repo.full_name;
+            const repoFull = wr.repository?.full_name || `${targetOwner}/${targetRepoName}`;
             const defaultBranch = repo.default_branch;
             const isDefault =
               wr.head_repository?.full_name === repoFull &&
@@ -94,8 +96,8 @@ jobs:
               prNumber = wr.pull_requests[0]?.number;
               if (prNumber) {
                 const pr = await github.rest.pulls.get({
-                  owner: repo.owner.login,
-                  repo: repo.name,
+                  owner: targetOwner,
+                  repo: targetRepoName,
                   pull_number: prNumber
                 });
                 prTitle = pr.data.title || "";
@@ -108,8 +110,8 @@ jobs:
             let failedLine = "";
             if (wr.conclusion !== "success") {
               const jobs = await github.rest.actions.listJobsForWorkflowRun({
-                owner: repo.owner.login,
-                repo: repo.name,
+                owner: targetOwner,
+                repo: targetRepoName,
                 run_id: wr.id
               });
 
@@ -133,8 +135,8 @@ jobs:
             if (workflowName === "VinylDNS Official Release") {
               try {
                 const versionFile = await github.rest.repos.getContent({
-                  owner: repo.owner.login,
-                  repo: repo.name,
+                  owner: targetOwner,
+                  repo: targetRepoName,
                   path: "version.sbt",
                   ref: wr.head_sha
                 });
@@ -151,8 +153,8 @@ jobs:
                     // If a GitHub Release exists for this tag, link to it (best-effort)
                     try {
                       const rel = await github.rest.repos.getReleaseByTag({
-                        owner: repo.owner.login,
-                        repo: repo.name,
+                        owner: targetOwner,
+                        repo: targetRepoName,
                         tag: releaseTag
                       });
                       releaseUrl = rel.data.html_url || "";
