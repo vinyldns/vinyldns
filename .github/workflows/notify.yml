@@ -157,22 +157,16 @@ jobs:
 
             const runUrl = wr.html_url;
 
-            // Minimal fallback text (for notifications / mobile / search only)
-            const fallbackText = `${workflowName} — ${status}`;
-
             // Status emoji
             const statusEmoji = status === "SUCCESS" ? ":white_check_mark:" : ":x:";
 
-            // Build compact blocks
+            // Title text (shown above attachment, with emoji)
+            const titleText = `${statusEmoji} ${workflowName} — ${status}`;
+
+            // Build compact blocks (no title block - that's the top-level text now)
             const blocks = [];
 
-            // Block 1: Title with emoji at the start
-            blocks.push({
-              type: "section",
-              text: { type: "mrkdwn", text: `${statusEmoji} *${workflowName}* — *${status}*` }
-            });
-
-            // Block 2 (optional): Failure info - right after title for visibility
+            // Block 1 (optional): Failure info - right after title for visibility
             if (failedLine) {
               blocks.push({
                 type: "section",
@@ -219,7 +213,7 @@ jobs:
 
             const payload = {
               channel: process.env.SLACK_CHANNEL_ID,
-              text: fallbackText,
+              text: titleText,
               attachments: [{
                 color: attachmentColor,
                 blocks
