@@ -111,8 +111,8 @@ jobs:
                   ? failedJob.steps.find(s => s.conclusion === "failure")
                   : undefined;
                 failedLine = failedStep
-                  ? `Failed: job "${failedJob.name}" (step: "${failedStep.name}")`
-                  : `Failed: job "${failedJob.name}"`;
+                  ? `Failed in job \`${failedJob.name}\` at step \`${failedStep.name}\``
+                  : `Failed in job \`${failedJob.name}\``;
               }
             }
 
@@ -190,8 +190,7 @@ jobs:
             // Block 3: Trigger + actor + PR info (if applicable) + release info (if applicable)
             const infoBits = [`Trigger: \`${trigger}\``, `Actor: \`${actor}\``];
             if (prNumber && prTitle) {
-              const prLink = prUrl ? `<${prUrl}|#${prNumber}>` : `#${prNumber}`;
-              infoBits.push(`PR: ${prLink} → \`${prBase}\``);
+              infoBits.push(`PR: \`#${prNumber} ${prTitle}\` → \`${prBase}\``);
             }
             if (releaseTag) {
               const releaseText = releaseUrl ? `<${releaseUrl}|${releaseTag}>` : `\`${releaseTag}\``;
@@ -206,7 +205,7 @@ jobs:
             if (failedLine) {
               blocks.push({
                 type: "section",
-                text: { type: "mrkdwn", text: `:warning: *${failedLine}*` }
+                text: { type: "mrkdwn", text: `*${failedLine}*` }
               });
             }
 
