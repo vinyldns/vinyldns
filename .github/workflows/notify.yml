@@ -160,8 +160,8 @@ jobs:
             // Status emoji
             const statusEmoji = status === "SUCCESS" ? ":white_check_mark:" : ":x:";
 
-            // Title text (shown above attachment, with emoji)
-            const titleText = `${statusEmoji} ${workflowName} — ${status}`;
+            // Title text (shown above attachment, with emoji, bold)
+            const titleText = `${statusEmoji} *${workflowName} — ${status}*`;
 
             // Build compact blocks (no title block - that's the top-level text now)
             const blocks = [];
