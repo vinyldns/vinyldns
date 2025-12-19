@@ -75,16 +75,21 @@ jobs:
             const headShaShort = (wr.head_sha || "").slice(0, 7) || "unknown";
 
             let prLine = "";
+            let prUrl = "";
+            let prNumber = undefined;
+            let prTitle = "";
+            let prBase = "";
             if (Array.isArray(wr.pull_requests) && wr.pull_requests.length > 0) {
-              const prNumber = wr.pull_requests[0]?.number;
+              prNumber = wr.pull_requests[0]?.number;
               if (prNumber) {
                 const pr = await github.rest.pulls.get({
                   owner: repo.owner.login,
                   repo: repo.name,
                   pull_number: prNumber
                 });
-                const prTitle = pr.data.title || "";
-                const prBase = pr.data.base?.ref || "unknown";
+                prTitle = pr.data.title || "";
+                prBase = pr.data.base?.ref || "unknown";
+                prUrl = pr.data.html_url || "";
                 prLine = `PR: #${prNumber} "${prTitle}" → base: ${prBase}`;
               }
             }
@@ -112,6 +117,8 @@ jobs:
             }
 
             let releaseLine = "";
+            let releaseTag = "";
+            let releaseUrl = "";
             if (workflowName === "VinylDNS Official Release") {
               try {
                 const versionFile = await github.rest.repos.getContent({
@@ -127,7 +134,20 @@ jobs:
                   ).toString("utf8");
                   const match = versionSbt.match(/"([^"]+)"/);
                   if (match?.[1]) {
-                    releaseLine = `Release: v${match[1]}`;
+                    releaseTag = `v${match[1]}`;
+                    releaseLine = `Release: ${releaseTag}`;
+
+                    // If a GitHub Release exists for this tag, link to it (best-effort)
+                    try {
+                      const rel = await github.rest.repos.getReleaseByTag({
+                        owner: repo.owner.login,
+                        repo: repo.name,
+                        tag: releaseTag
+                      });
+                      releaseUrl = rel.data.html_url || "";
+                    } catch (e) {
+                      // no-op: release may not exist yet
+                    }
                   }
                 }
               } catch (e) {
@@ -136,20 +156,76 @@ jobs:
             }
 
             const lines = [];
-            lines.push(
-              `${repoFull}${isDefault ? " [DEFAULT]" : ""} (default: ${defaultBranch})`
-            );
+            const runUrl = wr.html_url;
+
+            // Fallback text (notifications / mobile / search)
             lines.push(`${workflowName} — ${status}`);
+            lines.push(`Repo: ${repoFull} (default: ${defaultBranch})`);
             lines.push(`Trigger: ${trigger} • Actor: ${actor}`);
             if (prLine) lines.push(prLine);
             lines.push(`Ref: ${headRepo}:${headBranch} @ ${headShaShort}`);
             if (releaseLine) lines.push(releaseLine);
             if (failedLine) lines.push(failedLine);
-            lines.push(`Run: ${wr.html_url}`);
+            lines.push(`Run: ${runUrl}`);
+
+            const headerText = `${workflowName} — ${status}`.slice(0, 150);
+
+            const contextBits = [
+              `*Repo:* \`${repoFull}\``,
+              `*Default:* \`${defaultBranch}\``,
+              isDefault ? "*default branch run*" : null,
+              `*Trigger:* \`${trigger}\``,
+              `*Actor:* \`${actor}\``
+            ].filter(Boolean);
+
+            const fields = [];
+            if (prNumber) fields.push({ type: "mrkdwn", text: `*PR:*\n<${prUrl || `https://github.com/${repoFull}/pull/${prNumber}`}|#${prNumber}>` });
+            if (prBase) fields.push({ type: "mrkdwn", text: `*Base:*\n\`${prBase}\`` });
+            fields.push({ type: "mrkdwn", text: `*Ref:*\n\`${headRepo}:${headBranch}\`` });
+            fields.push({ type: "mrkdwn", text: `*SHA:*\n\`${headShaShort}\`` });
+            if (releaseTag) fields.push({ type: "mrkdwn", text: `*Release:*\n${releaseUrl ? `<${releaseUrl}|${releaseTag}>` : `\`${releaseTag}\``}` });
+
+            const actions = [
+              {
+                type: "button",
+                text: { type: "plain_text", text: "Run" },
+                url: runUrl
+              }
+            ];
+            if (prUrl) {
+              actions.push({
+                type: "button",
+                text: { type: "plain_text", text: "PR" },
+                url: prUrl
+              });
+            }
+            if (releaseUrl) {
+              actions.push({
+                type: "button",
+                text: { type: "plain_text", text: "Release" },
+                url: releaseUrl
+              });
+            }
+
+            const blocks = [
+              { type: "header", text: { type: "plain_text", text: headerText } },
+              { type: "context", elements: [{ type: "mrkdwn", text: contextBits.join("  •  ") }] },
+              { type: "section", fields }
+            ];
+
+            if (failedLine) {
+              blocks.push({
+                type: "section",
+                text: { type: "mrkdwn", text: `*${failedLine}*` }
+              });
+            }
+
+            blocks.push({ type: "actions", elements: actions });
 
             const payload = {
               channel: process.env.SLACK_CHANNEL_ID,
-              text: lines.join("\n")
+              text: lines.join("\n"),
+              blocks
             };
 
             return payload;
