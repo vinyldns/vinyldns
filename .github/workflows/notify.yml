@@ -222,10 +222,16 @@ jobs:
             }
             blocks.push({ type: "actions", elements: actions });
 
+            // Use attachment with colored sidebar for visual grouping
+            const attachmentColor = status === "SUCCESS" ? "#36a64f" : "#dc3545";
+
             const payload = {
               channel: process.env.SLACK_CHANNEL_ID,
               text: lines.join("\n"),
-              blocks
+              attachments: [{
+                color: attachmentColor,
+                blocks
+              }]
             };
 
             return payload;
