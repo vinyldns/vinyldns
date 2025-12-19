@@ -168,58 +168,58 @@ jobs:
             if (failedLine) lines.push(failedLine);
             lines.push(`Run: ${runUrl}`);
 
-            const headerText = `${workflowName} — ${status}`.slice(0, 150);
+            // Status emoji
+            const statusEmoji = status === "SUCCESS" ? ":white_check_mark:" : ":x:";
 
-            const contextBits = [
-              `*Repo:* \`${repoFull}\``,
-              `*Default:* \`${defaultBranch}\``,
-              isDefault ? "*default branch run*" : null,
-              `*Trigger:* \`${trigger}\``,
-              `*Actor:* \`${actor}\``
-            ].filter(Boolean);
+            // Build compact blocks
+            const blocks = [];
 
-            const fields = [];
-            if (prNumber) fields.push({ type: "mrkdwn", text: `*PR:*\n<${prUrl || `https://github.com/${repoFull}/pull/${prNumber}`}|#${prNumber}>` });
-            if (prBase) fields.push({ type: "mrkdwn", text: `*Base:*\n\`${prBase}\`` });
-            fields.push({ type: "mrkdwn", text: `*Ref:*\n\`${headRepo}:${headBranch}\`` });
-            fields.push({ type: "mrkdwn", text: `*SHA:*\n\`${headShaShort}\`` });
-            if (releaseTag) fields.push({ type: "mrkdwn", text: `*Release:*\n${releaseUrl ? `<${releaseUrl}|${releaseTag}>` : `\`${releaseTag}\``}` });
+            // Block 1: Title (section, not header - smaller text)
+            blocks.push({
+              type: "section",
+              text: { type: "mrkdwn", text: `*${workflowName}* — *${status}* ${statusEmoji}` }
+            });
 
-            const actions = [
-              {
-                type: "button",
-                text: { type: "plain_text", text: "Run" },
-                url: runUrl
-              }
-            ];
-            if (prUrl) {
-              actions.push({
-                type: "button",
-                text: { type: "plain_text", text: "PR" },
-                url: prUrl
-              });
+            // Block 2: Repo + ref + sha
+            const refLine = `\`${repoFull}\`  •  \`${headBranch}\` @ \`${headShaShort}\``;
+            blocks.push({
+              type: "context",
+              elements: [{ type: "mrkdwn", text: refLine }]
+            });
+
+            // Block 3: Trigger + actor + PR info (if applicable) + release info (if applicable)
+            const infoBits = [`Trigger: \`${trigger}\``, `Actor: \`${actor}\``];
+            if (prNumber && prTitle) {
+              const prLink = prUrl ? `<${prUrl}|#${prNumber}>` : `#${prNumber}`;
+              infoBits.push(`PR: ${prLink} → \`${prBase}\``);
             }
-            if (releaseUrl) {
-              actions.push({
-                type: "button",
-                text: { type: "plain_text", text: "Release" },
-                url: releaseUrl
-              });
+            if (releaseTag) {
+              const releaseText = releaseUrl ? `<${releaseUrl}|${releaseTag}>` : `\`${releaseTag}\``;
+              infoBits.push(`Release: ${releaseText}`);
             }
+            blocks.push({
+              type: "context",
+              elements: [{ type: "mrkdwn", text: infoBits.join("  •  ") }]
+            });
 
-            const blocks = [
-              { type: "header", text: { type: "plain_text", text: headerText } },
-              { type: "context", elements: [{ type: "mrkdwn", text: contextBits.join("  •  ") }] },
-              { type: "section", fields }
-            ];
-
+            // Block 4 (optional): Failure info
             if (failedLine) {
               blocks.push({
                 type: "section",
-                text: { type: "mrkdwn", text: `*${failedLine}*` }
+                text: { type: "mrkdwn", text: `:warning: *${failedLine}*` }
               });
             }
 
+            // Block 5: Action buttons
+            const actions = [
+              { type: "button", text: { type: "plain_text", text: "View Run →" }, url: runUrl }
+            ];
+            if (prUrl) {
+              actions.push({ type: "button", text: { type: "plain_text", text: "View PR →" }, url: prUrl });
+            }
+            if (releaseUrl) {
+              actions.push({ type: "button", text: { type: "plain_text", text: "View Release →" }, url: releaseUrl });
+            }
             blocks.push({ type: "actions", elements: actions });
 
             const payload = {
