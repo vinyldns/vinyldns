@@ -5,6 +5,11 @@ on:
     workflows: [Verify and Test, VinylDNS Official Release]
     types:
       - completed
+  workflow_dispatch:
+    inputs:
+      run-id:
+        description: "Workflow run id to summarize (e.g. from /actions/runs/<id>)"
+        required: true
 
 jobs:
   notify:
@@ -21,13 +26,35 @@ jobs:
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
         with:
           script: |
-            const wr = context.payload.workflow_run;
             const repo = context.payload.repository;
-            const workflowName =
+            let wr = context.payload.workflow_run;
+            let workflowName =
               context.payload.workflow?.name ||
-              wr.name ||
+              wr?.name ||
               context.payload.workflow_run?.name ||
               "Workflow";
+
+            if (context.eventName === "workflow_dispatch") {
+              const runIdRaw = context.payload.inputs?.["run-id"] ?? "";
+              const runId = Number(runIdRaw);
+              if (!Number.isFinite(runId)) {
+                throw new Error(`Invalid run-id input: "${runIdRaw}"`);
+              }
+
+              const run = await github.rest.actions.getWorkflowRun({
+                owner: repo.owner.login,
+                repo: repo.name,
+                run_id: runId
+              });
+              wr = run.data;
+
+              const wf = await github.rest.actions.getWorkflow({
+                owner: repo.owner.login,
+                repo: repo.name,
+                workflow_id: wr.workflow_id
+              });
+              workflowName = wf.data.name || workflowName;
+            }
 
             const repoFull = repo.full_name;
             const defaultBranch = repo.default_branch;
