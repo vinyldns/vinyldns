@@ -187,6 +187,14 @@ jobs:
               });
             }
 
+            // Block 2 (optional): Release info - prominent for release workflows
+            if (releaseTag) {
+              blocks.push({
+                type: "section",
+                text: { type: "mrkdwn", text: `*Release: ${releaseTag}*` }
+              });
+            }
+
             // Block 3: Repo + ref + sha
             const refLine = `\`${repoFull}\`  •  \`${headBranch}\` @ \`${headShaShort}\``;
             blocks.push({
@@ -194,15 +202,11 @@ jobs:
               elements: [{ type: "mrkdwn", text: refLine }]
             });
 
-            // Block 4: Trigger + actor + PR info (if applicable) + release info (if applicable)
+            // Block 4: Trigger + actor + PR info (if applicable)
             const infoBits = [`Trigger: \`${trigger}\``, `Actor: \`${actor}\``];
             if (prNumber && prTitle) {
               // Avoid # to prevent Slack channel parsing
               infoBits.push(`PR \`${prNumber} - ${prTitle}\` → \`${prBase}\``);
-            }
-            if (releaseTag) {
-              const releaseText = releaseUrl ? `<${releaseUrl}|${releaseTag}>` : `\`${releaseTag}\``;
-              infoBits.push(`Release: ${releaseText}`);
             }
             blocks.push({
               type: "context",
