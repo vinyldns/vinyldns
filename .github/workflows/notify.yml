@@ -9,23 +9,127 @@ on:
 jobs:
   notify:
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
     steps:
-      - name: Send Slack Notification On Success
-        uses: slackapi/slack-github-action@v2.1.1
-        if: github.event.workflow_run.conclusion == 'success'
+      - name: Compose Slack message payload
+        id: compose
+        uses: actions/github-script@v7
+        env:
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
         with:
-          method: chat.postMessage
-          token: ${{ secrets.SLACK_BOT_TOKEN }}
-          payload: |
-            channel: ${{ secrets.SLACK_CHANNEL_ID }}
-            text: "GitHub Action ${{ github.event.workflow.name }} completed successfully! Action: ${{ github.event.workflow_run.html_url }}"
+          script: |
+            const wr = context.payload.workflow_run;
+            const repo = context.payload.repository;
+            const workflowName =
+              context.payload.workflow?.name ||
+              wr.name ||
+              context.payload.workflow_run?.name ||
+              "Workflow";
 
-      - name: Send Slack Notification on Failure
+            const repoFull = repo.full_name;
+            const defaultBranch = repo.default_branch;
+            const isDefault =
+              wr.head_repository?.full_name === repoFull &&
+              wr.head_branch === defaultBranch;
+
+            const status = (wr.conclusion || "unknown").toUpperCase();
+            const trigger = wr.event || "unknown";
+            const actor =
+              wr.actor?.login ||
+              wr.actor?.name ||
+              wr.triggering_actor?.login ||
+              "unknown";
+
+            const headRepo = wr.head_repository?.full_name || repoFull;
+            const headBranch = wr.head_branch || "unknown";
+            const headShaShort = (wr.head_sha || "").slice(0, 7) || "unknown";
+
+            let prLine = "";
+            if (Array.isArray(wr.pull_requests) && wr.pull_requests.length > 0) {
+              const prNumber = wr.pull_requests[0]?.number;
+              if (prNumber) {
+                const pr = await github.rest.pulls.get({
+                  owner: repo.owner.login,
+                  repo: repo.name,
+                  pull_number: prNumber
+                });
+                const prTitle = pr.data.title || "";
+                const prBase = pr.data.base?.ref || "unknown";
+                prLine = `PR: #${prNumber} "${prTitle}" → base: ${prBase}`;
+              }
+            }
+
+            let failedLine = "";
+            if (wr.conclusion !== "success") {
+              const jobs = await github.rest.actions.listJobsForWorkflowRun({
+                owner: repo.owner.login,
+                repo: repo.name,
+                run_id: wr.id
+              });
+
+              const failedJob =
+                jobs.data.jobs.find(j => j.conclusion === "failure") ||
+                jobs.data.jobs.find(j => j.conclusion && j.conclusion !== "success");
+
+              if (failedJob) {
+                const failedStep = Array.isArray(failedJob.steps)
+                  ? failedJob.steps.find(s => s.conclusion === "failure")
+                  : undefined;
+                failedLine = failedStep
+                  ? `Failed: job "${failedJob.name}" (step: "${failedStep.name}")`
+                  : `Failed: job "${failedJob.name}"`;
+              }
+            }
+
+            let releaseLine = "";
+            if (workflowName === "VinylDNS Official Release") {
+              try {
+                const versionFile = await github.rest.repos.getContent({
+                  owner: repo.owner.login,
+                  repo: repo.name,
+                  path: "version.sbt",
+                  ref: wr.head_sha
+                });
+                if (!Array.isArray(versionFile.data) && versionFile.data.content) {
+                  const versionSbt = Buffer.from(
+                    versionFile.data.content,
+                    "base64"
+                  ).toString("utf8");
+                  const match = versionSbt.match(/"([^"]+)"/);
+                  if (match?.[1]) {
+                    releaseLine = `Release: v${match[1]}`;
+                  }
+                }
+              } catch (e) {
+                // no-op: keep releaseLine empty if we can't read version.sbt
+              }
+            }
+
+            const lines = [];
+            lines.push(
+              `${repoFull}${isDefault ? " [DEFAULT]" : ""} (default: ${defaultBranch})`
+            );
+            lines.push(`${workflowName} — ${status}`);
+            lines.push(`Trigger: ${trigger} • Actor: ${actor}`);
+            if (prLine) lines.push(prLine);
+            lines.push(`Ref: ${headRepo}:${headBranch} @ ${headShaShort}`);
+            if (releaseLine) lines.push(releaseLine);
+            if (failedLine) lines.push(failedLine);
+            lines.push(`Run: ${wr.html_url}`);
+
+            const payload = {
+              channel: process.env.SLACK_CHANNEL_ID,
+              text: lines.join("\n")
+            };
+
+            return JSON.stringify(payload);
+
+      - name: Send Slack Notification
         uses: slackapi/slack-github-action@v2.1.1
-        if: github.event.workflow_run.conclusion != 'success'
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}
-          payload: |
-            channel: ${{ secrets.SLACK_CHANNEL_ID }}
-            text: "GitHub Action ${{ github.event.workflow.name }} FAILED! Action: ${{ github.event.workflow_run.html_url }}"
+          payload: ${{ steps.compose.outputs.result }}
