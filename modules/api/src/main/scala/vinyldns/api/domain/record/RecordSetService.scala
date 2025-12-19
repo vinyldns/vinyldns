@@ -687,6 +687,7 @@ class RecordSetService(
 
   def getRecordSetChange(
                           zoneId: String,
+                          rsId: String,
                           changeId: String,
                           authPrincipal: AuthPrincipal
                         ): Result[RecordSetChange] =
@@ -698,8 +699,15 @@ class RecordSetService(
           RecordSetChangeNotFoundError(
             s"Unable to find record set change with id $changeId in zone ${zone.name}"
           )
-        )
-        .toResult[RecordSetChange]
+        ).toResult[RecordSetChange]
+      _ <- Either
+        .cond(
+          change.recordSet.id == rsId,
+          (),
+          RecordSetChangeNotFoundError(
+            s"RecordSet with id $rsId does not exist."
+          )
+        ).toResult
       _ <- canViewRecordSet(
         authPrincipal,
         change.recordSet.name,

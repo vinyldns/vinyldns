@@ -735,12 +735,14 @@ class RecordSetRoutingSpec
 
     def getRecordSetChange(
                             zoneId: String,
+                            rsId: String,
                             changeId: String,
                             authPrincipal: AuthPrincipal
                           ): Result[RecordSetChange] = {
       changeId match {
         case "changeNotFound" => Left(RecordSetChangeNotFoundError(""))
         case "zoneNotFound" => Left(ZoneNotFoundError(""))
+        case "recordSetNotFound" => Left(RecordSetNotFoundError(""))
         case "forbidden" => Left(NotAuthorizedError(""))
         case _ => Right(rsChange1)
       }
