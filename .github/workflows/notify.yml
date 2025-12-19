@@ -155,18 +155,10 @@ jobs:
               }
             }
 
-            const lines = [];
             const runUrl = wr.html_url;
 
-            // Fallback text (notifications / mobile / search)
-            lines.push(`${workflowName} — ${status}`);
-            lines.push(`Repo: ${repoFull} (default: ${defaultBranch})`);
-            lines.push(`Trigger: ${trigger} • Actor: ${actor}`);
-            if (prLine) lines.push(prLine);
-            lines.push(`Ref: ${headRepo}:${headBranch} @ ${headShaShort}`);
-            if (releaseLine) lines.push(releaseLine);
-            if (failedLine) lines.push(failedLine);
-            lines.push(`Run: ${runUrl}`);
+            // Minimal fallback text (for notifications / mobile / search only)
+            const fallbackText = `${workflowName} — ${status}`;
 
             // Status emoji
             const statusEmoji = status === "SUCCESS" ? ":white_check_mark:" : ":x:";
@@ -227,7 +219,7 @@ jobs:
 
             const payload = {
               channel: process.env.SLACK_CHANNEL_ID,
-              text: lines.join("\n"),
+              text: fallbackText,
               attachments: [{
                 color: attachmentColor,
                 blocks
