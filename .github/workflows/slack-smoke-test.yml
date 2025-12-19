@@ -30,7 +30,14 @@ jobs:
               - type: context
                 elements:
                   - type: mrkdwn
-                    text: "Trigger: `${{ github.event_name }}`  •  Actor: `${{ github.actor }}`  •  <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                    text: "Trigger: `${{ github.event_name }}`  •  Actor: `${{ github.actor }}`"
+              - type: actions
+                elements:
+                  - type: button
+                    text:
+                      type: plain_text
+                      text: "View Run →"
+                    url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
       - name: Log Slack API response
         if: always()
