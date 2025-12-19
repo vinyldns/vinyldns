@@ -8,16 +8,6 @@ jobs:
   test-slack:
     runs-on: ubuntu-latest
     steps:
-      - name: Compute display variables
-        id: vars
-        shell: bash
-        run: |
-          echo "sha_short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-          echo "run_url=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" >> "$GITHUB_OUTPUT"
-          echo "repo_url=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" >> "$GITHUB_OUTPUT"
-          echo "actor_url=${GITHUB_SERVER_URL}/${GITHUB_ACTOR}" >> "$GITHUB_OUTPUT"
-          echo "ref_url=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/tree/${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
-
       - name: Post test message to Slack
         id: slack
         uses: slackapi/slack-github-action@v2.1.1
@@ -27,39 +17,20 @@ jobs:
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
             channel: ${{ secrets.SLACK_CHANNEL_ID }}
-            text: "Verify and Test — SUCCESS\nRepo: ${{ github.repository }}\nRef: ${{ github.ref_name }} @ ${{ steps.vars.outputs.sha_short }}\nRun: ${{ steps.vars.outputs.run_url }}"
+            text: "Slack Smoke Test — SUCCESS\nRepo: ${{ github.repository }}\nRef: ${{ github.ref_name }} @ ${{ github.sha }}\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             blocks:
-              - type: header
+              - type: section
                 text:
-                  type: plain_text
-                  text: Verify and Test — SUCCESS
+                  type: mrkdwn
+                  text: "*Slack Smoke Test* — *SUCCESS* :white_check_mark:"
               - type: context
                 elements:
                   - type: mrkdwn
-                    text: "*Repo:* <${{ steps.vars.outputs.repo_url }}|${{ github.repository }}>"
-                  - type: mrkdwn
-                    text: "*Default:* main"
-                  - type: mrkdwn
-                    text: "*Trigger:* `${{ github.event_name }}`"
-                  - type: mrkdwn
-                    text: "*Actor:* <${{ steps.vars.outputs.actor_url }}|${{ github.actor }}>"
-              - type: section
-                fields:
-                  - type: mrkdwn
-                    text: |
-                      *Ref:*
-                      <${{ steps.vars.outputs.ref_url }}|${{ github.ref_name }}>
-                  - type: mrkdwn
-                    text: |
-                      *SHA:*
-                      `${{ steps.vars.outputs.sha_short }}`
-              - type: actions
+                    text: "`${{ github.repository }}`  •  `${{ github.ref_name }}` @ `${{ github.sha }}`"
+              - type: context
                 elements:
-                  - type: button
-                    text:
-                      type: plain_text
-                      text: Run
-                    url: ${{ steps.vars.outputs.run_url }}
+                  - type: mrkdwn
+                    text: "Trigger: `${{ github.event_name }}`  •  Actor: `${{ github.actor }}`  •  <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
 
       - name: Log Slack API response
         if: always()
