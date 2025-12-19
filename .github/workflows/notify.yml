@@ -10,6 +10,9 @@ on:
       run-id:
         description: "Workflow run id to summarize (e.g. from /actions/runs/<id>)"
         required: true
+      repo:
+        description: "Repository to fetch run from (e.g. vinyldns/vinyldns). Defaults to current repo."
+        required: false
 
 jobs:
   notify:
@@ -41,16 +44,24 @@ jobs:
                 throw new Error(`Invalid run-id input: "${runIdRaw}"`);
               }
 
+              // Allow overriding repo for testing (e.g. "vinyldns/vinyldns")
+              const repoInput = context.payload.inputs?.repo || "";
+              let targetOwner = repo.owner.login;
+              let targetRepo = repo.name;
+              if (repoInput && repoInput.includes("/")) {
+                [targetOwner, targetRepo] = repoInput.split("/");
+              }
+
               const run = await github.rest.actions.getWorkflowRun({
-                owner: repo.owner.login,
-                repo: repo.name,
+                owner: targetOwner,
+                repo: targetRepo,
                 run_id: runId
               });
               wr = run.data;
 
               const wf = await github.rest.actions.getWorkflow({
-                owner: repo.owner.login,
-                repo: repo.name,
+                owner: targetOwner,
+                repo: targetRepo,
                 workflow_id: wr.workflow_id
               });
               workflowName = wf.data.name || workflowName;
