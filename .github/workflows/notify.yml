@@ -174,23 +174,32 @@ jobs:
             // Build compact blocks
             const blocks = [];
 
-            // Block 1: Title (section, not header - smaller text)
+            // Block 1: Title with emoji at the start
             blocks.push({
               type: "section",
-              text: { type: "mrkdwn", text: `*${workflowName}* — *${status}* ${statusEmoji}` }
+              text: { type: "mrkdwn", text: `${statusEmoji} *${workflowName}* — *${status}*` }
             });
 
-            // Block 2: Repo + ref + sha
+            // Block 2 (optional): Failure info - right after title for visibility
+            if (failedLine) {
+              blocks.push({
+                type: "section",
+                text: { type: "mrkdwn", text: `*${failedLine}*` }
+              });
+            }
+
+            // Block 3: Repo + ref + sha
             const refLine = `\`${repoFull}\`  •  \`${headBranch}\` @ \`${headShaShort}\``;
             blocks.push({
               type: "context",
               elements: [{ type: "mrkdwn", text: refLine }]
             });
 
-            // Block 3: Trigger + actor + PR info (if applicable) + release info (if applicable)
+            // Block 4: Trigger + actor + PR info (if applicable) + release info (if applicable)
             const infoBits = [`Trigger: \`${trigger}\``, `Actor: \`${actor}\``];
             if (prNumber && prTitle) {
-              infoBits.push(`PR: \`#${prNumber} ${prTitle}\` → \`${prBase}\``);
+              // Avoid # to prevent Slack channel parsing
+              infoBits.push(`PR \`${prNumber} - ${prTitle}\` → \`${prBase}\``);
             }
             if (releaseTag) {
               const releaseText = releaseUrl ? `<${releaseUrl}|${releaseTag}>` : `\`${releaseTag}\``;
@@ -200,14 +209,6 @@ jobs:
               type: "context",
               elements: [{ type: "mrkdwn", text: infoBits.join("  •  ") }]
             });
-
-            // Block 4 (optional): Failure info
-            if (failedLine) {
-              blocks.push({
-                type: "section",
-                text: { type: "mrkdwn", text: `*${failedLine}*` }
-              });
-            }
 
             // Block 5: Action buttons
             const actions = [
