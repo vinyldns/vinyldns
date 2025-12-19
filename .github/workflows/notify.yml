@@ -155,8 +155,16 @@ jobs:
             return JSON.stringify(payload);
 
       - name: Send Slack Notification
+        id: slack
         uses: slackapi/slack-github-action@v2.1.1
         with:
+          errors: true
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: ${{ steps.compose.outputs.result }}
+
+      - name: Log Slack API response
+        if: always()
+        run: |
+          echo "slack ok: ${{ steps.slack.outputs.ok }}"
+          echo "slack response: ${{ steps.slack.outputs.response }}"
