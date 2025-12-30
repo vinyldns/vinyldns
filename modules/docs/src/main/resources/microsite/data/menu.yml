@@ -37,6 +37,8 @@ options:
         url: portal/create-a-group.html
       - title: Manage Membership
         url: portal/manage-membership.html
+      - title: Delete a Group
+        url: portal/delete-a-group.html
 
   - title: Zones
     url: portal/zones.html
@@ -184,6 +186,9 @@ options:
         menu_section: recordsetapireference
       - title: Get RecordSet Change History
         url: api/get-recordset-change-history.html
+        menu_section: recordsetapireference
+      - title: Ownership Transfer Model
+        url: api/ownership-transfer-model.html
         menu_section: recordsetapireference
 
   - title: Batch Change
