@@ -107,6 +107,30 @@ options:
     url: api/auth-mechanism.html
     menu_type: api
 
+  - title: Health & Monitoring
+    url: api/ping.html
+    menu_type: api
+    menu_section: healthapireference
+    nested_options:
+      - title: Ping
+        url: api/ping.html
+        menu_section: healthapireference
+      - title: Health Check
+        url: api/health.html
+        menu_section: healthapireference
+      - title: Color
+        url: api/color.html
+        menu_section: healthapireference
+      - title: Prometheus Metrics
+        url: api/prometheus-metrics.html
+        menu_section: healthapireference
+      - title: Get Status
+        url: api/get-status.html
+        menu_section: healthapireference
+      - title: Update Status
+        url: api/update-status.html
+        menu_section: healthapireference
+
   - title: Zone
     url: api/zone-model.html
     menu_type: api
@@ -144,6 +168,18 @@ options:
         menu_section: zoneapireference
       - title: Abandoned Zones
         url: api/list-deleted-zones.html
+        menu_section: zoneapireference
+      - title: Get Zone Details
+        url: api/get-zone-details.html
+        menu_section: zoneapireference
+      - title: Get Backend IDs
+        url: api/get-backend-ids.html
+        menu_section: zoneapireference
+      - title: Add ACL Rule
+        url: api/add-acl-rule.html
+        menu_section: zoneapireference
+      - title: Delete ACL Rule
+        url: api/delete-acl-rule.html
         menu_section: zoneapireference
 
   - title: RecordSet
@@ -261,4 +297,10 @@ options:
         menu_section: membershipapireference
       - title: Get Valid Email Domains
         url: api/get-valid-email-domains.html
+        menu_section: membershipapireference
+      - title: Lock User
+        url: api/lock-user.html
+        menu_section: membershipapireference
+      - title: Unlock User
+        url: api/unlock-user.html
         menu_section: membershipapireference
