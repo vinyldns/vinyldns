@@ -12,6 +12,12 @@ Retrieves a zone with the matching zone ID.
 
 > GET /zones/{zoneId}
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /zones/0f2fcece-b4ee-4982-b671-e5946f7db81d
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |

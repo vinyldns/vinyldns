@@ -12,6 +12,12 @@ Retrieves common zone details including the admin group name. This is a lightwei
 
 > GET /zones/{zoneId}/details
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /zones/0f2fcece-b4ee-4982-b671-e5946f7db81d/details
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |

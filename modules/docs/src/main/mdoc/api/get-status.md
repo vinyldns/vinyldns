@@ -14,6 +14,12 @@ Retrieves the current system status including processing state, deployment color
 
 > GET /status
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /status
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |

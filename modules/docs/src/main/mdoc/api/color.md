@@ -16,6 +16,12 @@ When deploying updates, this endpoint can be used to determine which server grou
 
 > GET /color
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /color
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |

@@ -14,6 +14,12 @@ Comprehensive health check that verifies connectivity to backend services includ
 
 > GET /health
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /health
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |

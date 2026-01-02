@@ -14,6 +14,12 @@ Simple health check endpoint that returns "PONG" if the API server is running.
 
 > GET /ping
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /ping
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |

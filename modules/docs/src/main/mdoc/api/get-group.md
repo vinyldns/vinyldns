@@ -12,6 +12,12 @@ Gets a group that you are a part of.
 
 > GET /groups/{groupId}
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /groups/6f8afcda-7529-4cad-9f2d-76903f4b1aca
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |

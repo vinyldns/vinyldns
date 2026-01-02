@@ -12,6 +12,12 @@ Retrieves all available backend IDs that can be used when creating or updating z
 
 > GET /zones/backendids
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /zones/backendids
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |

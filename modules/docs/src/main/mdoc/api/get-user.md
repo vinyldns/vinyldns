@@ -12,6 +12,12 @@ Gets a user corresponding to the given identifier (user ID or username).
 
 > GET /users/{userIdentifier}
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /users/ok
+```
+
 #### HTTP RESPONSE TYPES
 
 | Code | description                                                                                                                                                                                |
