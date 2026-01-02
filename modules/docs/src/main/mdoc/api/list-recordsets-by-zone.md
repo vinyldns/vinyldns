@@ -165,3 +165,9 @@ nameSort            | string  | name sort order sent in request
   "nameSort": "ASC"
 }
 ```
+
+#### EXAMPLE ERROR RESPONSE
+
+```text
+maxItems was 500, maxItems must be between 0 and 100
+```

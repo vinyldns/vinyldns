@@ -134,3 +134,9 @@ includeReverse     | boolean   | The includeReverse parameter that was sent in t
   "ignoreAccess": true
 }
 ```
+
+#### EXAMPLE ERROR RESPONSE
+
+```text
+maxItems was 500, maxItems must be between 0 and 100
+```

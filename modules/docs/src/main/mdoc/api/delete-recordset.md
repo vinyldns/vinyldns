@@ -97,3 +97,9 @@ id            | string        | The ID of the change.  This is not the ID of the
   "id": "c46cf622-285f-4f1b-b5b2-993a5a51ea5b"
 }
 ```
+
+#### EXAMPLE ERROR RESPONSE
+
+```text
+RecordSet with id da57c384-d6e8-4166-986d-2ca9d483f760, name foo and type A currently has a pending change
+```
