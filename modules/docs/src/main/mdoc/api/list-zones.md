@@ -23,6 +23,12 @@ ignoreAccess        | boolean       | no          | If false, returns only zones
 searchByAdminGroup  | boolean       | no          | Used along with `nameFilter`. If false, returns a list of zones based on `nameFilter` value. If true, uses `nameFilter` value and filters the zone based on a group. Returns all the zones that is owned by a group given in the `nameFilter`. Defaults to false if not provided. |
 includeReverse      | boolean       | no          | If false, returns only the forward zones. If true, returns both forward and reverse zones. |
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /zones?nameFilter=example*&maxItems=50&ignoreAccess=true&includeReverse=true
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |
