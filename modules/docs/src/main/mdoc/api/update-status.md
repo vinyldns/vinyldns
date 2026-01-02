@@ -14,6 +14,12 @@ Updates the system processing status. This endpoint is used to enable or disable
 
 > POST /status?processingDisabled={true|false}
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+POST /status?processingDisabled=true
+```
+
 #### HTTP REQUEST PARAMETERS
 
 name                | type          | required?     | description |

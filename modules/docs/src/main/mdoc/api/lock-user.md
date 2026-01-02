@@ -14,6 +14,12 @@ Locks a user account, preventing them from authenticating and accessing VinylDNS
 
 > PUT /users/{userId}/lock
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+PUT /users/123e64c0-b34f-4c9b-9e0e-f7f7bcc16f2e/lock
+```
+
 #### HTTP RESPONSE TYPES
 
 | Code | description                                                                                                                                                                                |

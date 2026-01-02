@@ -26,6 +26,12 @@ A group cannot be deleted if any of the following conditions are true:
 
 > DELETE /groups/{groupId}
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+DELETE /groups/6f8afcda-7529-4cad-9f2d-76903f4b1aca
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |

@@ -14,6 +14,12 @@ Unlocks a previously locked user account, restoring their ability to authenticat
 
 > PUT /users/{userId}/unlock
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+PUT /users/123e64c0-b34f-4c9b-9e0e-f7f7bcc16f2e/unlock
+```
+
 #### HTTP RESPONSE TYPES
 
 | Code | description                                                                                                                                                                                |

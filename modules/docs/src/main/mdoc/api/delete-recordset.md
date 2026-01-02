@@ -12,6 +12,12 @@ Delete a RecordSet in a specified zone.
 
 > DELETE /zones/{zoneId}/recordsets/{recordSetId}
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+DELETE /zones/2467dc05-68eb-4498-a9d5-78d24bb0893c/recordsets/da57c384-d6e8-4166-986d-2ca9d483f760
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |
