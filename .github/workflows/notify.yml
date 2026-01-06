@@ -37,39 +37,7 @@ jobs:
               context.payload.workflow_run?.name ||
               "Workflow";
 
-            // Target repo for API calls (can be overridden via workflow_dispatch input)
-            let targetOwner = repo.owner.login;
-            let targetRepoName = repo.name;
-
-            if (context.eventName === "workflow_dispatch") {
-              const runIdRaw = context.payload.inputs?.["run-id"] ?? "";
-              const runId = Number(runIdRaw);
-              if (!Number.isFinite(runId)) {
-                throw new Error(`Invalid run-id input: "${runIdRaw}"`);
-              }
-
-              // Allow overriding repo for testing (e.g. "vinyldns/vinyldns")
-              const repoInput = context.payload.inputs?.repo || "";
-              if (repoInput && repoInput.includes("/")) {
-                [targetOwner, targetRepoName] = repoInput.split("/");
-              }
-
-              const run = await github.rest.actions.getWorkflowRun({
-                owner: targetOwner,
-                repo: targetRepoName,
-                run_id: runId
-              });
-              wr = run.data;
-
-              const wf = await github.rest.actions.getWorkflow({
-                owner: targetOwner,
-                repo: targetRepoName,
-                workflow_id: wr.workflow_id
-              });
-              workflowName = wf.data.name || workflowName;
-            }
-
-            const repoFull = wr.repository?.full_name || `${targetOwner}/${targetRepoName}`;
+            const repoFull = repo.full_name;
             const defaultBranch = repo.default_branch;
             const isDefault =
               wr.head_repository?.full_name === repoFull &&
@@ -88,46 +56,17 @@ jobs:
             const headShaShort = (wr.head_sha || "").slice(0, 7) || "unknown";
 
             let prLine = "";
-            let prUrl = "";
-            let prNumber = undefined;
-            let prTitle = "";
-            let prBase = "";
-
-            // Try to get PR info from workflow run's pull_requests array
             if (Array.isArray(wr.pull_requests) && wr.pull_requests.length > 0) {
-              prNumber = wr.pull_requests[0]?.number;
-            }
-
-            // Fallback: if trigger is pull_request but no PR in array, search by commit SHA
-            if (!prNumber && trigger === "pull_request" && wr.head_sha) {
-              try {
-                const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
-                  owner: targetOwner,
-                  repo: targetRepoName,
-                  commit_sha: wr.head_sha
-                });
-                if (prs.data.length > 0) {
-                  prNumber = prs.data[0].number;
-                }
-              } catch (e) {
-                // no-op: couldn't find PR by commit
-              }
-            }
-
-            // Fetch full PR details if we have a PR number
-            if (prNumber) {
-              try {
+              const prNumber = wr.pull_requests[0]?.number;
+              if (prNumber) {
                 const pr = await github.rest.pulls.get({
-                  owner: targetOwner,
-                  repo: targetRepoName,
+                  owner: repo.owner.login,
+                  repo: repo.name,
                   pull_number: prNumber
                 });
-                prTitle = pr.data.title || "";
-                prBase = pr.data.base?.ref || "unknown";
-                prUrl = pr.data.html_url || "";
+                const prTitle = pr.data.title || "";
+                const prBase = pr.data.base?.ref || "unknown";
                 prLine = `PR: #${prNumber} "${prTitle}" → base: ${prBase}`;
-              } catch (e) {
-                // no-op: couldn't fetch PR details
               }
             }
 
