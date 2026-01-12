@@ -18,16 +18,18 @@ package vinyldns.api.route
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
+import cats.data.EitherT
 import cats.effect.IO
 import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
 import org.json4s.MappingException
-import vinyldns.api.config.{LimitsConfig, VinylDNSConfig}
+import org.slf4j.{Logger, LoggerFactory}
+import vinyldns.api.config.{LimitsConfig, RuntimeVinylDNSConfig}
 import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeServiceAlgebra
 import vinyldns.api.domain.membership.MembershipServiceAlgebra
 import vinyldns.api.domain.record.RecordSetServiceAlgebra
-import vinyldns.api.domain.zone.ZoneServiceAlgebra
+import vinyldns.api.domain.zone.{InvalidRequest, NotAuthorizedError, PendingUpdateError, ZoneServiceAlgebra}
 import vinyldns.core.health.HealthService
 
 object VinylDNSService {
@@ -64,27 +66,36 @@ class VinylDNSService(
     val recordSetService: RecordSetServiceAlgebra,
     val batchChangeService: BatchChangeServiceAlgebra,
     val collectorRegistry: CollectorRegistry,
-    authPrincipalProvider: AuthPrincipalProvider,
-    vinyldnsConfig: VinylDNSConfig
+    authPrincipalProvider: AuthPrincipalProvider
 ) extends PingRoute
     with HealthCheckRoute
     with BlueGreenRoute
     with PrometheusRoute
     with VinylDNSJsonProtocol
-    with RequestLogging {
+    with RequestLogging
+    with VinylDNSDirectives[Throwable] {
 
   import VinylDNSService.validationRejectionHandler
+
+  override def logger: Logger = LoggerFactory.getLogger(classOf[VinylDNSService])
+
+  override def handleErrors(e: Throwable): PartialFunction[Throwable, Route] = {
+    case e: NotAuthorizedError => complete(StatusCodes.Forbidden, e.msg)
+    case e: InvalidRequest => complete(StatusCodes.UnprocessableEntity, e.msg)
+    case e: PendingUpdateError => complete(StatusCodes.Conflict, e.msg)
+    case ex: Throwable => complete(StatusCodes.InternalServerError, ex.getMessage)
+  }
 
   val aws4Authenticator = new Aws4Authenticator
   val vinylDNSAuthenticator: VinylDNSAuthenticator =
     new ProductionVinylDNSAuthenticator(
       aws4Authenticator,
       authPrincipalProvider,
-      vinyldnsConfig.crypto
+      RuntimeVinylDNSConfig.current.crypto
     )
 
   val zoneRoute: Route =
-    new ZoneRoute(zoneService, limits, vinylDNSAuthenticator, vinyldnsConfig.crypto).getRoutes
+    new ZoneRoute(zoneService, limits, vinylDNSAuthenticator, RuntimeVinylDNSConfig.current.crypto).getRoutes
   val recordSetRoute: Route =
     new RecordSetRoute(recordSetService, limits, vinylDNSAuthenticator).getRoutes
   val membershipRoute: Route =
@@ -94,11 +105,11 @@ class VinylDNSService(
       batchChangeService,
       limits,
       vinylDNSAuthenticator,
-      vinyldnsConfig.manualReviewConfig
+      RuntimeVinylDNSConfig.current.manualReviewConfig
     ).getRoutes
   val statusRoute: Route =
     new StatusRoute(
-      vinyldnsConfig.serverConfig,
+      RuntimeVinylDNSConfig.current.serverConfig,
       vinylDNSAuthenticator,
       processingDisabled
     ).getRoutes
@@ -109,8 +120,30 @@ class VinylDNSService(
     Uri.Path("/ping"),
     Uri.Path("/metrics/prometheus")
   )
+
+  private val reloadConfigRoute: Route =
+    path("config" / "reload") {
+      (post & monitor("Endpoint.reloadConfig")) {
+        authenticateAndExecute { authPrincipal =>
+          if (authPrincipal.isSuper) {
+            logger.warn(s"User ${authPrincipal.signedInUser.userName} attempted to reload config without permission")
+            EitherT.leftT[IO, Unit](
+              NotAuthorizedError(s"User ${authPrincipal.signedInUser.userName} is not authorized to reload the application config"))
+          } else {
+            EitherT.liftF(
+              for {
+                _ <- IO {logger.info(s"User ${authPrincipal.signedInUser.userName} triggered configuration reload")}
+                _ <- RuntimeVinylDNSConfig.reload()
+                _ <- IO {logger.info("Application configuration reloaded successfully")}
+              } yield ()
+            )
+          }
+        } { _ => complete(StatusCodes.OK, "Application configuration reloaded successfully")}
+      }
+    }
+
   val unloggedRoutes: Route = healthCheckRoute ~ pingRoute ~ colorRoute(
-    vinyldnsConfig.serverConfig.color
+    RuntimeVinylDNSConfig.current.serverConfig.color
   ) ~ prometheusRoute
 
   val allRoutes: Route = unloggedRoutes ~
@@ -118,7 +151,8 @@ class VinylDNSService(
     zoneRoute ~
     recordSetRoute ~
     membershipRoute ~
-    statusRoute
+    statusRoute ~
+    reloadConfigRoute
 
   val vinyldnsRoutes: Route = logRequestResult(requestLogger(unloggedUris))(allRoutes)
 
@@ -128,5 +162,14 @@ class VinylDNSService(
         handleRejections(validationRejectionHandler)(vinyldnsRoutes)
       }
     }
+
+  override def getRoutes: Route =
+    reloadConfigRoute ~
+      unloggedRoutes ~
+      zoneRoute ~
+      recordSetRoute ~
+      membershipRoute ~
+      batchChangeRoute ~
+      statusRoute
 }
 // $COVERAGE-ON$

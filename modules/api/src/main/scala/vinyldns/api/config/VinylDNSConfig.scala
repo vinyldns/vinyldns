@@ -19,7 +19,7 @@ package vinyldns.api.config
 import cats.data.EitherT
 import cats.effect.IO
 import cats.implicits._
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.Config
 import pureconfig._
 import pureconfig.error.ConfigReaderException
 import pureconfig.generic.auto._
@@ -56,35 +56,37 @@ final case class VinylDNSConfig(
 )
 object VinylDNSConfig {
 
-  // Helper to load config in IO safely
   private def loadIO[A](
-      config: Config,
-      path: String
-  )(implicit cr: ConfigReader[A], classTag: ClassTag[A]): IO[A] =
+                         config: Config,
+                         path: String
+                       )(implicit cr: ConfigReader[A], classTag: ClassTag[A]): IO[A] =
     EitherT
       .fromEither[IO](ConfigSource.fromConfig(config).at(path).cursor())
       .subflatMap(cr.from)
       .leftMap(failures => new ConfigReaderException[A](failures))
       .rethrowT
 
-  def load(): IO[VinylDNSConfig] = {
+  def load(): IO[VinylDNSConfig] =
+    loadFrom(RuntimeVinylDNSConfig.getRaw)
+
+  def loadFrom(config: Config): IO[VinylDNSConfig] = {
+
     def optionalStringListIO(config: Config, path: String): IO[List[String]] =
       IO {
         if (config.hasPath(path)) config.getStringList(path).asScala.toList else Nil
       }
 
     def loadFromStringListIO[A](
-        config: Config,
-        path: String
-    )(implicit cr: ConfigReader[A], classTag: ClassTag[A]): IO[List[A]] =
+                                 config: Config,
+                                 path: String
+                               )(implicit cr: ConfigReader[A], classTag: ClassTag[A]): IO[List[A]] =
       optionalStringListIO(config, path).flatMap { configKeys =>
         configKeys.traverse(k => loadIO[A](config, s"vinyldns.$k"))
       }
 
     for {
-      config <- IO.delay(ConfigFactory.load())
-      limitsconfig <- loadIO[LimitsConfig](config, "vinyldns.api.limits") //Added Limitsconfig to fetch data from the reference.config and pass to LimitsConfig.config
-      validEmailConfig <- loadIO[ValidEmailConfig](config, path="vinyldns.valid-email-config")
+      limitsconfig <- loadIO[LimitsConfig](config, "vinyldns.api.limits")
+      validEmailConfig <- loadIO[ValidEmailConfig](config, "vinyldns.valid-email-config")
       serverConfig <- loadIO[ServerConfig](config, "vinyldns")
       batchChangeConfig <- loadIO[BatchChangeConfig](config, "vinyldns")
       backendConfigs <- loadIO[BackendConfigs](config, "vinyldns.backend")

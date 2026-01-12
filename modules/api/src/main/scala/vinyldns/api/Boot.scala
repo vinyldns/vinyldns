@@ -18,35 +18,35 @@ package vinyldns.api
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.stream.{Materializer, ActorMaterializer}
-import cats.effect.{Timer, IO, ContextShift}
+import akka.stream.{ActorMaterializer, Materializer}
+import cats.effect.{ContextShift, IO, Timer}
 import cats.data.NonEmptyList
-import com.typesafe.config.ConfigFactory
 import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.client.hotspot.DefaultExports
 import org.slf4j.LoggerFactory
 import vinyldns.api.backend.CommandHandler
-import vinyldns.api.config.{LimitsConfig, VinylDNSConfig}
-import vinyldns.api.domain.access.{GlobalAcls, AccessValidations}
+import vinyldns.api.config.{LimitsConfig, RuntimeVinylDNSConfig}
+import vinyldns.api.domain.access.{AccessValidations, GlobalAcls}
 import vinyldns.api.domain.auth.MembershipAuthPrincipalProvider
-import vinyldns.api.domain.batch.{BatchChangeService, BatchChangeConverter, BatchChangeValidations}
+import vinyldns.api.domain.batch.{BatchChangeConverter, BatchChangeService, BatchChangeValidations}
 import vinyldns.api.domain.membership._
 import vinyldns.api.domain.record.RecordSetService
 import vinyldns.api.domain.zone._
 import vinyldns.api.metrics.APIMetrics
-import vinyldns.api.repository.{ApiDataAccessorProvider, ApiDataAccessor, TestDataLoader}
+import vinyldns.api.repository.{ApiDataAccessor, ApiDataAccessorProvider, TestDataLoader}
 import vinyldns.api.route.VinylDNSService
 import vinyldns.core.VinylDNSMetrics
 import vinyldns.core.domain.backend.BackendResolver
 import vinyldns.core.health.HealthService
-import vinyldns.core.queue.{MessageQueueLoader, MessageCount}
+import vinyldns.core.queue.{MessageCount, MessageQueueLoader}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.{Codec, Source}
 import vinyldns.core.notifier.NotifierLoader
 import vinyldns.core.repository.DataStoreLoader
+
 import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 
 object Boot extends App {
@@ -74,8 +74,9 @@ object Boot extends App {
     // that if anything fails, the app does not start!
     for {
       banner <- vinyldnsBanner()
-      vinyldnsConfig <- VinylDNSConfig.load()
-      system <- IO(ActorSystem("VinylDNS", ConfigFactory.load()))
+      _ <- RuntimeVinylDNSConfig.init()
+      vinyldnsConfig = RuntimeVinylDNSConfig.current
+      system <- IO(ActorSystem("VinylDNS", RuntimeVinylDNSConfig.getRaw))
       loaderResponse <- DataStoreLoader.loadAll[ApiDataAccessor](
         vinyldnsConfig.dataStoreConfigs,
         vinyldnsConfig.crypto,
@@ -145,7 +146,7 @@ object Boot extends App {
         vinyldnsConfig.scheduledChangesConfig,
         vinyldnsConfig.serverConfig.approvedNameServers
       )
-      val membershipService = MembershipService(repositories,vinyldnsConfig.validEmailConfig)
+      val membershipService = MembershipService(repositories,() => vinyldnsConfig.validEmailConfig)
 
       val connectionValidator =
         new ZoneConnectionValidator(
@@ -220,8 +221,7 @@ object Boot extends App {
         recordSetService,
         batchChangeService,
         collectorRegistry,
-        authPrincipalProvider,
-        vinyldnsConfig
+        authPrincipalProvider
       )
 
       DefaultExports.initialize()

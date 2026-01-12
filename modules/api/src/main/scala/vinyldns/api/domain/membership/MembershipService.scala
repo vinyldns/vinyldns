@@ -31,7 +31,7 @@ import vinyldns.core.Messages._
 import vinyldns.mysql.TransactionProvider
 
 object MembershipService {
-  def apply(dataAccessor: ApiDataAccessor,emailConfig:ValidEmailConfig): MembershipService =
+  def apply(dataAccessor: ApiDataAccessor,emailConfig: () => ValidEmailConfig): MembershipService =
     new MembershipService(
       dataAccessor.groupRepository,
       dataAccessor.userRepository,
@@ -50,7 +50,7 @@ class MembershipService(
     zoneRepo: ZoneRepository,
     groupChangeRepo: GroupChangeRepository,
     recordSetRepo: RecordSetRepository,
-    validDomains: ValidEmailConfig
+    validDomains: () => ValidEmailConfig
 ) extends MembershipServiceAlgebra with TransactionProvider {
 
   import MembershipValidations._
@@ -70,7 +70,7 @@ class MembershipService(
   }
 
   def listEmailDomains(authPrincipal: AuthPrincipal): Result[List[String]] = {
-    val validEmailDomains = validDomains.valid_domains
+    val validEmailDomains = validDomains().valid_domains
     IO(validEmailDomains).toResult
   }
 
@@ -402,8 +402,8 @@ class MembershipService(
   }.toResult
    // Validate email details.Email domains details are fetched from the config file.
   def emailValidation(email: String): Result[Unit] = {
-    val emailDomains = validDomains.valid_domains
-    val numberOfDots=  validDomains.number_of_dots
+    val emailDomains = validDomains().valid_domains
+    val numberOfDots=  validDomains().number_of_dots
     val splitEmailDomains = emailDomains.mkString(",")
     val emailRegex ="""^(?!\.)(?!.*\.$)(?!.*\.\.)[a-zA-Z0-9._+!&-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$""".r
     val index = email.indexOf('@');
