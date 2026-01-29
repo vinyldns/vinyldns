@@ -68,10 +68,19 @@ angular.module('service.paging', [])
             return paging.pageNum >= 1
         };
 
-        this.getPanelTitle = function(paging) {
-            return paging.pageNum > 0 ? "[Page "+(paging.pageNum+1)+"]" : ""
+        this.getPanelTitle = function (paging) {
+            if (!paging.next && paging.pageNum === 0) {
+                return "";
+            }
+            const currentPage = paging.pageNum + 1;
+            if (!paging.totalCount || !paging.maxItems) {
+                return "[Page " + currentPage + "]";
+            }
+            const totalPages = Math.ceil(paging.totalCount / paging.maxItems);
+            return "[Page " + currentPage + " / " + totalPages + "]";
         };
 
+        
         this.resetPaging = function(paging) {
             var newPage = angular.copy(paging);
             newPage.pageNum = 0;
@@ -84,7 +93,8 @@ angular.module('service.paging', [])
             maxItems: 10,
             pageNum: 0,
             startKeys: [],
-            next: undefined
+            next: undefined,
+            totalCount: null
         };
 
         this.getNewPagingParams = function(maxItems) {

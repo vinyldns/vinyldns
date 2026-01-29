@@ -574,7 +574,8 @@ class RecordSetService(
       recordNameFilter,
       recordSetResults.recordTypeFilter,
       recordSetResults.recordOwnerGroupFilter,
-      recordSetResults.nameSort
+      recordSetResults.nameSort,
+      None
     )
 
   /**
@@ -639,7 +640,8 @@ class RecordSetService(
       recordNameFilter,
       recordSetResults.recordTypeFilter,
       recordSetResults.recordOwnerGroupFilter,
-      recordSetResults.nameSort
+      recordSetResults.nameSort,
+      recordSetResults.totalCount
     )
   }
 

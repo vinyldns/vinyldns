@@ -392,6 +392,23 @@ class MySqlRecordSetCacheRepository
             .filter(_ == results.size)
             .flatMap(_ => newResults.lastOption.map(PagingKey.toNextId(_, searchByZone)))
 
+          val countQueryBase = sqls"SELECT COUNT(*) FROM recordset"
+
+          val countWhere =
+            if (opts.nonEmpty) {
+              val setDelimiter = SQLSyntax.join(opts, sqls"AND")
+              sqls"WHERE".append(setDelimiter)
+            } else sqls""
+
+          val countQuery = countQueryBase.append(countWhere)
+
+          val totalCount: Option[Int] =
+              sql"$countQuery"
+              .map(_.int(1))
+              .single()
+              .apply()
+
+
           ListRecordSetResults(
             recordSets = newResults,
             nextId = nextId,
@@ -400,7 +417,8 @@ class MySqlRecordSetCacheRepository
             recordNameFilter = recordNameFilter,
             recordTypeFilter = recordTypeFilter,
             nameSort = nameSort,
-            recordTypeSort = RecordTypeSort.NONE)
+            recordTypeSort = RecordTypeSort.NONE,
+            totalCount = totalCount)
         }
       }
     }
