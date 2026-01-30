@@ -392,12 +392,12 @@ class MySqlRecordSetCacheRepository
             .filter(_ == results.size)
             .flatMap(_ => newResults.lastOption.map(PagingKey.toNextId(_, searchByZone)))
 
-          val countQueryBase = sqls"
+          val countQueryBase = sqls"""
             SELECT COUNT(DISTINCT recordset.id)
             FROM recordset_data
-            RIGHT JOIN recordset 
+            RIGHT JOIN recordset
               ON recordset.id = recordset_data.recordset_id
-          "
+          """
           val countWhere =
             if (opts.nonEmpty) {
               val setDelimiter = SQLSyntax.join(opts, sqls"AND")
