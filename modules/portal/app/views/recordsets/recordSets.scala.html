@@ -108,6 +108,17 @@
                             </div>
                         </div>
                     </div>
+                    <div class="dropdown export-dropdown" ng-show="isRecordSearchTriggered" ng-click="$event.stopPropagation()">
+                        <button class="btn btn-primary dropdown-toggle" ng-click="toggleExportOptions($event)">
+                            Export CSV ▾
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-export" ng-if="showExportOptions" ng-click="$event.stopPropagation()">
+                            <label ng-repeat="(key, label) in HEADER_MAP">
+                            <input type="checkbox" ng-model="selectedFields[key]"> {{label}}
+                            </label>
+                            <button class="btn btn-success btn-sm" ng-click="exportWithSelection()">Download</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 

@@ -60,6 +60,20 @@
                 CONFIRM_DELETE: 4,
                 VIEW_DETAILS: 5
             };
+            $scope.showExportOptions = false;
+            $scope.HEADER_MAP = {
+            fqdn: 'FQDN',
+            name: 'Name',
+            type: 'Type',
+            ttl: 'TTL',
+            records: 'Record Data',
+            zoneName: 'Zone',
+            zoneId: 'Zone ID',
+            zoneShared: 'Zone Access Type',
+            ownerGroupName: 'Owner Group Name',
+            created: 'Created Date'
+            };
+            $scope.selectedFields = {};
 
             // Function to copy the Record ID to clipboard
             $scope.copyToClipboard = function(type) {
@@ -105,6 +119,77 @@
                 $('[data-toggle="tooltip"]').tooltip();
             });
 
+            document.addEventListener('click', function () {
+                $scope.$apply(function () {
+                    $scope.showExportOptions = false;
+                });
+            });
+            
+            $scope.toggleExportOptions = function(event) {
+                event.stopPropagation();
+                $scope.showExportOptions = !$scope.showExportOptions;
+            };
+
+            $scope.exportWithSelection = function() {
+                $scope.showExportOptions = false;
+                $scope.exportToCSV();
+            };
+            
+            function getRecordData(records, type) {
+                if (!records || !records.length) return '';
+
+                switch (type) {
+                    case 'A':
+                    case 'AAAA':
+                    return records.map(r => r.address).join('\n');
+
+                    case 'CNAME':
+                    return records.map(r => r.cname).join('\n');
+
+                    case 'TXT':
+                    return records.map(r => r.text).join('\n');
+
+                    case 'NS':
+                    return records.map(r => r.nsdname).join('\n'); 
+
+                    case 'PTR':
+                    return records.map(r => r.ptrdname).join('\n');
+
+                    case 'MX':
+                    return records.map(r =>
+                        `preference=${r.preference}, exchange=${r.exchange}`
+                    ).join('\n');
+
+                    case 'SOA':
+                    return records.map(r =>
+                        `mname=${r.mname}, rname=${r.rname}, serial=${r.serial}, refresh=${r.refresh}, retry=${r.retry}, expire=${r.expire}, minimum=${r.minimum}`
+                    ).join('\n');
+
+                    case 'DS':
+                    return records.map(r =>
+                        `keyTag=${r.keytag}, algorithm=${r.algorithm}, digestType=${r.digestType}, digest=${r.digest}`
+                    ).join('\n');
+
+                    case 'SRV':
+                    return records.map(r =>
+                        `priority=${r.priority}, weight=${r.weight}, port=${r.port}, target=${r.target}`
+                    ).join('\n');
+
+                    case 'NAPTR':
+                    return records.map(r =>
+                        `order=${r.order}, preference=${r.preference}, flags=${r.flags}, service=${r.service}, regexp=${r.regexp}, replacement=${r.replacement}`
+                    ).join('\n');
+
+                    case 'SSHFP':
+                    return records.map(r =>
+                        `algorithm=${r.algorithm}, type=${r.type}, fingerprint=${r.fingerprint}`
+                    ).join('\n');
+
+                    default:
+                    return '';
+                }
+            };
+            
             $( "#record-search-text" ).autocomplete({
               source: function( request, response ) {
                 $.ajax({
@@ -204,7 +289,71 @@
                 }
             };
 
+            $scope.exportToCSV = function () {
+                if (!$scope.isRecordSearchTriggered) {
+                    return;
+                }
+                let recordName, recordType;
 
+                if ($scope.query && $scope.query.includes("|")) {
+                    const queryRecord = $scope.query.split('|');
+                    recordName = queryRecord[0].trim();
+                    recordType = queryRecord[1].trim();
+                } else {
+                    recordName = $scope.query || '';
+                    recordType = ($scope.selectedRecordTypes || []).toString();
+                }
+
+                const filename = `${recordName} - recordsets.csv`;
+                const csv = [];
+                function buildHeaders() {
+                    return Object.keys($scope.HEADER_MAP)
+                        .filter(key => $scope.selectedFields[key])
+                        .map(key => $scope.HEADER_MAP[key])
+                        .join(',');
+                }
+                function buildRow(r) {
+                return Object.keys($scope.HEADER_MAP)
+                    .filter(key => $scope.selectedFields[key])
+                    .map(key => {
+                    if (key === 'records') return `"${getRecordData(r.records, r.type)}"`;
+                    if (key === 'zoneShared') return `"${r.zoneShared ? 'Shared' : 'Private'}"`;
+                    if (key === 'created') return `"${r.created ? new Date(r.created).toISOString() : ''}"`;
+                    return `"${r[key] || ''}"`;
+                    }).join(',');
+                }
+                recordsService.listRecordSetData(
+                    recordsPaging.maxItems,
+                    undefined,
+                    recordName,
+                    recordType,
+                    $scope.nameSort,
+                    $scope.ownerGroupFilter
+                    )
+                .then(function (response) {
+                    const recordSets = response.data.recordSets || [];
+                    if (!recordSets.length) return;
+
+                    csv.push(buildHeaders());
+
+                    recordSets.forEach(function (r) {
+                        csv.push(buildRow(r));
+                    });
+
+                    const csvFile = new Blob([csv.join('\n')], { type: 'text/csv' });
+                    const link = document.createElement('a');
+
+                    link.href = window.URL.createObjectURL(csvFile);
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                })
+                .catch(function (error) {
+                    handleError(error, 'recordExport-failure');
+                });
+            };
+            
             function updateRecordDisplay(records) {
                 var newRecords = [];
                 angular.forEach(records, function(record) {
