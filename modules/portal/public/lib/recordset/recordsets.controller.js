@@ -60,6 +60,7 @@
                 CONFIRM_DELETE: 4,
                 VIEW_DETAILS: 5
             };
+            $scope.isRecordSearchTriggered = false;
             $scope.showExportOptions = false;
             $scope.HEADER_MAP = {
             fqdn: 'FQDN',
@@ -233,6 +234,7 @@
             };
 
             $scope.refreshRecords = function() {
+            $scope.isRecordSearchTriggered = true;
             if($scope.query.includes("|")) {
                 const queryRecord = $scope.query.split('|');
                 recordName = queryRecord[0].trim();
