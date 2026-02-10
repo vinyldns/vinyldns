@@ -16,22 +16,6 @@
 
 package modules
 
-/*
- * Copyright 2018 Comcast Cable Communications Management, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import actions._
 import cats.effect.{ContextShift, IO, Timer}
 import com.google.inject.AbstractModule
@@ -62,22 +46,26 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
       loaderResponse <- DataStoreLoader
         .loadAll[PortalDataAccessor](repoConfigs, crypto, PortalDataAccessorProvider)
       auth = authenticator()
+      syncProvider = buildSyncProvider(auth)
+      pollingInterval = resolvePollingInterval()
       healthService = new HealthService(auth.healthCheck() :: loaderResponse.healthChecks)
       repositories = loaderResponse.accessor
       userAccessor = new UserAccountAccessor(
         repositories.userRepository,
         repositories.userChangeRepository
       )
-      _ <- if (settings.ldapSyncEnabled) {
-        TaskScheduler
-          .schedule(
-            new UserSyncTask(userAccessor, auth, settings.ldapSyncPollingInterval),
-            repositories.taskRepository
-          )
-          .compile
-          .drain
-          .start
-      } else IO.unit
+      _ <- syncProvider match {
+        case NoOpUserSyncProvider => IO.unit
+        case _ =>
+          TaskScheduler
+            .schedule(
+              new UserSyncTask(userAccessor, syncProvider, pollingInterval),
+              repositories.taskRepository
+            )
+            .compile
+            .drain
+            .start
+      }
     } yield {
       bind(classOf[SecuritySupport]).to(classOf[LegacySecuritySupport])
       bind(classOf[CryptoAlgebra]).toInstance(crypto)
@@ -91,13 +79,41 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
     startApp.unsafeRunSync()
   }
 
-  private def authenticator(): Authenticator =
-    /**
-      * Why not load config here you ask?  Well, there is some ugliness in the LdapAuthenticator
-      * that I am not looking to undo at this time.  There are private classes
-      * that do some wrapping.  It all seems to work, so I am leaving it alone
-      * to complete the Play framework upgrade
-      */
-    LdapAuthenticator(settings)
+  private def buildSyncProvider(auth: Authenticator): UserSyncProvider =
+    settings.userSyncProvider match {
+      case "graph-api" =>
+        new GraphApiUserSyncProvider(
+          settings.oidcTenantId,
+          settings.oidcClientId,
+          settings.oidcSecret,
+          settings.graphApiUsernameAttribute
+        )
+      case "ldap" =>
+        new LdapUserSyncProvider(auth)
+      case _ =>
+        // "none" or unset: fall back to legacy LDAP sync config for backward compat
+        if (settings.ldapSyncEnabled) new LdapUserSyncProvider(auth)
+        else NoOpUserSyncProvider
+    }
+
+  private def resolvePollingInterval() =
+    settings.userSyncProvider match {
+      case "graph-api" | "ldap" => settings.userSyncPollingInterval
+      case _ =>
+        // Legacy fallback uses LDAP polling interval
+        if (settings.ldapSyncEnabled) settings.ldapSyncPollingInterval
+        else settings.userSyncPollingInterval
+    }
+
+  private def authenticator(): Authenticator = {
+    val needsLdap = settings.userSyncProvider == "ldap" ||
+      (settings.userSyncProvider == "none" && settings.ldapSyncEnabled) ||
+      !settings.oidcEnabled
+
+    if (needsLdap)
+      LdapAuthenticator(settings)
+    else
+      new NoOpAuthenticator
+  }
 }
 // $COVERAGE-ON$

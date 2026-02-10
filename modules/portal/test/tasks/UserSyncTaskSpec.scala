@@ -17,7 +17,7 @@
 package tasks
 
 import cats.effect.IO
-import controllers.{Authenticator, UserAccountAccessor}
+import controllers.{UserAccountAccessor, UserSyncProvider}
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import vinyldns.core.domain.Encrypted
@@ -26,9 +26,9 @@ import vinyldns.core.domain.membership._
 class UserSyncTaskSpec extends Specification with Mockito {
   val notAuthUser: User = User("not-authorized", "accessKey", Encrypted("secretKey"))
   val lockedNotAuthUser: User = notAuthUser.copy(lockStatus = LockStatus.Locked)
-  val mockAuthenticator: Authenticator = {
-    val mockObject = mock[Authenticator]
-    mockObject.getUsersNotInLdap(List(notAuthUser)).returns(IO(List(notAuthUser)))
+  val mockSyncProvider: UserSyncProvider = {
+    val mockObject = mock[UserSyncProvider]
+    mockObject.getStaleUsers(List(notAuthUser)).returns(IO(List(notAuthUser)))
     mockObject
   }
 
@@ -43,7 +43,7 @@ class UserSyncTaskSpec extends Specification with Mockito {
 
   "SyncUserTask" should {
     "successfully lock unauthorized, non-test users" in {
-      new UserSyncTask(mockUserAccountAccessor, mockAuthenticator)
+      new UserSyncTask(mockUserAccountAccessor, mockSyncProvider)
         .run()
         .unsafeRunSync() must beEqualTo(())
 
@@ -51,8 +51,8 @@ class UserSyncTaskSpec extends Specification with Mockito {
     }
 
     "successfully process if no users are found" in {
-      val mockAuth: Authenticator = mock[Authenticator]
-      mockAuth.getUsersNotInLdap(List(notAuthUser)).returns(IO(Nil))
+      val mockSync: UserSyncProvider = mock[UserSyncProvider]
+      mockSync.getStaleUsers(List(notAuthUser)).returns(IO(Nil))
 
       val mockUsers = mock[UserAccountAccessor]
       mockUsers
@@ -61,7 +61,7 @@ class UserSyncTaskSpec extends Specification with Mockito {
 
       mockUsers.getAllUsers.returns(IO(List(notAuthUser)))
 
-      new UserSyncTask(mockUsers, mockAuth)
+      new UserSyncTask(mockUsers, mockSync)
         .run()
         .unsafeRunSync() must beEqualTo(())
     }
