@@ -299,7 +299,8 @@ class MySqlRecordSetCacheRepository
               Some(sqls"recordset_data.reverse_fqdn LIKE ${wildcardStart.replaceAllIn(fqdn, "$1").reverse.replace('*', '%') + "%"} ")
             case _ =>
               // By default, just use a LIKE query
-              Some(sqls"recordset.fqdn LIKE ${fqdn.replace('*', '%')} ")
+              val pattern = "%" + fqdn.replace('*', '%') + "%"
+              Some(sqls"(recordset.fqdn LIKE $pattern OR (recordset.type = '3' AND recordset.data LIKE $pattern))")
           }
           case (Some(zId), None) => Some(sqls"recordset.zone_id = $zId ")
           case _ => None

@@ -189,11 +189,13 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val zoneAndNameFilters = (zoneId, recordNameFilter) match {
             case (Some(zId), Some(rName)) =>
               Some(sqls"zone_id = $zId AND name LIKE ${rName.replace('*', '%')} ")
-            case (None, Some(fqdn)) => Some(sqls"fqdn LIKE ${fqdn.replace('*', '%')} ")
+            case (None, Some(fqdn)) =>
+              val pattern = "%" + fqdn.replace('*', '%') + "%"
+              Some(sqls"(fqdn LIKE $pattern OR (type = '3' AND data LIKE $pattern))")
             case (Some(zId), None) => Some(sqls"zone_id = $zId ")
             case _ => None
           }
-
+          
           val searchByZone = zoneId.fold[Boolean](false)(_ => true)
           val pagingKey = PagingKey(startFrom)
 
