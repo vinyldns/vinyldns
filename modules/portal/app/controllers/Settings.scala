@@ -97,6 +97,12 @@ class Settings(private val config: Configuration) {
 
   val cryptoConfig = IO(config.get[Config]("crypto"))
 
+  def validateLdapConfig(): Unit = {
+    ldapUser; ldapPwd; ldapDomain; ldapSearchBase
+    ldapCtxFactory; ldapSecurityAuthentication; ldapProviderUrl
+    ldapUserNameAttribute
+  }
+
   implicit def ldapSearchDomainLoader: ConfigLoader[List[LdapSearchDomain]] =
     new ConfigLoader[List[LdapSearchDomain]] {
       def load(config: Config, path: String): List[LdapSearchDomain] = {
