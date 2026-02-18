@@ -78,7 +78,7 @@
                 $scope.processing = true;
 
                 var payload = $scope.newBatch;
-
+                
                 function formatData(payload) {
                     if (!$scope.newBatch.ownerGroupId) {
                          delete payload.ownerGroupId
@@ -101,6 +101,24 @@
                             if(entry.record.regexp == undefined){
                                 var newEntry = {changeType: entry.changeType, type: "NAPTR", ttl: entry.ttl, inputName: entry.inputName, record: {order: entry.record.order, preference: entry.record.preference, flags: entry.record.flags, service: entry.record.service, regexp: '', replacement: entry.record.replacement}}
                                 payload.changes[i] = newEntry;
+                            }
+                        }
+                        if(entry.type == 'TXT'){
+                            var splitValues = entry.record.text
+                                .split(/\r?\n/)
+                                .map(function(v) { return v.trim(); })
+                                .filter(function(v) { return v.length > 0; });
+                            if (splitValues.length > 1) {
+                                entry.record.text = splitValues[0];
+                                for (var j = 1; j < splitValues.length; j++) {
+                                    payload.changes.splice(i + j, 0, {
+                                        changeType: entry.changeType,
+                                        type: 'TXT',
+                                        ttl: entry.ttl,
+                                        inputName: entry.inputName,
+                                        record: { text: splitValues[j] }
+                                    });
+                                }
                             }
                         }
                         if(entry.changeType == 'DeleteRecordSet' && entry.record) {
@@ -127,7 +145,6 @@
                 }
 
                 formatData(payload);
-
                 return dnsChangeService.createBatchChange(payload, true)
                     .then(success)
                     .catch(function (error){
