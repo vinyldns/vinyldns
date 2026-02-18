@@ -26,7 +26,6 @@ object RuntimeVinylDNSConfig {
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 
   @volatile private var rawConfig: Config = ConfigFactory.load()
-
   @volatile private var runtimeRef: Ref[IO, VinylDNSConfig] = _
 
   def init(): IO[Unit] =
@@ -39,8 +38,8 @@ object RuntimeVinylDNSConfig {
       }
     } yield ()
 
-  def current: VinylDNSConfig =
-    runtimeRef.get.unsafeRunSync()
+  def currentIO: IO[VinylDNSConfig] =
+    runtimeRef.get
 
   def getRaw: Config =
     rawConfig
@@ -58,5 +57,4 @@ object RuntimeVinylDNSConfig {
         logger.info("[RuntimeConfig:reload] Reload completed successfully")
       }
     } yield ()
-
 }

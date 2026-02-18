@@ -91,11 +91,11 @@ class VinylDNSService(
     new ProductionVinylDNSAuthenticator(
       aws4Authenticator,
       authPrincipalProvider,
-      RuntimeVinylDNSConfig.current.crypto
+      RuntimeVinylDNSConfig.currentIO.map(_.crypto).unsafeRunSync()
     )
 
   val zoneRoute: Route =
-    new ZoneRoute(zoneService, limits, vinylDNSAuthenticator, RuntimeVinylDNSConfig.current.crypto).getRoutes
+    new ZoneRoute(zoneService, limits, vinylDNSAuthenticator, RuntimeVinylDNSConfig.currentIO.map(_.crypto).unsafeRunSync()).getRoutes
   val recordSetRoute: Route =
     new RecordSetRoute(recordSetService, limits, vinylDNSAuthenticator).getRoutes
   val membershipRoute: Route =
@@ -105,11 +105,11 @@ class VinylDNSService(
       batchChangeService,
       limits,
       vinylDNSAuthenticator,
-      RuntimeVinylDNSConfig.current.manualReviewConfig
+      RuntimeVinylDNSConfig.currentIO.map(_.manualReviewConfig).unsafeRunSync()
     ).getRoutes
   val statusRoute: Route =
     new StatusRoute(
-      RuntimeVinylDNSConfig.current.serverConfig,
+      RuntimeVinylDNSConfig.currentIO.map(_.serverConfig).unsafeRunSync(),
       vinylDNSAuthenticator,
       processingDisabled
     ).getRoutes
@@ -143,7 +143,7 @@ class VinylDNSService(
     }
 
   val unloggedRoutes: Route = healthCheckRoute ~ pingRoute ~ colorRoute(
-    RuntimeVinylDNSConfig.current.serverConfig.color
+    RuntimeVinylDNSConfig.currentIO.map(_.serverConfig.color).unsafeRunSync()
   ) ~ prometheusRoute
 
   val allRoutes: Route = unloggedRoutes ~

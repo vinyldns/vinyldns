@@ -75,7 +75,7 @@ object Boot extends App {
     for {
       banner <- vinyldnsBanner()
       _ <- RuntimeVinylDNSConfig.init()
-      vinyldnsConfig = RuntimeVinylDNSConfig.current
+      vinyldnsConfig <- RuntimeVinylDNSConfig.currentIO
       system <- IO(ActorSystem("VinylDNS", RuntimeVinylDNSConfig.getRaw))
       loaderResponse <- DataStoreLoader.loadAll[ApiDataAccessor](
         vinyldnsConfig.dataStoreConfigs,
