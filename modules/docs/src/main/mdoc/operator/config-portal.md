@@ -11,7 +11,10 @@ The portal configuration is much smaller than the API Server.
 
 ## Configuration
 - [Database Configuration](#database-configuration)
+- [Authentication](#authentication)
 - [LDAP](#ldap)
+- [OIDC](#oidc)
+- [User Sync](#user-sync)
 - [Cryptography](#cryptography-settings)
 - [Custom Links](#custom-links)
 - [Additional Configuration Settings](#additional-configuration-settings)
@@ -102,27 +105,37 @@ vinyldns {
 }
 ```
 
+## Authentication
+VinylDNS supports two authentication methods:
+
+- **LDAP** - Traditional LDAP-based authentication against a directory service
+- **OIDC** - OpenID Connect authentication via an identity provider (e.g., Azure AD)
+
+When OIDC is enabled (`oidc.enabled = true`), LDAP configuration is only required if LDAP is also being used
+for user sync. When OIDC is disabled, LDAP is required for authentication.
+
 ## LDAP
 Be sure to follow the [LDAP Setup Guide](setup-ldap.html) first to get the values you need to configure here.
 
-LDAP configuration connects VinylDNS to your Directory where user information is stored.
-
-The default value for user sync enabled is _false_ and user sync hours polling interval is 24 (max value). If the hours polling interval
-is configured higher than 24, 24 hours will be used.
+LDAP configuration connects VinylDNS to your Directory where user information is stored. LDAP is required when
+OIDC is disabled, or when using LDAP as the [user sync](#user-sync) provider.
 
 ```yaml
 LDAP {
   # The name of the user to connect VinylDNS to LDAP
-  user="test"
+  user = "test"
 
   # The password for the user to connect VinylDNS to LDAP
-  password="test"
+  password = "test"
 
   # The domain for the user connecting VinylDNS to LDAP
-  domain="test"
+  domain = "test"
 
   # One or more search bases to find users.  If users come from multiple domains, list them here
-  searchBase = [{organization = "someDomain", domainName = "DC=test,DC=test,DC=com"}, {organization = "anotherDomain", domainName = "DC=test,DC=com"}]
+  searchBase = [
+    {organization = "someDomain", domainName = "DC=test,DC=test,DC=com"},
+    {organization = "anotherDomain", domainName = "DC=test,DC=com"}
+  ]
 
   # Connection information to LDAP
   context {
@@ -132,13 +145,94 @@ LDAP {
     # Set this to point to your LDAP
     providerUrl = "ldaps://somedomain.com:9999"
   }
-  
-  user-sync {
-    enabled = true # Default value is false
-    hours-polling-interval = 12 # Default value is 24
+}
+```
+
+## OIDC
+OpenID Connect (OIDC) enables authentication via an external identity provider. When enabled, LDAP is no longer
+required for authentication (though it may still be used for [user sync](#user-sync)).
+
+OIDC requires the following configuration. The `tenant-id`, `client-id`, and `secret` are required when OIDC
+is enabled or when using `graph-api` as the user sync provider.
+
+```yaml
+oidc {
+  enabled = true
+
+  # OIDC provider tenant ID
+  tenant-id = ${OIDC_TENANT_ID}
+
+  # Application client ID registered with the OIDC provider
+  client-id = ${OIDC_CLIENT_ID}
+
+  # Application client secret
+  secret = ${OIDC_SECRET}
+
+  # Display name for the OIDC client
+  client-name = "vinyldns"
+
+  # Redirect URI after authentication
+  redirect-uri = "https://portal.example.com"
+
+  # OIDC scopes to request
+  scope = "openid profile email"
+
+  # JWT claim fields used to extract user information
+  jwt-username-field = "onpremisessamaccountname"
+  jwt-firstname-field = "givenname"
+  jwt-lastname-field = "surname"
+  jwt-email-field = "email"
+
+  # OIDC provider endpoints
+  authorization-endpoint = ${OIDC_AUTH_ENDPOINT}
+  token-endpoint = ${OIDC_TOKEN_ENDPOINT}
+  jwks-endpoint = ${OIDC_JWKS_ENDPOINT}
+  logout-endpoint = ${OIDC_LOGOUT_ENDPOINT}
+}
+```
+
+## User Sync
+VinylDNS can periodically sync its user database against an external directory to lock accounts that no longer
+exist. This is configured via the `user-sync` block.
+
+The `user-sync.provider` setting determines which sync method to use:
+
+| Provider | Description |
+|----------|-------------|
+| `"none"` | Default. Falls back to `LDAP.user-sync.enabled` for backward compatibility. |
+| `"ldap"` | Syncs users against LDAP. Requires LDAP configuration. |
+| `"graph-api"` | Syncs users via the Microsoft Graph API. Requires OIDC configuration (`tenant-id`, `client-id`, `secret`). |
+
+```yaml
+user-sync {
+  # Provider: "ldap", "graph-api", or "none"
+  provider = "none"
+
+  # How often to run the sync (in hours). Default is 24, which is also the maximum.
+  polling-interval-hours = 24
+
+  graph-api {
+    # The Graph API user attribute to match against VinylDNS usernames
+    # Default: "onPremisesSamAccountName"
+    username-attribute = "onPremisesSamAccountName"
   }
 }
 ```
+
+### Legacy LDAP User Sync
+For backward compatibility, when `user-sync.provider` is set to `"none"`, VinylDNS falls back to the legacy
+LDAP sync configuration:
+
+```yaml
+LDAP {
+  user-sync {
+    enabled = true   # Default: false
+    hours-polling-interval = 12  # Default: 24
+  }
+}
+```
+
+New deployments should use `user-sync.provider` instead of the legacy `LDAP.user-sync` settings.
 
 ## Cryptography Settings
 The Portal encrypts user secrets at rest using the same mechanism as the API server.
@@ -280,7 +374,7 @@ data-stores = ["mysql"]
 
 mysql {
   class-name = "vinyldns.mysql.repository.MySqlDataStoreProvider"
-  
+
   settings {
     name = "vinyldns"
     driver = "org.mariadb.jdbc.Driver"
@@ -302,13 +396,54 @@ mysql {
       rewriteBatchedStatements = true
     }
   }
-  
+
   repositories {
     user {
     }
   }
 }
 
+# LDAP configuration (required when OIDC is disabled, or when using LDAP user sync)
+LDAP {
+  user = "cn=admin,dc=example,dc=com"
+  password = "secret"
+  domain = "EXAMPLE"
+  searchBase = [
+    {organization = "example", domainName = "DC=example,DC=com"}
+  ]
+  context {
+    initialContextFactory = "com.sun.jndi.ldap.LdapCtxFactory"
+    securityAuthentication = "simple"
+    providerUrl = "ldaps://ldap.example.com:636"
+  }
+}
+
+# OIDC configuration (optional, enables OpenID Connect authentication)
+oidc {
+  enabled = true
+  tenant-id = ${OIDC_TENANT_ID}
+  client-id = ${OIDC_CLIENT_ID}
+  secret = ${OIDC_SECRET}
+  client-name = "vinyldns"
+  redirect-uri = "https://portal.example.com"
+  scope = "openid profile email"
+  jwt-username-field = "onpremisessamaccountname"
+  jwt-firstname-field = "givenname"
+  jwt-lastname-field = "surname"
+  jwt-email-field = "email"
+  authorization-endpoint = ${OIDC_AUTH_ENDPOINT}
+  token-endpoint = ${OIDC_TOKEN_ENDPOINT}
+  jwks-endpoint = ${OIDC_JWKS_ENDPOINT}
+  logout-endpoint = ${OIDC_LOGOUT_ENDPOINT}
+}
+
+# User sync configuration
+user-sync {
+  provider = "graph-api"  # "ldap", "graph-api", or "none"
+  polling-interval-hours = 24
+  graph-api {
+    username-attribute = "onPremisesSamAccountName"
+  }
 }
 
 play.filters.enabled += "play.filters.csrf.CSRFFilter"
@@ -320,12 +455,12 @@ play.http.session.maxAge = 10h
 play.http.session.secure = false
 play.http.session.httpOnly = true
 
-# use no-op by default
 crypto {
-  type = "vinyldns.core.crypto.NoOpCrypto"
+  type = "vinyldns.core.crypto.JavaCrypto"
+  secret = "8B06A7F3BC8A2497736F1916A123AA40E88217BE9264D8872597EF7A6E5DCE61"
 }
 
-http.port=9001
+http.port = 9001
 
 links = [
   {
