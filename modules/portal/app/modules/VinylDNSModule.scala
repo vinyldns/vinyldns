@@ -98,6 +98,7 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
   private def buildSyncProvider(auth: Authenticator): UserSyncProvider =
     settings.userSyncProvider match {
       case "graph-api" =>
+        settings.validateOidcConfig()
         new GraphApiUserSyncProvider(
           settings.oidcTenantId,
           settings.oidcClientId,

@@ -70,10 +70,10 @@ class Settings(private val config: Configuration) {
     config.getOptional[Boolean]("oidc.enabled").getOrElse(false)
 
   lazy val oidcTenantId: String =
-    config.get[String]("oidc.tenantId")
+    config.get[String]("oidc.tenant-id")
 
   lazy val oidcClientId: String =
-    config.get[String]("oidc.clientId")
+    config.get[String]("oidc.client-id")
 
   lazy val oidcSecret: String =
     config.get[String]("oidc.secret")
@@ -101,6 +101,10 @@ class Settings(private val config: Configuration) {
     ldapUser; ldapPwd; ldapDomain; ldapSearchBase
     ldapCtxFactory; ldapSecurityAuthentication; ldapProviderUrl
     ldapUserNameAttribute
+  }
+
+  def validateOidcConfig(): Unit = {
+    oidcTenantId; oidcClientId; oidcSecret
   }
 
   implicit def ldapSearchDomainLoader: ConfigLoader[List[LdapSearchDomain]] =
