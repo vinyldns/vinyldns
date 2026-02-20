@@ -94,6 +94,35 @@ accessLevel   | string      | Access level of the user requesting the zone. Curr
 }
 ```
 
+#### ZONE CONNECTION ATTRIBUTES <a id="zone-conn-attr"></a>
+In order for VinylDNS to make updates in DNS, it needs key information for every zone. There are 3 ways to specify that key information; ask your VinylDNS admin which is appropriate for your zone based on the configuration of the service:
+
+1. Leave connection, transfer connection, and backend ID blank: In this case, the default VinylDNS keys will be used
+2. Specify a backend ID on the zone: if multiple backends are configured for your instance of VinylDNS, you can specify a backend ID on the zone and the keys associated with that backend will be used.
+3. Specify zone connection and transfer connection on the zone itself: see below for details
+
+Note that if both a backend ID and specific connection keys are included on a zone, the specific connection keys will be used.
+
+Zone Connection specifies the connection information to the backend DNS server.
+
+| field         | type   | description                                                                                                                                                                                                                                                  |
+|---------------|:-------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| primaryServer | string | The IP address or host that is connected to.  This can take a port as well `127.0.0.1:5300`.  If no port is specified, 53 will be assumed.                                                                                                                   |
+| keyName       | string | The name of the DNS key that has access to the DNS server and zone.  **Note:** For the transfer connection, the key must be given *allow-transfer* access to the zone.  For the primary connection, the key must be given *allow-update* access to the zone. |
+| name          | string | A user identifier for the connection.                                                                                                                                                                                                                        |
+| key           | string | The TSIG secret key used to sign requests when communicating with the primary server.  **Note:** After creating the zone, the key value itself is hashed and obfuscated, so it will be unusable from a client perspective.                                   |
+
+#### ZONE CONNECTION EXAMPLE <a id="zone-conn-example"></a>
+
+```json
+{
+  "primaryServer": "127.0.0.1:5301",
+  "keyName": "vinyl.",
+  "name": "ok.",
+  "key": "OBF:1:W1FXgpOjjrQAABAARrZmyLjFSOuFYTAw81mhvNEmNAc4RnYzPjJQMEjVQWWLRohu7gRAVw=="
+}
+```
+
 #### ZONE ACL RULE ATTRIBUTES <a id="zone-acl-rule-attr"></a>
 ACL Rules are used to govern user and group access to record operations on a zone.  ACL Rules can be associated with a specific user, or all users in a specified group.  If neither a user _or_ a group is attached to an ACL rule, then the rule applies to _all_ users in the system.
 <br><br>
@@ -185,7 +214,7 @@ Under this rule, the user specified will be able to view, create, edit, and dele
 }
 ```
 
-### PTR ACL RULES WITH CIDR MASKS <a id="ptr-acl-rule"></a>
+#### PTR ACL RULES WITH CIDR MASKS <a id="ptr-acl-rule"></a>
 ACL rules can be applied to specific record types and can include record masks to further narrow down which records they
 apply to. These record masks apply to record names, but because `PTR` record names are part their reverse zone ip, the use of regular
 expressions for record masks are not supported.
@@ -194,7 +223,7 @@ Instead `PTR` record masks must be CIDR rules, which will denote a range of IP a
 While more information and useful CIDR rule utility tools can be found online, CIDR rules describe how many bits of an ip address' binary representation
 must be the same for a match.
 
-### PTR ACL RULES WITH CIDR MASKS EXAMPLE <a id="ptr-acl-rule-example"></a>
+#### PTR ACL RULES WITH CIDR MASKS EXAMPLE <a id="ptr-acl-rule-example"></a>
 The ACL Rule
 
 ```json
@@ -230,36 +259,7 @@ The **IPv6** ACL Rule
 
 Will give Read permissions to `PTR` Record Sets 1000:1000:1000:1000:0000:0000:0000:0000 to 1000:1000:1000:1000:FFFF:FFFF:FFFF:FFFF, as 64 bits is half of an IPv6 address.
 
-#### ZONE CONNECTION ATTRIBUTES <a id="zone-conn-attr"></a>
-In order for VinylDNS to make updates in DNS, it needs key information for every zone. There are 3 ways to specify that key information; ask your VinylDNS admin which is appropriate for your zone based on the configuration of the service:
-
-1. Leave connection, transfer connection, and backend ID blank: In this case, the default VinylDNS keys will be used
-2. Specify a backend ID on the zone: if multiple backends are configured for your instance of VinylDNS, you can specify a backend ID on the zone and the keys associated with that backend will be used.
-3. Specify zone connection and transfer connection on the zone itself: see below for details
-
-Note that if both a backend ID and specific connection keys are included on a zone, the specific connection keys will be used.
-
-Zone Connection specifies the connection information to the backend DNS server.
-
-| field         | type   | description                                                                                                                                                                                                                                                  |
-|---------------|:-------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| primaryServer | string | The IP address or host that is connected to.  This can take a port as well `127.0.0.1:5300`.  If no port is specified, 53 will be assumed.                                                                                                                   |
-| keyName       | string | The name of the DNS key that has access to the DNS server and zone.  **Note:** For the transfer connection, the key must be given *allow-transfer* access to the zone.  For the primary connection, the key must be given *allow-update* access to the zone. |
-| name          | string | A user identifier for the connection.                                                                                                                                                                                                                        |
-| key           | string | The TSIG secret key used to sign requests when communicating with the primary server.  **Note:** After creating the zone, the key value itself is hashed and obfuscated, so it will be unusable from a client perspective.                                   |
-
-#### ZONE CONNECTION EXAMPLE <a id="zone-conn-example"></a>
-
-```json
-{
-  "primaryServer": "127.0.0.1:5301",
-  "keyName": "vinyl.",
-  "name": "ok.",
-  "key": "OBF:1:W1FXgpOjjrQAABAARrZmyLjFSOuFYTAw81mhvNEmNAc4RnYzPjJQMEjVQWWLRohu7gRAVw=="
-}
-```
-
-### SHARED ZONES <a id="shared-zones"></a>
+#### SHARED ZONES <a id="shared-zones"></a>
 
 Shared zones allow for a more open management of records in VinylDNS. Zone administrators can assign ownership of
 records to groups. Any user in VinylDNS can claim existing unowned records in shared zones, as well as create records in
