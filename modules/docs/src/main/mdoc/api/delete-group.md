@@ -16,8 +16,8 @@ You must be a **group admin** to delete a group.
 
 A group cannot be deleted if any of the following conditions are true:
 
-| Restriction | Error Message |
-|-------------|---------------|
+| Restriction | Resolution |
+|-------------|------------|
 | Group is zone admin | "{groupName} is the admin of a zone. Cannot delete. Please transfer the ownership to another group before deleting." |
 | Group owns records | "{groupName} is the owner for a record set including {recordSetId}. Cannot delete. Please transfer the ownership to another group before deleting." |
 | Group has ACL rules | "{groupName} has an ACL rule for a zone including {zoneId}. Cannot delete. Please transfer the ownership to another group before deleting." |
