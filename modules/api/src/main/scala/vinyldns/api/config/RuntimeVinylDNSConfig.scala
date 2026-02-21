@@ -27,6 +27,7 @@ object RuntimeVinylDNSConfig {
 
   @volatile private var rawConfig: Config = ConfigFactory.load()
   @volatile private var runtimeRef: Ref[IO, VinylDNSConfig] = _
+  @volatile private var _current: VinylDNSConfig = _
 
   def init(): IO[Unit] =
     for {
@@ -34,9 +35,12 @@ object RuntimeVinylDNSConfig {
       ref <- Ref.of[IO, VinylDNSConfig](cfg)
       _ <- IO {
         runtimeRef = ref
+        _current = cfg
         logger.info("[RuntimeConfig:init] Loaded VinylDNSConfig")
       }
     } yield ()
+
+  def current: VinylDNSConfig = _current
 
   def currentIO: IO[VinylDNSConfig] =
     runtimeRef.get
@@ -54,6 +58,7 @@ object RuntimeVinylDNSConfig {
       cfg <- VinylDNSConfig.loadFrom(rawConfig)
       _ <- runtimeRef.set(cfg)
       _ <- IO {
+        _current = cfg
         logger.info("[RuntimeConfig:reload] Reload completed successfully")
       }
     } yield ()

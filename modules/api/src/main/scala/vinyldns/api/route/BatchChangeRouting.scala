@@ -159,7 +159,6 @@ class BatchChangeRoute(
             }
           }
         }
-
     if (manualReviewConfig.enabled)
       standardBatchChangeRoutes ~ manualBatchReviewRoutes
     else standardBatchChangeRoutes
