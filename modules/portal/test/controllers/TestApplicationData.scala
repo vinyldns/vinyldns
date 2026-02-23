@@ -322,12 +322,12 @@ trait TestApplicationData { this: Mockito =>
   val simulatedBackendPort: Int = 9001
 
   val testConfigLdap: Configuration =
-    Configuration.from(
+    Configuration.load(Environment.simple()) ++ Configuration.from(
       Map(
         "portal.vinyldns.backend.url" -> s"http://localhost:$simulatedBackendPort",
         "oidc.enabled" -> false
       )
-    ).withFallback(Configuration.load(Environment.simple()))
+    )
 
   val mockAuth: Authenticator = mock[Authenticator]
   val mockUserRepo: UserRepository = mock[UserRepository]
