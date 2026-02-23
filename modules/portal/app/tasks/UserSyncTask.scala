@@ -34,30 +34,16 @@ class UserSyncTask(
   val name: String = "user_sync"
   private val logger: Logger = LoggerFactory.getLogger("UserSyncTask")
 
-  // TODO: Remove dryRun flag after testing
-  val dryRun: Boolean = true
-
   def run(): IO[Unit] = {
-    logger.error("Initiating user sync" + (if (dryRun) " (DRY RUN)" else ""))
+    logger.info(s"Initiating user sync using provider=${syncProvider.getClass.getSimpleName}")
     for {
       allUsers <- userAccountAccessor.getAllUsers
       activeUsers = allUsers.filter(u => u.lockStatus != LockStatus.Locked && !u.isTest)
-      _ <- IO(logger.error(s"""activeUsersCount="${activeUsers.size}"; users="${activeUsers.map(_.userName)}""""))
+      _ <- IO(logger.info(s"""totalUsers="${allUsers.size}"; activeUsers="${activeUsers.size}""""))
       staleUsers <- syncProvider.getStaleUsers(activeUsers)
-      _ <- IO(logger.error(s"""staleUsersCount="${staleUsers.size}"; staleUsers="${staleUsers.map(_.userName)}""""))
-      _ <- IO {
-        val activeSet = activeUsers.map(_.userName).toSet
-        val staleSet = staleUsers.map(_.userName).toSet
-        val okUsers = activeSet -- staleSet
-        logger.error(s"""activeInDirectoryCount="${okUsers.size}"; activeInDirectory="${okUsers}"""")
-      }
-      lockedUsers <- if (dryRun) {
-        IO(logger.error(s"""DRY RUN - skipping lock for: ${staleUsers.map(_.userName)}""")).as(List.empty)
-      } else {
-        userAccountAccessor.lockUsers(staleUsers)
-      }
-      _ <- IO(logger.error(s"""usersLocked="${lockedUsers
-        .map(_.userName)}"; userLockCount="${lockedUsers.size}" """))
+      _ <- IO(logger.info(s"""staleUsers="${staleUsers.size}"; staleUserNames="${staleUsers.map(_.userName)}""""))
+      lockedUsers <- userAccountAccessor.lockUsers(staleUsers)
+      _ <- IO(logger.info(s"""usersLocked="${lockedUsers.map(_.userName)}"; userLockCount="${lockedUsers.size}""""))
     } yield ()
   }
 }

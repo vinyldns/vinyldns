@@ -30,8 +30,14 @@ trait UserSyncProvider {
 }
 
 class LdapUserSyncProvider(authenticator: Authenticator) extends UserSyncProvider {
+  private val logger = LoggerFactory.getLogger(classOf[LdapUserSyncProvider])
+
   def getStaleUsers(users: List[User]): IO[List[User]] =
-    authenticator.getUsersNotInLdap(users)
+    for {
+      _ <- IO(logger.info(s"Checking ${users.size} users against LDAP"))
+      staleUsers <- authenticator.getUsersNotInLdap(users)
+      _ <- IO(logger.info(s"LDAP sync complete; ${staleUsers.size} users not found in directory"))
+    } yield staleUsers
 }
 
 object NoOpUserSyncProvider extends UserSyncProvider {
@@ -111,9 +117,12 @@ class GraphApiUserSyncProvider(
 
   def getStaleUsers(users: List[User]): IO[List[User]] =
     for {
+      _ <- IO(logger.info(s"Checking ${users.size} users against Graph API"))
       token <- getAccessToken()
       results <- users.map(u => checkUser(token, u)).parSequence
-    } yield results.flatten
+      staleUsers = results.flatten
+      _ <- IO(logger.info(s"Graph API sync complete; ${staleUsers.size} of ${users.size} users marked as stale"))
+    } yield staleUsers
 
   private[controllers] def checkUser(token: String, user: User): IO[Option[User]] =
     IO {
