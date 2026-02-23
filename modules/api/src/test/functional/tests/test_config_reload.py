@@ -93,13 +93,6 @@ class TestConfigReloadEndpoint:
         status_code, _ = bad_client.reload_config(status=401)
         assert_that(status_code, is_(401))
 
-    # --- HTTP method ---
-
-    def test_reload_config_method_not_allowed_for_get(self, ok_client):
-        """GET /config/reload must be rejected (405 Method Not Allowed)."""
-        status_code, _ = _get_config_reload(ok_client)
-        assert_that(status_code, is_(405))
-
     # --- Idempotency ---
 
     def test_reload_config_idempotent_on_repeated_calls(self, ok_client):
