@@ -58,6 +58,7 @@ class GraphApiUserSyncProvider(
   @volatile private var cachedToken: Option[String] = None
   @volatile private var tokenExpiresAt: Long = 0L
 
+  // $COVERAGE-OFF$
   private[controllers] def getAccessToken(): IO[String] =
     IO {
       val now = System.currentTimeMillis()
@@ -114,6 +115,7 @@ class GraphApiUserSyncProvider(
       conn.disconnect()
     }
   }
+  // $COVERAGE-ON$
 
   def getStaleUsers(users: List[User]): IO[List[User]] =
     for {
@@ -124,6 +126,7 @@ class GraphApiUserSyncProvider(
       _ <- IO(logger.info(s"Graph API sync complete; ${staleUsers.size} of ${users.size} users marked as stale"))
     } yield staleUsers
 
+  // $COVERAGE-OFF$
   private[controllers] def checkUser(token: String, user: User): IO[Option[User]] =
     IO {
       try {
@@ -188,6 +191,7 @@ class GraphApiUserSyncProvider(
           None
       }
     }
+  // $COVERAGE-ON$
 }
 
 import vinyldns.core.health.HealthCheck

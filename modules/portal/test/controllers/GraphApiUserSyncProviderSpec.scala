@@ -163,5 +163,35 @@ class GraphApiUserSyncProviderSpec extends Specification with Mockito {
       result must beEqualTo(List(testUser))
       there.was(one(mockAuth).getUsersNotInLdap(List(testUser)))
     }
+
+    "return empty list when no users are stale" in {
+      val mockAuth = mock[Authenticator]
+      mockAuth.getUsersNotInLdap(List(testUser)).returns(IO(Nil))
+
+      val provider = new LdapUserSyncProvider(mockAuth)
+      val result = provider.getStaleUsers(List(testUser)).unsafeRunSync()
+
+      result must beEmpty
+    }
+  }
+
+  "NoOpAuthenticator" should {
+    val auth = new NoOpAuthenticator
+
+    "return LdapServiceException for authenticate" in {
+      auth.authenticate("user", "pass") must beLeft(LdapServiceException("LDAP not configured"))
+    }
+
+    "return LdapServiceException for lookup" in {
+      auth.lookup("user") must beLeft(LdapServiceException("LDAP not configured"))
+    }
+
+    "return empty list for getUsersNotInLdap" in {
+      auth.getUsersNotInLdap(List(testUser)).unsafeRunSync() must beEmpty
+    }
+
+    "return a passing health check" in {
+      auth.healthCheck().unsafeRunSync() must beRight
+    }
   }
 }
