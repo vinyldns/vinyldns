@@ -1,13 +1,11 @@
 """
-Functional tests for the /config/reload endpoint.
+tests for the /config/reload endpoint.
 
 Access control:
   - Authenticated super users        → 200 OK
   - Authenticated non-super users    → 403 Not Authorized
   - Unauthenticated / bad credentials → 401 Unauthorized
   - GET /config/reload               → 405 Method Not Allowed
-
-Run against a live VinylDNS instance (e.g. via the quickstart Docker stack).
 """
 import pytest
 from hamcrest import *
@@ -16,10 +14,7 @@ from vinyldns_context import VinylDNSTestContext
 from vinyldns_python import VinylDNSClient
 
 
-# ---------------------------------------------------------------------------
 # Shared client fixtures
-# ---------------------------------------------------------------------------
-
 @pytest.fixture(scope="module")
 def ok_client():
     """Regular (non-super) authenticated user — forbidden from reloading config."""
@@ -55,21 +50,11 @@ def bad_client():
     yield client
     client.tear_down()
 
-
-# ---------------------------------------------------------------------------
-# Helper: raw GET against /config/reload (method-not-allowed check)
-# ---------------------------------------------------------------------------
-
 def _get_config_reload(client: VinylDNSClient):
     """Issue a raw GET to /config/reload and return (status_code, body)."""
     from urllib.parse import urljoin
     url = urljoin(client.index_url, "/config/reload")
     return client.make_request(url, method="GET", headers=client.headers)
-
-
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
 
 class TestConfigReloadEndpoint:
 
@@ -119,7 +104,6 @@ class TestConfigReloadEndpoint:
         assert_that(status_code, is_(200))
 
     # --- HTTP method ---
-
     def test_reload_config_method_not_allowed_for_get(self, super_client):
         """GET /config/reload must be rejected (405 Method Not Allowed)."""
         status_code, _ = _get_config_reload(super_client)

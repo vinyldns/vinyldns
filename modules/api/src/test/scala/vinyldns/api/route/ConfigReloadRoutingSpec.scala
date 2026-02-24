@@ -30,10 +30,7 @@ import vinyldns.api.config.RuntimeVinylDNSConfig
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.core.TestMembershipData._
 
-/**
-  * Minimal in-test route that replicates the reloadConfigRoute logic from VinylDNSService,
-  * but accepts an injectable reload effect so tests can run without a full service stack.
-  */
+
 class TestConfigReloadRoute(
     val vinylDNSAuthenticator: VinylDNSAuthenticator,
     reloadEffect: IO[Unit]
@@ -153,7 +150,7 @@ class ConfigReloadRoutingSpec
   "POST /config/reload with RuntimeVinylDNSConfig" should {
 
     "actually invoke RuntimeVinylDNSConfig.reload and keep config valid" in {
-      // Wire the real reload effect (same as production VinylDNSService does)
+      // Wire the real reload effect
       RuntimeVinylDNSConfig.init().unsafeRunSync()
       val realRoute =
         new TestConfigReloadRoute(
