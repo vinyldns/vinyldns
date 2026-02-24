@@ -100,7 +100,7 @@ class ConfigReloadRoutingSpec
     new TestConfigReloadRoute(new TestVinylDNSAuthenticator(supportUserAuth), successReload).reloadConfigRoute
 
   private val failRoute: Route =
-    new TestConfigReloadRoute(new TestVinylDNSAuthenticator(okAuth), failingReload).reloadConfigRoute
+    new TestConfigReloadRoute(new TestVinylDNSAuthenticator(superUserAuth), failingReload).reloadConfigRoute
 
   "POST /config/reload" should {
 
