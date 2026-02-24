@@ -140,6 +140,9 @@ class VinylDNSService(
           }
         } { _ => complete(StatusCodes.OK, "Application configuration reloaded successfully")}
       }
+      get {
+        complete(StatusCodes.MethodNotAllowed)
+      }
     }
 
   val unloggedRoutes: Route = healthCheckRoute ~ pingRoute ~ colorRoute(

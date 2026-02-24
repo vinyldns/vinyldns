@@ -42,7 +42,7 @@ trait VinylDNSAuthenticator {
 class ProductionVinylDNSAuthenticator(
     val authenticator: Aws4Authenticator,
     val authPrincipalProvider: AuthPrincipalProvider,
-    crypto: CryptoAlgebra
+    val crypto: CryptoAlgebra
 ) extends VinylDNSAuthenticator
     with Monitored {
 
