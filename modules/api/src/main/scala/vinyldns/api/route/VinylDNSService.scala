@@ -125,7 +125,7 @@ class VinylDNSService(
     path("config" / "reload") {
       (post & monitor("Endpoint.reloadConfig")) {
         authenticateAndExecute { authPrincipal =>
-          if (authPrincipal.isSuper) {
+          if (!authPrincipal.isSuper) {
             logger.warn(s"User ${authPrincipal.signedInUser.userName} attempted to reload config without permission")
             EitherT.leftT[IO, Unit](
               NotAuthorizedError(s"User ${authPrincipal.signedInUser.userName} is not authorized to reload the application config"))

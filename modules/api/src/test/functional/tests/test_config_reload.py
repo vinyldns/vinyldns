@@ -2,8 +2,8 @@
 Functional tests for the /config/reload endpoint.
 
 Access control:
-  - Authenticated non-super users    → 200 OK
-  - Authenticated super users        → 403 Not Authorized
+  - Authenticated super users        → 200 OK
+  - Authenticated non-super users    → 403 Not Authorized
   - Unauthenticated / bad credentials → 401 Unauthorized
   - GET /config/reload               → 405 Method Not Allowed
 
@@ -22,7 +22,7 @@ from vinyldns_python import VinylDNSClient
 
 @pytest.fixture(scope="module")
 def ok_client():
-    """Regular (non-super) authenticated user."""
+    """Regular (non-super) authenticated user — forbidden from reloading config."""
     client = VinylDNSClient(
         VinylDNSTestContext.vinyldns_url,
         "okAccessKey",
@@ -34,7 +34,7 @@ def ok_client():
 
 @pytest.fixture(scope="module")
 def super_client():
-    """Super-user client (should be forbidden from reloading config)."""
+    """Super-user client — authorised to reload config."""
     client = VinylDNSClient(
         VinylDNSTestContext.vinyldns_url,
         "superUserAccessKey",
@@ -73,19 +73,15 @@ def _get_config_reload(client: VinylDNSClient):
 
 class TestConfigReloadEndpoint:
 
-    # --- Happy-path ---
-
-    def test_reload_config_succeeds_for_regular_user(self, ok_client):
-        """A regular authenticated user can trigger a config reload (200 OK)."""
-        status_code, data = ok_client.reload_config(status=200)
+    def test_reload_config_succeeds_for_super_user(self, super_client):
+        """A super user can trigger a config reload (200 OK)."""
+        status_code, data = super_client.reload_config(status=200)
         assert_that(status_code, is_(200))
         assert_that(data, contains_string("reloaded successfully"))
 
-    # --- Authorization ---
-
-    def test_reload_config_forbidden_for_super_user(self, super_client):
-        """Super users are explicitly denied the reload action (403 Forbidden)."""
-        status_code, data = super_client.reload_config(status=403)
+    def test_reload_config_forbidden_for_regular_user(self, ok_client):
+        """Regular (non-super) users are not authorized to reload config (403 Forbidden)."""
+        status_code, data = ok_client.reload_config(status=403)
         assert_that(status_code, is_(403))
 
     def test_reload_config_unauthorized_without_valid_credentials(self, bad_client):
@@ -93,35 +89,38 @@ class TestConfigReloadEndpoint:
         status_code, _ = bad_client.reload_config(status=401)
         assert_that(status_code, is_(401))
 
-    # --- Idempotency ---
-
-    def test_reload_config_idempotent_on_repeated_calls(self, ok_client):
+    def test_reload_config_idempotent_on_repeated_calls(self, super_client):
         """Calling reload multiple times in a row must all succeed (200 OK)."""
         for _ in range(3):
-            status_code, data = ok_client.reload_config(status=200)
+            status_code, data = super_client.reload_config(status=200)
             assert_that(status_code, is_(200))
             assert_that(data, contains_string("reloaded successfully"))
 
-    # --- Side-effect: other endpoints still respond after reload ---
-
-    def test_color_endpoint_still_responds_after_reload(self, ok_client):
+    def test_color_endpoint_still_responds_after_reload(self, super_client):
         """GET /color must continue to return a valid color string after reload."""
-        ok_client.reload_config(status=200)
-        color = ok_client.color()
+        super_client.reload_config(status=200)
+        color = super_client.color()
         assert_that(color, any_of(contains_string("blue"), contains_string("green")))
 
-    def test_ping_endpoint_still_responds_after_reload(self, ok_client):
+    def test_ping_endpoint_still_responds_after_reload(self, super_client):
         """GET /ping must still return 200 after a config reload."""
-        ok_client.reload_config(status=200)
+        super_client.reload_config(status=200)
         from urllib.parse import urljoin
-        url = urljoin(ok_client.index_url, "/ping")
-        status_code, _ = ok_client.make_request(url, method="GET", headers=ok_client.headers)
+        url = urljoin(super_client.index_url, "/ping")
+        status_code, _ = super_client.make_request(url, method="GET", headers=super_client.headers)
         assert_that(status_code, is_(200))
 
-    def test_status_endpoint_still_responds_after_reload(self, ok_client):
+    def test_status_endpoint_still_responds_after_reload(self, super_client):
         """GET /status must still return a response after a config reload."""
-        ok_client.reload_config(status=200)
+        super_client.reload_config(status=200)
         from urllib.parse import urljoin
-        url = urljoin(ok_client.index_url, "/status")
-        status_code, _ = ok_client.make_request(url, method="GET", headers=ok_client.headers)
+        url = urljoin(super_client.index_url, "/status")
+        status_code, _ = super_client.make_request(url, method="GET", headers=super_client.headers)
         assert_that(status_code, is_(200))
+
+    # --- HTTP method ---
+
+    def test_reload_config_method_not_allowed_for_get(self, super_client):
+        """GET /config/reload must be rejected (405 Method Not Allowed)."""
+        status_code, _ = _get_config_reload(super_client)
+        assert_that(status_code, is_(405))

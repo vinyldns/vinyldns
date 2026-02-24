@@ -53,7 +53,7 @@ class TestConfigReloadRoute(
     path("config" / "reload") {
       (post & monitor("Endpoint.reloadConfig")) {
         authenticateAndExecute { authPrincipal =>
-          if (authPrincipal.isSuper) {
+          if (!authPrincipal.isSuper) {
             logger.warn(
               s"User ${authPrincipal.signedInUser.userName} attempted to reload config without permission"
             )
@@ -104,22 +104,22 @@ class ConfigReloadRoutingSpec
 
   "POST /config/reload" should {
 
-    "return 200 OK with success message for a regular authenticated user" in {
-      Post("/config/reload") ~> okRoute ~> check {
-        status shouldBe StatusCodes.OK
-        responseAs[String] should include("reloaded successfully")
-      }
-    }
-
-    "return 200 OK for a support user (not super)" in {
-      Post("/config/reload") ~> supportUserRoute ~> check {
-        status shouldBe StatusCodes.OK
-        responseAs[String] should include("reloaded successfully")
-      }
-    }
-
-    "return 403 Forbidden for a super user" in {
+    "return 200 OK with success message for a super user" in {
       Post("/config/reload") ~> superUserRoute ~> check {
+        status shouldBe StatusCodes.OK
+        responseAs[String] should include("reloaded successfully")
+      }
+    }
+
+    "return 403 Forbidden for a regular authenticated user" in {
+      Post("/config/reload") ~> okRoute ~> check {
+        status shouldBe StatusCodes.Forbidden
+        responseAs[String] should include("is not authorized to reload")
+      }
+    }
+
+    "return 403 Forbidden for a support user (not super)" in {
+      Post("/config/reload") ~> supportUserRoute ~> check {
         status shouldBe StatusCodes.Forbidden
         responseAs[String] should include("is not authorized to reload")
       }
@@ -157,7 +157,7 @@ class ConfigReloadRoutingSpec
       RuntimeVinylDNSConfig.init().unsafeRunSync()
       val realRoute =
         new TestConfigReloadRoute(
-          new TestVinylDNSAuthenticator(okAuth),
+          new TestVinylDNSAuthenticator(superUserAuth),
           RuntimeVinylDNSConfig.reload()
         ).reloadConfigRoute
 
@@ -173,7 +173,7 @@ class ConfigReloadRoutingSpec
       RuntimeVinylDNSConfig.init().unsafeRunSync()
       val realRoute =
         new TestConfigReloadRoute(
-          new TestVinylDNSAuthenticator(okAuth),
+          new TestVinylDNSAuthenticator(superUserAuth),
           RuntimeVinylDNSConfig.reload()
         ).reloadConfigRoute
 
