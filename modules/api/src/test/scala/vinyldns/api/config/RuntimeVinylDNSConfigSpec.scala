@@ -22,6 +22,9 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+import akka.actor.ActorSystem
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class RuntimeVinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
@@ -112,6 +115,58 @@ class RuntimeVinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAnd
 
     "contain the vinyldns namespace" in {
       RuntimeVinylDNSConfig.getRaw.hasPath("vinyldns") shouldBe true
+    }
+  }
+
+  "RuntimeVinylDNSConfig.currentIO (Boot: vinyldnsConfig <- RuntimeVinylDNSConfig.currentIO)" should {
+
+    "return a non-null config" in {
+      val cfg = RuntimeVinylDNSConfig.currentIO.unsafeRunSync()
+      cfg should not be null
+    }
+
+    "contain non-empty dataStoreConfigs (used by DataStoreLoader.loadAll)" in {
+      val cfg = RuntimeVinylDNSConfig.currentIO.unsafeRunSync()
+      cfg.dataStoreConfigs should not be empty
+    }
+
+    "have a non-null crypto instance (used by DataStoreLoader.loadAll)" in {
+      val cfg = RuntimeVinylDNSConfig.currentIO.unsafeRunSync()
+      cfg.crypto should not be null
+    }
+
+    "have dataStoreConfigs with a non-empty className for each entry" in {
+      val cfg = RuntimeVinylDNSConfig.currentIO.unsafeRunSync()
+      cfg.dataStoreConfigs.foreach { dsc =>
+        dsc.className should not be empty
+      }
+    }
+
+    "have a non-null messageQueueConfig (used in subsequent Boot steps)" in {
+      val cfg = RuntimeVinylDNSConfig.currentIO.unsafeRunSync()
+      cfg.messageQueueConfig should not be null
+    }
+  }
+
+  "Boot: system <- IO(ActorSystem(VinylDNS, RuntimeVinylDNSConfig.getRaw))" should {
+
+    "create an ActorSystem from getRaw without throwing" in {
+      val system = ActorSystem("VinylDNSTest", RuntimeVinylDNSConfig.getRaw)
+      try {
+        system should not be null
+        system.name shouldBe "VinylDNSTest"
+      } finally {
+        Await.result(system.terminate(), 10.seconds)
+      }
+    }
+
+    "produce an ActorSystem whose config reflects the vinyldns namespace" in {
+      val system = ActorSystem("VinylDNSConfigCheck", RuntimeVinylDNSConfig.getRaw)
+      try {
+        system.settings.config.hasPath("vinyldns") shouldBe true
+      } finally {
+        Await.result(system.terminate(), 10.seconds)
+      }
     }
   }
 }
