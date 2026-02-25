@@ -2141,13 +2141,37 @@ class RecordSetServiceSpec
       error shouldBe a[RecordSetChangeNotFoundError]
     }
 
+    "return a RecordSetChangeNotFoundError if changeId is incorrect" in {
+      val wrongChangeId = "fake-change-id"
+      doReturn(IO.pure(None))
+        .when(mockRecordChangeRepo)
+        .getRecordSetChange(okZone.id, wrongChangeId)
+      
+      val error =
+        underTest.getRecordSetChange(okZone.id, pendingCreateAAAA.recordSet.id, wrongChangeId, okAuth).value.unsafeRunSync()
+          .swap
+          .toOption
+          .get
+      error shouldBe a[RecordSetChangeNotFoundError]
+    }
+
     "return a RecordSetChangeNotFoundError if recordId is incorrect" in {
       doReturn(IO.pure(Some(pendingCreateAAAA)))
         .when(mockRecordChangeRepo)
         .getRecordSetChange(okZone.id, pendingCreateAAAA.id)
+
       val error =
         underTest.getRecordSetChange(okZone.id, abcRecord.id, pendingCreateAAAA.id, okAuth).value.unsafeRunSync().swap.toOption.get
       error shouldBe a[RecordSetChangeNotFoundError]
+    }
+
+    "fail if the zone is not found when getting record set change" in {
+      val fakeZoneId = "fake-zone-id"
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZone(fakeZoneId)
+      
+      val error = 
+        underTest.getRecordSetChange(fakeZoneId, pendingCreateAAAA.recordSet.id, pendingCreateAAAA.id, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[ZoneNotFoundError]
     }
 
     "return a RecordSets Count" in {

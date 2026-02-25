@@ -282,28 +282,35 @@ def test_get_recordset_change_with_incorrect_record_id(shared_zone_test_context)
     Test that fetching a record set change with an incorrect recordId
     returns a 404 (RecordSetChangeNotFoundError)
     """
-    new_rs = {
-                "zoneId": shared_zone_test_context.ok_zone["id"],
-                "name": "test_get_recordset",
-                "type": "A",
-                "ttl": 100,
-                "records": [
-                    {
-                        "address": "10.1.1.1"
-                    },
-                    {
-                        "address": "10.2.2.2"
-                    }
-                ]
-            }
-
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.ok_zone
-    record_set_change = client.create_recordset(new_rs,status=202)
-    dummy_record_id = "cace152a-ae0c-4e7a-921c-ea9d13c29583"
+    result_rs = None
 
-    client.get_recordset_change(
-        zone_id=record_set_change["recordSet"]["zoneId"],
-        rs_id=dummy_record_id,
-        change_id=record_set_change["id"],
-        status=404)
+    try:
+        new_rs = {
+            "zoneId": zone["id"],
+            "name": "test_get_recordset_change_bad_rs",
+            "type": "A",
+            "ttl": 100,
+            "records": [
+                {"address": "10.1.1.1"},
+                {"address": "10.2.2.2"}
+            ]
+        }
+        record_set_change = client.create_recordset(new_rs, status=202)
+        result_rs = client.wait_until_recordset_change_status(record_set_change, "Complete")["recordSet"]
+        dummy_record_id = "cace152a-ae0c-4e7a-921c-ea9d13c29583"
+        client.get_recordset_change(
+            zone_id=zone["id"],
+            rs_id=dummy_record_id,
+            change_id=record_set_change["id"],
+            status=404
+        )
+    finally:
+        if result_rs:
+            delete_result = client.delete_recordset(
+                result_rs["zoneId"],
+                result_rs["id"],
+                status=202
+            )
+            client.wait_until_recordset_change_status(delete_result, "Complete")
