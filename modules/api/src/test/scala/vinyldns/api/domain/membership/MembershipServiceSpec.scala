@@ -1378,6 +1378,113 @@ class MembershipServiceSpec
       }
     }
 
+    "updateUserPermissionStatus" should {
+      "update the user permission to super user and save the update to the user account" in {
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser(okUser.id)
+        doReturn(IO.pure(okUser)).when(mockUserRepo).save(any[User])
+
+        underTest
+          .updateUserPermissionStatus(okUser.id, PermissionStatus.MakeSuper, superUserAuth)
+          .value
+          .unsafeRunSync()
+
+        val userCaptor = ArgumentCaptor.forClass(classOf[User])
+
+        verify(mockUserRepo).save(userCaptor.capture())
+
+        val savedUser = userCaptor.getValue
+        savedUser.isSuper shouldBe true
+        savedUser.id shouldBe okUser.id
+      }
+
+      "update the user permission to support user and save the update to the user account" in {
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser(okUser.id)
+        doReturn(IO.pure(okUser)).when(mockUserRepo).save(any[User])
+
+        underTest
+          .updateUserPermissionStatus(okUser.id, PermissionStatus.MakeSupport, superUserAuth)
+          .value
+          .unsafeRunSync()
+
+        val userCaptor = ArgumentCaptor.forClass(classOf[User])
+
+        verify(mockUserRepo).save(userCaptor.capture())
+
+        val savedUser = userCaptor.getValue
+        savedUser.isSupport shouldBe true
+        savedUser.id shouldBe okUser.id
+      }
+
+      "update the user permission to remove super user and save the update to the user account" in {
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser(okUser.id)
+        doReturn(IO.pure(okUser)).when(mockUserRepo).save(any[User])
+
+        underTest
+          .updateUserPermissionStatus(okUser.id, PermissionStatus.RemoveSuper, superUserAuth)
+          .value
+          .unsafeRunSync()
+
+        val userCaptor = ArgumentCaptor.forClass(classOf[User])
+
+        verify(mockUserRepo).save(userCaptor.capture())
+
+        val savedUser = userCaptor.getValue
+        savedUser.isSuper shouldBe false
+        savedUser.id shouldBe okUser.id
+      }
+
+      "update the user permission to remove support user and save the update to the user account" in {
+        doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUser(okUser.id)
+        doReturn(IO.pure(okUser)).when(mockUserRepo).save(any[User])
+
+        underTest
+          .updateUserPermissionStatus(okUser.id, PermissionStatus.RemoveSupport, superUserAuth)
+          .value
+          .unsafeRunSync()
+
+        val userCaptor = ArgumentCaptor.forClass(classOf[User])
+
+        verify(mockUserRepo).save(userCaptor.capture())
+
+        val savedUser = userCaptor.getValue
+        savedUser.isSupport shouldBe false
+        savedUser.id shouldBe okUser.id
+      }
+
+      "return an error if the signed in user is not a super user" in {
+        val error =
+          underTest
+            .updateUserPermissionStatus(okUser.id, PermissionStatus.MakeSupport, dummyAuth)
+            .value.unsafeRunSync().swap.toOption.get
+
+        error shouldBe a[NotAuthorizedError]
+      }
+
+      "return an error if the signed in user is only a support admin" in {
+        val supportAuth = okAuth.copy(
+          signedInUser = dummyAuth.signedInUser.copy(isSupport = true),
+          memberGroupIds = Seq.empty
+        )
+        val error =
+          underTest
+            .updateUserPermissionStatus(okUser.id, PermissionStatus.RemoveSupport, supportAuth)
+            .value.unsafeRunSync().swap.toOption.get
+
+        error shouldBe a[NotAuthorizedError]
+      }
+
+      "return an error if the requested user is not found" in {
+        doReturn(IO.pure(None)).when(mockUserRepo).getUser(okUser.id)
+
+        val error =
+          underTest
+            .updateUserPermissionStatus(okUser.id, PermissionStatus.RemoveSuper, superUserAuth)
+            .value.unsafeRunSync().swap.toOption.get
+
+        error shouldBe a[UserNotFoundError]
+      }
+    }
+
     "get user" should {
       "return the user" in {
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(anyString)

@@ -1,4 +1,4 @@
-@(rootAccountName: String, rootAccountCanReview: Boolean)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
+@(rootAccountName: String, rootAccountIsAdmin: Boolean)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
 
 @content = {
     <!-- PAGE CONTENT -->
@@ -531,4 +531,4 @@
 }
 
 
-@main(rootAccountName)("RecordSetsController")("RecordSets")(content)(plugins)
+@main(rootAccountName, rootAccountIsAdmin)("RecordSetsController")("RecordSets")(content)(plugins)
