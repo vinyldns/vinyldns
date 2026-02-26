@@ -1586,7 +1586,12 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
         "email": "test@test.com",
         "description": "for testing that a get batch change still works when record owner group is deleted",
         "members": [{"id": "ok"}, {"id": "dummy"}],
-        "admins": [{"id": "ok"}, {"id": "dummy"}]
+        "admins": [{"id": "ok"}, {"id": "dummy"}],
+        "membershipAccessStatus": {
+            "pendingReviewMember": [],
+            "rejectedMember": [],
+            "approvedMember": []
+        }
     }
 
     rs_delete_name = generate_record_name()
