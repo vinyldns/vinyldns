@@ -686,28 +686,38 @@ class RecordSetService(
     )
 
   def getRecordSetChange(
-                          zoneId: String,
-                          changeId: String,
-                          authPrincipal: AuthPrincipal
-                        ): Result[RecordSetChange] =
-    for {
-      zone <- getZone(zoneId)
-      change <- recordChangeRepository
-        .getRecordSetChange(zone.id, changeId)
-        .orFail(
-          RecordSetChangeNotFoundError(
-            s"Unable to find record set change with id $changeId in zone ${zone.name}"
+                  zoneId: String,
+                  rsId: String,
+                  changeId: String,
+                  authPrincipal: AuthPrincipal
+                ): Result[RecordSetChange] =
+      for {
+
+        zone <- getZone(zoneId)
+
+        change <- recordChangeRepository
+          .getRecordSetChange(zone.id, changeId)
+          .flatMap {
+            case Some(c) if c.recordSet.id == rsId =>
+              IO.pure(Some(c))
+            case _ =>
+              IO.pure(None)
+          }
+          .orFail(
+            RecordSetChangeNotFoundError(
+              s"RecordSetChange with id $changeId not found for RecordSet $rsId in zone ${zone.name}"
+            )
           )
-        )
-        .toResult[RecordSetChange]
-      _ <- canViewRecordSet(
-        authPrincipal,
-        change.recordSet.name,
-        change.recordSet.typ,
-        zone,
-        change.recordSet.ownerGroupId
-      ).toResult
-    } yield change
+          .toResult[RecordSetChange]
+
+        _ <- canViewRecordSet(
+          authPrincipal,
+          change.recordSet.name,
+          change.recordSet.typ,
+          zone,
+          change.recordSet.ownerGroupId
+        ).toResult
+      } yield change
 
   def listRecordSetChanges(
                             zoneId: String,

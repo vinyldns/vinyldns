@@ -244,9 +244,9 @@ class RecordSetRoute(
         }
     } ~
     path("zones" / Segment / "recordsets" / Segment / "changes" / Segment) {
-      (zoneId, _, changeId) =>
+      (zoneId, rsId, changeId) =>
         (get & monitor("Endpoint.getRecordSetChange")) {
-          authenticateAndExecute(recordSetService.getRecordSetChange(zoneId, changeId, _)) {
+          authenticateAndExecute(recordSetService.getRecordSetChange(zoneId, rsId, changeId, _)) {
             change =>
               complete(StatusCodes.OK, change)
           }
