@@ -1943,7 +1943,7 @@ class RecordSetServiceSpec
       result.totalCount shouldBe Some(5)
     }
 
-  "return totalCount as 0 when no records found" in {
+    "return totalCount as 0 when no records found" in {
       doReturn(IO.pure(Set.empty))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])

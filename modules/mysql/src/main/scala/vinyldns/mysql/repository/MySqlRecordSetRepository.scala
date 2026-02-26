@@ -280,9 +280,11 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
           val countQueryBase = sqls"SELECT COUNT(*) FROM recordset"
 
+          val countOpts = (zoneAndNameFilters ++ typeFilter ++ ownerGroupFilter).toList
+
           val countWhere =
-            if (opts.nonEmpty) {
-              val setDelimiter = SQLSyntax.join(opts, sqls"AND")
+            if (countOpts.nonEmpty) {
+              val setDelimiter = SQLSyntax.join(countOpts, sqls"AND")
               sqls"WHERE".append(setDelimiter)
             } else sqls""
 

@@ -398,9 +398,11 @@ class MySqlRecordSetCacheRepository
             RIGHT JOIN recordset
               ON recordset.id = recordset_data.recordset_id
           """
+          val countOpts = (zoneAndNameFilters ++ typeFilter ++ ownerGroupFilter).toList
+          
           val countWhere =
-            if (opts.nonEmpty) {
-              val setDelimiter = SQLSyntax.join(opts, sqls"AND")
+            if (countOpts.nonEmpty) {
+              val setDelimiter = SQLSyntax.join(countOpts, sqls"AND")
               sqls"WHERE".append(setDelimiter)
             } else sqls""
 
@@ -411,8 +413,7 @@ class MySqlRecordSetCacheRepository
               .map(_.int(1))
               .single()
               .apply()
-
-
+          
           ListRecordSetResults(
             recordSets = newResults,
             nextId = nextId,
