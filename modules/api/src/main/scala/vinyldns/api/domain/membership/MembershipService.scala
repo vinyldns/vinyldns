@@ -31,7 +31,7 @@ import vinyldns.core.Messages._
 import vinyldns.mysql.TransactionProvider
 
 object MembershipService {
-  def apply(dataAccessor: ApiDataAccessor,emailConfig:ValidEmailConfig): MembershipService =
+  def apply(dataAccessor: ApiDataAccessor,emailConfig: ValidEmailConfig): MembershipService =
     new MembershipService(
       dataAccessor.groupRepository,
       dataAccessor.userRepository,
