@@ -393,11 +393,12 @@ class MySqlRecordSetCacheRepository
             .flatMap(_ => newResults.lastOption.map(PagingKey.toNextId(_, searchByZone)))
 
           val countQueryBase = sqls"""
-            SELECT COUNT(DISTINCT recordset.id)
-            FROM recordset_data
-            RIGHT JOIN recordset
-              ON recordset.id = recordset_data.recordset_id
-          """
+              SELECT COUNT(*) FROM (
+                SELECT recordset_data.recordset_id, recordset_data.type
+                FROM recordset_data
+                RIGHT JOIN recordset
+                  ON recordset.id = recordset_data.recordset_id
+            """
           val countOpts = (zoneAndNameFilters ++ typeFilter ++ ownerGroupFilter).toList
           
           val countWhere =
@@ -405,14 +406,23 @@ class MySqlRecordSetCacheRepository
               val setDelimiter = SQLSyntax.join(countOpts, sqls"AND")
               sqls"WHERE".append(setDelimiter)
             } else sqls""
+          
+          val countGroupBy = sqls"""
+              GROUP BY recordset_data.recordset_id, recordset_data.type
+            ) AS grouped_count
+            """
 
-          val countQuery = countQueryBase.append(countWhere)
+          val countQuery = countQueryBase.append(countWhere).append(countGroupBy)
 
           val totalCount: Option[Int] =
               sql"$countQuery"
               .map(_.int(1))
               .single()
               .apply()
+
+              println(s"final query: $finalQuery")
+              println(s"count query: $countQuery")
+            println(s"final query: $totalCount")
           
           ListRecordSetResults(
             recordSets = newResults,
@@ -427,8 +437,8 @@ class MySqlRecordSetCacheRepository
         }
       }
     }
-
-
+    
+    
   private val IPV4_ARPA = ".in-addr.arpa."
   private val IPV6_ARPA = ".ip6.arpa."
   private val innerRecordRegex = "(?i).*?\"((?:[0-9a-f]+[:.]+)+[0-9a-f]+)\".*".r
