@@ -65,3 +65,9 @@ zone          | map           | Refer to [zone model](zone-model.html) |
   }
 }
 ```
+
+#### EXAMPLE ERROR RESPONSE
+
+```text
+Zone with id e91b6232-2e2f-479b-93fe-ce440314fb87 does not exists
+```

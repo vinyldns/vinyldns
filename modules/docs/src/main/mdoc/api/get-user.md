@@ -48,3 +48,8 @@ GET /users/ok
   ]
 }
 ```
+
+#### EXAMPLE ERROR RESPONSE
+```text
+User new-ok was not found
+```

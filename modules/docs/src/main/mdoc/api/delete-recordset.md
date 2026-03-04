@@ -103,3 +103,7 @@ id            | string        | The ID of the change.  This is not the ID of the
 ```text
 RecordSet with id da57c384-d6e8-4166-986d-2ca9d483f760, name foo and type A currently has a pending change
 ```
+
+```text
+RecordSet with id 0ae54802-ffd4-4044-9747-bee1f7c624d8 does not exist.
+```
