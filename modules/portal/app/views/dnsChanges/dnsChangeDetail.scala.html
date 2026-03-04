@@ -129,7 +129,8 @@
                             </thead>
                             <tbody>
                             <tr ng-repeat="change in batch.changes|filter:query" 
-                                ng-hide="change.type=='TXT' && $index > 0 && batch.changes[$index - 1].zoneId === change.zoneId && batch.changes[$index - 1].recordName === change.recordName && batch.changes[$index - 1].type === change.type"
+                                ng-hide="change.type=='TXT' && $index > 0 && batch.changes[$index - 1].zoneId === change.zoneId && batch.changes[$index - 1].recordName === change.recordName
+                                 && batch.changes[$index - 1].type === change.type && batch.changes[$index - 1].changeType === change.changeType"
                                 ng-class="{changeError: change.outstandingErrors}">
                                 <td ng-bind="change.changeType"></td>
                                 <td class="wrap-long-text">{{change.inputName}}</td>
@@ -151,7 +152,9 @@
                                         <li class="wrap-long-text"ng-repeat="c in batch.changes | filter:query" 
                                             ng-if="c.zoneId === change.zoneId && 
                                                     c.recordName === change.recordName && 
-                                                    c.type === change.type">
+                                                    c.type === change.type &&
+                                                    c.changeType === change.changeType &&
+                                                    c.record && c.record.text">
                                             {{c.record.text}}
                                         </li>
                                         </ul>

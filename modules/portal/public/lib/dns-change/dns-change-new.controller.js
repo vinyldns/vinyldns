@@ -76,9 +76,7 @@
             $scope.createBatchChange = function() {
                 //flag to prevent multiple clicks until previous promise has resolved.
                 $scope.processing = true;
-
                 var payload = $scope.newBatch;
-                
                 function formatData(payload) {
                     if (!$scope.newBatch.ownerGroupId) {
                          delete payload.ownerGroupId
@@ -103,7 +101,7 @@
                                 payload.changes[i] = newEntry;
                             }
                         }
-                        if(entry.type == 'TXT'){
+                        if(entry.type == 'TXT' && entry.record && entry.record.text){
                             var splitValues = entry.record.text
                                 .split(/\r?\n/)
                                 .map(function(v) { return v.trim(); })
@@ -119,6 +117,7 @@
                                         record: { text: splitValues[j] }
                                     });
                                 }
+                                i += (splitValues.length - 1);
                             }
                         }
                         if(entry.changeType == 'DeleteRecordSet' && entry.record) {
@@ -134,7 +133,6 @@
                         }
                     }
                 }
-
                 function success(response) {
                     var alert = utilityService.success('Successfully created DNS Change', response, 'createBatchChange: createBatchChange successful');
                     $scope.alerts.push(alert);
