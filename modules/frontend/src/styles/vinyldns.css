@@ -1,0 +1,82 @@
+/*
+ * Copyright 2018 Comcast Cable Communications Management, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* ============================================================
+   VinylDNS – Global styles
+   Mirrors the look-and-feel from the original portal
+   ============================================================ */
+
+/* Sidebar dark theme */
+:root {
+  --vinyldns-sidebar-bg: #1a1a2e;
+  --vinyldns-sidebar-width: 240px;
+}
+
+/* Make nav links feel like the Gentelella nav */
+.sidebar-nav .nav-link {
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+.sidebar-nav .nav-link:hover,
+.sidebar-nav .nav-link.active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Ensure table hover effect is visible */
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Badge alignment */
+.badge {
+  vertical-align: middle;
+}
+
+/* Monospace IDs in tables */
+.font-monospace {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.85em;
+}
+
+/* Cursor pointer for clickable elements */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Alert wrapper top positioning */
+.alert-wrapper {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  min-width: 320px;
+  max-width: 480px;
+}
+
+/* Card shadows consistent with portal style */
+.card {
+  border-radius: 6px;
+}
+
+/* Page title */
+h1.h3 {
+  color: #2c3e50;
+}
+
+/* Input group refinements */
+.input-group .form-control:focus {
+  z-index: 3;
+}
