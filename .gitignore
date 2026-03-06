@@ -47,3 +47,16 @@ modules/portal/public/project/
 modules/portal/public/stylesheets/
 **/.env.*
 modules/portal/package-lock.json
+
+# Ignore frontend build outputs and dependencies
+modules/frontend/node_modules/
+modules/frontend/dist/
+modules/frontend/*.local
+modules/frontend/.DS_Store
+modules/frontend/coverage/
+modules/frontend/package-lock.json
+modules/frontend/yarn.lock
+modules/frontend/.idea/
+modules/frontend/.vscode/
+modules/frontend/*.log
+modules/frontend/*.tmp
