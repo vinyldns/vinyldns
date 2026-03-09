@@ -93,14 +93,14 @@ class RecordSetRoute(
   val recordSetRoute: Route = path("zones" / Segment / "recordsets") { zoneId =>
     (post & monitor("Endpoint.addRecordSet")) {
       authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet](
-        (authPrincipal, recordSet) => {
-          if (recordSet.zoneId.nonEmpty && recordSet.zoneId != zoneId) {
-            Left(RecordSetValidation("zoneId in URI and body must match")).toResult
-          } else {
-            val updatedRecordSet = recordSet.copy(zoneId = zoneId)
-            recordSetService.addRecordSet(updatedRecordSet, authPrincipal)
+        (authPrincipal, recordSet) =>   
+          recordSet match {
+            case badRs if badRs.zoneId.nonEmpty && badRs.zoneId != zoneId =>
+              Left(InvalidRequest("zoneId in URI and body must match")).toResult
+            case goodRs =>
+              val updatedRecordSet = goodRs.copy(zoneId = zoneId)
+              recordSetService.addRecordSet(updatedRecordSet, authPrincipal)
           }
-        }
       ) { rc =>
         complete(StatusCodes.Accepted, rc)
       }
