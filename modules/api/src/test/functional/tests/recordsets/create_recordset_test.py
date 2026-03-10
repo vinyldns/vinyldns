@@ -75,10 +75,7 @@ def test_create_recordset_zoneid_mismatch(shared_zone_test_context):
             {"address": "10.1.1.1"}
         ]
     }
-    url = urljoin(
-        client.index_url,
-        "/zones/{0}/recordsets".format(zone["id"]) 
-    )
+    url = urljoin(client.index_url, "/zones/{0}/recordsets".format(zone["id"]))
     response, error = client.make_request(
         url,
         "POST",
