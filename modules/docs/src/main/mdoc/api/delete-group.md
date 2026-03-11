@@ -18,9 +18,9 @@ A group cannot be deleted if any of the following conditions are true:
 
 | Restriction | Resolution |
 |-------------|------------|
-| Group is zone admin | "{groupName} is the admin of a zone. Cannot delete. Please transfer the ownership to another group before deleting." |
-| Group owns records | "{groupName} is the owner for a record set including {recordSetId}. Cannot delete. Please transfer the ownership to another group before deleting." |
-| Group has ACL rules | "{groupName} has an ACL rule for a zone including {zoneId}. Cannot delete. Please transfer the ownership to another group before deleting." |
+| Group is the admin of a zone | Transfer zone admin ownership to another group first |
+| Group owns record sets | Transfer record set ownership to another group first |
+| Group has ACL rules on a zone | Remove the ACL rules referencing this group first |
 
 #### HTTP REQUEST
 
@@ -35,6 +35,14 @@ Code          | description |
 401           | **Unauthorized** - The authentication information provided is invalid.  Typically the request was not signed properly, or the access key and secret used to sign the request are incorrect |
 403           | **Forbidden** - The user does not have the access required to perform the action |
 404           | **Not Found** - The group was not found |
+
+#### POSSIBLE ERROR MESSAGES
+
+If deletion fails because one of the restriction checks above is triggered, VinylDNS may return one of the following messages:
+
+- **"{groupName} is the admin of a zone. Cannot delete. Please transfer the ownership to another group before deleting."**
+- **"{groupName} is the owner for a record set including {recordSetId}. Cannot delete. Please transfer the ownership to another group before deleting."**
+- **"{groupName} has an ACL rule for a zone including {zoneId}. Cannot delete. Please transfer the ownership to another group before deleting."**
 
 #### HTTP RESPONSE ATTRIBUTES
 
