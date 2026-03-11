@@ -56,7 +56,7 @@
                                                         <span class="fa fa-search"></span>
                                                     </button>
                                                 </span>
-                                                <input id="group-search-text" ng-model="query" type="text" class="form-control"  placeholder="Group Name"/>
+                                                <input id="my-group-search-text" ng-model="query" type="text" class="form-control"  placeholder="Group Name"/>
                                             </div>
                                         </form>
                                     </div>
@@ -156,8 +156,11 @@
                                                         <span class="fa fa-search"></span>
                                                     </button>
                                                 </span>
-                                                <input id="group-search-text" ng-model="query" type="text" class="form-control"  placeholder="Group Name"/>
+                                                <input ng-model="query" type="text" class="form-control all-group-search-text"  placeholder="{{!isSearchByUser ? 'Group Name' : 'User Name'}}"ng-required="isSearchByUser"/>
                                             </div>
+                                            <label class="reduce-font-weight remove-bottom-margin flex-1">
+                                                <input ng-class="isSearchByUser" type="checkbox" ng-model="isSearchByUser"> Search by User
+                                            </label>
                                         </form>
                                     </div>
                                     <!-- END SEARCH BOX -->
