@@ -134,8 +134,8 @@ queue {
   settings = {
      name = "vinyldns"
      driver = "org.mariadb.jdbc.Driver"
-     migration-url = "jdbc:mariadb://localhost:19004/?user=root&password=pass"
-     url = "jdbc:mariadb://localhost:19004/vinyldns?user=root&password=pass"
+     migration-url = "jdbc:mariadb://localhost:19004/?user=root&password=pass&useMysqlMetadata=true"
+     url = "jdbc:mariadb://localhost:19004/vinyldns?user=root&password=pass&useMysqlMetadata=true"
      user = "root"
      password = "pass"
    
@@ -183,10 +183,10 @@ vinyldns {
         driver = "org.mariadb.jdbc.Driver"
       
         # the URL used to create the schema, typically this will be without the "database" name
-        migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass"
+        migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass&useMysqlMetadata=true"
       
         # the main connection URL
-        url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass"
+        url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass&useMysqlMetadata=true"
       
         # the user to connect to MySQL
         user = "root"
@@ -534,7 +534,15 @@ email = {
 
       smtp {
          # Host SMTP server
+         portal {
+            url= "http://127.0.0.1:9001" # portal uri for email link
+         }
          host = "example.host"
+         # if smtp host requires authentication we can enable auth
+         auth = true
+         username = sampleUser
+         password = samplePassword
+         starttls.enable = true
       }
    }
 }
@@ -771,8 +779,8 @@ dotted-hosts = {
      settings {
         name = "vinyldns"
         driver = "org.mariadb.jdbc.Driver"
-        migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass"
-        url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass"
+        migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass&useMysqlMetadata=true"
+        url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass&useMysqlMetadata=true"
         user = "root"
         password = "pass"
         maximum-pool-size = 20
@@ -859,11 +867,20 @@ dotted-hosts = {
      settings = {
      # Sender address for e-mail notifications
      from = "Sender <do-not-reply@example.sender>"
-   
+
      smtp {
-        # Host SMTP server
-        host = "example.host"
+         # Host SMTP server
+         portal {
+            url= "http://127.0.0.1:9001" # portal uri for email link
+         }
+         host = "example.host"
+         # if smtp host requires authentication we can enable auth
+         auth = true
+         username = sampleUser
+         password = samplePassword
+         starttls.enable = true
      }
+   }
   }
 
   # Valid Email Domains
