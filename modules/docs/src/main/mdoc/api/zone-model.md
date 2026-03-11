@@ -13,9 +13,7 @@ section: "api"
 - [Zone Connection Attributes](#zone-conn-attr)
 - [Zone Connection JSON Example](#zone-conn-example)
 - [Zone ACL Rule Attributes](#zone-acl-rule-attr)
-- [Zone ACL Rule Examples](#zone-acl-rule-example)
 - [PTR ACL Rule](#ptr-acl-rule)
-- [PTR ACL Rule Examples](#ptr-acl-rule-example)
 - [Shared Zones](#shared-zones) 
 
 #### ZONE ATTRIBUTES <a id="zone-attributes"></a>
@@ -182,37 +180,7 @@ and then Delete access to only A records that matched the expression \*dev\* thr
 then the rule with the recordMask will take precedence and give Delete access to matched A RecordSets, the rule with recordTypes will
 take precedence and give Write access to all other A records, and the more broad rule will give Read access to all other record types in the zone
 
-#### ZONE ACL RULE EXAMPLES <a id="zone-acl-rule-example"></a>
-**Grant read/write/delete access to www.* records of type `A`, `AAAA`, `CNAME` to one user**
-Under this rule, the user specified will be able to view, create, edit, and delete records in the zone that match the expression `www.*` and are of type `A`, `AAAA`, or `CNAME`.
-
-```json
-{
-  "recordMask": "www.*",
-  "accessLevel": "Delete",
-  "userId": "<uuid>",
-  "recordTypes": ["A", "AAAA", "CNAME"]
-}
-```
-
-**Grant read only access to all VinylDNS users to `A`, `AAAA`, `CNAME` records**
-
-```json
-{
-  "accessLevel": "Read",
-  "recordTypes": ["A", "AAAA", "CNAME"]
-}
-```
-
-**Grant read/write/delete access to records of type `A`, `AAAA`, `CNAME` to one group***
-
-```json
-{
-  "accessLevel": "Delete",
-  "groupId": "<uuid>",
-  "recordTypes": ["A", "AAAA", "CNAME"]
-}
-```
+For example ACL rule request payloads, see [Add ACL Rule](add-acl-rule.html).
 
 #### PTR ACL RULES WITH CIDR MASKS <a id="ptr-acl-rule"></a>
 ACL rules can be applied to specific record types and can include record masks to further narrow down which records they
@@ -222,42 +190,6 @@ expressions for record masks are not supported.
 Instead `PTR` record masks must be CIDR rules, which will denote a range of IP addresses that the rule will apply to.
 While more information and useful CIDR rule utility tools can be found online, CIDR rules describe how many bits of an ip address' binary representation
 must be the same for a match.
-
-#### PTR ACL RULES WITH CIDR MASKS EXAMPLE <a id="ptr-acl-rule-example"></a>
-The ACL Rule
-
-```json
-{
-    "recordTypes": ["PTR"],
-    "accessLevel": "Read"
-}
-```
-
-Will give Read permissions to `PTR` Record Sets to all users in VinylDNS
-<br><br>
-The **IPv4** ACL Rule
-
-```json
-{
-    "recordTypes": ["PTR"],
-    "accessLevel": "Read",
-    "recordMask": "100.100.100.100/16"
-}
-```
-
-Will give Read permissions to `PTR` Record Sets 100.100.000.000 to 100.100.255.255, as 16 bits is half of an IPv4 address
-<br><br>
-The **IPv6** ACL Rule
-
-```json
-{
-    "recordTypes": ["PTR"],
-    "accessLevel": "Read",
-    "recordMask": "1000:1000:1000:1000:1000:1000:1000:1000/64"
-}
-```
-
-Will give Read permissions to `PTR` Record Sets 1000:1000:1000:1000:0000:0000:0000:0000 to 1000:1000:1000:1000:FFFF:FFFF:FFFF:FFFF, as 64 bits is half of an IPv6 address.
 
 #### SHARED ZONES <a id="shared-zones"></a>
 

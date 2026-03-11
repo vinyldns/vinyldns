@@ -36,14 +36,74 @@ Code          | description |
 404           | **Not Found** - Zone not found |
 409           | **Conflict** - Zone is not in a state where ACL rules can be modified |
 
-#### EXAMPLE REQUEST
+#### EXAMPLE REQUESTS
+
+**Grant read/write/delete access to `www.*` records of type `A`, `AAAA`, `CNAME` to one user**
+
+Under this rule, the specified user can view, create, edit, and delete records in the zone that match the expression `www.*` and are of type `A`, `AAAA`, or `CNAME`.
 
 ```json
 {
-  "accessLevel": "Write",
+  "recordMask": "www.*",
+  "accessLevel": "Delete",
+  "userId": "123e64c0-b34f-4c9b-9e0e-f7f7bcc16f2e",
+  "recordTypes": ["A", "AAAA", "CNAME"],
+  "description": "Allow a single user to fully manage matching web records"
+}
+```
+
+**Grant read-only access to all VinylDNS users for `A`, `AAAA`, `CNAME` records**
+
+```json
+{
+  "accessLevel": "Read",
+  "recordTypes": ["A", "AAAA", "CNAME"],
+  "description": "Allow all users to view common web record types"
+}
+```
+
+**Grant read/write/delete access to records of type `A`, `AAAA`, `CNAME` to one group**
+
+```json
+{
+  "accessLevel": "Delete",
   "groupId": "456e64c0-b34f-4c9b-9e0e-f7f7bcc16f2e",
   "recordTypes": ["A", "AAAA", "CNAME"],
-  "description": "Allow web team to manage A, AAAA, and CNAME records"
+  "description": "Allow the web team to fully manage common web record types"
+}
+```
+
+**Grant read access to all `PTR` records**
+
+```json
+{
+  "recordTypes": ["PTR"],
+  "accessLevel": "Read",
+  "description": "Allow all users to view PTR records"
+}
+```
+
+**Grant read access to IPv4 `PTR` records within a CIDR range**
+
+For `PTR` records, `recordMask` must use CIDR notation rather than a regular expression. See [Zone ACL Rule Attributes](zone-model.html#ptr-acl-rule) for more detail.
+
+```json
+{
+  "recordTypes": ["PTR"],
+  "accessLevel": "Read",
+  "recordMask": "100.100.100.100/16",
+  "description": "Allow read access to PTR records in a specific IPv4 range"
+}
+```
+
+**Grant read access to IPv6 `PTR` records within a CIDR range**
+
+```json
+{
+  "recordTypes": ["PTR"],
+  "accessLevel": "Read",
+  "recordMask": "1000:1000:1000:1000:1000:1000:1000:1000/64",
+  "description": "Allow read access to PTR records in a specific IPv6 range"
 }
 ```
 
