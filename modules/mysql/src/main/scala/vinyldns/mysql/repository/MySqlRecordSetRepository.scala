@@ -259,7 +259,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val appendQueries = initialQuery.append(appendOpts)
 
           val finalQuery = appendQueries.append(finalQualifiers)
-
+          
           val results = sql"$finalQuery"
             .map(toRecordSet)
             .list()
@@ -270,13 +270,31 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           } else {
             results
           }
-
+          
           // if size of results is less than the maxItems plus one, we don't have a next id
           // if maxItems is None, we don't have a next id
 
           val nextId = maxPlusOne
             .filter(_ == results.size)
             .flatMap(_ => newResults.lastOption.map(PagingKey.toNextId(_, searchByZone)))
+
+          val countQueryBase = sqls"SELECT COUNT(*) FROM recordset"
+
+          val countOpts = (zoneAndNameFilters ++ typeFilter ++ ownerGroupFilter).toList
+
+          val countWhere =
+            if (countOpts.nonEmpty) {
+              val setDelimiter = SQLSyntax.join(countOpts, sqls"AND")
+              sqls"WHERE".append(setDelimiter)
+            } else sqls""
+
+          val countQuery = countQueryBase.append(countWhere)
+
+          val totalCount: Option[Int] =
+              sql"$countQuery"
+              .map(_.int(1)) 
+              .single()
+              .apply()
 
           ListRecordSetResults(
             recordSets = newResults,
@@ -286,8 +304,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             recordNameFilter = recordNameFilter,
             recordTypeFilter = recordTypeFilter,
             nameSort = nameSort,
-            recordTypeSort = recordTypeSort
-          )
+            recordTypeSort = recordTypeSort,
+            totalCount = totalCount)
         }
       }
     }

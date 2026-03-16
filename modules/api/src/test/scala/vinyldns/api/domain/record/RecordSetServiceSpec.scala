@@ -1895,6 +1895,152 @@ class RecordSetServiceSpec
         )
     }
 
+    "return totalCount when records exist" in {
+      doReturn(IO.pure(Set(okGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+
+      doReturn(IO.pure(Set(sharedZone)))
+        .when(mockZoneRepo)
+        .getZones(Set(sharedZone.id))
+
+      doReturn(
+        IO.pure(
+          ListRecordSetResults(
+            List(sharedZoneRecord),
+            recordNameFilter = Some("aaaa*"),
+            nameSort = NameSort.ASC,
+            recordOwnerGroupFilter = Some("owner group id"),
+            recordTypeSort = RecordTypeSort.NONE,
+            totalCount = Some(5)
+          )
+        )
+      ).when(mockRecordDataRepo)
+        .listRecordSetData(
+          zoneId = any[Option[String]],
+          startFrom = any[Option[String]],
+          maxItems = any[Option[Int]],
+          recordNameFilter = any[Option[String]],
+          recordTypeFilter = any[Option[Set[RecordType.RecordType]]],
+          recordOwnerGroupFilter = any[Option[String]],
+          nameSort = any[NameSort.NameSort]
+        )
+
+      val result =
+        underTest
+          .searchRecordSets(
+            None,
+            None,
+            "aaaa*",
+            None,
+            Some("owner group id"),
+            NameSort.ASC,
+            sharedAuth,
+            RecordTypeSort.ASC
+          )
+          .value.unsafeRunSync().toOption.get
+
+      result.totalCount shouldBe Some(5)
+    }
+
+    "return totalCount as 0 when no records found" in {
+      doReturn(IO.pure(Set.empty))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+
+      doReturn(IO.pure(Set.empty))
+        .when(mockZoneRepo)
+        .getZones(any[Set[String]])
+
+      doReturn(
+        IO.pure(
+          ListRecordSetResults(
+            List.empty,
+            recordNameFilter = Some("aaaa*"),
+            nameSort = NameSort.ASC,
+            recordOwnerGroupFilter = None,
+            recordTypeSort = RecordTypeSort.NONE,
+            totalCount = Some(0)
+          )
+        )
+      ).when(mockRecordDataRepo)
+        .listRecordSetData(
+          any[Option[String]],
+          any[Option[String]],
+          any[Option[Int]],
+          any[Option[String]],
+          any[Option[Set[RecordType.RecordType]]],
+          any[Option[String]],
+          any[NameSort.NameSort]
+        )
+
+      val result =
+        underTest
+          .searchRecordSets(
+            None,
+            None,
+            "aaaa*",
+            None,
+            None,
+            NameSort.ASC,
+            sharedAuth,
+            RecordTypeSort.ASC
+          )
+          .value.unsafeRunSync().toOption.get
+
+      result.totalCount shouldBe Some(0)
+      result.recordSets shouldBe empty
+    }
+
+    "return correct totalCount when maxItems is applied" in {
+      doReturn(IO.pure(Set(okGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+
+      doReturn(IO.pure(Set(sharedZone)))
+        .when(mockZoneRepo)
+        .getZones(any[Set[String]])
+
+      doReturn(
+        IO.pure(
+          ListRecordSetResults(
+            List(sharedZoneRecord), 
+            recordNameFilter = Some("aaaa*"),
+            nameSort = NameSort.ASC,
+            recordOwnerGroupFilter = None,  
+            recordTypeSort = RecordTypeSort.NONE,
+            totalCount = Some(10)
+          )
+        )
+      ).when(mockRecordDataRepo)
+        .listRecordSetData(
+          any[Option[String]],
+          any[Option[String]],
+          any[Option[Int]],
+          any[Option[String]],
+          any[Option[Set[RecordType.RecordType]]],
+          any[Option[String]],
+          any[NameSort.NameSort]
+        )
+
+      val result =
+        underTest
+          .searchRecordSets(
+            None,
+            Some(1),
+            "aaaa*",
+            None,
+            None,
+            NameSort.ASC,
+            sharedAuth,
+            RecordTypeSort.ASC
+          )
+          .value.unsafeRunSync().toOption.get
+
+      result.totalCount shouldBe Some(10)
+      result.recordSets.size shouldBe 1
+    }
+
     "fail recordSetData if recordNameFilter is fewer than two characters" in {
       val result =
         underTest
