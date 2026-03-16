@@ -138,6 +138,22 @@ a.action-link {
     margin-left: 10px;
 }
 
+.export-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-menu-export{
+    display:block;
+    padding:5px;
+    min-width: auto;
+}
+
+.export-dropdown label {
+    display: block;
+    margin-bottom: 5px;
+}
+
 .form-control.zone-edit {
     background: #F9F9F9;
     color:#555;

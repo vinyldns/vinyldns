@@ -2,8 +2,9 @@
 
 @content = {
     <!-- PAGE CONTENT -->
+    
     <div class="right_col" role="main">
-
+        
         <!-- START BREADCRUMB -->
         <ul class="breadcrumb">
             <li><a href="/">Home</a></li>
@@ -107,6 +108,29 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="dropdown export-dropdown" ng-show="isRecordSearchTriggered && records && records.length > 0">
+                            <a class="btn btn-primary dropdown-toggle" id="exportDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Export CSV <span class="caret"></span>
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="exportDropdown" style="padding: 0 4.5px;">
+                                <div class="dropdown-item"> 
+                                    <input type="checkbox" ng-model="exportOptions.selectAll" ng-change="toggleAllFields()">
+                                    <strong>Select All</strong>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <div class="dropdown-item" ng-repeat="(key, label) in HEADER_MAP">
+                                    <input type="checkbox" ng-model="selectedFields[key]" ng-change="updateSelectAllState()">
+                                       {{label}}
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <div class="dropdown-item">
+                                    <button class="btn btn-success btn-sm btn-block"
+                                            ng-click="exportToCSV()">
+                                        Download
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -136,6 +160,9 @@
                     <!-- MODAL BEGIN -->
                     <div class="modal fade" id="loader" tabindex="-1" role="dialog">
                         <div class="spinner" ></div>
+                    </div>
+                    <div class="modal fade" id="csvLoaderModal" tabindex="-1" role="dialog">
+                        <div class="spinner"></div>
                     </div>
 
                     <div class="modal fade" id="ShowNoRec" tabindex="-1" role="dialog">
