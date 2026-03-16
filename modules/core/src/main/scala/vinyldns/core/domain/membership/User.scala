@@ -17,17 +17,24 @@
 package vinyldns.core.domain.membership
 
 import java.util.UUID
-
 import org.apache.commons.lang3.RandomStringUtils
+
 import java.time.Instant
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.{Encrypted, Encryption}
 import vinyldns.core.domain.membership.LockStatus.LockStatus
+import vinyldns.core.domain.membership.Theme.Theme
+
 import java.time.temporal.ChronoUnit
 
 object LockStatus extends Enumeration {
   type LockStatus = Value
   val Locked, Unlocked = Value
+}
+
+object Theme extends Enumeration {
+  type Theme = Value
+  val Light, Dark = Value
 }
 
 final case class User(
@@ -41,12 +48,16 @@ final case class User(
     id: String = UUID.randomUUID().toString,
     isSuper: Boolean = false,
     lockStatus: LockStatus = LockStatus.Unlocked,
+    theme: Theme = Theme.Light,
     isSupport: Boolean = false,
     isTest: Boolean = false
 ) {
 
   def updateUserLockStatus(lockStatus: LockStatus): User =
     this.copy(lockStatus = lockStatus)
+
+  def updateUserTheme(theme: Theme): User =
+    this.copy(theme = theme)
 
   def regenerateCredentials(): User =
     copy(accessKey = User.generateKey, secretKey = Encrypted(User.generateKey))
@@ -67,6 +78,7 @@ final case class User(
     sb.append("isSupport=\"").append(isSupport).append("\"; ")
     sb.append("isTest=\"").append(isTest).append("\"; ")
     sb.append("lockStatus=\"").append(lockStatus.toString).append("\"; ")
+    sb.append("theme=\"").append(theme.toString).append("\"; ")
     sb.append("]")
     sb.toString
   }
