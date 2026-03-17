@@ -265,7 +265,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     *
     * @return a ListZonesResults
     */
-  def (
+  def listZonesByAdminGroupIds(
        authPrincipal: AuthPrincipal,
        startFrom: Option[String] = None,
        maxItems: Int = 100,
