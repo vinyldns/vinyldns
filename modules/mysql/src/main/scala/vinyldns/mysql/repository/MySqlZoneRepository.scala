@@ -265,7 +265,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     *
     * @return a ListZonesResults
     */
-  def listZonesByAdminGroupIds(
+  def (
        authPrincipal: AuthPrincipal,
        startFrom: Option[String] = None,
        maxItems: Int = 100,
@@ -304,6 +304,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           }
 
           sb.append(s" GROUP BY z.name ")
+          sb.append(s" ORDER BY z.name ASC ")
           sb.append(s" LIMIT ${maxItems + 1}")
 
           val query = sb.toString
@@ -392,6 +393,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           }
 
           sb.append(s" GROUP BY z.name ")
+          sb.append(s" ORDER BY z.name ASC ")
           sb.append(s" LIMIT ${maxItems + 1}")
 
           val query = sb.toString
