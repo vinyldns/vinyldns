@@ -20,6 +20,8 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import cats.data.EitherT
+import cats.effect.IO
 import com.typesafe.config.ConfigFactory
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -53,6 +55,13 @@ class ZoneRoutingSpec
   private val nonSuperUserSharedZone =
     Zone("non-super-user-shared-zone.", "non-super-user-shared-zone@test.com")
 
+  private val alreadyExistsGenerateZone = GenerateZone("already.exists.groupID","test@test.com", "bind", "already.exists.")
+  private val notFoundGenerateZone = GenerateZone("not.found.groupID","test@test.com", "bind", "not.found.")
+  private val notAuthorizedGenerateZone = GenerateZone("not.authorized.groupID","test@test.com", "bind","not.authorized.")
+  private val badAdminIdGenerateZone = GenerateZone("bad.admin.groupID","test@test.com", "bind","bad.admin.")
+  private val nonSuperUserSharedZoneGenerateZone =
+    GenerateZone("non-super-user-shared-zone.groupID","test@test.com", "bind","non-super-user-shared-zone.")
+
   private val userAclRule = ACLRule(
     AccessLevel.Read,
     Some("desc"),
@@ -82,6 +91,58 @@ class ZoneRoutingSpec
   private val ok = Zone("ok.", "ok@test.com", acl = zoneAcl, adminGroupId = "test")
   private val aclAsInfo = ZoneACLInfo(zoneAcl.rules.map(ACLRuleInfo(_, Some("name"))))
   private val okAsZoneInfo = ZoneInfo(ok, aclAsInfo, okGroup.name, AccessLevel.Read)
+  private val generateBindZoneAuthorized = GenerateZone(
+    okGroup.id,
+    "test@test.com",
+    "bind",
+    okZone.name,
+    providerParams = bindProviderParams
+  )
+
+  private val generatePdnsZoneAuthorized = GenerateZone(
+    okGroup.id,
+    "test@test.com",
+    "pdns",
+    okZone.name,
+    providerParams = powerDNSProviderParams
+  )
+
+  private val generatePdnsZoneAuthorizedInput = ZoneGenerationInput(
+    okGroup.id,
+    "test@test.com",
+    "powerdns",
+    okZone.name,
+    providerParams = powerDNSProviderParams,
+    response=Some(pdnsZoneGenerationResponse)
+  )
+
+  private val badAdminIdZoneGenerationInput = ZoneGenerationInput(
+    groupId = badAdminIdGenerateZone.groupId,
+    email = badAdminIdGenerateZone.email,
+    provider = badAdminIdGenerateZone.provider,
+    zoneName = badAdminIdGenerateZone.zoneName,
+    id = null,
+    providerParams = Map.empty,
+    response = None
+  )
+
+  private val alreadyExistsZoneGenerationInput = ZoneGenerationInput(
+    groupId = alreadyExistsGenerateZone.groupId,
+    email = alreadyExistsGenerateZone.email,
+    provider = alreadyExistsGenerateZone.provider,
+    zoneName = alreadyExistsGenerateZone.zoneName,
+    id = null,
+    providerParams = Map.empty,
+    response = None
+  )
+
+  private val generateMarkTwainZoneAuthorized = GenerateZone(
+    okGroup.id,
+    "test@test.com",
+    "markTwain",
+    okZone.name,
+    providerParams = powerDNSProviderParams
+  )
   private val okAsZoneDetails = ZoneDetails(ok, okGroup.name)
   private val badRegex = Zone("ok.", "bad-regex@test.com", adminGroupId = "test")
   private val trailingDot = Zone("trailing.dot", "trailing-dot@test.com")
@@ -103,6 +164,12 @@ class ZoneRoutingSpec
   )
   private val zone1 = Zone("zone1.", "zone1@test.com", ZoneStatus.Active)
   private val zoneSummaryInfo1 = ZoneSummaryInfo(zone1, okGroup.name, AccessLevel.NoAccess)
+  private val generateZoneSummaryInfoBind = GenerateZoneSummaryInfo(generateBindZoneAuthorized, okGroup.name, AccessLevel.NoAccess)
+  private val generateZoneSummaryInfoPDNS = GenerateZoneSummaryInfo(generatePdnsZoneAuthorized, okGroup.name, AccessLevel.NoAccess)
+  private val generateZoneSummaryInfoMarkTwain = GenerateZoneSummaryInfo(generateMarkTwainZoneAuthorized, okGroup.name, AccessLevel.NoAccess)
+  private val generateZoneSummaryInfoBindAll = GenerateZoneSummaryInfo(generateBindZoneAuthorized, okGroup.name, AccessLevel.Delete)
+  private val generateZoneSummaryInfoPDNSAll= GenerateZoneSummaryInfo(generatePdnsZoneAuthorized, okGroup.name, AccessLevel.Delete)
+  private val generateZoneSummaryInfoMarkTwainAll = GenerateZoneSummaryInfo(generateMarkTwainZoneAuthorized, okGroup.name, AccessLevel.Delete)
   private val zone2 = Zone("zone2.", "zone2@test.com", ZoneStatus.Active)
   private val zoneSummaryInfo2 = ZoneSummaryInfo(zone2, okGroup.name, AccessLevel.NoAccess)
   private val zone3 = Zone("zone3.", "zone3@test.com", ZoneStatus.Active)
@@ -117,6 +184,7 @@ class ZoneRoutingSpec
     Zone("zone6.in-addr.arpa.", "zone6@test.com", ZoneStatus.Active, adminGroupId = xyzGroup.id)
   private val zoneSummaryInfo6 = ZoneSummaryInfo(zone6, xyzGroup.name, AccessLevel.NoAccess)
   private val error = Zone("error.", "error@test.com")
+  private val errorGenerateZone = GenerateZone("error.groupId","error@test.com", "bind", "error.")
   private val deletedZone1 = Zone("ok1.", "ok1@test.com", ZoneStatus.Deleted , acl = zoneAcl)
   private val deletedZoneChange1 = ZoneChange(deletedZone1, "ok1", ZoneChangeType.Create, ZoneChangeStatus.Synced)
   private val ZoneChangeDeletedInfo1 = ZoneChangeDeletedInfo(
@@ -138,6 +206,7 @@ class ZoneRoutingSpec
   private val ZoneChangeDeletedInfo5 = ZoneChangeDeletedInfo(
     deletedZoneChange5, okGroup.name, okUser.userName, AccessLevel.NoAccess)
 
+
   private val missingFields: JValue =
     ("invalidField" -> "randomValue") ~~
       ("connection" -> ("k" -> "value"))
@@ -148,6 +217,14 @@ class ZoneRoutingSpec
       ("email" -> "invalid-zone-status@test.com") ~~
       ("status" -> "invalidStatus") ~~
       ("adminGroupId" -> "admin-group-id")
+
+//  private val generateZoneWithInvalidId: JValue =
+//    ("id" -> true) ~~
+//      ("name" -> "invalidZoneStatus.") ~~
+//      ("email" -> "invalid-zone-status@test.com") ~~
+//      ("groupId" -> "admin-group-id") ~~
+//      ("provider" -> "valid-provider")
+
 
   private val zoneCreate = ZoneChange(ok, "ok", ZoneChangeType.Create, ZoneChangeStatus.Synced)
   private val listZoneChangeResponse = ListZoneChangesResponse(
@@ -170,6 +247,7 @@ class ZoneRoutingSpec
       """secret = "8B06A7F3BC8A2497736F1916A123AA40E88217BE9264D8872597EF7A6E5DCE61""""
     )
   )
+
   val testLimitConfig: LimitsConfig =
     LimitsConfig(100,100,1000,1500,100,100,100)
 
@@ -178,25 +256,25 @@ class ZoneRoutingSpec
 
   object TestZoneService extends ZoneServiceAlgebra {
     def connectToZone(
-        createZoneInput: CreateZoneInput,
-        auth: AuthPrincipal
-    ): Result[ZoneCommandResult] = {
-      val outcome = createZoneInput.email match {
-        case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$createZoneInput"))
-        case notFound.email => Left(ZoneNotFoundError(s"$createZoneInput"))
-        case notAuthorized.email => Left(NotAuthorizedError(s"$createZoneInput"))
-        case badAdminId.email => Left(InvalidGroupError(s"$createZoneInput"))
+                       ConnectZoneInput: ConnectZoneInput,
+                       auth: AuthPrincipal
+                     ): Result[ZoneCommandResult] = {
+      val outcome = ConnectZoneInput.email match {
+        case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$ConnectZoneInput"))
+        case notFound.email => Left(ZoneNotFoundError(s"$ConnectZoneInput"))
+        case notAuthorized.email => Left(NotAuthorizedError(s"$ConnectZoneInput"))
+        case badAdminId.email => Left(InvalidGroupError(s"$ConnectZoneInput"))
         case ok.email | connectionOk.email | trailingDot.email | "invalid-zone-status@test.com" =>
           Right(
             zoneCreate.copy(
               status = ZoneChangeStatus.Synced,
-              zone = Zone(createZoneInput, false).copy(status = ZoneStatus.Active)
+              zone = Zone(ConnectZoneInput, false).copy(status = ZoneStatus.Active)
             )
           )
         case error.email => Left(new RuntimeException("fail"))
-        case connectionFailed.email => Left(ConnectionFailed(Zone(createZoneInput, false), "fail"))
+        case connectionFailed.email => Left(ConnectionFailed(Zone(ConnectZoneInput, false), "fail"))
         case zoneValidationFailed.email =>
-          Left(ZoneValidationFailed(Zone(createZoneInput, false), List("fail"), "failure message"))
+          Left(ZoneValidationFailed(Zone(ConnectZoneInput, false), List("fail"), "failure message"))
         case nonSuperUserSharedZone.email =>
           Left(NotAuthorizedError("unauth"))
       }
@@ -204,9 +282,9 @@ class ZoneRoutingSpec
     }
 
     def updateZone(
-        updateZoneInput: UpdateZoneInput,
-        auth: AuthPrincipal
-    ): Result[ZoneCommandResult] = {
+                    updateZoneInput: UpdateZoneInput,
+                    auth: AuthPrincipal
+                  ): Result[ZoneCommandResult] = {
       val outcome = updateZoneInput.email match {
         case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$updateZoneInput"))
         case notFound.email => Left(ZoneNotFoundError(s"$updateZoneInput"))
@@ -289,14 +367,14 @@ class ZoneRoutingSpec
     }
 
     def listZones(
-        authPrincipal: AuthPrincipal,
-        nameFilter: Option[String],
-        startFrom: Option[String],
-        maxItems: Int,
-        searchByAdminGroup: Boolean = false,
-        ignoreAccess: Boolean = false,
-        includeReverse: Boolean = true
-    ): Result[ListZonesResponse] = {
+                   authPrincipal: AuthPrincipal,
+                   nameFilter: Option[String],
+                   startFrom: Option[String],
+                   maxItems: Int,
+                   searchByAdminGroup: Boolean = false,
+                   ignoreAccess: Boolean = false,
+                   includeReverse: Boolean = true
+                 ): Result[ListZonesResponse] = {
 
       val outcome = (authPrincipal, nameFilter, startFrom, maxItems, ignoreAccess, includeReverse) match {
         case (_, None, Some("zone3."), 3, false, true) =>
@@ -415,6 +493,107 @@ class ZoneRoutingSpec
       outcome.toResult
     }
 
+    def listGeneratedZones(
+                   authPrincipal: AuthPrincipal,
+                   nameFilter: Option[String],
+                   startFrom: Option[String],
+                   maxItems: Int,
+                   searchByAdminGroup: Boolean,
+                   ignoreAccess: Boolean = false
+                 ): Result[ListGeneratedZonesResponse] = {
+
+      val outcome = (authPrincipal, nameFilter, startFrom, maxItems, ignoreAccess) match {
+        case (_, None, Some("zone3."), 3, false) =>
+          Right(
+            ListGeneratedZonesResponse(
+              zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
+              nameFilter = None,
+              startFrom = Some("zone3."),
+              nextId = Some("zone6."),
+              maxItems = 3
+            )
+          )
+        case (_, None, Some("zone4."), 4, false) =>
+          Right(
+            ListGeneratedZonesResponse(
+              zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
+              nameFilter = None,
+              startFrom = Some("zone4."),
+              nextId = None,
+              maxItems = 4
+            )
+          )
+
+        case (_, None, None, 3, false) =>
+          Right(
+            ListGeneratedZonesResponse(
+              zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
+              nameFilter = None,
+              startFrom = None,
+              nextId = Some("zone3."),
+              maxItems = 3
+            )
+          )
+
+        case (_, Some(filter), Some("zone4."), 4, false) =>
+          Right(
+            ListGeneratedZonesResponse(
+              zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
+              nameFilter = Some(filter),
+              startFrom = Some("zone4."),
+              nextId = None,
+              maxItems = 4
+            )
+          )
+
+        case (_, Some(filter), Some("zone4."), 4, true) =>
+          Right(
+            ListGeneratedZonesResponse(
+              zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
+              nameFilter = Some(filter),
+              startFrom = Some("zone4."),
+              nextId = None,
+              maxItems = 4,
+              ignoreAccess = true
+            )
+          )
+
+        case (_, None, None, 6, true) =>
+          Right(
+            ListGeneratedZonesResponse(
+              zones = List(
+                generateZoneSummaryInfoBind,
+                generateZoneSummaryInfoPDNS,
+                generateZoneSummaryInfoMarkTwain,
+                generateZoneSummaryInfoBindAll,
+                generateZoneSummaryInfoPDNSAll,
+                generateZoneSummaryInfoMarkTwainAll
+              ),
+              nameFilter = None,
+              startFrom = None,
+              nextId = None,
+              maxItems = 6,
+              ignoreAccess = true,
+            )
+          )
+
+        case (_, None, None, _, _) =>
+          Right(
+            ListGeneratedZonesResponse(
+              zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
+              nameFilter = None,
+              startFrom = None,
+              nextId = None
+            )
+          )
+
+        case _ => Left(InvalidRequest("shouldnt get here"))
+      }
+
+      outcome.toResult
+    }
+
+
     def listDeletedZones(
                           authPrincipal: AuthPrincipal,
                           nameFilter: Option[String],
@@ -427,7 +606,7 @@ class ZoneRoutingSpec
         case (_, None, Some("zone3."), 3, false) =>
           Right(
             ListDeletedZoneChangesResponse(
-              zonesDeletedInfo = List(ZoneChangeDeletedInfo1,ZoneChangeDeletedInfo2,ZoneChangeDeletedInfo3),
+              zonesDeletedInfo = List(ZoneChangeDeletedInfo1, ZoneChangeDeletedInfo2, ZoneChangeDeletedInfo3),
               zoneChangeFilter = None,
               startFrom = Some("zone3."),
               nextId = Some("zone6."),
@@ -438,7 +617,7 @@ class ZoneRoutingSpec
         case (_, None, Some("zone4."), 4, false) =>
           Right(
             ListDeletedZoneChangesResponse(
-              zonesDeletedInfo = List(ZoneChangeDeletedInfo1,ZoneChangeDeletedInfo2,ZoneChangeDeletedInfo3),
+              zonesDeletedInfo = List(ZoneChangeDeletedInfo1, ZoneChangeDeletedInfo2, ZoneChangeDeletedInfo3),
               zoneChangeFilter = None,
               startFrom = Some("zone4."),
               nextId = None,
@@ -450,7 +629,7 @@ class ZoneRoutingSpec
         case (_, None, None, 3, false) =>
           Right(
             ListDeletedZoneChangesResponse(
-              zonesDeletedInfo = List(ZoneChangeDeletedInfo1,ZoneChangeDeletedInfo2,ZoneChangeDeletedInfo3),
+              zonesDeletedInfo = List(ZoneChangeDeletedInfo1, ZoneChangeDeletedInfo2, ZoneChangeDeletedInfo3),
               zoneChangeFilter = None,
               startFrom = None,
               nextId = Some("zone3."),
@@ -463,7 +642,7 @@ class ZoneRoutingSpec
           Right(
             ListDeletedZoneChangesResponse(
               zonesDeletedInfo =
-                List(ZoneChangeDeletedInfo1,ZoneChangeDeletedInfo2,ZoneChangeDeletedInfo3, ZoneChangeDeletedInfo4,ZoneChangeDeletedInfo5),
+                List(ZoneChangeDeletedInfo1, ZoneChangeDeletedInfo2, ZoneChangeDeletedInfo3, ZoneChangeDeletedInfo4, ZoneChangeDeletedInfo5),
               zoneChangeFilter = None,
               startFrom = None,
               nextId = None,
@@ -475,7 +654,7 @@ class ZoneRoutingSpec
         case (_, Some(filter), Some("zone4."), 4, false) =>
           Right(
             ListDeletedZoneChangesResponse(
-              zonesDeletedInfo = List(ZoneChangeDeletedInfo1,ZoneChangeDeletedInfo2,ZoneChangeDeletedInfo3),
+              zonesDeletedInfo = List(ZoneChangeDeletedInfo1, ZoneChangeDeletedInfo2, ZoneChangeDeletedInfo3),
               zoneChangeFilter = Some(filter),
               startFrom = Some("zone4."),
               nextId = None,
@@ -487,7 +666,7 @@ class ZoneRoutingSpec
         case (_, None, None, _, _) =>
           Right(
             ListDeletedZoneChangesResponse(
-              zonesDeletedInfo = List(ZoneChangeDeletedInfo1,ZoneChangeDeletedInfo2,ZoneChangeDeletedInfo3),
+              zonesDeletedInfo = List(ZoneChangeDeletedInfo1, ZoneChangeDeletedInfo2, ZoneChangeDeletedInfo3),
               zoneChangeFilter = None,
               startFrom = None,
               nextId = None,
@@ -502,11 +681,11 @@ class ZoneRoutingSpec
     }
 
     def listZoneChanges(
-        zoneId: String,
-        authPrincipal: AuthPrincipal,
-        startFrom: Option[String],
-        maxItems: Int
-    ): Result[ListZoneChangesResponse] = {
+                         zoneId: String,
+                         authPrincipal: AuthPrincipal,
+                         startFrom: Option[String],
+                         maxItems: Int
+                       ): Result[ListZoneChangesResponse] = {
       val outcome = zoneId match {
         case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case notAuthorized.id => Left(NotAuthorizedError("no way"))
@@ -527,10 +706,10 @@ class ZoneRoutingSpec
     }
 
     def addACLRule(
-        zoneId: String,
-        aclRuleInfo: ACLRuleInfo,
-        authPrincipal: AuthPrincipal
-    ): Result[ZoneCommandResult] = {
+                    zoneId: String,
+                    aclRuleInfo: ACLRuleInfo,
+                    authPrincipal: AuthPrincipal
+                  ): Result[ZoneCommandResult] = {
       val outcome = zoneId match {
         case badRegex.id =>
           Left(InvalidRequest("record mask x{5,-3} is an invalid regex"))
@@ -554,10 +733,10 @@ class ZoneRoutingSpec
     }
 
     def deleteACLRule(
-        zoneId: String,
-        aclRuleInfo: ACLRuleInfo,
-        authPrincipal: AuthPrincipal
-    ): Result[ZoneCommandResult] = {
+                       zoneId: String,
+                       aclRuleInfo: ACLRuleInfo,
+                       authPrincipal: AuthPrincipal
+                     ): Result[ZoneCommandResult] = {
       val outcome = zoneId match {
         case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
         case notAuthorized.id => Left(NotAuthorizedError(s"$zoneId"))
@@ -579,6 +758,72 @@ class ZoneRoutingSpec
     }
 
     def getBackendIds(): Result[List[String]] = List("backend-1", "backend-2").toResult
+
+    def allowedDNSProviders(): Result[List[String]] = List("bind", "pdns").toResult
+
+    def dnsNameServers(): Result[List[String]] = List("127.0.0.1", "localhost").toResult
+
+    def handleGenerateZoneRequest(request: ZoneGenerationInput, auth: AuthPrincipal): EitherT[IO, Throwable, GenerateZone] = {
+      val outcome = request.zoneName match {
+        case alreadyExistsGenerateZone.zoneName => Left(ZoneAlreadyExistsError(s"$request"))
+        case notFoundGenerateZone.zoneName => Left(ZoneNotFoundError(s"$request"))
+        case notAuthorizedGenerateZone.zoneName => Left(NotAuthorizedError(s"$request"))
+        case badAdminIdGenerateZone.zoneName => Left(InvalidGroupError(s"$request"))
+        case errorGenerateZone.zoneName => Left(new RuntimeException("fail"))
+        case nonSuperUserSharedZoneGenerateZone.zoneName => Left(NotAuthorizedError("unauth"))
+        case _ => Right(GenerateZone(request.groupId, request.email, request.provider, request.zoneName, request.status, request.providerParams, request.response))
+      }
+      outcome.toResult
+    }
+
+    def handleUpdateGeneratedZoneRequest(
+                    updateZoneInput: ZoneGenerationInput,
+                    auth: AuthPrincipal
+                  ): Result[GenerateZone] = {
+      val outcome = updateZoneInput.email match {
+        case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$updateZoneInput"))
+        case notFound.email => Left(ZoneNotFoundError(s"$updateZoneInput"))
+        case notAuthorized.email => Left(NotAuthorizedError(s"$updateZoneInput"))
+        case badAdminId.email => Left(InvalidGroupError(s"$updateZoneInput"))
+        case ok.email | connectionOk.email =>
+          Right(
+            updateBindZone
+          )
+        case error.email => Left(new RuntimeException("fail"))
+        case zone1.email => Left(ZoneUnavailableError(s"$updateZoneInput"))
+      }
+      outcome.map(c => c.asInstanceOf[GenerateZone]).toResult
+    }
+
+    def handleDeleteGeneratedZoneRequest(zoneId: String, auth: AuthPrincipal): Result[GenerateZone] = {
+      val outcome = zoneId match {
+        case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+        case notAuthorized.id => Left(NotAuthorizedError(s"$zoneId"))
+        case ok.id | connectionOk.id =>
+          Right(ZoneChange(ok, "ok", ZoneChangeType.Delete, ZoneChangeStatus.Synced))
+        case error.id => Left(new RuntimeException("fail"))
+        case zone1.id => Left(ZoneUnavailableError(zoneId))
+      }
+      outcome.map(c => c.asInstanceOf[GenerateZone]).toResult
+    }
+
+    def getGenerateZoneByName(zoneName: String, auth: AuthPrincipal): Result[GenerateZone] = {
+      val outcome = zoneName match {
+        case notFoundGenerateZone.zoneName => Left(ZoneNotFoundError(s"$zoneName"))
+        case generateBindZoneAuthorized.zoneName => Right(generateBindZoneAuthorized)
+        case errorGenerateZone.zoneName => Left(new RuntimeException("fail"))
+      }
+      outcome.toResult
+    }
+
+    def getGeneratedZoneById(zoneId: String, auth: AuthPrincipal): Result[GenerateZone] = {
+        val outcome = zoneId match {
+            case notFound.id => Left(ZoneNotFoundError(s"$zoneId"))
+            case ok.id => Right(generateBindZoneAuthorized)
+            case error.id => Left(new RuntimeException("fail"))
+        }
+        outcome.toResult
+    }
   }
 
   val zoneService: ZoneServiceAlgebra = TestZoneService
@@ -588,11 +833,22 @@ class ZoneRoutingSpec
 
   def zoneJson(zone: Zone): String = compact(render(Extraction.decompose(zone)))
 
+  def generateZoneJson(name: String, email: String): String =
+    generateZoneJson(ZoneGenerationInput(name, email, null, null, status = null, id = null))
+
+  def generateZoneJson(zone: ZoneGenerationInput): String = compact(render(Extraction.decompose(zone)))
+
   def post(zone: Zone): HttpRequest =
     Post("/zones").withEntity(HttpEntity(ContentTypes.`application/json`, zoneJson(zone)))
 
   def post(js: JValue): HttpRequest =
     Post("/zones").withEntity(HttpEntity(ContentTypes.`application/json`, compact(render(js))))
+
+  def postGenerateZone(zone: ZoneGenerationInput): HttpRequest =
+    Post("/zones/generate").withEntity(HttpEntity(ContentTypes.`application/json`, generateZoneJson(zone)))
+
+  def postGenerateZone(js: JValue): HttpRequest =
+    Post("/zones/generate").withEntity(HttpEntity(ContentTypes.`application/json`, compact(render(js))))
 
   def js(aclInfo: ACLRuleInfo): String = compact(render(Extraction.decompose(aclInfo)))
 
@@ -824,6 +1080,56 @@ class ZoneRoutingSpec
     }
   }
 
+  "POST generate zone" should {
+    "return 202 Accepted when the generate zone is created" in {
+      postGenerateZone(generatePdnsZoneAuthorizedInput) ~> zoneRoute ~> check {
+        status shouldBe Accepted
+      }
+    }
+
+    "return a fully populated zone in the response" in {
+      postGenerateZone(generatePdnsZoneAuthorizedInput) ~> zoneRoute ~> check {
+        val result = responseAs[GenerateZone]
+        Option(result.status) shouldBe defined
+        Option(result.created) shouldBe defined
+        result.email shouldBe generateBindZoneAuthorized.email
+        result.zoneName shouldBe generateBindZoneAuthorized.zoneName
+        Option(result.created) shouldBe defined
+        Option(result.status) shouldBe defined
+        result.updated shouldBe None
+        Option(result.id) shouldBe defined
+      }
+    }
+
+    "return 409 Conflict if the zone already exists" in {
+      postGenerateZone(alreadyExistsZoneGenerationInput) ~> zoneRoute ~> check {
+        status shouldBe Conflict
+      }
+    }
+
+    "return 400 BadRequest if the zone adminGroupId is invalid" in {
+      postGenerateZone(badAdminIdZoneGenerationInput) ~> zoneRoute ~> check {
+        status shouldBe BadRequest
+      }
+    }
+
+    "report missing data" in {
+      postGenerateZone(missingFields) ~> Route.seal(zoneRoute) ~> check {
+        status shouldBe BadRequest
+        val result = responseAs[JValue]
+        val errs = (result \ "errors").extractOpt[List[String]]
+        errs should not be None
+        errs.get.toSet shouldBe Set(
+          "Missing group id",
+          "Missing email",
+          "Missing provider",
+          "Missing zone name"
+        )
+      }
+    }
+  }
+
+
   "POST zone" should {
     "return 202 Accepted when the zone is created" in {
       post(ok) ~> zoneRoute ~> check {
@@ -942,7 +1248,7 @@ class ZoneRoutingSpec
       }
     }
 
-    "ignore fields not defined in CreateZoneInput" in {
+    "ignore fields not defined in ConnectZoneInput" in {
       post(zoneWithInvalidId) ~> Route.seal(zoneRoute) ~> check {
         status shouldBe Accepted
       }
@@ -1176,6 +1482,97 @@ class ZoneRoutingSpec
 
     "return an error if the max items is out of range" in {
       Get(s"/zones?maxItems=700") ~> zoneRoute ~> check {
+        status shouldBe BadRequest
+        responseEntity.toString should include(
+          "maxItems was 700, maxItems must be between 0 and 100"
+        )
+      }
+    }
+  }
+
+  "GET generated zones" should {
+    "return the next id when more results exist" in {
+      Get(s"/zones/generate/info?startFrom=zone3.&maxItems=3") ~> zoneRoute ~> check {
+        val resp = responseAs[ListGeneratedZonesResponse]
+        val zones = resp.zones
+        (zones.map(_.id) should contain)
+          .only(generateBindZoneAuthorized.id, generatePdnsZoneAuthorized.id,generateMarkTwainZoneAuthorized.id)
+        resp.nextId shouldBe Some("zone6.")
+        resp.maxItems shouldBe 3
+        resp.startFrom shouldBe Some("zone3.")
+      }
+    }
+
+    "not return the next id when there are no more results" in {
+      Get(s"/zones/generate/info?startFrom=zone4.&maxItems=4") ~> zoneRoute ~> check {
+        val resp = responseAs[ListGeneratedZonesResponse]
+        val zones = resp.zones
+        (zones.map(_.id) should contain)
+          .only(generateBindZoneAuthorized.id, generatePdnsZoneAuthorized.id,generateMarkTwainZoneAuthorized.id)
+        resp.nextId shouldBe None
+        resp.maxItems shouldBe 4
+        resp.startFrom shouldBe Some("zone4.")
+        resp.ignoreAccess shouldBe false
+      }
+    }
+
+    "not return the start from when not provided" in {
+      Get(s"/zones/generate/info?maxItems=3") ~> zoneRoute ~> check {
+        val resp = responseAs[ListGeneratedZonesResponse]
+        val zones = resp.zones
+        (zones.map(_.id) should contain)
+          .only(generateBindZoneAuthorized.id, generatePdnsZoneAuthorized.id,generateMarkTwainZoneAuthorized.id)
+        resp.nextId shouldBe Some("zone3.")
+        resp.maxItems shouldBe 3
+        resp.startFrom shouldBe None
+        resp.ignoreAccess shouldBe false
+      }
+    }
+
+    "return the name filter when provided" in {
+      Get(s"/zones/generate/info?nameFilter=foo&startFrom=zone4.&maxItems=4") ~> zoneRoute ~> check {
+        val resp = responseAs[ListGeneratedZonesResponse]
+        val zones = resp.zones
+        (zones.map(_.id) should contain)
+          .only(generateBindZoneAuthorized.id, generatePdnsZoneAuthorized.id,generateMarkTwainZoneAuthorized.id)
+        resp.nextId shouldBe None
+        resp.maxItems shouldBe 4
+        resp.startFrom shouldBe Some("zone4.")
+        resp.nameFilter shouldBe Some("foo")
+        resp.ignoreAccess shouldBe false
+      }
+    }
+
+    "return zones by admin group name when searchByAdminGroup is true" in {
+      Get(s"/zones/generate/info?nameFilter=ok&startFrom=zone4.&maxItems=4&searchByAdminGroup=true") ~> zoneRoute ~> check {
+        val resp = responseAs[ListGeneratedZonesResponse]
+        val zones = resp.zones
+        (zones.map(_.id) should contain)
+          .only(generateBindZoneAuthorized.id, generatePdnsZoneAuthorized.id,generateMarkTwainZoneAuthorized.id)
+        resp.nextId shouldBe None
+        resp.maxItems shouldBe 4
+        resp.startFrom shouldBe Some("zone4.")
+        resp.nameFilter shouldBe Some("ok")
+        resp.ignoreAccess shouldBe false
+      }
+    }
+
+    "return all zones when list all is true" in {
+      Get(s"/zones/generate/info?maxItems=6&ignoreAccess=true") ~> zoneRoute ~> check {
+        val resp = responseAs[ListGeneratedZonesResponse]
+        val zones = resp.zones
+        (zones.map(_.id) should contain)
+          .only(generateBindZoneAuthorized.id, generatePdnsZoneAuthorized.id,generateMarkTwainZoneAuthorized.id)
+        resp.nextId shouldBe None
+        resp.maxItems shouldBe 6
+        resp.startFrom shouldBe None
+        resp.nameFilter shouldBe None
+        resp.ignoreAccess shouldBe true
+      }
+    }
+
+    "return an error if the max items is out of range" in {
+      Get(s"/zones/generate/info?maxItems=700") ~> zoneRoute ~> check {
         status shouldBe BadRequest
         responseEntity.toString should include(
           "maxItems was 700, maxItems must be between 0 and 100"

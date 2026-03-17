@@ -29,6 +29,26 @@ message ACLRule {
   repeated string recordTypes = 6;
 }
 
+message GenerateZone {
+  required string id = 1;
+  required string groupId = 2;
+  required string provider = 3;
+  required string zoneName = 4;
+  required string status = 5;
+  required string email = 6;
+  map<string, string> provider_params = 7;  // All provider-specific config
+  optional ZoneGenerationResponse response = 8;
+  required int64 created = 9;
+  optional int64 updated = 10;
+}
+
+message ZoneGenerationResponse {
+  optional int64 responseCode = 1;
+  optional string Status = 2;
+  optional string message = 3;
+  optional string changeType = 4;
+}
+
 message ZoneACL {
   repeated ACLRule rules = 1;
 }
