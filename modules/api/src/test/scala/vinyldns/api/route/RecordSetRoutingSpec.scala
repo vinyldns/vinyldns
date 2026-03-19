@@ -56,6 +56,7 @@ class RecordSetRoutingSpec
   private val notAuthorizedZone = Zone("notAuth", "test@test.com")
   private val syncingZone = Zone("syncing", "test@test.com")
   private val invalidChangeZone = Zone("invalidChange", "test@test.com")
+  private val mismatchedZone = Zone("mismatch", "test@test.com")
   private val recordSetCount = RecordSetCount(5)
 
   private val rsAlreadyExists = RecordSet(
@@ -1305,6 +1306,22 @@ class RecordSetRoutingSpec
     "return 202 Accepted when the the recordset is created" in {
       post(rsOk) ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.Accepted
+      }
+    }
+
+    "return a 422 Unprocessable Entity if the zoneId in the body does not match the one in the URI" in {
+      Post(s"/zones/${okZone.id}/recordsets")
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            rsJson(rsOk.copy(zoneId = mismatchedZone.id))
+        )   
+      ) ~>
+      recordSetRoute ~> check {
+        
+        status shouldBe StatusCodes.UnprocessableEntity
+        val error = responseAs[String]
+        error shouldBe "zoneId in URI and body must match"
       }
     }
 

@@ -2,6 +2,7 @@ import pytest
 
 from tests.test_data import TestData
 from utils import *
+from urllib.parse import urljoin
 
 
 def test_create_recordset_with_dns_verify(shared_zone_test_context):
@@ -57,6 +58,33 @@ def test_create_recordset_with_dns_verify(shared_zone_test_context):
                 traceback.print_exc()
                 pass
 
+def test_create_recordset_zoneid_mismatch(shared_zone_test_context):
+    """
+    Test creating a record set where the zoneId in the body does not match the URI zoneId returns 422
+    """
+
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone = shared_zone_test_context.shared_zone
+
+    new_rs = {
+        "zoneId": shared_zone_test_context.dummy_zone["id"],
+        "name": "test-create-recordset-zoneid-mismatch",
+        "type": "A",
+        "ttl": 100,
+        "records": [
+            {"address": "10.1.1.1"}
+        ]
+    }
+    url = urljoin(client.index_url, "/zones/{0}/recordsets".format(zone["id"]))
+    response, error = client.make_request(
+        url,
+        "POST",
+        client.headers,
+        json.dumps(new_rs),
+        status=422
+    )
+
+    assert_that(error, is_("zoneId in URI and body must match"))
 
 def test_create_naptr_origin_record(shared_zone_test_context):
     """
