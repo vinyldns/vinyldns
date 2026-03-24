@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Appenders>
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <EcsLayout
+                    serviceName="vinyldns-core"
+                    serviceNodeName="vinyldns-core"
+                    eventDataset="vinyldns-core"
+                    includeOrigin="true"
+            />
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Logger name="org.flywaydb" level="INFO" additivity="false">
+            <AppenderRef ref="CONSOLE"/>
+        </Logger>
+        <Logger name="vinyldns.core.route.Monitor" level="OFF" additivity="true"/>
+
+        <Root level="OFF">
+            <AppenderRef ref="CONSOLE"/>
+        </Root>
+    </Loggers>
+</Configuration>
