@@ -366,7 +366,12 @@ class MembershipService(
     for{
         user <- getUser(userIdentifier,authPrincipal)
         group <-  membershipRepo.getGroupsForUser(user.id).toResult[Set[String]]
-    } yield UserResponseInfo(user.id, Some(user.userName), group)
+        group <- groupRepo.getGroups(group).toResult[Set[Group]]
+      } yield UserResponseInfo(
+        id       = user.id,
+        userName = Some(user.userName),
+        groupMap = group.map(g => g.id -> g.name).toMap
+      )
 
   def getUsers(
       userIds: Set[String],

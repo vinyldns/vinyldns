@@ -74,8 +74,8 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         $scope.refresh();
         return true;
     };
-    // Autocomplete for group search
-    $("#group-search-text").autocomplete({
+    //Autocomplete for group search
+    $("#my-group-search-text").autocomplete({
       source: function( request, response ) {
         $.ajax({
           url: "/api/groups?maxItems=100&abridged=true",
@@ -92,7 +92,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
       minLength: 1,
       select: function (event, ui) {
           $scope.query = ui.item.value;
-          $("#group-search-text").val(ui.item.value);
+          $("#my-group-search-text").val(ui.item.value);
           return false;
         },
       open: function() {
@@ -101,6 +101,61 @@ angular.module('controller.groups', []).controller('GroupsController', function 
       close: function() {
         $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
       }
+    });
+
+    $("#all-group-search-text").autocomplete({
+        source: function (request, response) {
+            if ($scope.isSearchByUser) {
+                //USER SEARCH
+                $.ajax({
+                    url: "/api/users/" + encodeURIComponent(request.term),
+                    dataType: "json",
+                    success: function (data) {
+                        const search = JSON.parse(JSON.stringify(data));
+                        const groupMap = search.groupMap || {};
+                        response($.map(Object.entries(groupMap), function ([groupId, groupName]) {
+                            return {
+                                value: search.userName,
+                                label: search.userName + " - " + groupName
+                            };
+                        }));
+                    }
+                });
+            } else {
+                //GROUP SEARCH
+                $.ajax({
+                    url: "/api/groups?maxItems=100&abridged=true",
+                    dataType: "json",
+                    data: {
+                        groupNameFilter: request.term,
+                        ignoreAccess: $scope.ignoreAccess
+                    },
+                    success: function (data) {
+                        const search = JSON.parse(JSON.stringify(data));
+                        response($.map(search.groups, function (group) {
+                            return {
+                                value: group.name,
+                                label: group.name
+                            };
+                        }));
+                    }
+                });
+            }
+        },
+        minLength: 1,
+        select: function (event, ui) {
+            $scope.$apply(function () {
+                $scope.query = ui.item.value;
+            });
+            $("#all-group-search-text").val(ui.item.value);
+            return false;
+        },
+        open: function () {
+            $(this).removeClass("ui-corner-all").addClass("ui-corner-top");
+        },
+        close: function () {
+            $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
+        }
     });
 
     // Autocomplete text-highlight
@@ -152,69 +207,103 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             });
     };
 
-    $scope.refresh = function () {
-        groupsPaging = pagingService.resetPaging(groupsPaging);
-        allGroupsPaging = pagingService.resetPaging(allGroupsPaging);
-        const groupsSearchByUser = [];
-        userNameQuery = "";
-        if($scope.isSearchByUser){
+$scope.refresh = function () {
+    groupsPaging = pagingService.resetPaging(groupsPaging);
+    allGroupsPaging = pagingService.resetPaging(allGroupsPaging);
+    const groupsSearchByUser = [];
+    userNameQuery = "";
+    if ($scope.isSearchByUser) {
         try {
-            if ($scope.query === "%" || $scope.query === "*"){
+            if ($scope.query === "%" || $scope.query === "*") {
                 throw new Error("User name should at least one other character for wildcard search");
-            }else if($scope.query.endsWith("%%") || $scope.query.endsWith("**")){
-                throw new Error("User name should not end with multiple * or %");
-            }else if($scope.query.endsWith("%") || $scope.query.endsWith("*")){
+            } else if (
+                ($scope.query.startsWith("*") && $scope.query.endsWith("*")) ||
+                ($scope.query.startsWith("%") && $scope.query.endsWith("%"))
+            ) {
+                userNameQuery = $scope.query.substring(1, $scope.query.length - 1);
+            } else if ($scope.query.endsWith("%") || $scope.query.endsWith("*")) {
                 userNameQuery = $scope.query.substring(0, $scope.query.length - 1);
-            }else {userNameQuery = $scope.query}
-            profileService.getUserDataById(userNameQuery)
-            .then(function (result) {
-                  var groupIds = result.data.groupIds
-                  groupIds.forEach((groupId) => {
+            } else if ($scope.query.startsWith("%") || $scope.query.startsWith("*")) {
+                userNameQuery = $scope.query.substring(1);
+            } else if (
+                $scope.query.startsWith("%") && $scope.query.endsWith("%")
+            ) {
+                userNameQuery = $scope.query.substring(1, $scope.query.length - 1);
+            } else if (
+                $scope.query.startsWith("*") && $scope.query.endsWith("*")
+            ) {
+                userNameQuery = $scope.query.substring(1, $scope.query.length - 1);
+            } else if ($scope.query === "") {
+                throw new Error("Please enter a user name to search for groups");
+            } else {
+                userNameQuery = $scope.query;
+            }
+            function success(response) {
+                $log.debug('profileService::getZoneUserDataByName-success');
+                $scope.response = response.data;
+                const groupMap = $scope.response.groupMap || {};
+                const groupIds = Object.keys(groupMap);
+                $log.debug("getGroupsByUser:groupIds: ", groupIds);
+                $log.debug("getGroupsByUser:groupMap:", groupMap);
+                groupIds.forEach((groupId) => {
                     groupsService.getGroup(groupId)
                         .then(function (result) {
                             groupsSearchByUser.push(result.data);
-                         })
-                  });
-            $log.debug('getGroupsByUser:refresh-success', groupsSearchByUser);
-            updateAllGroupDisplay(groupsSearchByUser)
+                        });
+                });
+                $log.debug('getGroupsByUser:refresh-success', groupsSearchByUser);
+                updateAllGroupDisplay(groupsSearchByUser);
+            }
+            return profileService
+                .getUserDataById(userNameQuery)
+                .then(success)
+                .catch(function (error) {
+                    handleError(error, 'profileService::getZoneUserDataById-failure');
+                });
+        } catch (error) {
+            alert(error.message);
+        }
+
+    } else {
+        groupsService
+            .getGroupsAbridged(
+                groupsPaging.maxItems,
+                undefined,
+                false,
+                $scope.query
+            )
+            .then(function (result) {
+                $log.debug('getGroups:refresh-success', result);
+
+                groupsPaging.next = result.data.nextId;
+                updateGroupDisplay(result.data.groups);
+
+                if (!$scope.query.length) {
+                    $scope.hasGroups = $scope.groups.items.length > 0;
+                }
             })
             .catch(function (error) {
-                handleError(error, 'getGroupsByUser::refresh-failure');
+                handleError(error, 'getGroups::refresh-failure');
             });
-        }
-        catch (error) {
-               alert(error.message);
-                }
-        }
-        else {
-            groupsService
-                .getGroupsAbridged(groupsPaging.maxItems, undefined, false, $scope.query)
-                .then(function (result) {
-                      $log.debug('getGroups:refresh-success', result);
-                      //update groups
-                      groupsPaging.next = result.data.nextId;
-                      updateGroupDisplay(result.data.groups);
-                      if (!$scope.query.length) {
-                          $scope.hasGroups = $scope.groups.items.length > 0;
-                      }
-                })
-                .catch(function (error) {
-                    handleError(error, 'getGroups::refresh-failure');
-                });
 
-            groupsService
-                .getGroupsAbridged(allGroupsPaging.maxItems, undefined, true, $scope.query)
-                .then(function (result) {
-                    $log.debug('getGroups:refresh-success', result);
-                    //update groups
-                    allGroupsPaging.next = result.data.nextId;
-                    updateAllGroupDisplay(result.data.groups);
-                })
-                .catch(function (error) {
-                    handleError(error, 'getGroups::refresh-failure');
-                });
-        }
-    };
+        groupsService
+            .getGroupsAbridged(
+                allGroupsPaging.maxItems,
+                undefined,
+                true,
+                $scope.query
+            )
+            .then(function (result) {
+                $log.debug('getGroups:refresh-success', result);
+
+                allGroupsPaging.next = result.data.nextId;
+                updateAllGroupDisplay(result.data.groups);
+            })
+            .catch(function (error) {
+                handleError(error, 'getGroups::refresh-failure');
+            });
+    }
+};
 
     $scope.reset = function () {
         //reset processing flag

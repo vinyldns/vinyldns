@@ -27,7 +27,7 @@ angular.module('service.profile', [])
         }
 
         this.getUserDataById = function(userId){
-            return $http.get('/api/users/' + userId);
+            return $http.get('/api/users/' + encodeURIComponent(userId));
         }
 
         this.regenerateCredentials = function(){
