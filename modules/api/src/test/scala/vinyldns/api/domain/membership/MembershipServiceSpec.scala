@@ -1395,7 +1395,15 @@ class MembershipServiceSpec
       "return the user info" in {
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(anyString)
         doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
-        val result: UserResponseInfo = underTest.getUserDetails(okUser.id, okAuth).value.unsafeRunSync().toOption.get
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+        val resultEither = underTest.getUserDetails(okUser.id, okAuth).value.unsafeRunSync()
+
+        val result = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
         result.id shouldBe okUser.id
         result.userName.get shouldBe okUser.userName
         result.groupMap.headOption match {
