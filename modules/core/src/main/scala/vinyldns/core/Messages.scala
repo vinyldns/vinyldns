@@ -205,7 +205,7 @@ object Messages {
 
   val OwnershipTransferAlreadyOwnedErrorMsg: String = "Record owner group with id %s already owns the record, new request is not needed.".orConfig
 
-  val OwnershipTransferInvalidPendingReviewErrorMsg: String = "Invalid ownership transfer status: %s".orConfig
+  val OwnershipTransferInvalidPendingReviewErrorMsg: String = "Invalid Ownership transfer status: %s".orConfig
 
   val OwnershipTransferInvalidApprovalErrorMsg: String = "Unable to %s the Ownership transfer status for the record: None".orConfig
 
