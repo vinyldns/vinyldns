@@ -208,7 +208,7 @@ user-sync {
   # Provider: "ldap", "graph-api", or "none"
   provider = "none"
 
-  # How often to run the sync (in hours). Default is 24, which is also the maximum.
+  # How often to run the sync (in hours). Default is 24.
   polling-interval-hours = 24
 
   graph-api {
@@ -250,8 +250,7 @@ additional settings, they will be configured inside the `crypto` element, adjace
 
 ```yaml
 crypto {
-  type = "vinyldns.core.crypto.JavaCrypto"
-  secret = "8B06A7F3BC8A2497736F1916A123AA40E88217BE9264D8872597EF7A6E5DCE61"
+  type = "vinyldns.core.crypto.NoOpCrypto"
 }
 ```
 
@@ -456,8 +455,7 @@ play.http.session.secure = false
 play.http.session.httpOnly = true
 
 crypto {
-  type = "vinyldns.core.crypto.JavaCrypto"
-  secret = "8B06A7F3BC8A2497736F1916A123AA40E88217BE9264D8872597EF7A6E5DCE61"
+  type = "vinyldns.core.crypto.NoOpCrypto"
 }
 
 http.port = 9001

@@ -32,7 +32,7 @@ class GraphApiUserSyncProviderSpec extends Specification with Mockito {
 
   /**
     * Testable subclass that overrides HTTP calls to avoid real network I/O.
-    * This follows the same sync-wrapped-in-IO pattern used by the real provider.
+    * Uses the real parseUserResponse method for 200 responses so parsing logic is tested.
     */
   class TestableGraphApiProvider(
       userResponses: Map[String, (Int, String)] = Map.empty,
@@ -49,14 +49,7 @@ class GraphApiUserSyncProviderSpec extends Specification with Mockito {
       IO {
         userResponses.get(user.userName) match {
           case Some((200, body)) =>
-            val json = Json.parse(body)
-            val values = (json \ "value").as[JsArray].value
-            if (values.isEmpty) {
-              Some(user)
-            } else {
-              val accountEnabled = (values.head \ "accountEnabled").asOpt[Boolean].getOrElse(true)
-              if (!accountEnabled) Some(user) else None
-            }
+            parseUserResponse(body, user)
           case Some((404, _)) =>
             Some(user)
           case Some((_, _)) =>
@@ -143,6 +136,46 @@ class GraphApiUserSyncProviderSpec extends Specification with Mockito {
       provider.getStaleUsers(List(testUser)).unsafeRunSync() must throwA[RuntimeException](
         "Token request failed with status 401"
       )
+    }
+  }
+
+  "escapeODataValue" should {
+    val provider = new TestableGraphApiProvider()
+
+    "escape single quotes by doubling them" in {
+      provider.escapeODataValue("O'Brien") must beEqualTo("O''Brien")
+    }
+
+    "leave strings without quotes unchanged" in {
+      provider.escapeODataValue("testuser") must beEqualTo("testuser")
+    }
+
+    "handle multiple single quotes" in {
+      provider.escapeODataValue("it's a 'test'") must beEqualTo("it''s a ''test''")
+    }
+  }
+
+  "parseUserResponse" should {
+    val provider = new TestableGraphApiProvider()
+
+    "return None when user is enabled" in {
+      val body = """{"value": [{"accountEnabled": true}]}"""
+      provider.parseUserResponse(body, testUser) must beNone
+    }
+
+    "return Some(user) when user is disabled" in {
+      val body = """{"value": [{"accountEnabled": false}]}"""
+      provider.parseUserResponse(body, disabledUser) must beSome(disabledUser)
+    }
+
+    "return Some(user) when value array is empty" in {
+      val body = """{"value": []}"""
+      provider.parseUserResponse(body, missingUser) must beSome(missingUser)
+    }
+
+    "default to enabled when accountEnabled field is missing" in {
+      val body = """{"value": [{"displayName": "Test"}]}"""
+      provider.parseUserResponse(body, testUser) must beNone
     }
   }
 

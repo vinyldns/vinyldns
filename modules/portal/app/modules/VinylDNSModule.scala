@@ -37,6 +37,7 @@ import cats.effect.{ContextShift, IO, Timer}
 import com.google.inject.AbstractModule
 import controllers._
 import controllers.repository.{PortalDataAccessor, PortalDataAccessorProvider}
+import org.slf4j.LoggerFactory
 import play.api.{Configuration, Environment}
 import tasks.UserSyncTask
 import vinyldns.core.crypto.CryptoAlgebra
@@ -49,6 +50,7 @@ import vinyldns.core.task.{TaskRepository, TaskScheduler}
 class VinylDNSModule(environment: Environment, configuration: Configuration)
     extends AbstractModule {
 
+  private val logger = LoggerFactory.getLogger(classOf[VinylDNSModule])
   val settings = new Settings(configuration)
   implicit val t: Timer[IO] = IO.timer(scala.concurrent.ExecutionContext.global)
   implicit val cs: ContextShift[IO] =
@@ -107,8 +109,12 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
         )
       case "ldap" =>
         new LdapUserSyncProvider(auth)
-      case _ =>
-        // "none" or unset: fall back to legacy LDAP sync config for backward compat
+      case "none" =>
+        // fall back to legacy LDAP sync config for backward compat
+        if (settings.ldapSyncEnabled) new LdapUserSyncProvider(auth)
+        else NoOpUserSyncProvider
+      case unknown =>
+        logger.warn(s"""Unrecognized user-sync.provider="$unknown", defaulting to "none"""")
         if (settings.ldapSyncEnabled) new LdapUserSyncProvider(auth)
         else NoOpUserSyncProvider
     }
@@ -117,7 +123,6 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
     settings.userSyncProvider match {
       case "graph-api" | "ldap" => settings.userSyncPollingInterval
       case _ =>
-        // Legacy fallback uses LDAP polling interval
         if (settings.ldapSyncEnabled) settings.ldapSyncPollingInterval
         else settings.userSyncPollingInterval
     }

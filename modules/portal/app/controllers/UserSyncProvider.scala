@@ -24,6 +24,8 @@ import cats.implicits._
 import org.slf4j.LoggerFactory
 import play.api.libs.json._
 import vinyldns.core.domain.membership.User
+import vinyldns.core.health.HealthCheck
+import vinyldns.core.health.HealthCheck._
 
 trait UserSyncProvider {
   def getStaleUsers(users: List[User]): IO[List[User]]
@@ -57,17 +59,19 @@ class GraphApiUserSyncProvider(
 
   @volatile private var cachedToken: Option[String] = None
   @volatile private var tokenExpiresAt: Long = 0L
+  private val tokenLock = new Object
 
   // $COVERAGE-OFF$
   private[controllers] def getAccessToken(): IO[String] =
     IO {
-      val now = System.currentTimeMillis()
-      cachedToken match {
-        case Some(token) if now < tokenExpiresAt - 300000 => // 5 min buffer
-          token
-        case _ =>
-          val token = fetchAccessToken()
-          token
+      tokenLock.synchronized {
+        val now = System.currentTimeMillis()
+        cachedToken match {
+          case Some(token) if now < tokenExpiresAt - 300000 => // 5 min buffer
+            token
+          case _ =>
+            fetchAccessToken()
+        }
       }
     }
 
@@ -126,12 +130,34 @@ class GraphApiUserSyncProvider(
       _ <- IO(logger.info(s"Graph API sync complete; ${staleUsers.size} of ${users.size} users marked as stale"))
     } yield staleUsers
 
+  private[controllers] def parseUserResponse(responseBody: String, user: User): Option[User] = {
+    val json = Json.parse(responseBody)
+    val values = (json \ "value").as[JsArray].value
+
+    if (values.isEmpty) {
+      logger.info(s"User ${user.userName} not found in Graph API, marking as stale")
+      Some(user)
+    } else {
+      val accountEnabled = (values.head \ "accountEnabled").asOpt[Boolean].getOrElse(true)
+      if (!accountEnabled) {
+        logger.info(s"User ${user.userName} is disabled in Graph API, marking as stale")
+        Some(user)
+      } else {
+        None
+      }
+    }
+  }
+
+  private[controllers] def escapeODataValue(value: String): String =
+    value.replace("'", "''")
+
   // $COVERAGE-OFF$
   private[controllers] def checkUser(token: String, user: User): IO[Option[User]] =
     IO {
       try {
+        val escapedUsername = escapeODataValue(user.userName)
         val filter = java.net.URLEncoder.encode(
-          s"$usernameAttribute eq '${user.userName}'",
+          s"$usernameAttribute eq '$escapedUsername'",
           "UTF-8"
         )
         val select = java.net.URLEncoder.encode("accountEnabled", "UTF-8")
@@ -162,21 +188,7 @@ class GraphApiUserSyncProvider(
             }
             reader.close()
 
-            val json = Json.parse(response.toString())
-            val values = (json \ "value").as[JsArray].value
-
-            if (values.isEmpty) {
-              logger.info(s"User ${user.userName} not found in Graph API, marking as stale")
-              Some(user)
-            } else {
-              val accountEnabled = (values.head \ "accountEnabled").asOpt[Boolean].getOrElse(true)
-              if (!accountEnabled) {
-                logger.info(s"User ${user.userName} is disabled in Graph API, marking as stale")
-                Some(user)
-              } else {
-                None
-              }
-            }
+            parseUserResponse(response.toString(), user)
           }
         } finally {
           conn.disconnect()
@@ -193,9 +205,6 @@ class GraphApiUserSyncProvider(
     }
   // $COVERAGE-ON$
 }
-
-import vinyldns.core.health.HealthCheck
-import vinyldns.core.health.HealthCheck._
 
 class NoOpAuthenticator extends Authenticator {
   def authenticate(username: String, password: String): Either[LdapException, LdapUserDetails] =
