@@ -826,6 +826,82 @@ class MySqlZoneRepositoryIntegrationSpec
         .nextId shouldBe None
     }
 
+    "return nextId on every intermediate page when paging through all zones" in {
+      // Create 15 zones and page with maxItems=5, expecting 3 pages
+      // This verifies nextId is present on pages 1 and 2, absent on page 3
+      val pagingZones = (0 until 15).map { num =>
+        okZone.copy(
+          name = f"paging-zone-$num%03d.",
+          id = UUID.randomUUID().toString,
+          adminGroupId = testZoneAdminGroupId,
+          acl = testZoneAcl
+        )
+      }
+      val sorted = pagingZones.sortBy(_.name)
+
+      saveZones(pagingZones).unsafeRunSync()
+
+      // Page 1: should return 5 zones and a nextId
+      val page1 = repo.listZones(superUserAuth, None, None, 5).unsafeRunSync()
+      page1.zones should have size 5
+      (page1.zones should contain).theSameElementsInOrderAs(sorted.take(5))
+      page1.nextId shouldBe defined
+
+      // Page 2: should return 5 zones and a nextId
+      val page2 = repo.listZones(superUserAuth, None, page1.nextId, 5).unsafeRunSync()
+      page2.zones should have size 5
+      (page2.zones should contain).theSameElementsInOrderAs(sorted.slice(5, 10))
+      page2.nextId shouldBe defined
+
+      // Page 3: should return 5 zones and NO nextId (last page)
+      val page3 = repo.listZones(superUserAuth, None, page2.nextId, 5).unsafeRunSync()
+      page3.zones should have size 5
+      (page3.zones should contain).theSameElementsInOrderAs(sorted.slice(10, 15))
+      page3.nextId shouldBe None
+
+      // Verify all zones were returned with no duplicates
+      val allReturned = page1.zones ++ page2.zones ++ page3.zones
+      allReturned should have size 15
+      allReturned.map(_.name).distinct should have size 15
+    }
+
+    "return nextId on intermediate pages for authorized (non-super) user" in {
+      // Create 12 zones, user has access to all via ACL
+      // Page with maxItems=5, expecting pages of 5, 5, 2
+      val pagingZones = (0 until 12).map { num =>
+        okZone.copy(
+          name = f"auth-paging-$num%03d.",
+          id = UUID.randomUUID().toString,
+          adminGroupId = testZoneAdminGroupId,
+          acl = testZoneAcl
+        )
+      }
+      val sorted = pagingZones.sortBy(_.name)
+
+      val auth = AuthPrincipal(okUser, groups.map(_.id))
+
+      saveZones(pagingZones).unsafeRunSync()
+
+      // Page 1
+      val page1 = repo.listZones(auth, None, None, 5).unsafeRunSync()
+      page1.zones should have size 5
+      page1.nextId shouldBe defined
+
+      // Page 2
+      val page2 = repo.listZones(auth, None, page1.nextId, 5).unsafeRunSync()
+      page2.zones should have size 5
+      page2.nextId shouldBe defined
+
+      // Page 3 (last)
+      val page3 = repo.listZones(auth, None, page2.nextId, 5).unsafeRunSync()
+      page3.zones should have size 2
+      page3.nextId shouldBe None
+
+      // Verify completeness
+      val allReturned = page1.zones ++ page2.zones ++ page3.zones
+      allReturned.map(_.name) should contain theSameElementsAs sorted.map(_.name)
+    }
+
     "apply paging when doing an authorized zone search" in {
       // create 10 zones, but our user should only have access to 5 of them
       val differentAdminGroupId = UUID.randomUUID().toString
