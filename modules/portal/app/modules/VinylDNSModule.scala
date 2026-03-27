@@ -114,9 +114,9 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
         if (settings.ldapSyncEnabled) new LdapUserSyncProvider(auth)
         else NoOpUserSyncProvider
       case unknown =>
-        logger.warn(s"""Unrecognized user-sync.provider="$unknown", defaulting to "none"""")
-        if (settings.ldapSyncEnabled) new LdapUserSyncProvider(auth)
-        else NoOpUserSyncProvider
+        throw new IllegalArgumentException(
+          s"""Unrecognized user-sync.provider="$unknown". Valid values are "ldap", "graph-api", or "none"."""
+        )
     }
 
   private def resolvePollingInterval() =
