@@ -31,6 +31,7 @@ object MembershipJsonProtocol {
       name: String,
       email: String,
       description: Option[String],
+      customMessage: Option[String],
       members: Set[UserId],
       admins: Set[UserId]
   )
@@ -39,6 +40,7 @@ object MembershipJsonProtocol {
       name: String,
       email: String,
       description: Option[String],
+      customMessage: Option[String],
       members: Set[UserId],
       admins: Set[UserId]
   )
@@ -66,6 +68,7 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "name").required[String]("Missing Group.name"),
         (js \ "email").required[String]("Missing Group.email"),
         (js \ "description").optional[String],
+        (js \ "customMessage").optional[String],
         (js \ "members").required[Set[UserId]]("Missing Group.members"),
         (js \ "admins").required[Set[UserId]]("Missing Group.admins")
       ).mapN(CreateGroupInput.apply)
@@ -77,6 +80,7 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "name").required[String]("Missing Group.name"),
         (js \ "email").required[String]("Missing Group.email"),
         (js \ "description").optional[String],
+        (js \ "customMessage").optional[String],
         (js \ "members").required[Set[UserId]]("Missing Group.members"),
         (js \ "admins").required[Set[UserId]]("Missing Group.admins")
       ).mapN(UpdateGroupInput.apply)
@@ -96,7 +100,8 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
         (js \ "status").default(GroupStatus, GroupStatus.Active),
         (js \ "memberIds").default[Set[String]](Set.empty),
-        (js \ "adminUserIds").default[Set[String]](Set.empty)
+        (js \ "adminUserIds").default[Set[String]](Set.empty),
+        (js \ "customMessage").optional[String],
       ).mapN(Group.apply)
   }
 
@@ -107,6 +112,7 @@ trait MembershipJsonProtocol extends JsonValidation {
         (js \ "name").required[String]("Missing Group.name"),
         (js \ "email").required[String]("Missing Group.email"),
         (js \ "description").optional[String],
+        (js \ "customMessage").optional[String],
         (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
         (js \ "status").default(GroupStatus, GroupStatus.Active),
         (js \ "members").default[Set[UserId]](Set.empty),
@@ -119,6 +125,7 @@ trait MembershipJsonProtocol extends JsonValidation {
       ("name" -> gi.name) ~
       ("email" -> gi.email) ~
       ("description" -> gi.description) ~
+      ("customMessage" -> gi.customMessage) ~
       ("created" -> Extraction.decompose(gi.created)) ~
       ("status" -> Extraction.decompose(gi.status)) ~
       ("members" -> Extraction.decompose(gi.members)) ~
