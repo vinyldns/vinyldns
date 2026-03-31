@@ -578,7 +578,6 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
 
       insert(List(targetChange, pointerChange))
 
-      // trailing wildcard: does NOT match wildcardStart regex so union path is taken
       val filter = s"$targetName.${okZone.name.dropRight(1)}*"
       val found = recordSetCacheRepo
         .listRecordSetData(None, None, None, Some(filter), None, None, NameSort.ASC)
