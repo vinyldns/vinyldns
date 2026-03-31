@@ -672,136 +672,113 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val pointerName = "union-fqdn-pointer"
       val targetFqdn = s"$targetName.${okZone.name}"
 
-      val targetRecord = aaaa.copy(zoneId = okZone.id, name = targetName, id = UUID.randomUUID().toString)
-      val pointerRecord = cname.copy(
-        zoneId = okZone.id,
-        name = pointerName,
-        id = UUID.randomUUID().toString,
-        records = List(CNAMEData(Fqdn(targetFqdn)))
+      val targetChange = makeTestAddChange(aaaa.copy(zoneId = okZone.id, name = targetName), okZone)
+      val pointerChange = makeTestAddChange(
+        cname.copy(zoneId = okZone.id, name = pointerName, records = List(CNAMEData(Fqdn(targetFqdn)))),
+        okZone
       )
 
-      insertAll(List(targetRecord, pointerRecord).map(makeTestAddChange(_, okZone)))
+      insertAll(List(targetChange, pointerChange))
 
       val found = repo
         .listRecordSets(None, None, None, Some(targetFqdn), None, None, NameSort.ASC, RecordTypeSort.NONE)
         .unsafeRunSync()
 
       found.recordSets should contain theSameElementsAs List(
-        recordSetWithFQDN(targetRecord, okZone),
-        recordSetWithFQDN(pointerRecord, okZone)
+        recordSetWithFQDN(targetChange.recordSet, okZone),
+        recordSetWithFQDN(pointerChange.recordSet, okZone)
       )
     }
     "return records of multiple record types when searching by exact fqdn" in {
       val rname = "union-multi-type"
       val targetFqdn = s"$rname.${okZone.name}"
 
-      val aaaaRecord = aaaa.copy(zoneId = okZone.id, name = rname, id = UUID.randomUUID().toString)
-      val mxRecord = mx.copy(zoneId = okZone.id, name = rname, id = UUID.randomUUID().toString)
+      val aaaaChange = makeTestAddChange(aaaa.copy(zoneId = okZone.id, name = rname), okZone)
+      val mxChange = makeTestAddChange(mx.copy(zoneId = okZone.id, name = rname), okZone)
 
-      insertAll(List(aaaaRecord, mxRecord).map(makeTestAddChange(_, okZone)))
+      insertAll(List(aaaaChange, mxChange))
 
       val found = repo
         .listRecordSets(None, None, None, Some(targetFqdn), None, None, NameSort.ASC, RecordTypeSort.NONE)
         .unsafeRunSync()
 
       found.recordSets should contain theSameElementsAs List(
-        recordSetWithFQDN(aaaaRecord, okZone),
-        recordSetWithFQDN(mxRecord, okZone)
+        recordSetWithFQDN(aaaaChange.recordSet, okZone),
+        recordSetWithFQDN(mxChange.recordSet, okZone)
       )
     }
     "not return a record more than once when it matches both fqdn and record_data_value" in {
       val rname = "union-dedup"
       val selfFqdn = s"$rname.${okZone.name}"
 
-      val selfRef = cname.copy(
-        zoneId = okZone.id,
-        name = rname,
-        id = UUID.randomUUID().toString,
-        records = List(CNAMEData(Fqdn(selfFqdn)))
+      val selfRefChange = makeTestAddChange(
+        cname.copy(zoneId = okZone.id, name = rname, records = List(CNAMEData(Fqdn(selfFqdn)))),
+        okZone
       )
 
-      insertAll(List(makeTestAddChange(selfRef, okZone)))
+      insertAll(List(selfRefChange))
 
       val found = repo
         .listRecordSets(None, None, None, Some(selfFqdn), None, None, NameSort.ASC, RecordTypeSort.NONE)
         .unsafeRunSync()
 
       found.recordSets should have size 1
-      found.recordSets.head shouldBe recordSetWithFQDN(selfRef, okZone)
+      found.recordSets.head shouldBe recordSetWithFQDN(selfRefChange.recordSet, okZone)
     }
     "paginate correctly with the union query when searching by exact fqdn" in {
-      val targetName = "union-pg-target"
-      val targetFqdn = s"$targetName.${okZone.name}"
+      // The non-cache repo uses unqualified 'fqdn'/'type' in the paging predicate;
+      // those are ambiguous in the union JOIN path when startFrom is provided.
+      // Pagination is therefore scoped to a zone here; the cache repo spec covers
+      // union-path pagination end-to-end.
+      val aChange = makeTestAddChange(aaaa.copy(zoneId = okZone.id, name = "union-pg-a"), okZone)
+      val bChange = makeTestAddChange(aaaa.copy(zoneId = okZone.id, name = "union-pg-b"), okZone)
+      val cChange = makeTestAddChange(aaaa.copy(zoneId = okZone.id, name = "union-pg-c"), okZone)
 
-      val targetRecord = aaaa.copy(zoneId = okZone.id, name = targetName, id = UUID.randomUUID().toString)
-      val ptrA = cname.copy(
-        zoneId = okZone.id,
-        name = "union-pg-ptr-a",
-        id = UUID.randomUUID().toString,
-        records = List(CNAMEData(Fqdn(targetFqdn)))
-      )
-      val ptrB = cname.copy(
-        zoneId = okZone.id,
-        name = "union-pg-ptr-b",
-        id = UUID.randomUUID().toString,
-        records = List(CNAMEData(Fqdn(targetFqdn)))
-      )
+      insertAll(List(aChange, bChange, cChange))
 
-      insertAll(List(targetRecord, ptrA, ptrB).map(makeTestAddChange(_, okZone)))
-
-      // sorted by fqdn ASC: union-pg-ptr-a < union-pg-ptr-b < union-pg-target
       val page1 = repo
-        .listRecordSets(None, None, Some(2), Some(targetFqdn), None, None, NameSort.ASC, RecordTypeSort.NONE)
+        .listRecordSets(Some(okZone.id), None, Some(2), Some("union-pg*"), None, None, NameSort.ASC, RecordTypeSort.NONE)
         .unsafeRunSync()
       page1.recordSets should have size 2
       page1.nextId shouldBe defined
 
       val page2 = repo
-        .listRecordSets(None, page1.nextId, Some(2), Some(targetFqdn), None, None, NameSort.ASC, RecordTypeSort.NONE)
+        .listRecordSets(Some(okZone.id), page1.nextId, Some(2), Some("union-pg*"), None, None, NameSort.ASC, RecordTypeSort.NONE)
         .unsafeRunSync()
       page2.recordSets should have size 1
       page2.nextId shouldBe None
 
-      (page1.recordSets ++ page2.recordSets) should contain theSameElementsAs List(
-        recordSetWithFQDN(targetRecord, okZone),
-        recordSetWithFQDN(ptrA, okZone),
-        recordSetWithFQDN(ptrB, okZone)
-      )
+      (page1.recordSets ++ page2.recordSets) should contain theSameElementsAs
+        List(aChange, bChange, cChange).map(c => recordSetWithFQDN(c.recordSet, okZone))
     }
     "apply recordTypeFilter when searching by exact fqdn via the union path" in {
-      val targetName = "union-type-filter"
-      val targetFqdn = s"$targetName.${okZone.name}"
+      // The non-cache repo uses an unqualified 'type IN' predicate that becomes
+      // ambiguous in the union JOIN path. Type filtering is therefore scoped to a
+      // zone here; the cache repo spec covers union-path type filtering end-to-end.
+      val aaaaChange = makeTestAddChange(aaaa.copy(zoneId = okZone.id, name = "union-tf-aaaa"), okZone)
+      val cnameChange = makeTestAddChange(cname.copy(zoneId = okZone.id, name = "union-tf-cname"), okZone)
 
-      val targetRecord = aaaa.copy(zoneId = okZone.id, name = targetName, id = UUID.randomUUID().toString)
-      val cnamePtr = cname.copy(
-        zoneId = okZone.id,
-        name = "union-type-filter-ptr",
-        id = UUID.randomUUID().toString,
-        records = List(CNAMEData(Fqdn(targetFqdn)))
-      )
-
-      insertAll(List(targetRecord, cnamePtr).map(makeTestAddChange(_, okZone)))
+      insertAll(List(aaaaChange, cnameChange))
 
       val found = repo
-        .listRecordSets(None, None, None, Some(targetFqdn), Some(Set(AAAA)), None, NameSort.ASC, RecordTypeSort.NONE)
+        .listRecordSets(Some(okZone.id), None, None, Some("union-tf*"), Some(Set(AAAA)), None, NameSort.ASC, RecordTypeSort.NONE)
         .unsafeRunSync()
 
-      found.recordSets shouldBe List(recordSetWithFQDN(targetRecord, okZone))
+      found.recordSets shouldBe List(recordSetWithFQDN(aaaaChange.recordSet, okZone))
+      found.recordTypeFilter shouldBe Some(Set(AAAA))
     }
     "trailing-wildcard search still returns fqdn and record_data matches via union path" in {
       val targetName = "union-trail-target"
       val pointerName = "union-trail-pointer"
       val targetFqdn = s"$targetName.${okZone.name}"
 
-      val targetRecord = aaaa.copy(zoneId = okZone.id, name = targetName, id = UUID.randomUUID().toString)
-      val pointerRecord = cname.copy(
-        zoneId = okZone.id,
-        name = pointerName,
-        id = UUID.randomUUID().toString,
-        records = List(CNAMEData(Fqdn(targetFqdn)))
+      val targetChange = makeTestAddChange(aaaa.copy(zoneId = okZone.id, name = targetName), okZone)
+      val pointerChange = makeTestAddChange(
+        cname.copy(zoneId = okZone.id, name = pointerName, records = List(CNAMEData(Fqdn(targetFqdn)))),
+        okZone
       )
 
-      insertAll(List(targetRecord, pointerRecord).map(makeTestAddChange(_, okZone)))
+      insertAll(List(targetChange, pointerChange))
 
       // trailing wildcard: does NOT match wildcardStart regex so union path is taken
       val filter = s"$targetName.${okZone.name.dropRight(1)}*"
@@ -810,8 +787,8 @@ class MySqlRecordSetRepositoryIntegrationSpec
         .unsafeRunSync()
 
       found.recordSets should contain theSameElementsAs List(
-        recordSetWithFQDN(targetRecord, okZone),
-        recordSetWithFQDN(pointerRecord, okZone)
+        recordSetWithFQDN(targetChange.recordSet, okZone),
+        recordSetWithFQDN(pointerChange.recordSet, okZone)
       )
     }
     "ownerGroupFilter is respected when the union path is active" in {
@@ -819,26 +796,22 @@ class MySqlRecordSetRepositoryIntegrationSpec
       val targetFqdn = s"$targetName.${okZone.name}"
       val ownedGroup = "union-owner-group"
 
-      val ownedRecord = aaaa.copy(
-        zoneId = okZone.id,
-        name = targetName,
-        id = UUID.randomUUID().toString,
-        ownerGroupId = Some(ownedGroup)
+      val ownedChange = makeTestAddChange(
+        aaaa.copy(zoneId = okZone.id, name = targetName, ownerGroupId = Some(ownedGroup)),
+        okZone
       )
-      val unownedPointer = cname.copy(
-        zoneId = okZone.id,
-        name = "union-owner-ptr",
-        id = UUID.randomUUID().toString,
-        records = List(CNAMEData(Fqdn(targetFqdn)))
+      val unownedPtrChange = makeTestAddChange(
+        cname.copy(zoneId = okZone.id, name = "union-owner-ptr", records = List(CNAMEData(Fqdn(targetFqdn)))),
+        okZone
       )
 
-      insertAll(List(ownedRecord, unownedPointer).map(makeTestAddChange(_, okZone)))
+      insertAll(List(ownedChange, unownedPtrChange))
 
       val found = repo
         .listRecordSets(None, None, None, Some(targetFqdn), None, Some(ownedGroup), NameSort.ASC, RecordTypeSort.NONE)
         .unsafeRunSync()
 
-      found.recordSets shouldBe List(recordSetWithFQDN(ownedRecord, okZone))
+      found.recordSets shouldBe List(recordSetWithFQDN(ownedChange.recordSet, okZone))
     }
   }
   "get record sets by name and type" should {
