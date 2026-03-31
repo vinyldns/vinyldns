@@ -190,12 +190,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
         val zoneAndNameFilters = (zoneId, recordNameFilter) match {
           case (Some(zId), Some(rName)) =>
             Some(sqls"zone_id = $zId AND name LIKE ${rName.replace('*', '%')} ")
-          case (None, Some(fqdn)) => fqdn match {
-            case fqdn if wildcardStart.pattern.matcher(fqdn).matches() =>
-              Some(sqls"fqdn LIKE ${fqdn.replace('*', '%')} ")
-            case _ =>
-              Some(sqls"fqdn LIKE ${fqdn.replace('*', '%')} ")
-          }
+          case (None, Some(fqdn)) => Some(sqls"fqdn LIKE ${fqdn.replace('*', '%')} ")
           case (Some(zId), None) => Some(sqls"zone_id = $zId ")
           case _ => None
         }

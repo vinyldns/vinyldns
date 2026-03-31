@@ -22,6 +22,7 @@ import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
+import vinyldns.core.domain.Fqdn
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.Zone
@@ -452,6 +453,179 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
       val found =
         recordSetCacheRepo.listRecordSetData(None, None, None, None, None, None, NameSort.ASC).unsafeRunSync()
       found.recordSets shouldBe empty
+    }
+    "return both direct fqdn matches and records pointing to that fqdn via record_data_value" in {
+      val targetName = "union-fqdn-target"
+      val pointerName = "union-fqdn-pointer"
+      val targetFqdn = s"$targetName.${okZone.name}"
+
+      val targetRecord = aaaa.copy(zoneId = okZone.id, name = targetName, id = UUID.randomUUID().toString)
+      val pointerRecord = cname.copy(
+        zoneId = okZone.id,
+        name = pointerName,
+        id = UUID.randomUUID().toString,
+        records = List(CNAMEData(Fqdn(targetFqdn)))
+      )
+
+      insert(List(targetRecord, pointerRecord).map(makeTestAddChange(_, okZone)))
+
+      val found = recordSetCacheRepo
+        .listRecordSetData(None, None, None, Some(targetFqdn), None, None, NameSort.ASC)
+        .unsafeRunSync()
+
+      found.recordSets should contain theSameElementsAs List(
+        recordSetDataWithFQDN(targetRecord, okZone),
+        recordSetDataWithFQDN(pointerRecord, okZone)
+      )
+    }
+    "return records of multiple record types when searching by exact fqdn" in {
+      val rname = "union-multi-type"
+      val targetFqdn = s"$rname.${okZone.name}"
+
+      val aaaaRecord = aaaa.copy(zoneId = okZone.id, name = rname, id = UUID.randomUUID().toString)
+      val mxRecord = mx.copy(zoneId = okZone.id, name = rname, id = UUID.randomUUID().toString)
+
+      insert(List(aaaaRecord, mxRecord).map(makeTestAddChange(_, okZone)))
+
+      val found = recordSetCacheRepo
+        .listRecordSetData(None, None, None, Some(targetFqdn), None, None, NameSort.ASC)
+        .unsafeRunSync()
+
+      found.recordSets should contain theSameElementsAs List(
+        recordSetDataWithFQDN(aaaaRecord, okZone),
+        recordSetDataWithFQDN(mxRecord, okZone)
+      )
+    }
+    "not return a record more than once when it matches both fqdn and record_data_value" in {
+      val rname = "union-dedup"
+      val selfFqdn = s"$rname.${okZone.name}"
+
+      val selfRef = cname.copy(
+        zoneId = okZone.id,
+        name = rname,
+        id = UUID.randomUUID().toString,
+        records = List(CNAMEData(Fqdn(selfFqdn)))
+      )
+
+      insert(List(makeTestAddChange(selfRef, okZone)))
+
+      val found = recordSetCacheRepo
+        .listRecordSetData(None, None, None, Some(selfFqdn), None, None, NameSort.ASC)
+        .unsafeRunSync()
+
+      found.recordSets should have size 1
+      found.recordSets.head shouldBe recordSetDataWithFQDN(selfRef, okZone)
+    }
+    "paginate correctly with the union query when searching by exact fqdn" in {
+      val targetName = "union-pg-target"
+      val targetFqdn = s"$targetName.${okZone.name}"
+
+      val targetRecord = aaaa.copy(zoneId = okZone.id, name = targetName, id = UUID.randomUUID().toString)
+      val ptrA = cname.copy(
+        zoneId = okZone.id,
+        name = "union-pg-ptr-a",
+        id = UUID.randomUUID().toString,
+        records = List(CNAMEData(Fqdn(targetFqdn)))
+      )
+      val ptrB = cname.copy(
+        zoneId = okZone.id,
+        name = "union-pg-ptr-b",
+        id = UUID.randomUUID().toString,
+        records = List(CNAMEData(Fqdn(targetFqdn)))
+      )
+
+      insert(List(targetRecord, ptrA, ptrB).map(makeTestAddChange(_, okZone)))
+
+      // sorted by fqdn ASC: union-pg-ptr-a < union-pg-ptr-b < union-pg-target
+      val page1 = recordSetCacheRepo
+        .listRecordSetData(None, None, Some(2), Some(targetFqdn), None, None, NameSort.ASC)
+        .unsafeRunSync()
+      page1.recordSets should have size 2
+      page1.nextId shouldBe defined
+
+      val page2 = recordSetCacheRepo
+        .listRecordSetData(None, page1.nextId, Some(2), Some(targetFqdn), None, None, NameSort.ASC)
+        .unsafeRunSync()
+      page2.recordSets should have size 1
+      page2.nextId shouldBe None
+
+      (page1.recordSets ++ page2.recordSets) should contain theSameElementsAs List(
+        recordSetDataWithFQDN(targetRecord, okZone),
+        recordSetDataWithFQDN(ptrA, okZone),
+        recordSetDataWithFQDN(ptrB, okZone)
+      )
+    }
+    "apply recordTypeFilter when searching by exact fqdn via the union path" in {
+      val targetName = "union-type-filter"
+      val targetFqdn = s"$targetName.${okZone.name}"
+
+      val targetRecord = aaaa.copy(zoneId = okZone.id, name = targetName, id = UUID.randomUUID().toString)
+      val cnamePtr = cname.copy(
+        zoneId = okZone.id,
+        name = "union-type-filter-ptr",
+        id = UUID.randomUUID().toString,
+        records = List(CNAMEData(Fqdn(targetFqdn)))
+      )
+
+      insert(List(targetRecord, cnamePtr).map(makeTestAddChange(_, okZone)))
+
+      val found = recordSetCacheRepo
+        .listRecordSetData(None, None, None, Some(targetFqdn), Some(Set(AAAA)), None, NameSort.ASC)
+        .unsafeRunSync()
+
+      found.recordSets shouldBe List(recordSetDataWithFQDN(targetRecord, okZone))
+    }
+    "trailing-wildcard search still returns fqdn and record_data matches via union path" in {
+      val targetName = "union-trail-target"
+      val pointerName = "union-trail-pointer"
+      val targetFqdn = s"$targetName.${okZone.name}"
+
+      val targetRecord = aaaa.copy(zoneId = okZone.id, name = targetName, id = UUID.randomUUID().toString)
+      val pointerRecord = cname.copy(
+        zoneId = okZone.id,
+        name = pointerName,
+        id = UUID.randomUUID().toString,
+        records = List(CNAMEData(Fqdn(targetFqdn)))
+      )
+
+      insert(List(targetRecord, pointerRecord).map(makeTestAddChange(_, okZone)))
+
+      // trailing wildcard: does NOT match wildcardStart regex so union path is taken
+      val filter = s"$targetName.${okZone.name.dropRight(1)}*"
+      val found = recordSetCacheRepo
+        .listRecordSetData(None, None, None, Some(filter), None, None, NameSort.ASC)
+        .unsafeRunSync()
+
+      found.recordSets should contain theSameElementsAs List(
+        recordSetDataWithFQDN(targetRecord, okZone),
+        recordSetDataWithFQDN(pointerRecord, okZone)
+      )
+    }
+    "ownerGroupFilter is respected when the union path is active" in {
+      val targetName = "union-owner-target"
+      val targetFqdn = s"$targetName.${okZone.name}"
+      val ownedGroup = "union-owner-group"
+
+      val ownedRecord = aaaa.copy(
+        zoneId = okZone.id,
+        name = targetName,
+        id = UUID.randomUUID().toString,
+        ownerGroupId = Some(ownedGroup)
+      )
+      val unownedPointer = cname.copy(
+        zoneId = okZone.id,
+        name = "union-owner-ptr",
+        id = UUID.randomUUID().toString,
+        records = List(CNAMEData(Fqdn(targetFqdn)))
+      )
+
+      insert(List(ownedRecord, unownedPointer).map(makeTestAddChange(_, okZone)))
+
+      val found = recordSetCacheRepo
+        .listRecordSetData(None, None, None, Some(targetFqdn), None, Some(ownedGroup), NameSort.ASC)
+        .unsafeRunSync()
+
+      found.recordSets shouldBe List(recordSetDataWithFQDN(ownedRecord, okZone))
     }
   }
 
