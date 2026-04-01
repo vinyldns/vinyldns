@@ -275,6 +275,7 @@ class MySqlRecordSetCacheRepository
     * @param nameSort The Sort of record Name
     * @return A list of {@link RecordSet} matching the criteria
     */
+  
   def listRecordSetData(
                          zoneId: Option[String],
                          startFrom: Option[String],
@@ -289,17 +290,22 @@ class MySqlRecordSetCacheRepository
         val maxPlusOne = maxItems.map(_ + 1)
         val wildcardStart = raw"^\s*[*%](.+[^*%])\s*$$".r
 
-        // setup optional filters
+        def escapeSqlLike(input: String): String =
+          input.replace("\\", "\\\\").replace("_", "\\_").replace("%", "\\%").replace("*", "%").replace(".", "%")
+
         val zoneAndNameFilters = (zoneId, recordNameFilter) match {
           case (Some(zId), Some(rName)) =>
-            Some(sqls"recordset.zone_id = $zId AND recordset.name LIKE ${rName.replace('*', '%')} ")
+            val escaped = escapeSqlLike(rName)
+            Some(sqls"recordset.zone_id = $zId AND recordset.name LIKE ${escaped} ")
           case (None, Some(fqdn)) => fqdn match {
             case fqdn if wildcardStart.pattern.matcher(fqdn).matches() =>
               // If we have a wildcard at the beginning only, then use the reverse_fqdn DB index
-              Some(sqls"recordset_data.reverse_fqdn LIKE ${wildcardStart.replaceAllIn(fqdn, "$1").reverse.replace('*', '%') + "%"} ")
+              val basePattern = wildcardStart.replaceAllIn(fqdn, "$1")
+              val escaped = escapeSqlLike(basePattern).reverse + "%"
+              Some(sqls"recordset_data.reverse_fqdn LIKE ${escaped} ")
             case _ =>
-              // By default, just use a LIKE query
-              Some(sqls"recordset.fqdn LIKE ${fqdn.replace('*', '%')} ")
+              val escaped = escapeSqlLike(fqdn)
+              Some(sqls"recordset.fqdn LIKE ${escaped} ")
           }
           case (Some(zId), None) => Some(sqls"recordset.zone_id = $zId ")
           case _ => None
@@ -308,7 +314,6 @@ class MySqlRecordSetCacheRepository
         val searchByZone = zoneId.fold[Boolean](false)(_ => true)
         val pagingKey = PagingKey(startFrom)
 
-        // sort by name or fqdn in given order
         val sortBy = (searchByZone, nameSort) match {
           case (true, NameSort.DESC) =>
             pagingKey.as(
@@ -336,8 +341,7 @@ class MySqlRecordSetCacheRepository
         val ownerGroupFilter =
           recordOwnerGroupFilter.map(owner => sqls"recordset.owner_group_id = $owner ")
 
-        val opts =
-          (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
+        val opts = (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
 
         val qualifiers = if (nameSort == ASC) {
           sqls"ORDER BY recordset.fqdn ASC, recordset.type ASC "
