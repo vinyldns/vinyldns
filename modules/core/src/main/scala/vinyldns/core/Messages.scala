@@ -130,7 +130,7 @@ object Messages {
 
   val DeleteRecordDataDoesNotExistErrorMsg: String = "Record data %s does not exist for \"%s\".".orConfig
 
-  val NotAuthorizedErrorMsg: String = "User \"%s\" is not authorized. Contact %s owner group: %s at %s to make DNS changes.".orConfig
+  val NotAuthorizedErrorMsg: String = "The record \"%s\" is owned by the [%s] group(%s). Only members of this group may update the record. Please contact them for assistance: %s.".orConfig
 
   val InvalidIPv4CNameErrorMsg: String = "Invalid Cname: \"%s\", Valid CNAME record data should not be an IP address".orConfig
 
@@ -139,6 +139,13 @@ object Messages {
   val InvalidReverseCnameErrorMsg: String = "Invalid Cname: \"%s\", valid cnames must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.".orConfig
 
   val InvalidUpdateRequestErrorMsg: String = "Cannot perform request for the record \"%s\". Add and Delete for the record with same record data exists in the batch.".orConfig
+
+  /* Deprecated errors */
+  val ExistingMultiRecordErrorMsg: String = "RecordSet with name %s and type %s cannot be updated in a single Batch Change because it contains multiple DNS records (%s).".orConfig
+
+  val NewMultiRecordErrorMsg: String = "Multi-record recordsets are not enabled for this instance of VinylDNS. Cannot create a new record set with multiple records for inputName %s and type %s.".orConfig
+
+  val UserIsNotAuthorizedMsg: String = "User \"%s\" is not authorized.".orConfig
 
   /* RecordSetValidations.scala */
   val RecordNameFilterErrorMsg: String = "Record Name Filter field must contain at least two letters or numbers and cannot have wildcard at both the start and end.".orConfig
@@ -585,4 +592,5 @@ object Messages {
   val nonExistentRecordDeleteMessage = "This record does not exist. No further action is required."
 
   val nonExistentRecordDataDeleteMessage = "Record data entered does not exist. No further action is required."
+
 }

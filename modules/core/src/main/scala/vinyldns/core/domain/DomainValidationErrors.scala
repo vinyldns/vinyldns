@@ -17,7 +17,7 @@
 package vinyldns.core.domain
 
 import vinyldns.core.domain.batch.OwnerType.OwnerType
-import vinyldns.core.domain.record.{RecordData, RecordType}
+import vinyldns.core.domain.record.{RecordData, RecordType, RecordSet}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.Messages._
 
@@ -137,19 +137,25 @@ final case class CnameIsNotUniqueError(name: String, typ: RecordType)
 }
 
 final case class UserIsNotAuthorizedError(
-    userName: String,
+    recordName: String,
     ownerGroupId: String,
-    ownerType: OwnerType,
+    ownerType: OwnerType,              
     contactEmail: Option[String] = None,
     ownerGroupName: Option[String] = None
 ) extends DomainValidationError {
-  def message: String =
+
+  def message: String = {
+    val groupName = ownerGroupName.getOrElse(ownerGroupId)
+    val groupUrl  = s"/groups/$ownerGroupId"
+    val contact   = contactEmail.getOrElse("")
+
     NotAuthorizedErrorMsg.format(
-      userName,
-      ownerType.toString.toLowerCase,
-      ownerGroupName.getOrElse(ownerGroupId),
-      contactEmail.getOrElse("")
+      recordName,
+      groupName,
+      groupUrl,
+      contact
     )
+  }
 }
 
 final case class RecordNameNotUniqueInBatch(name: String, typ: RecordType)
@@ -195,4 +201,19 @@ final case class DeleteRecordDataDoesNotExist(inputName: String, recordData: Rec
   def message: String = DeleteRecordDataDoesNotExistErrorMsg.format(recordData, inputName)
 }
 
+// Deprecated errors
+final case class ExistingMultiRecordError(fqdn: String, record: RecordSet)
+    extends DomainValidationError {
+  def message: String = ExistingMultiRecordErrorMsg.format(fqdn, record.typ.toString, record.records.length)
+}
+
+final case class NewMultiRecordError(changeName: String, changeType: RecordType)
+    extends DomainValidationError {
+  def message: String = NewMultiRecordErrorMsg.format(changeName, changeType)
+}
+
+// deprecated in favor of more informative error message
+final case class UserIsNotAuthorized(userName: String) extends DomainValidationError {
+  def message: String = UserIsNotAuthorizedMsg.format(userName)
+}
 

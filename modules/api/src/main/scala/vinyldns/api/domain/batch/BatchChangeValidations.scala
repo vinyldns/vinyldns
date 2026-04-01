@@ -609,7 +609,7 @@ class BatchChangeValidations(
       .leftMap(
         _ =>
           UserIsNotAuthorizedError(
-            authPrincipal.signedInUser.userName,
+            input.recordName,
             input.zone.adminGroupId,
             OwnerType.Zone,
             Some(input.zone.email)
@@ -639,10 +639,10 @@ class BatchChangeValidations(
         _ =>
           ownerGroupId match {
             case Some(id) if input.zone.shared =>
-              UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, OwnerType.Record)
+              UserIsNotAuthorizedError(input.recordName, id, OwnerType.Record)
             case _ =>
               UserIsNotAuthorizedError(
-                authPrincipal.signedInUser.userName,
+                input.recordName,
                 input.zone.adminGroupId,
                 OwnerType.Zone,
                 Some(input.zone.email)
@@ -672,10 +672,10 @@ class BatchChangeValidations(
         _ =>
           ownerGroupId match {
             case Some(id) if input.zone.shared =>
-              UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, OwnerType.Record)
+              UserIsNotAuthorizedError(input.recordName, id, OwnerType.Record)
             case _ =>
               UserIsNotAuthorizedError(
-                authPrincipal.signedInUser.userName,
+                input.recordName,
                 input.zone.adminGroupId,
                 OwnerType.Zone,
                 Some(input.zone.email)
