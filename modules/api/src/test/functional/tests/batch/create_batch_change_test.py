@@ -800,7 +800,6 @@ def test_create_batch_change_partial_failure(shared_zone_test_context):
     }
 
     to_delete = []
-
     try:
         dns_add(shared_zone_test_context.ok_zone, "direct-to-backend", 200, "A", "1.2.3.4")
         result = client.create_batch_change(batch_change_input, status=202)
