@@ -57,6 +57,14 @@ class FrontendController @Inject() (
     )
   }
 
+  def settings(): Action[AnyContent] = userAction.async { implicit request =>
+    Future(
+      Ok(
+        views.html.settings.settings(request.user.userName)
+      )
+    )
+  }
+
   def viewAllGroups(): Action[AnyContent] = userAction.async { implicit request =>
     Future(Ok(views.html.groups.groups(request.user.userName)))
   }
