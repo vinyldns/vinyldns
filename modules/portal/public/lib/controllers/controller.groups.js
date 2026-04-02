@@ -216,6 +216,8 @@ $scope.refresh = function () {
         try {
             if ($scope.query === "%" || $scope.query === "*") {
                 throw new Error("User name should at least one other character for wildcard search");
+            } else if ($scope.query === "") {
+                throw new Error("Please enter a user name to search for groups");
             } else if (
                 ($scope.query.startsWith("*") && $scope.query.endsWith("*")) ||
                 ($scope.query.startsWith("%") && $scope.query.endsWith("%"))
@@ -225,45 +227,40 @@ $scope.refresh = function () {
                 userNameQuery = $scope.query.substring(0, $scope.query.length - 1);
             } else if ($scope.query.startsWith("%") || $scope.query.startsWith("*")) {
                 userNameQuery = $scope.query.substring(1);
-            } else if (
-                $scope.query.startsWith("%") && $scope.query.endsWith("%")
-            ) {
-                userNameQuery = $scope.query.substring(1, $scope.query.length - 1);
-            } else if (
-                $scope.query.startsWith("*") && $scope.query.endsWith("*")
-            ) {
-                userNameQuery = $scope.query.substring(1, $scope.query.length - 1);
-            } else if ($scope.query === "") {
-                throw new Error("Please enter a user name to search for groups");
             } else {
                 userNameQuery = $scope.query;
             }
+
             function success(response) {
                 $log.debug('profileService::getZoneUserDataByName-success');
+
                 $scope.response = response.data;
                 const groupMap = $scope.response.groupMap || {};
                 const groupIds = Object.keys(groupMap);
+
                 $log.debug("getGroupsByUser:groupIds: ", groupIds);
                 $log.debug("getGroupsByUser:groupMap:", groupMap);
-                groupIds.forEach((groupId) => {
-                    groupsService.getGroup(groupId)
-                        .then(function (result) {
-                            groupsSearchByUser.push(result.data);
-                        });
+
+                const groupPromises = groupIds.map((groupId) =>
+                    groupsService.getGroup(groupId).then(result => result.data)
+                );
+
+                return Promise.all(groupPromises).then((groupsSearchByUser) => {
+                    $log.debug('getGroupsByUser:refresh-success', groupsSearchByUser);
+                    updateAllGroupDisplay(groupsSearchByUser);
                 });
-                $log.debug('getGroupsByUser:refresh-success', groupsSearchByUser);
-                updateAllGroupDisplay(groupsSearchByUser);
             }
+
             return profileService
                 .getUserDataById(userNameQuery)
                 .then(success)
                 .catch(function (error) {
                     handleError(error, 'profileService::getZoneUserDataById-failure');
                 });
-        } catch (error) {
-            alert(error.message);
-        }
 
+        } catch (error) {
+            $log.error(error.message);
+        }
     } else {
         groupsService
             .getGroupsAbridged(
