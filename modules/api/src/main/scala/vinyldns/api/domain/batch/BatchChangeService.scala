@@ -29,6 +29,7 @@ import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.backend.dns.DnsConversions._
+import vinyldns.api.domain.membership.MembershipService
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus.BatchChangeApprovalStatus
@@ -45,6 +46,7 @@ import vinyldns.core.notifier.{AllNotifiers, Notification}
 object BatchChangeService {
   def apply(
       dataAccessor: ApiDataAccessor,
+      membershipService: MembershipService,
       batchChangeValidations: BatchChangeValidationsAlgebra,
       batchChangeConverter: BatchChangeConverterAlgebra,
       manualReviewEnabled: Boolean,
@@ -57,6 +59,7 @@ object BatchChangeService {
     new BatchChangeService(
       dataAccessor.zoneRepository,
       dataAccessor.recordSetRepository,
+      membershipService,
       dataAccessor.groupRepository,
       batchChangeValidations,
       dataAccessor.batchChangeRepository,
@@ -74,6 +77,7 @@ object BatchChangeService {
 class BatchChangeService(
     zoneRepository: ZoneRepository,
     recordSetRepository: RecordSetRepository,
+    membershipService: MembershipService,
     groupRepository: GroupRepository,
     batchChangeValidations: BatchChangeValidationsAlgebra,
     batchChangeRepo: BatchChangeRepository,
@@ -583,6 +587,7 @@ class BatchChangeService(
   def listBatchChangeSummaries(
       auth: AuthPrincipal,
       userName: Option[String] = None,
+      groupName: Option[String] = None,
       dateTimeStartRange: Option[String] = None,
       dateTimeEndRange: Option[String] = None,
       startFrom: Option[Int] = None,
@@ -596,8 +601,11 @@ class BatchChangeService(
     val startDateTime = if(dateTimeStartRange.isDefined && dateTimeStartRange.get.isEmpty) None else dateTimeStartRange
     val endDateTime = if(dateTimeEndRange.isDefined && dateTimeEndRange.get.isEmpty) None else dateTimeEndRange
     for {
+      mId <- membershipService.listMyGroups(groupName, None, maxItems,auth,false,false).
+        map(_.groups.map(_.members.map(_.id).mkString("', '")).mkString).getOrElse("None").toBatchResult
+      uid = if (groupName.isDefined) Some(mId) else userId
       listResults <- batchChangeRepo
-        .getBatchChangeSummaries(userId, submitterUserName, startDateTime, endDateTime, startFrom, maxItems, batchStatus, approvalStatus)
+        .getBatchChangeSummaries(uid, submitterUserName, startDateTime, endDateTime, startFrom, maxItems, batchStatus, approvalStatus)
         .toBatchResult
       rsOwnerGroupIds = listResults.batchChanges.flatMap(_.ownerGroupId).toSet
       rsOwnerGroups <- groupRepository.getGroups(rsOwnerGroupIds).toBatchResult

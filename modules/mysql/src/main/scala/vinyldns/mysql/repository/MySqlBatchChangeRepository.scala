@@ -272,22 +272,17 @@ class MySqlBatchChangeRepository
           val sb = new StringBuilder
           sb.append(GET_BATCH_CHANGE_SUMMARY_BASE)
 
-          val uid = userId.map(u => s"bc.user_id = '$u'")
+          val uid = userId.map(u => s"bc.user_id in ('$u')")
           val as = approvalStatus.map(a => s"bc.approval_status = '${fromApprovalStatus(a)}'")
           val bs = batchStatus.map(b => s"bc.batch_status = '${fromBatchStatus(b)}'")
           val uname = userName.map(uname => s"bc.user_name = '$uname'")
-          val dtRange = if(dateTimeStartRange.isDefined && dateTimeEndRange.isDefined) {
+          val dtRange = if(dateTimeStartRange.isDefined && dateTimeEndRange.isDefined)
             Some(s"(bc.created_time >= '${dateTimeStartRange.get}' AND bc.created_time <= '${dateTimeEndRange.get}')")
-          } else {
-            None
-          }
+            else None
           val opts = uid ++ as ++ bs ++ uname ++ dtRange
-
           if (opts.nonEmpty) sb.append("WHERE ").append(opts.mkString(" AND "))
-
           sb.append(GET_BATCH_CHANGE_SUMMARY_END)
           val query = sb.toString()
-
           val queryResult =
             SQL(query)
               .bindByName('startFrom -> startValue, 'maxItems -> (maxItems + 1))
