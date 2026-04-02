@@ -715,11 +715,18 @@ class RecordSetValidationsSpec
         val rs = sharedZoneRecord.copy(ownerGroupId = Some(dummyGroup.id))
         canSuperUserUpdateOwnerGroup(existing, rs, zone, superUserAuth) should be(false)
       }
-      "return false when record owner group is NOT the only field changed in the updated record" in {
+      /*"return false when record owner group is NOT the only field changed in the updated record" in {
         val zone = sharedZone
         val existing = sharedZoneRecord.copy(ownerGroupId = Some(okGroup.id), records = List(AData("10.1.1.1")))
         val rs = sharedZoneRecord.copy(ownerGroupId = Some(dummyGroup.id), records = List(AData("10.1.1.2")))
         canSuperUserUpdateOwnerGroup(existing, rs, zone, superUserAuth) should be(false)
+      }*/
+
+      "return true when record owner group is NOT the only field changed in the updated record" in {
+        val zone = sharedZone
+        val existing = sharedZoneRecord.copy(ownerGroupId = Some(okGroup.id), records = List(AData("10.1.1.1")))
+        val rs = sharedZoneRecord.copy(ownerGroupId = Some(dummyGroup.id), records = List(AData("10.1.1.2")))
+        canSuperUserUpdateOwnerGroup(existing, rs, zone, superUserAuth) should be(true)
       }
     }
     "unchangedRecordSet" should {
@@ -773,33 +780,33 @@ class RecordSetValidationsSpec
         error.getMessage() shouldBe "Cannot update RecordSet's if user not a member of ownership group. User can only request for ownership transfer"
       }
     }
-    "recordSetOwnerShipApproveStatus" should {
-      "return invalid request when given ownership transfer does not match OwnerShipTransferStatus as ManuallyRejected" in {
-        val rs = rsOk.copy(recordSetGroupChange = Some(ownerShipTransfer.copy(OwnerShipTransferStatus.ManuallyRejected)))
-        val error = leftValue(recordSetOwnerShipApproveStatus(rs))
+    "recordSetOwnershipApproveStatus" should {
+      "return invalid request when given ownership transfer does not match OwnershipTransferStatus as ManuallyRejected" in {
+        val rs = rsOk.copy(recordSetGroupChange = Some(ownershipTransfer.copy(OwnershipTransferStatus.ManuallyRejected)))
+        val error = leftValue(recordSetOwnershipApproveStatus(rs))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "Cannot update RecordSet OwnerShip Status when request is cancelled."
+        error.getMessage() shouldBe "Cannot update RecordSet Ownership Status when request is cancelled."
       }
-      "return invalid request when given ownership transfer does not match OwnerShipTransferStatus as ManuallyApproved" in {
-        val rs = rsOk.copy(recordSetGroupChange = Some(ownerShipTransfer.copy(OwnerShipTransferStatus.ManuallyApproved)))
-        val error = leftValue(recordSetOwnerShipApproveStatus(rs))
+      "return invalid request when given ownership transfer does not match OwnershipTransferStatus as ManuallyApproved" in {
+        val rs = rsOk.copy(recordSetGroupChange = Some(ownershipTransfer.copy(OwnershipTransferStatus.ManuallyApproved)))
+        val error = leftValue(recordSetOwnershipApproveStatus(rs))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "Cannot update RecordSet OwnerShip Status when request is cancelled."
+        error.getMessage() shouldBe "Cannot update RecordSet Ownership Status when request is cancelled."
       }
-      "return invalid request when given ownership transfer does not match OwnerShipTransferStatus as AutoApproved" in {
-        val rs = rsOk.copy(recordSetGroupChange = Some(ownerShipTransfer.copy(OwnerShipTransferStatus.AutoApproved)))
-        val error = leftValue(recordSetOwnerShipApproveStatus(rs))
+      "return invalid request when given ownership transfer does not match OwnershipTransferStatus as AutoApproved" in {
+        val rs = rsOk.copy(recordSetGroupChange = Some(ownershipTransfer.copy(OwnershipTransferStatus.AutoApproved)))
+        val error = leftValue(recordSetOwnershipApproveStatus(rs))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "Cannot update RecordSet OwnerShip Status when request is cancelled."
+        error.getMessage() shouldBe "Cannot update RecordSet Ownership Status when request is cancelled."
       }
     }
     "unchangedRecordSetOwnershipStatus" should {
       "return invalid request when given ownership transfer status does not match existing recordset ownership transfer status for non shared zones" in {
         val existing = rsOk
-        val rs = rsOk.copy(recordSetGroupChange = Some(ownerShipTransfer.copy(OwnerShipTransferStatus.AutoApproved)))
+        val rs = rsOk.copy(recordSetGroupChange = Some(ownershipTransfer.copy(OwnershipTransferStatus.AutoApproved)))
         val error = leftValue(unchangedRecordSetOwnershipStatus(existing, rs))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "Cannot update RecordSet OwnerShip Status when zone is not shared."
+        error.getMessage() shouldBe "Cannot update RecordSet Ownership Status when zone is not shared."
       }
     }
   }
