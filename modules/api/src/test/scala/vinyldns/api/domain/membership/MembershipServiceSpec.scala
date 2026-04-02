@@ -35,6 +35,9 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.RecordSetRepository
+import vinyldns.core.notifier.{AllNotifiers, Notification, Notifier}
+
+import scala.concurrent.ExecutionContext
 
 class MembershipServiceSpec
   extends AnyWordSpec
@@ -43,6 +46,7 @@ class MembershipServiceSpec
     with BeforeAndAfterEach
     with EitherMatchers {
 
+  private implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   private val mockGroupRepo = mock[GroupRepository]
   private val mockUserRepo = mock[UserRepository]
   private val mockMembershipRepo = mock[MembershipRepository]
@@ -51,6 +55,8 @@ class MembershipServiceSpec
   private val mockRecordSetRepo = mock[RecordSetRepository]
   private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com","*dummy.com"),2)
   private val mockValidEmailConfigNew = ValidEmailConfig(valid_domains = List(),2)
+  private val mockNotifier = mock[Notifier]
+  private val mockNotifiers = AllNotifiers(List(mockNotifier))
 
   private val backingService = new MembershipService(
     mockGroupRepo,
@@ -59,7 +65,8 @@ class MembershipServiceSpec
     mockZoneRepo,
     mockGroupChangeRepo,
     mockRecordSetRepo,
-    mockValidEmailConfig
+    mockValidEmailConfig,
+    mockNotifiers
   )
   private val backingServiceNew = new MembershipService(
     mockGroupRepo,
@@ -68,7 +75,8 @@ class MembershipServiceSpec
     mockZoneRepo,
     mockGroupChangeRepo,
     mockRecordSetRepo,
-    mockValidEmailConfigNew
+    mockValidEmailConfigNew,
+    mockNotifiers
   )
   private val underTest = spy(backingService)
   private val underTestNew = spy(backingServiceNew)
@@ -90,7 +98,7 @@ class MembershipServiceSpec
   private val existingGroup = okGroup.copy(
     id = "id",
     memberIds = Set("user1", "user2", "user3", "user4"),
-    adminUserIds = Set("user1", "user2", "ok")
+    adminUserIds = Set("user1", "user2", "ok", "admin")
   )
 
   // the update will remove users 3 and 4, add users 5 and 6, as well as a new admin user 7 and remove user2 as admin
@@ -488,6 +496,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync()
@@ -549,6 +558,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
+              updatedInfo.membershipAccessStatus,
               dummyAuth
             )
             .value.unsafeRunSync().swap.toOption.get
@@ -574,6 +584,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync().swap.toOption.get
@@ -599,6 +610,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync().swap.toOption.get
@@ -618,6 +630,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync().swap.toOption.get
@@ -645,6 +658,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               updatedInfo.memberIds,
               updatedInfo.adminUserIds,
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync().swap.toOption.get
@@ -666,6 +680,7 @@ class MembershipServiceSpec
               updatedInfo.description,
               Set(),
               Set(),
+              updatedInfo.membershipAccessStatus,
               okAuth
             )
             .value.unsafeRunSync().swap.toOption.get
@@ -1406,6 +1421,225 @@ class MembershipServiceSpec
         val error = underTest.getUserDetails("notfound", okAuth).value.unsafeRunSync().swap.toOption.get
         error shouldBe a[UserNotFoundError]
       }
+    }
+  }
+  "requestGroupMember" should {
+    "create a pending group membership request successfully" in {
+      val userId = "testUser"
+      val description = Some("Please add me to the group")
+      val status = "Request"
+      val groupId = okGroup.id
+      val newGroup = existingGroup.pendingReviewMember(okUser, description, okAuth)
+
+      doReturn(IO.pure(Some(existingGroup))).when(mockGroupRepo).getGroup(groupId)
+      doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(userId)
+      doReturn(IO.pure(newGroup)).when(mockGroupRepo).save(any[DB], any[Group])
+      doReturn(IO.pure(okGroupChangeUpdate)).when(mockGroupChangeRepo).save(any[DB], any[GroupChange])
+      doReturn(IO.pure(Set())).when(mockMembershipRepo).saveMembers(any[DB], anyString, any[Set[String]], isAdmin = anyBoolean)
+      doReturn(IO.pure(Set())).when(mockMembershipRepo).removeMembers(any[DB], anyString, any[Set[String]])
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
+
+      val result = underTest.requestGroupMember(userId, description, status, groupId, okAuth).value.unsafeRunSync().toOption.get
+
+      result.membershipAccessStatus.map(_.pendingReviewMember.head.userId) shouldBe newGroup.membershipAccessStatus.map(_.pendingReviewMember.head.userId)
+      result.membershipAccessStatus.map(_.pendingReviewMember.head.status) shouldBe newGroup.membershipAccessStatus.map(_.pendingReviewMember.head.status)
+      result.membershipAccessStatus.map(_.pendingReviewMember.head.description) shouldBe newGroup.membershipAccessStatus.map(_.pendingReviewMember.head.description)
+      result.membershipAccessStatus.map(_.pendingReviewMember.head.submittedBy) shouldBe newGroup.membershipAccessStatus.map(_.pendingReviewMember.head.submittedBy)
+      verify(mockGroupRepo).save(any[DB], any[Group])
+      verify(mockGroupChangeRepo).save(any[DB], any[GroupChange])
+    }
+
+    "approve a group membership request successfully when user is admin" in {
+      val userId = "testUser"
+      val description = Some("Approving request")
+      val status = "Approved"
+      val groupId = okGroup.id
+      val newGroup = existingGroup.approvedMember(okUser, description, okAuth)
+
+      doReturn(IO.pure(Some(existingGroup))).when(mockGroupRepo).getGroup(groupId)
+      doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(userId)
+      doReturn(IO.pure(newGroup)).when(mockGroupRepo).save(any[DB], any[Group])
+      doReturn(IO.pure(okGroupChangeUpdate)).when(mockGroupChangeRepo).save(any[DB], any[GroupChange])
+      doReturn(IO.pure(Set())).when(mockMembershipRepo).saveMembers(any[DB], anyString, any[Set[String]], isAdmin = anyBoolean)
+      doReturn(IO.pure(Set())).when(mockMembershipRepo).removeMembers(any[DB], anyString, any[Set[String]])
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
+
+      val result = underTest.requestGroupMember(userId, description, status, groupId, okAuth).value.unsafeRunSync().toOption.get
+
+      result.membershipAccessStatus.map(_.approvedMember.head.userId) shouldBe newGroup.membershipAccessStatus.map(_.approvedMember.head.userId)
+      result.membershipAccessStatus.map(_.approvedMember.head.status) shouldBe newGroup.membershipAccessStatus.map(_.approvedMember.head.status)
+      result.membershipAccessStatus.map(_.approvedMember.head.description) shouldBe newGroup.membershipAccessStatus.map(_.approvedMember.head.description)
+      result.membershipAccessStatus.map(_.approvedMember.head.submittedBy) shouldBe newGroup.membershipAccessStatus.map(_.approvedMember.head.submittedBy)
+      verify(mockGroupRepo).save(any[DB], any[Group])
+      verify(mockGroupChangeRepo).save(any[DB], any[GroupChange])
+    }
+
+    "reject a group membership request successfully when user is admin" in {
+      val userId = "testUser"
+      val description = Some("Rejecting request")
+      val status = "Rejected"
+      val groupId = okGroup.id
+      val newGroup = existingGroup.rejectedMember(okUser, description, okAuth)
+
+      doReturn(IO.pure(Some(existingGroup))).when(mockGroupRepo).getGroup(groupId)
+      doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(userId)
+      doReturn(IO.pure(newGroup)).when(mockGroupRepo).save(any[DB], any[Group])
+      doReturn(IO.pure(okGroupChangeUpdate)).when(mockGroupChangeRepo).save(any[DB], any[GroupChange])
+      doReturn(IO.pure(Set())).when(mockMembershipRepo).saveMembers(any[DB], anyString, any[Set[String]], isAdmin = anyBoolean)
+      doReturn(IO.pure(Set())).when(mockMembershipRepo).removeMembers(any[DB], anyString, any[Set[String]])
+      doReturn(IO.unit).when(mockNotifier).notify(any[Notification[_]])
+
+      val result = underTest.requestGroupMember(userId, description, status, groupId, okAuth).value.unsafeRunSync().toOption.get
+
+      result.membershipAccessStatus.map(_.rejectedMember.head.userId) shouldBe newGroup.membershipAccessStatus.map(_.rejectedMember.head.userId)
+      result.membershipAccessStatus.map(_.rejectedMember.head.status) shouldBe newGroup.membershipAccessStatus.map(_.rejectedMember.head.status)
+      result.membershipAccessStatus.map(_.rejectedMember.head.description) shouldBe newGroup.membershipAccessStatus.map(_.rejectedMember.head.description)
+      result.membershipAccessStatus.map(_.rejectedMember.head.submittedBy) shouldBe newGroup.membershipAccessStatus.map(_.rejectedMember.head.submittedBy)
+      verify(mockGroupRepo).save(any[DB], any[Group])
+      verify(mockGroupChangeRepo).save(any[DB], any[GroupChange])
+    }
+
+    "return an error when the user is already a member of the group" in {
+      val userId = "user1"
+      val description = Some("Please add me to the group")
+      val status = "Request"
+      val groupId = okGroup.id
+
+      doReturn(IO.pure(Some(existingGroup))).when(mockGroupRepo).getGroup(groupId)
+      doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(userId)
+      val error = underTest.requestGroupMember(userId, description, status, groupId, okAuth).value.unsafeRunSync().swap.toOption.get
+
+      error shouldBe a[GroupAlreadyExistsError]
+      verify(mockGroupRepo, never()).save(any[DB], any[Group])
+      verify(mockGroupChangeRepo, never()).save(any[DB], any[GroupChange])
+    }
+
+    "return an error when the user is already a admin of the group" in {
+      val userId = "admin"
+      val description = Some("Please add me to the group")
+      val status = "Request"
+      val groupId = okGroup.id
+
+      doReturn(IO.pure(Some(existingGroup))).when(mockGroupRepo).getGroup(groupId)
+      doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(userId)
+      val error = underTest.requestGroupMember(userId, description, status, groupId, okAuth).value.unsafeRunSync().swap.toOption.get
+
+      error shouldBe a[GroupAlreadyExistsError]
+      verify(mockGroupRepo, never()).save(any[DB], any[Group])
+      verify(mockGroupChangeRepo, never()).save(any[DB], any[GroupChange])
+    }
+
+    "return an error when the user is not authorized to approve a request" in {
+
+      val userId = "testUser"
+      val description = Some("Approving request")
+      val status = "Approved"
+      val groupId = okGroup.id
+
+      doReturn(IO.pure(Some(existingGroup))).when(mockGroupRepo).getGroup(groupId)
+      doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(userId)
+
+      val error = underTest.requestGroupMember(userId, description, status, groupId, dummyAuth).value.unsafeRunSync().swap.toOption.get
+
+      error shouldBe a[NotAuthorizedError]
+      verify(mockGroupRepo, never()).save(any[DB], any[Group])
+      verify(mockGroupChangeRepo, never()).save(any[DB], any[GroupChange])
+    }
+
+    "return an error when the user is not authorized to reject a request" in {
+      val userId = "testUser"
+      val description = Some("Rejecting request")
+      val status = "Rejected"
+      val groupId = okGroup.id
+
+      doReturn(IO.pure(Some(existingGroup))).when(mockGroupRepo).getGroup(groupId)
+      doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(userId)
+
+      val error = underTest.requestGroupMember(userId, description, status, groupId, dummyAuth).value.unsafeRunSync().swap.toOption.get
+
+      error shouldBe a[NotAuthorizedError]
+      verify(mockGroupRepo, never()).save(any[DB], any[Group])
+      verify(mockGroupChangeRepo, never()).save(any[DB], any[GroupChange])
+    }
+
+    "return an error when an invalid status is provided" in {
+
+      val userId = "testUser"
+      val description = Some("Invalid status request")
+      val status = "InvalidStatus"
+      val groupId = "testGroup"
+
+      doReturn(IO.pure(Some(existingGroup))).when(mockGroupRepo).getGroup(groupId)
+      doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(userId)
+
+      val error = underTest.requestGroupMember(userId, description, status, groupId, okAuth).value.unsafeRunSync().swap.toOption.get
+
+      error shouldBe a[InvalidGroupRequestError]
+      verify(mockGroupRepo, never()).save(any[DB], any[Group])
+      verify(mockGroupChangeRepo, never()).save(any[DB], any[GroupChange])
+    }
+
+    "return an error when the group doesn't exist" in {
+      val userId = "testUser"
+      val description = Some("Please add me to the group")
+      val status = "Request"
+      val groupId = "nonExistentGroup"
+
+      doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(groupId)
+
+      val error = underTest.requestGroupMember(userId, description, status, groupId, okAuth).value.unsafeRunSync().swap.toOption.get
+
+      error shouldBe a[GroupNotFoundError]
+      verify(mockGroupRepo, never()).save(any[DB], any[Group])
+      verify(mockGroupChangeRepo, never()).save(any[DB], any[GroupChange])
+    }
+
+    "return an error when the user doesn't exist" in {
+      val userId = "nonExistentUser"
+      val description = Some("Please add me to the group")
+      val status = "Request"
+      val groupId = "testGroup"
+
+      doReturn(IO.pure(Some(existingGroup))).when(mockGroupRepo).getGroup(groupId)
+      doReturn(IO.pure(None)).when(mockUserRepo).getUserByIdOrName(userId)
+
+      val error = underTest.requestGroupMember(userId, description, status, groupId, okAuth).value.unsafeRunSync().swap.toOption.get
+
+      error shouldBe a[UserNotFoundError]
+      verify(mockGroupRepo, never()).save(any[DB], any[Group])
+      verify(mockGroupChangeRepo, never()).save(any[DB], any[GroupChange])
+    }
+
+    "return an error when the user already has a pending membership request" in {
+      val userId = "pendingUser"
+      val description = Some("Please add me to the group")
+      val status = "Request"
+      val groupId = "testGroup"
+
+      val pendingMemberAccess = MembershipAccess(
+        userId = userId,
+        submittedBy = "anotherUser",
+        status = "PendingReview",
+        description = Some("Previous request")
+      )
+
+      val groupWithPendingRequest = existingGroup.copy(
+        membershipAccessStatus = Some(MembershipAccessStatus(
+          pendingReviewMember = Set(pendingMemberAccess),
+          rejectedMember = Set(),
+          approvedMember = Set()
+        ))
+      )
+
+      doReturn(IO.pure(Some(groupWithPendingRequest))).when(mockGroupRepo).getGroup(groupId)
+      doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(userId)
+
+      val result = underTest.requestGroupMember(userId, description, status, groupId, okAuth).value.unsafeRunSync()
+
+      result should be(left)
+      val error = result.swap.toOption.get
+      error shouldBe a[GroupAlreadyExistsError]
+      error.getMessage should include(s"User $userId already has a pending membership request")
     }
   }
 }

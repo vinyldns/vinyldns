@@ -21,7 +21,12 @@ class ListGroupsTestContext(object):
                     "name": "{0}-{1:0>3}".format(self.group_prefix, index),
                     "email": "test@test.com",
                     "members": [{"id": "list-group-user"}],
-                    "admins": [{"id": "list-group-user"}]
+                    "admins": [{"id": "list-group-user"}],
+                    "membershipAccessStatus": {
+                        "pendingReviewMember": [],
+                        "rejectedMember": [],
+                        "approvedMember": []
+                    }
                 }
                 self.client.create_group(new_group, status=200)
         except Exception:

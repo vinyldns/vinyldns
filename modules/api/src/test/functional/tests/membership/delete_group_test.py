@@ -15,7 +15,12 @@ def test_delete_group_success(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         saved_group = client.create_group(new_group, status=200)
         result = client.delete_group(saved_group["id"], status=200)
@@ -46,7 +51,12 @@ def test_delete_group_that_is_already_deleted(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         saved_group = client.create_group(new_group, status=200)
 
@@ -72,7 +82,12 @@ def test_delete_admin_group(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
 
         result_group = client.create_group(new_group, status=200)
@@ -127,7 +142,12 @@ def test_delete_group_not_authorized(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         saved_group = ok_client.create_group(new_group, status=200)
         not_admin_client.delete_group(saved_group["id"], status=403)
