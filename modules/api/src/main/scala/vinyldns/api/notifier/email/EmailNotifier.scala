@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory
 import javax.mail.internet.{InternetAddress, MimeMessage}
 import javax.mail.{Address, Message, Session}
 import scala.util.Try
-import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData, MXData, OwnerShipTransferStatus, PTRData, RecordData, RecordSetChange, TXTData}
-import vinyldns.core.domain.record.OwnerShipTransferStatus.OwnerShipTransferStatus
+import vinyldns.core.domain.record.{AAAAData, AData, CNAMEData, MXData, OwnershipTransferStatus, PTRData, RecordData, RecordSetChange, TXTData}
+import vinyldns.core.domain.record.OwnershipTransferStatus.OwnershipTransferStatus
 
 import java.time.format.{DateTimeFormatter, FormatStyle}
 import vinyldns.core.domain.batch.BatchChangeStatus._
@@ -115,7 +115,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       ccEmails = ownerUsers.collect { case UserWithEmail(address) => address }
       _ <- send(toEmails: _*)(ccEmails: _*) { message =>
         message.setSubject(s"VinylDNS RecordSet Ownership transfer")
-        message.setContent(formatRecordSetOwnerShipTransfer(rsc, currentUser, currentGroup, ownerGroup), "text/html")
+        message.setContent(formatRecordSetOwnershipTransfer(rsc, currentUser, currentGroup, ownerGroup), "text/html")
         message
       }
     } yield ()
@@ -169,7 +169,7 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
       case (_, status) => status.toString
     }
 
-  def formatRecordSetOwnerShipTransfer(rsc: RecordSetChange,
+  def formatRecordSetOwnershipTransfer(rsc: RecordSetChange,
                                        currentUser: Option[User],
                                        currentGroup: Option[Group],
                                        ownerGroup: Option[Group]
@@ -197,23 +197,23 @@ class EmailNotifier(config: EmailNotifierConfig, session: Session, userRepositor
                  | </table><br/>
                  | <b>Current Owner Group: </b> ${currentGroup.get.name} <br/><br/>
                  | <b>Transfer Owner Group: </b> ${ownerGroup.get.name} <br/><br/>
-                 | <b>Status: ${formatOwnerShipStatus(rsc.recordSet.recordSetGroupChange.map(_.ownerShipTransferStatus).get,rsc.zone,portalHost)}</b>
+                 | <b>Status: ${formatOwnershipStatus(rsc.recordSet.recordSetGroupChange.map(_.ownershipTransferStatus).get,rsc.zone,portalHost)}</b>
                  | <br/><br/>
                """.stripMargin)
     sb.toString
   }
 
-  def formatOwnerShipStatus(status: OwnerShipTransferStatus, zone:Zone, portalHost: String): String =
+  def formatOwnershipStatus(status: OwnershipTransferStatus, zone:Zone, portalHost: String): String =
     status match {
-      case OwnerShipTransferStatus.ManuallyRejected => "<i style=\"color: red;\">Rejected</i>"
-      case OwnerShipTransferStatus.PendingReview => s"""<i style=\"color: blue;\">Pending Review </i> <br/><br/>
+      case OwnershipTransferStatus.ManuallyRejected => "<i style=\"color: red;\">Rejected</i>"
+      case OwnershipTransferStatus.PendingReview => s"""<i style=\"color: blue;\">Pending Review </i> <br/><br/>
                                                     Requesting your review for the Ownership transfer. <br/>
                                                     ${if(portalHost != null)
                                                     s"""<a href="$portalHost/zones/${zone.id}">Go to Zones </a>
                                                      >>>  Search by RecordSet Name  >>>  Click Close Request </i><br/>"""
                                                     else s""}"""
-      case OwnerShipTransferStatus.ManuallyApproved => "<i style=\"color: green;\">Approved</i>"
-      case OwnerShipTransferStatus.Cancelled => "<i style=\"color: dark grey;\">Cancelled</i>"
+      case OwnershipTransferStatus.ManuallyApproved => "<i style=\"color: green;\">Approved</i>"
+      case OwnershipTransferStatus.Cancelled => "<i style=\"color: dark grey;\">Cancelled</i>"
     }
 
   def formatSingleChange(sc: SingleChange, index: Int): String = sc match {

@@ -50,10 +50,10 @@ vinyldns {
       driver = "org.mariadb.jdbc.Driver"
   
       # the URL used to create the schema, typically this will be without the "database" name
-      migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass"
+      migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass&useMysqlMetadata=true"
   
       # the main connection URL
-      url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass"
+      url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass&useMysqlMetadata=true"
   
       # the user to connect to MySQL
       user = "root"
@@ -284,8 +284,8 @@ mysql {
   settings {
     name = "vinyldns"
     driver = "org.mariadb.jdbc.Driver"
-    migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass"
-    url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass"
+    migration-url = "jdbc:mariadb://localhost:19002/?user=root&password=pass&useMysqlMetadata=true"
+    url = "jdbc:mariadb://localhost:19002/vinyldns?user=root&password=pass&useMysqlMetadata=true"
     user = "root"
     password = "pass"
     maximum-pool-size = 20

@@ -21,7 +21,7 @@ import vinyldns.core.domain.record.RecordSetChangeStatus.RecordSetChangeStatus
 import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
 import vinyldns.core.domain.record.RecordType.RecordType
-import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange, OwnerShipTransfer}
+import vinyldns.core.domain.record.{RecordData, RecordSet, RecordSetChange, OwnershipTransfer}
 import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, Zone, ZoneACL, ZoneChange, ZoneConnection}
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone.ZoneStatus.ZoneStatus
@@ -180,7 +180,7 @@ case class RecordSetListInfo(
                               accessLevel: AccessLevel,
                               ownerGroupId: Option[String],
                               ownerGroupName: Option[String],
-                              recordSetGroupChange: Option[OwnerShipTransfer],
+                              recordSetGroupChange: Option[OwnershipTransfer],
                               fqdn: Option[String]
                             )
 
@@ -218,7 +218,7 @@ case class RecordSetInfo(
                           account: String,
                           ownerGroupId: Option[String],
                           ownerGroupName: Option[String],
-                          recordSetGroupChange: Option[OwnerShipTransfer],
+                          recordSetGroupChange: Option[OwnershipTransfer],
                           fqdn: Option[String]
                         )
 
@@ -255,7 +255,7 @@ case class RecordSetGlobalInfo(
                                 account: String,
                                 ownerGroupId: Option[String],
                                 ownerGroupName: Option[String],
-                                recordSetGroupChange: Option[OwnerShipTransfer],
+                                recordSetGroupChange: Option[OwnershipTransfer],
                                 fqdn: Option[String],
                                 zoneName: String,
                                 zoneShared: Boolean

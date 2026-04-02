@@ -37,7 +37,7 @@ import _root_.vinyldns.core.domain.batch._
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import vinyldns.core.domain.record.{AData, OwnerShipTransferStatus, RecordSetChange, RecordSetChangeStatus, RecordSetChangeType, RecordType}
+import vinyldns.core.domain.record.{AData, OwnershipTransferStatus, RecordSetChange, RecordSetChangeStatus, RecordSetChangeType, RecordType}
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import vinyldns.core.domain.Encrypted
@@ -45,7 +45,7 @@ import vinyldns.core.domain.Encrypted
 import scala.collection.JavaConverters._
 import vinyldns.core.notifier.NotifierConfig
 import vinyldns.core.TestMembershipData.{dummyGroup, dummyUser, okGroup, okUser}
-import vinyldns.core.TestRecordSetData.{ownerShipTransfer, rsOk}
+import vinyldns.core.TestRecordSetData.{ownershipTransfer, rsOk}
 import vinyldns.core.TestZoneData.okZone
 
 object MockTransport extends MockitoSugar {
@@ -111,7 +111,7 @@ class EmailNotifierSpec
     RecordSetChange(
       okZone,
       rsOk.copy(ownerGroupId= Some(okGroup.id),recordSetGroupChange =
-        Some(ownerShipTransfer.copy(ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview, requestedOwnerGroupId = Some(dummyGroup.id)))),
+        Some(ownershipTransfer.copy(ownershipTransferStatus = OwnershipTransferStatus.PendingReview, requestedOwnerGroupId = Some(dummyGroup.id)))),
       "system",
       RecordSetChangeType.Create,
       RecordSetChangeStatus.Complete
