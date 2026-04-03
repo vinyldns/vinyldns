@@ -32,3 +32,27 @@ An approver can approve or reject the requested Ownership Transfer in a shared z
 Select either Approve or Reject in the Record Owner Group Status, then submit.
 
 [![Ownership Transfer Approver page screenshot](../img/portal/ownership-transfer-approver-page.png){: .screenshot}](../img/portal/ownership-transfer-approver-page.png)
+
+## Cancelling an Ownership Transfer Request
+
+If you have submitted an ownership transfer request that is pending review, you can cancel it before the current owner group approves or rejects it.
+
+To cancel a pending request:
+1. Navigate to the *Zone* page in the VinylDNS Portal.
+2. Locate the record with the pending ownership transfer request.
+3. Select the *Request* button for that record.
+4. In the Record Owner Group Status dropdown, select *Cancelled*.
+5. Submit the change.
+
+Note: You can only cancel requests that are in "Pending Review" status. Once a request has been approved or rejected, it cannot be cancelled.
+
+## Email Notifications
+
+VinylDNS automatically sends email notifications for ownership transfer requests:
+
+- **When a transfer is requested**: Members of the current owner group receive an email notifying them that a transfer request is pending their review. The email includes a link to review the request in VinylDNS.
+- **When a transfer is approved**: Members of both the previous owner group and the new owner group receive an email confirming the approval.
+- **When a transfer is rejected**: Members of the requesting group receive an email notifying them that the request was rejected.
+- **When a transfer is cancelled**: Members of the current owner group receive an email notifying them that the pending request was cancelled.
+
+Note: Email notifications are not sent for auto-approved transfers (when claiming unowned records).

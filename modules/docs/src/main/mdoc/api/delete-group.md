@@ -8,9 +8,29 @@ section: "api"
 
 Deletes a Group in VinylDNS.
 
+#### PREREQUISITES
+
+You must be a **group admin** to delete a group.
+
+#### DELETION RESTRICTIONS
+
+A group cannot be deleted if any of the following conditions are true:
+
+| Restriction | Error Message |
+|-------------|---------------|
+| Group is zone admin | "{groupName} is the admin of a zone. Cannot delete. Please transfer the ownership to another group before deleting." |
+| Group owns records | "{groupName} is the owner for a record set including {recordSetId}. Cannot delete. Please transfer the ownership to another group before deleting." |
+| Group has ACL rules | "{groupName} has an ACL rule for a zone including {zoneId}. Cannot delete. Please transfer the ownership to another group before deleting." |
+
 #### HTTP REQUEST
 
 > DELETE /groups/{groupId}
+
+#### EXAMPLE HTTP REQUEST
+
+```http
+DELETE /groups/6f8afcda-7529-4cad-9f2d-76903f4b1aca
+```
 
 #### HTTP RESPONSE TYPES
 
