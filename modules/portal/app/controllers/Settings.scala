@@ -62,6 +62,9 @@ class Settings(private val config: Configuration) {
     .getOrElse(24)
     .hours
 
+  val userSyncDryRun: Boolean =
+    config.getOptional[Boolean]("user-sync.dry-run").getOrElse(false)
+
   val graphApiUsernameAttribute: String =
     config.getOptional[String]("user-sync.graph-api.username-attribute")
       .getOrElse("onPremisesSamAccountName")

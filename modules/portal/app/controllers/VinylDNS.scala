@@ -394,8 +394,8 @@ class VinylDNS @Inject() (
                   createNewUser(userDetails).map(VinylDNS.UserInfo.fromUser)
               }
             } yield userAccount
-          case Left(_: LdapServiceException) =>
-            // LDAP not configured (e.g., OIDC-only mode) — fall back to database lookup
+          case Left(LdapServiceException("LDAP not configured")) =>
+            // NoOpAuthenticator (OIDC-only mode) — fall back to database lookup
             userAccountAccessor.get(username).flatMap {
               case Some(user) => IO(VinylDNS.UserInfo.fromUser(user))
               case None => IO.raiseError(UserDoesNotExistException(username))

@@ -50,6 +50,20 @@ class UserSyncTaskSpec extends Specification with Mockito {
       there.was(one(mockUserAccountAccessor).lockUsers(List(notAuthUser)))
     }
 
+    "not lock users when dry run is enabled" in {
+      val mockSync: UserSyncProvider = mock[UserSyncProvider]
+      mockSync.getStaleUsers(List(notAuthUser)).returns(IO(List(notAuthUser)))
+
+      val mockUsers = mock[UserAccountAccessor]
+      mockUsers.getAllUsers.returns(IO(List(notAuthUser)))
+
+      new UserSyncTask(mockUsers, mockSync, dryRun = true)
+        .run()
+        .unsafeRunSync() must beEqualTo(())
+
+      there.was(no(mockUsers).lockUsers(any))
+    }
+
     "successfully process if no users are found" in {
       val mockSync: UserSyncProvider = mock[UserSyncProvider]
       mockSync.getStaleUsers(List(notAuthUser)).returns(IO(Nil))

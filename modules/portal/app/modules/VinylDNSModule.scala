@@ -77,7 +77,7 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
         case _ =>
           TaskScheduler
             .schedule(
-              new UserSyncTask(userAccessor, syncProvider, pollingInterval),
+              new UserSyncTask(userAccessor, syncProvider, pollingInterval, dryRun = settings.userSyncDryRun),
               repositories.taskRepository
             )
             .compile

@@ -29,21 +29,28 @@ class UserSyncTask(
     syncProvider: UserSyncProvider,
     val runEvery: FiniteDuration = 24.hours,
     val timeout: FiniteDuration = 24.hours,
-    val checkInterval: FiniteDuration = 1.minute
+    val checkInterval: FiniteDuration = 1.minute,
+    dryRun: Boolean = false
 ) extends Task {
   val name: String = "user_sync"
   private val logger: Logger = LoggerFactory.getLogger("UserSyncTask")
 
   def run(): IO[Unit] = {
-    logger.info(s"Initiating user sync using provider=${syncProvider.getClass.getSimpleName}")
+    logger.info(s"Initiating user sync using provider=${syncProvider.getClass.getSimpleName}; dryRun=$dryRun")
     for {
       allUsers <- userAccountAccessor.getAllUsers
       activeUsers = allUsers.filter(u => u.lockStatus != LockStatus.Locked && !u.isTest)
       _ <- IO(logger.info(s"""totalUsers="${allUsers.size}"; activeUsers="${activeUsers.size}""""))
       staleUsers <- syncProvider.getStaleUsers(activeUsers)
       _ <- IO(logger.info(s"""staleUsers="${staleUsers.size}"; staleUserNames="${staleUsers.map(_.userName)}""""))
-      lockedUsers <- userAccountAccessor.lockUsers(staleUsers)
-      _ <- IO(logger.info(s"""usersLocked="${lockedUsers.map(_.userName)}"; userLockCount="${lockedUsers.size}""""))
+      _ <- if (dryRun) {
+        IO(logger.info(s"""[DRY RUN] Would lock users="${staleUsers.map(_.userName)}"; count="${staleUsers.size}""""))
+      } else {
+        for {
+          lockedUsers <- userAccountAccessor.lockUsers(staleUsers)
+          _ <- IO(logger.info(s"""usersLocked="${lockedUsers.map(_.userName)}"; userLockCount="${lockedUsers.size}""""))
+        } yield ()
+      }
     } yield ()
   }
 }
