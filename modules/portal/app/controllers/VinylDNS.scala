@@ -384,15 +384,25 @@ class VinylDNS @Inject() (
   def getUserDataByUsername(username: String): Action[AnyContent] = userAction.async {
     implicit request =>
       {
-        for {
-          userDetails <- IO.fromEither(authenticator.lookup(username))
-          existingAccount <- userAccountAccessor.get(userDetails.username)
-          userAccount <- existingAccount match {
-            case Some(user) => IO(VinylDNS.UserInfo.fromUser(user))
-            case None =>
-              createNewUser(userDetails).map(VinylDNS.UserInfo.fromUser)
-          }
-        } yield userAccount
+        authenticator.lookup(username) match {
+          case Right(userDetails) =>
+            for {
+              existingAccount <- userAccountAccessor.get(userDetails.username)
+              userAccount <- existingAccount match {
+                case Some(user) => IO(VinylDNS.UserInfo.fromUser(user))
+                case None =>
+                  createNewUser(userDetails).map(VinylDNS.UserInfo.fromUser)
+              }
+            } yield userAccount
+          case Left(_: LdapServiceException) =>
+            // LDAP not configured (e.g., OIDC-only mode) — fall back to database lookup
+            userAccountAccessor.get(username).flatMap {
+              case Some(user) => IO(VinylDNS.UserInfo.fromUser(user))
+              case None => IO.raiseError(UserDoesNotExistException(username))
+            }
+          case Left(err) =>
+            IO.raiseError(err)
+        }
       }.unsafeToFuture()
         .map(Json.toJson(_))
         .map(Ok(_).withHeaders(cacheHeaders: _*))

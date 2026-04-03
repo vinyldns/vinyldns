@@ -103,9 +103,17 @@ class Settings(private val config: Configuration) {
     ldapUserNameAttribute
   }
 
-  def validateOidcConfig(): Unit = {
-    oidcTenantId; oidcClientId; oidcSecret
-  }
+  def validateOidcConfig(): Unit =
+    try {
+      oidcTenantId; oidcClientId; oidcSecret
+    } catch {
+      case e: com.typesafe.config.ConfigException.Missing =>
+        throw new IllegalArgumentException(
+          "OIDC configuration incomplete for graph-api user sync. " +
+            "The oidc.tenant-id, oidc.client-id, and oidc.secret settings are all required " +
+            s"when user-sync.provider is set to 'graph-api': ${e.getMessage}"
+        )
+    }
 
   implicit def ldapSearchDomainLoader: ConfigLoader[List[LdapSearchDomain]] =
     new ConfigLoader[List[LdapSearchDomain]] {

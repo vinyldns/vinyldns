@@ -95,7 +95,20 @@ class GraphApiUserSyncProvider(
 
       val responseCode = conn.getResponseCode
       if (responseCode != 200) {
-        throw new RuntimeException(s"Token request failed with status $responseCode")
+        val errorBody = try {
+          val es = conn.getErrorStream
+          if (es != null) {
+            val reader = new BufferedReader(new InputStreamReader(es))
+            val sb = new StringBuilder
+            var line: String = null
+            while ({ line = reader.readLine(); line != null }) { sb.append(line) }
+            reader.close()
+            sb.toString()
+          } else ""
+        } catch { case _: Exception => "" }
+        throw new RuntimeException(
+          s"Token request failed with status $responseCode: $errorBody"
+        )
       }
 
       val reader = new BufferedReader(new InputStreamReader(conn.getInputStream))
@@ -121,11 +134,20 @@ class GraphApiUserSyncProvider(
   }
   // $COVERAGE-ON$
 
+  // Limit concurrent Graph API requests to avoid rate limiting (Microsoft throttles at ~2000 req/10min)
+  private val maxConcurrency = 10
+
   def getStaleUsers(users: List[User]): IO[List[User]] =
     for {
       _ <- IO(logger.info(s"Checking ${users.size} users against Graph API"))
       token <- getAccessToken()
-      results <- users.map(u => checkUser(token, u)).parSequence
+      results <- users.grouped(maxConcurrency).toList.foldLeft(IO.pure(List.empty[Option[User]])) {
+        (acc, batch) =>
+          for {
+            prev <- acc
+            batchResults <- batch.map(u => checkUser(token, u)).parSequence
+          } yield prev ++ batchResults
+      }
       staleUsers = results.flatten
       _ <- IO(logger.info(s"Graph API sync complete; ${staleUsers.size} of ${users.size} users marked as stale"))
     } yield staleUsers
@@ -162,7 +184,7 @@ class GraphApiUserSyncProvider(
         )
         val select = java.net.URLEncoder.encode("accountEnabled", "UTF-8")
         val url =
-          s"https://graph.microsoft.com/v1.0/users?$$filter=$filter&$$select=$select&$$count=true"
+          s"https://graph.microsoft.com/v1.0/users?$$filter=$filter&$$select=$select"
 
         val conn = new URL(url).openConnection().asInstanceOf[HttpURLConnection]
         try {

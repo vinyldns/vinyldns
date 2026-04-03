@@ -1591,6 +1591,43 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         status(result) must beEqualTo(404)
         hasCacheHeaders(result)
       }
+      "fall back to database lookup when LDAP is not configured" in new WithApplication(app) {
+        authenticator
+          .lookup(frodoUser.userName)
+          .returns(Left(LdapServiceException("LDAP not configured")))
+        userAccessor.get(frodoUser.userName).returns(IO.pure(Some(frodoUser)))
+        val vinyldnsPortal =
+          TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto, mockOidcAuth)
+
+        val expected = Json.toJson(VinylDNS.UserInfo.fromUser(frodoUser))
+
+        val result = vinyldnsPortal
+          .getUserDataByUsername(frodoUser.userName)
+          .apply(
+            FakeRequest(GET, s"/api/users/lookupuser/${frodoUser.userName}")
+              .withSession("username" -> "frodo")
+          )
+        status(result) must beEqualTo(200)
+        hasCacheHeaders(result)
+        contentAsJson(result) must beEqualTo(expected)
+      }
+      "return a 404 when LDAP is not configured and user is not in database" in new WithApplication(app) {
+        authenticator
+          .lookup("unknownuser")
+          .returns(Left(LdapServiceException("LDAP not configured")))
+        userAccessor.get("unknownuser").returns(IO.pure(None))
+        val vinyldnsPortal =
+          TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto, mockOidcAuth)
+
+        val result = vinyldnsPortal
+          .getUserDataByUsername("unknownuser")
+          .apply(
+            FakeRequest(GET, s"/api/users/lookupuser/unknownuser")
+              .withSession("username" -> "frodo")
+          )
+        status(result) must beEqualTo(404)
+        hasCacheHeaders(result)
+      }
     }
 
     ".getZones" should {
