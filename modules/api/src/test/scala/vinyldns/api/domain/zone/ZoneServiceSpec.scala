@@ -29,7 +29,6 @@ import vinyldns.api.config.ValidEmailConfig
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.membership.{EmailValidationError, MembershipService}
 import vinyldns.core.domain.record.RecordSetRepository
-//import vinyldns.api.domain.membership.{EmailValidationError, MembershipService}
 import vinyldns.api.repository.TestDataLoader
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
