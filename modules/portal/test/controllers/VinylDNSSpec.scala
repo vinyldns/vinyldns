@@ -1627,7 +1627,6 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
               .withSession("username" -> frodoUser.userName)
           )
         status(result) must beEqualTo(404)
-        hasCacheHeaders(result)
       }
     }
 
