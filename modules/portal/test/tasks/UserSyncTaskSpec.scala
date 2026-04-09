@@ -61,7 +61,7 @@ class UserSyncTaskSpec extends Specification with Mockito {
         .run()
         .unsafeRunSync() must beEqualTo(())
 
-      there.was(no(mockUsers).lockUsers(any))
+      there.was(no(mockUsers).lockUsers(any[List[User]]))
     }
 
     "successfully process if no users are found" in {
