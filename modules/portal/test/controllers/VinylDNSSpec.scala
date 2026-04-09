@@ -1605,7 +1605,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           .getUserDataByUsername(frodoUser.userName)
           .apply(
             FakeRequest(GET, s"/api/users/lookupuser/${frodoUser.userName}")
-              .withSession("username" -> "frodo")
+              .withSession("username" -> frodoUser.userName)
           )
         status(result) must beEqualTo(200)
         hasCacheHeaders(result)
@@ -1615,6 +1615,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         authenticator
           .lookup("unknownuser")
           .returns(Left(LdapServiceException("LDAP not configured")))
+        userAccessor.get(frodoUser.userName).returns(IO.pure(Some(frodoUser)))
         userAccessor.get("unknownuser").returns(IO.pure(None))
         val vinyldnsPortal =
           TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto, mockOidcAuth)
@@ -1623,7 +1624,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           .getUserDataByUsername("unknownuser")
           .apply(
             FakeRequest(GET, s"/api/users/lookupuser/unknownuser")
-              .withSession("username" -> "frodo")
+              .withSession("username" -> frodoUser.userName)
           )
         status(result) must beEqualTo(404)
         hasCacheHeaders(result)
