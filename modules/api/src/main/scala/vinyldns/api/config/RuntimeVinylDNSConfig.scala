@@ -61,7 +61,7 @@ object RuntimeVinylDNSConfig {
   @volatile private var _validEmailConfig: ValidEmailConfig =
     ConfigSource.fromConfig(rawConfig).at("vinyldns.valid-email-config")
       .load[ValidEmailConfig].getOrElse(ValidEmailConfig(List("test.com"), 2))
-  @volatile private var _limitsConfig: LimitsConfig = LimitsConfig(100, 100, 1000, 1500, 100, 100, 100)
+  @volatile private var _limitsConfig: LimitsConfig = LimitsConfig(100, 100, 1000, 3000, 100, 100, 100)
   @volatile private var _sharedApprovedTypes: List[RecordType.Value] = Nil
   @volatile private var _manualReviewConfig: ManualReviewConfig = ManualReviewConfig(enabled = true, Nil, Nil, Set.empty)
   @volatile private var _approvedNameServers: List[Regex] = Nil

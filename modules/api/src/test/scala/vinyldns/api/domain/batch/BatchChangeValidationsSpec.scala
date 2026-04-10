@@ -67,7 +67,8 @@ class BatchChangeValidationsSpec
     new BatchChangeValidations(
       accessValidations,
       VinylDNSTestHelpers.manualReviewConfig,
-      VinylDNSTestHelpers.approvedNameServers
+      VinylDNSTestHelpers.approvedNameServers,
+      highValueDomainConfigFn = () => VinylDNSTestHelpers.highValueDomainConfig
     )
 
   import underTest._
