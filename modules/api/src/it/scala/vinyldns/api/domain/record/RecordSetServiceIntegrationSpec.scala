@@ -30,7 +30,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
 import vinyldns.api._
-import vinyldns.api.config.{DottedHostsConfig, VinylDNSConfig}
+import vinyldns.api.config.{DottedHostsConfig, HighValueDomainConfig, VinylDNSConfig}
 import vinyldns.api.domain.access.AccessValidations
 import com.typesafe.config.ConfigFactory
 import pureconfig._
@@ -77,6 +77,7 @@ class RecordSetServiceIntegrationSpec
 
   private var testRecordSetService: RecordSetServiceAlgebra = _
   private var dottedHostsConfigFromDb: DottedHostsConfig = DottedHostsConfig(Nil)
+  private var highValueDomainConfigFromDb: HighValueDomainConfig = HighValueDomainConfig(Nil, Nil)
 
   private val user = User("live-test-user", "key", Encrypted("secret"))
   private val testUser = User("testuser", "key", Encrypted("secret"))
@@ -317,6 +318,15 @@ class RecordSetServiceIntegrationSpec
     clearGroupRepo()
     clearAppConfigRepo()
 
+    // Seed high-value-domains config into the app_config table
+    val hvdJson =
+      """{"fqdn-regex-list":["high-value-domain.*"],"ip-list":[]}"""
+    appConfigRepository.create("high-value-domains", hvdJson).unsafeRunSync()
+    highValueDomainConfigFromDb = ConfigSource
+      .fromConfig(ConfigFactory.parseString(hvdJson))
+      .load[HighValueDomainConfig]
+      .getOrElse(HighValueDomainConfig(Nil, Nil))
+
     // Seed dotted-hosts config into the app_config table so the service reads it from DB
     val dottedHostsJson =
       """{"allowed-settings":[{"zone":"dummy.","user-list":["testuser"],"group-list":["dummy-group"],"record-types":["AAAA"],"dots-limit":3}]}"""
@@ -386,7 +396,7 @@ class RecordSetServiceIntegrationSpec
       vinyldnsConfig.serverConfig.approvedNameServers,
       useRecordSetCache = IO(true),
       mockNotifiers,
-      () => vinyldnsConfig.highValueDomainConfig,
+      () => highValueDomainConfigFromDb,
       () => dottedHostsConfigFromDb,
     )
   }
