@@ -16,7 +16,6 @@
 
 package vinyldns.api.config
 
-import com.typesafe.config.Config
 import pureconfig.ConfigReader
 import vinyldns.api.domain.zone.ZoneRecordValidations
 
@@ -41,64 +40,50 @@ object ServerConfig {
 
   import ZoneRecordValidations.toCaseIgnoredRegexList
 
-  implicit val configReader: ConfigReader[ServerConfig] = ConfigReader.forProduct13[
-    ServerConfig,
-    Int,
-    Int,
-    Int,
-    Int,
-    Boolean,
-    List[String],
-    String,
-    String,
-    Config,
-    Boolean,
-    Boolean,
-    Boolean,
-    Boolean
-  ](
-    "health-check-timeout",
-    "default-ttl",
-    "max-zone-size",
-    "sync-delay",
-    "validate-record-lookup-against-dns-backend",
-    "approved-name-servers",
-    "color",
-    "version",
-    "defaultZoneConnection",
-    "processing-disabled",
-    "use-recordset-cache",
-    "load-test-data",
-    "is-zone-sync-schedule-allowed"
-  ) {
-    case (
-      timeout,
-      ttl,
-      maxZone,
-      syncDelay,
-      validateDnsBackend,
-      approvedNameServers,
-      color,
-      version,
-      zoneConnConfig,
-      processingDisabled,
-      useRecordSetCache,
-      loadTestData,
-      isZoneSyncScheduleAllowed) =>
+  implicit val configReader: ConfigReader[ServerConfig] = ConfigReader.fromCursor { c =>
+    c.asObjectCursor.map { oc =>
+      def optInt(key: String, default: Int): Int = {
+        val cur = oc.atKeyOrUndefined(key)
+        if (cur.isUndefined) default else cur.asInt.fold(_ => default, identity)
+      }
+      def optBool(key: String, default: Boolean): Boolean = {
+        val cur = oc.atKeyOrUndefined(key)
+        if (cur.isUndefined) default else cur.asBoolean.fold(_ => default, identity)
+      }
+      def optString(key: String, default: String): String = {
+        val cur = oc.atKeyOrUndefined(key)
+        if (cur.isUndefined) default else cur.asString.fold(_ => default, identity)
+      }
+      def optListOfStrings(key: String): List[String] = {
+        val cur = oc.atKeyOrUndefined(key)
+        if (cur.isUndefined) Nil else ConfigReader[List[String]].from(cur).fold(_ => Nil, identity)
+      }
+      val zoneKeyName: String = {
+        val cur = oc.atKeyOrUndefined("defaultZoneConnection")
+        if (cur.isUndefined) ""
+        else cur.asObjectCursor.fold(
+          _ => "",
+          objCur => {
+            val kc = objCur.atKeyOrUndefined("keyName")
+            if (kc.isUndefined) "" else kc.asString.fold(_ => "", identity)
+          }
+        )
+      }
       ServerConfig(
-        timeout,
-        ttl,
-        maxZone,
-        syncDelay,
-        validateDnsBackend,
-        toCaseIgnoredRegexList(approvedNameServers),
-        color,
-        version,
-        zoneConnConfig.getString("keyName"),
-        processingDisabled,
-        useRecordSetCache,
-        loadTestData,
-        isZoneSyncScheduleAllowed
+        optInt("health-check-timeout",                         10),
+        optInt("default-ttl",                                  7200),
+        optInt("max-zone-size",                                60000),
+        optInt("sync-delay",                                   10000),
+        optBool("validate-record-lookup-against-dns-backend",  false),
+        toCaseIgnoredRegexList(optListOfStrings("approved-name-servers")),
+        optString("color",                                     "blue"),
+        optString("version",                                   ""),
+        zoneKeyName,
+        optBool("processing-disabled",                         false),
+        optBool("use-recordset-cache",                         false),
+        optBool("load-test-data",                              false),
+        optBool("is-zone-sync-schedule-allowed",               true)
       )
+    }
   }
 }

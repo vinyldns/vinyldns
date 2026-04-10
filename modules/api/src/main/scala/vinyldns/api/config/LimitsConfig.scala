@@ -28,34 +28,23 @@ final case class LimitsConfig(
     ZONE_ROUTING_MAX_ITEMS_LIMIT: Int
 )
 object LimitsConfig {
-  implicit val configReader: ConfigReader[LimitsConfig] =
-    ConfigReader.forProduct7[LimitsConfig, Int, Int, Int, Int, Int, Int, Int](
-      "batchchange-routing-max-items-limit",
-      "membership-routing-default-max-items",
-      "membership-routing-max-items-limit",
-      "membership-routing-max-groups-list-limit",
-      "recordset-routing-default-max-items",
-      "zone-routing-default-max-items",
-      "zone-routing-max-items-limit"
-    ) {
-      case (
-          batchchange_routing_max_items_limit,
-          membership_routing_default_max_items,
-          membership_routing_max_items_limit,
-          membership_routing_max_groups_list_limit,
-          recordset_routing_default_max_items,
-          zone_routing_default_max_items,
-          zone_routing_max_items_limit
-          ) =>
-        LimitsConfig(
-          batchchange_routing_max_items_limit,
-          membership_routing_default_max_items,
-          membership_routing_max_items_limit,
-          membership_routing_max_groups_list_limit,
-          recordset_routing_default_max_items,
-          zone_routing_default_max_items,
-          zone_routing_max_items_limit
-        )
+  // All fields are DB-backed. Defaults match the DB insert script.
+  implicit val configReader: ConfigReader[LimitsConfig] = ConfigReader.fromCursor { c =>
+    c.asObjectCursor.map { oc =>
+      def optInt(key: String, default: Int): Int = {
+        val cur = oc.atKeyOrUndefined(key)
+        if (cur.isUndefined) default else cur.asInt.fold(_ => default, identity)
+      }
+      LimitsConfig(
+        optInt("batchchange-routing-max-items-limit",      100),
+        optInt("membership-routing-default-max-items",     100),
+        optInt("membership-routing-max-items-limit",       1000),
+        optInt("membership-routing-max-groups-list-limit", 3000),
+        optInt("recordset-routing-default-max-items",      100),
+        optInt("zone-routing-default-max-items",           100),
+        optInt("zone-routing-max-items-limit",             100)
+      )
     }
+  }
 
 }

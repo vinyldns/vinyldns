@@ -30,8 +30,11 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
 import vinyldns.api._
-import vinyldns.api.config.VinylDNSConfig
+import vinyldns.api.config.{DottedHostsConfig, VinylDNSConfig}
 import vinyldns.api.domain.access.AccessValidations
+import com.typesafe.config.ConfigFactory
+import pureconfig._
+import pureconfig.generic.auto._
 import vinyldns.api.domain.zone._
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.core.TestMembershipData.okGroup
@@ -73,6 +76,7 @@ class RecordSetServiceIntegrationSpec
   private val groupRepo: GroupRepository = groupRepository
 
   private var testRecordSetService: RecordSetServiceAlgebra = _
+  private var dottedHostsConfigFromDb: DottedHostsConfig = DottedHostsConfig(Nil)
 
   private val user = User("live-test-user", "key", Encrypted("secret"))
   private val testUser = User("testuser", "key", Encrypted("secret"))
@@ -295,6 +299,7 @@ class RecordSetServiceIntegrationSpec
     clearRecordSetRepo()
     clearZoneRepo()
     clearGroupRepo()
+    clearAppConfigRepo()
   }
 
   override def beforeEach(): Unit = {
@@ -310,6 +315,16 @@ class RecordSetServiceIntegrationSpec
     clearRecordSetRepo()
     clearZoneRepo()
     clearGroupRepo()
+    clearAppConfigRepo()
+
+    // Seed dotted-hosts config into the app_config table so the service reads it from DB
+    val dottedHostsJson =
+      """{"allowed-settings":[{"zone":"dummy.","user-list":["testuser"],"group-list":["dummy-group"],"record-types":["AAAA"],"dots-limit":3}]}"""
+    appConfigRepository.create("dotted-hosts", dottedHostsJson).unsafeRunSync()
+    dottedHostsConfigFromDb = ConfigSource
+      .fromConfig(ConfigFactory.parseString(dottedHostsJson))
+      .load[DottedHostsConfig]
+      .getOrElse(DottedHostsConfig(Nil))
 
     def saveGroupData(
                        groupRepo: GroupRepository,
@@ -367,12 +382,12 @@ class RecordSetServiceIntegrationSpec
       TestMessageQueue,
       new AccessValidations(),
       mockBackendResolver,
-      false,
-      vinyldnsConfig.highValueDomainConfig,
-      vinyldnsConfig.dottedHostsConfig,
+      IO(false),
       vinyldnsConfig.serverConfig.approvedNameServers,
-      useRecordSetCache = true,
-      mockNotifiers
+      useRecordSetCache = IO(true),
+      mockNotifiers,
+      () => vinyldnsConfig.highValueDomainConfig,
+      () => dottedHostsConfigFromDb,
     )
   }
 

@@ -218,7 +218,7 @@ object CommandHandler {
            batchChangeRepo: BatchChangeRepository,
            notifiers: AllNotifiers,
            backendResolver: BackendResolver,
-           maxZoneSize: Int
+           maxZoneSize: IO[Int]
   )(implicit timer: Timer[IO]): IO[Unit] = {
     // Handlers for each type of change request
     val zoneChangeHandler =

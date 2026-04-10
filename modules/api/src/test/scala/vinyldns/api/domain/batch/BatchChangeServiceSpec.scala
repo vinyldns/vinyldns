@@ -23,7 +23,7 @@ import cats.scalatest.{EitherMatchers, ValidatedMatchers}
 import java.time.temporal.ChronoUnit
 import java.time.{Instant, LocalDateTime, ZoneId}
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterEach, EitherValues}
+import org.scalatest.{BeforeAndAfterEach, BeforeAndAfterAll, EitherValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.ValidatedBatchMatcherImprovements.containChangeForValidation
@@ -50,6 +50,7 @@ import vinyldns.core.notifier.{AllNotifiers, Notification, Notifier}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import vinyldns.api.VinylDNSTestHelpers
+import vinyldns.api.config.RuntimeVinylDNSConfig
 import vinyldns.api.domain.access.AccessValidations
 
 import java.time.format.DateTimeFormatter
@@ -60,23 +61,23 @@ class BatchChangeServiceSpec
     with Matchers
     with MockitoSugar
     with BeforeAndAfterEach
+    with BeforeAndAfterAll
     with EitherMatchers
     with EitherValues
     with ValidatedMatchers {
 
   private implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
+  override def beforeAll(): Unit = RuntimeVinylDNSConfig.init().unsafeRunSync()
+
   private val nonFatalErrorZoneDiscoveryError = ZoneDiscoveryError("test")
   private val nonFatalErrorRecordAlreadyExists = RecordAlreadyExists("test")
 
   private val validations = new BatchChangeValidations(
     new AccessValidations(
-      sharedApprovedTypes = VinylDNSTestHelpers.sharedApprovedTypes
+      sharedApprovedTypesFn = () => VinylDNSTestHelpers.sharedApprovedTypes
     ),
-    VinylDNSTestHelpers.highValueDomainConfig,
     VinylDNSTestHelpers.manualReviewConfig,
-    VinylDNSTestHelpers.batchChangeConfig,
-    VinylDNSTestHelpers.scheduledChangesConfig,
     VinylDNSTestHelpers.approvedNameServers
   )
   private val ttl = Some(200L)
@@ -423,12 +424,12 @@ class BatchChangeServiceSpec
     batchChangeRepo,
     EmptyBatchConverter,
     TestUserRepo,
-    false,
+    IO.pure(false),
     TestAuth,
     mockNotifiers,
-    false,
+    IO.pure(false),
     defaultv6Discovery,
-    7200L
+    IO.pure(7200L)
   )
 
   private val underTestManualEnabled = new BatchChangeService(
@@ -439,12 +440,12 @@ class BatchChangeServiceSpec
     batchChangeRepo,
     EmptyBatchConverter,
     TestUserRepo,
-    true,
+    IO.pure(true),
     TestAuth,
     mockNotifiers,
-    false,
+    IO.pure(false),
     defaultv6Discovery,
-    7200L
+    IO.pure(7200L)
   )
 
   private val underTestScheduledEnabled = new BatchChangeService(
@@ -455,12 +456,12 @@ class BatchChangeServiceSpec
     batchChangeRepo,
     EmptyBatchConverter,
     TestUserRepo,
-    true,
+    IO.pure(true),
     TestAuth,
     mockNotifiers,
-    true,
+    IO.pure(true),
     defaultv6Discovery,
-    7200L
+    IO.pure(7200L)
   )
 
   "applyBatchChange" should {
@@ -481,12 +482,12 @@ class BatchChangeServiceSpec
         batchChangeRepo,
         EmptyBatchConverter,
         TestUserRepo,
-        false,
+        IO.pure(false),
         TestAuth,
         mockNotifiers,
-        false,
+        IO.pure(false),
         new V6DiscoveryNibbleBoundaries(16, 17),
-        7200L
+        IO.pure(7200L)
       )
       val ptr = AddChangeInput(
         "2001:0000:0000:0001:0000:ff00:0042:8329",
@@ -513,12 +514,12 @@ class BatchChangeServiceSpec
         batchChangeRepo,
         EmptyBatchConverter,
         TestUserRepo,
-        false,
+        IO.pure(false),
         TestAuth,
         mockNotifiers,
-        false,
+        IO.pure(false),
         new V6DiscoveryNibbleBoundaries(16, 16),
-        7200L
+        IO.pure(7200L)
       )
       val ptr = AddChangeInput(
         "2001:0000:0000:0001:0000:ff00:0042:8329",
@@ -1152,12 +1153,12 @@ class BatchChangeServiceSpec
         batchChangeRepo,
         EmptyBatchConverter,
         TestUserRepo,
-        false,
+        IO.pure(false),
         TestAuth,
         mockNotifiers,
-        false,
+        IO.pure(false),
         defaultv6Discovery,
-        7200L
+        IO.pure(7200L)
       )
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
@@ -1193,12 +1194,12 @@ class BatchChangeServiceSpec
         batchChangeRepo,
         EmptyBatchConverter,
         TestUserRepo,
-        false,
+        IO.pure(false),
         TestAuth,
         mockNotifiers,
-        false,
+        IO.pure(false),
         new V6DiscoveryNibbleBoundaries(16, 16),
-        7200L
+        IO.pure(7200L)
       )
 
       val ip = "2001:0db8:0000:0000:0000:ff00:0042:8329"
@@ -1219,12 +1220,12 @@ class BatchChangeServiceSpec
         batchChangeRepo,
         EmptyBatchConverter,
         TestUserRepo,
-        false,
+        IO.pure(false),
         TestAuth,
         mockNotifiers,
-        false,
+        IO.pure(false),
         defaultv6Discovery,
-        7200L
+        IO.pure(7200L)
       )
 
       val ip1 = "::1"
@@ -1269,14 +1270,16 @@ class BatchChangeServiceSpec
   "zoneDiscovery" should {
     "map the batch change input to the apex zone if both the apex and base zones exist for A records" in {
       val result =
-        underTest.zoneDiscovery(List(apexAddA.validNel), ExistingZones(Set(apexZone, baseZone)))
+        underTest.zoneDiscovery(List(apexAddA.validNel), ExistingZones(Set(apexZone, baseZone)),
+        VinylDNSTestHelpers.defaultTtl)
 
       result should containChangeForValidation(apexAddForVal)
     }
 
     "map the batch change input to the apex zone if only the apex zone exists for A records" in {
       val result =
-        underTest.zoneDiscovery(List(onlyApexAddA.validNel), ExistingZones(Set(onlyApexZone)))
+        underTest.zoneDiscovery(List(onlyApexAddA.validNel), ExistingZones(Set(onlyApexZone)),
+        VinylDNSTestHelpers.defaultTtl)
 
       result should containChangeForValidation(
         AddChangeForValidation(onlyApexZone, "only.apex.exists.", onlyApexAddA, 7200L)
@@ -1285,7 +1288,8 @@ class BatchChangeServiceSpec
 
     "map the batch change input to the base zone if only the base zone exists for A records" in {
       val result =
-        underTest.zoneDiscovery(List(onlyBaseAddAAAA.validNel), ExistingZones(Set(onlyBaseZone)))
+        underTest.zoneDiscovery(List(onlyBaseAddAAAA.validNel), ExistingZones(Set(onlyBaseZone)),
+        VinylDNSTestHelpers.defaultTtl)
 
       result should containChangeForValidation(
         AddChangeForValidation(onlyBaseZone, "have", onlyBaseAddAAAA, 7200L)
@@ -1294,7 +1298,8 @@ class BatchChangeServiceSpec
 
     "map the batch change input to the base zone only for CNAME records" in {
       val result =
-        underTest.zoneDiscovery(List(cnameAdd.validNel), ExistingZones(Set(apexZone, baseZone)))
+        underTest.zoneDiscovery(List(cnameAdd.validNel), ExistingZones(Set(apexZone, baseZone)),
+        VinylDNSTestHelpers.defaultTtl)
 
       result should containChangeForValidation(
         AddChangeForValidation(baseZone, "cname", cnameAdd, 7200L)
@@ -1318,7 +1323,8 @@ class BatchChangeServiceSpec
       val discovered = underTest.zoneDiscovery(
         List(aApex.validNel, aNormal.validNel, aDotted.validNel),
         ExistingZones(Set(apexZone, baseZone))
-      )
+      ,
+        VinylDNSTestHelpers.defaultTtl)
 
       discovered.getValid shouldBe expected
     }
@@ -1340,26 +1346,30 @@ class BatchChangeServiceSpec
       val discovered = underTest.zoneDiscovery(
         List(txtApex.validNel, txtNormal.validNel, txtDotted.validNel),
         ExistingZones(Set(apexZone, baseZone))
-      )
+      ,
+        VinylDNSTestHelpers.defaultTtl)
 
       discovered.getValid shouldBe expected
     }
 
     "return an error if an apex zone is found for CNAME records" in {
       val result =
-        underTest.zoneDiscovery(List(cnameApexAdd.validNel), ExistingZones(Set(apexZone)))
+        underTest.zoneDiscovery(List(cnameApexAdd.validNel), ExistingZones(Set(apexZone)),
+        VinylDNSTestHelpers.defaultTtl)
 
       result.head should haveInvalid[DomainValidationError](CnameAtZoneApexError(apexZone.name))
     }
 
     "return an error if no base zone is found for CNAME records" in {
-      val result = underTest.zoneDiscovery(List(cnameAdd.validNel), ExistingZones(Set(apexZone)))
+      val result = underTest.zoneDiscovery(List(cnameAdd.validNel), ExistingZones(Set(apexZone)),
+        VinylDNSTestHelpers.defaultTtl)
 
       result.head should haveInvalid[DomainValidationError](ZoneDiscoveryError("cname.test.com."))
     }
 
     "return an error if no zone is found through zone discovery" in {
-      val result = underTest.zoneDiscovery(List(noZoneAddA.validNel), ExistingZones(Set()))
+      val result = underTest.zoneDiscovery(List(noZoneAddA.validNel), ExistingZones(Set()),
+        VinylDNSTestHelpers.defaultTtl)
 
       result.head should haveInvalid[DomainValidationError](ZoneDiscoveryError("no.zone.match."))
     }
@@ -1368,7 +1378,8 @@ class BatchChangeServiceSpec
       val result = underTest.zoneDiscovery(
         List(apexAddA.validNel, onlyApexAddA.validNel, onlyBaseAddAAAA.validNel, cnameAdd.validNel),
         ExistingZones(Set(apexZone, baseZone, onlyBaseZone))
-      )
+      ,
+        VinylDNSTestHelpers.defaultTtl)
 
       result.head should beValid[ChangeForValidation](apexAddForVal)
       result(1) should haveInvalid[DomainValidationError](ZoneDiscoveryError("only.apex.exists."))
@@ -1384,7 +1395,8 @@ class BatchChangeServiceSpec
       val result = underTest.zoneDiscovery(
         List(ptrAdd.validNel),
         ExistingZones(Set(delegatedPTRZone, ptrZone))
-      )
+      ,
+        VinylDNSTestHelpers.defaultTtl)
 
       result should containChangeForValidation(
         AddChangeForValidation(delegatedPTRZone, "11", ptrAdd, 7200L)
@@ -1395,7 +1407,8 @@ class BatchChangeServiceSpec
       val result = underTest.zoneDiscovery(
         List(ptrAdd2.validNel),
         ExistingZones(Set(delegatedPTRZone, ptrZone))
-      )
+      ,
+        VinylDNSTestHelpers.defaultTtl)
 
       result should containChangeForValidation(
         AddChangeForValidation(ptrZone, "255", ptrAdd2, 7200L)
@@ -1403,7 +1416,8 @@ class BatchChangeServiceSpec
     }
 
     "return an error if no zone is found for PTR records (ipv4)" in {
-      val result = underTest.zoneDiscovery(List(ptrAdd.validNel), ExistingZones(Set(apexZone)))
+      val result = underTest.zoneDiscovery(List(ptrAdd.validNel), ExistingZones(Set(apexZone)),
+        VinylDNSTestHelpers.defaultTtl)
 
       result.head should haveInvalid[DomainValidationError](ZoneDiscoveryError("10.144.55.11"))
     }
@@ -1412,7 +1426,8 @@ class BatchChangeServiceSpec
       val result = underTest.zoneDiscovery(
         List(ptrAdd.validNel),
         ExistingZones(Set(delegatedPTRZone.copy(name = "192/30.55.144.10.in-addr.arpa.")))
-      )
+      ,
+        VinylDNSTestHelpers.defaultTtl)
 
       result.head should haveInvalid[DomainValidationError](ZoneDiscoveryError(ptrAdd.inputName))
     }
@@ -1450,7 +1465,8 @@ class BatchChangeServiceSpec
       val result = underTest.zoneDiscovery(
         ptripv6Adds,
         ExistingZones(Set(ptrv6ZoneSmall, ptrv6ZoneMed, ptrv6ZoneBig))
-      )
+      ,
+        VinylDNSTestHelpers.defaultTtl)
 
       result should containChangeForValidation(
         AddChangeForValidation(
@@ -1493,8 +1509,10 @@ class BatchChangeServiceSpec
             AddChangeForValidation(baseZone, "cname", cnameAdd, 7200L).validNel
           ),
           okAuth,
-          true
-        )
+          true,
+        false,
+        false,
+        VinylDNSTestHelpers.defaultTtl)
         .toOption
         .get
 
@@ -1556,8 +1574,10 @@ class BatchChangeServiceSpec
             AddChangeForValidation(baseZone, "cname", cnameAdd, 7200L).validNel
           ),
           okAuth,
-          false
-        )
+          false,
+        false,
+        false,
+        VinylDNSTestHelpers.defaultTtl)
         .toOption
         .get
 
@@ -1622,8 +1642,10 @@ class BatchChangeServiceSpec
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel
           ),
           okAuth,
-          true
-        )
+          true,
+        true,
+        true,
+        VinylDNSTestHelpers.defaultTtl)
         .toOption
         .get
 
@@ -1659,8 +1681,10 @@ class BatchChangeServiceSpec
             AddChangeForValidation(apexZone, "apex.test.com.", apexAddA, 7200L).validNel
           ),
           okAuth,
-          true
-        )
+          true,
+        true,
+        true,
+        VinylDNSTestHelpers.defaultTtl)
         .toOption
         .get
 
@@ -1694,8 +1718,10 @@ class BatchChangeServiceSpec
             nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
-          true
-        )
+          true,
+        true,
+        false,
+        VinylDNSTestHelpers.defaultTtl)
         .toOption
         .get
 
@@ -1761,8 +1787,10 @@ class BatchChangeServiceSpec
             nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
-          allowManualReview = true
-        )
+          allowManualReview = true,
+        true,
+        true,
+        VinylDNSTestHelpers.defaultTtl)
         .toOption
         .get
 
@@ -1794,8 +1822,10 @@ class BatchChangeServiceSpec
             nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
-          true
-        )
+          true,
+        false,
+        false,
+        VinylDNSTestHelpers.defaultTtl)
         .left
         .value
 
@@ -1821,8 +1851,10 @@ class BatchChangeServiceSpec
             nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
-          true
-        )
+          true,
+        false,
+        false,
+        VinylDNSTestHelpers.defaultTtl)
         .left
         .value
 
@@ -1846,8 +1878,10 @@ class BatchChangeServiceSpec
             nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
-          true
-        )
+          true,
+        false,
+        false,
+        VinylDNSTestHelpers.defaultTtl)
         .left
         .value
 
@@ -1868,8 +1902,10 @@ class BatchChangeServiceSpec
             AddChangeForValidation(baseZone, "non-apex", nonApexAddA, 7200L).validNel
           ),
           okAuth,
-          true
-        )
+          true,
+        true,
+        true,
+        VinylDNSTestHelpers.defaultTtl)
         .left
         .value
 
@@ -1888,8 +1924,10 @@ class BatchChangeServiceSpec
             nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
-          false
-        )
+          false,
+        true,
+        false,
+        VinylDNSTestHelpers.defaultTtl)
         .left
         .value
 
@@ -1912,8 +1950,10 @@ class BatchChangeServiceSpec
             nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
-          allowManualReview = false
-        )
+          allowManualReview = false,
+        true,
+        true,
+        VinylDNSTestHelpers.defaultTtl)
         .left
         .value
 
@@ -1930,8 +1970,10 @@ class BatchChangeServiceSpec
             nonFatalErrorZoneDiscoveryError.invalidNel
           ),
           okAuth,
-          true
-        )
+          true,
+        true,
+        false,
+        VinylDNSTestHelpers.defaultTtl)
 
       result shouldBe Left(ManualReviewRequiresOwnerGroup)
     }
@@ -2625,7 +2667,8 @@ class BatchChangeServiceSpec
             batchChange,
             ExistingZones(Set()),
             ChangeForValidationMap(List(), ExistingRecordSets(List())),
-            None
+            None,
+            true
           )
           .value.unsafeRunSync().toOption.get
 
@@ -2648,7 +2691,8 @@ class BatchChangeServiceSpec
             batchChange,
             ExistingZones(Set()),
             ChangeForValidationMap(List(), ExistingRecordSets(List())),
-            None
+            None,
+            true
           )
           .value.unsafeRunSync().toOption.get
 
@@ -2674,7 +2718,8 @@ class BatchChangeServiceSpec
             batchChange,
             ExistingZones(Set()),
             ChangeForValidationMap(List(), ExistingRecordSets(List())),
-            None
+            None,
+            false
           )
           .value.unsafeRunSync().swap.toOption.get
 
@@ -2697,7 +2742,8 @@ class BatchChangeServiceSpec
             batchChange,
             ExistingZones(Set()),
             ChangeForValidationMap(List(), ExistingRecordSets(List())),
-            None
+            None,
+            false
           )
           .value.unsafeRunSync().swap.toOption.get
 

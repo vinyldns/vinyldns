@@ -59,7 +59,7 @@ class MembershipServiceSpec
     mockZoneRepo,
     mockGroupChangeRepo,
     mockRecordSetRepo,
-    mockValidEmailConfig
+    () => mockValidEmailConfig
   )
   private val backingServiceNew = new MembershipService(
     mockGroupRepo,
@@ -68,7 +68,7 @@ class MembershipServiceSpec
     mockZoneRepo,
     mockGroupChangeRepo,
     mockRecordSetRepo,
-    mockValidEmailConfigNew
+    () => mockValidEmailConfigNew
   )
   private val underTest = spy(backingService)
   private val underTestNew = spy(backingServiceNew)

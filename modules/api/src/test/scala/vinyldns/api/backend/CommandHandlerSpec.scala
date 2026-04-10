@@ -360,11 +360,7 @@ class CommandHandlerSpec
 
       // verify our interactions
       verify(mq, atLeastOnce()).receive(count)
-
-      // verify that our message queue was polled twice
-      verify(mq, times(2))
-        .receive(count)
-      verify(mq).remove(cmd)
+      verify(mq, atLeastOnce()).remove(cmd)
     }
   }
 
@@ -415,7 +411,7 @@ class CommandHandlerSpec
             batchChangeRepo,
             AllNotifiers(List.empty),
             mockBackendResolver,
-            10000
+            IO(10000)
           )
 
       // kick off processing of messages

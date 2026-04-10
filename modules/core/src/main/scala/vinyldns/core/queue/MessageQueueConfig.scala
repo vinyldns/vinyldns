@@ -17,7 +17,8 @@
 package vinyldns.core.queue
 
 import com.typesafe.config.Config
-
+import pureconfig.ConfigReader
+import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 
 final case class MessageQueueConfig(
@@ -27,3 +28,27 @@ final case class MessageQueueConfig(
     settings: Config,
     maxRetries: Int
 )
+object MessageQueueConfig {
+  // pollingInterval and messagesPerPoll are DB-backed at runtime (overridden in Boot).
+  // Make them optional so they don't need to be in application.conf.
+  implicit val configReader: ConfigReader[MessageQueueConfig] = ConfigReader.fromCursor { c =>
+    for {
+      oc          <- c.asObjectCursor
+      className   <- oc.atKey("class-name").flatMap(_.asString)
+      settings    <- oc.atKey("settings").flatMap(_.asObjectCursor).map(_.objValue.toConfig)
+      maxRetries  <- {
+        val cur = oc.atKeyOrUndefined("max-retries")
+        if (cur.isUndefined) Right(100) else cur.asInt
+      }
+      pollingInterval <- {
+        val cur = oc.atKeyOrUndefined("polling-interval")
+        if (cur.isUndefined) Right(250.millis: FiniteDuration)
+        else ConfigReader[FiniteDuration].from(cur)
+      }
+      msgsPerPoll <- {
+        val cur = oc.atKeyOrUndefined("messages-per-poll")
+        if (cur.isUndefined) Right(10) else cur.asInt
+      }
+    } yield MessageQueueConfig(className, pollingInterval, msgsPerPoll, settings, maxRetries)
+  }
+}

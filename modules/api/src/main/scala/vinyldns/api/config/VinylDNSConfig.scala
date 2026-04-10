@@ -24,7 +24,7 @@ import pureconfig._
 import pureconfig.error.ConfigReaderException
 import pureconfig.generic.auto._
 import vinyldns.api.domain.access.{GlobalAcl, GlobalAcls}
-import vinyldns.api.metrics.APIMetricsSettings
+import vinyldns.api.metrics.{APIMetricsSettings, MemoryMetricsSettings}
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.backend.BackendConfigs
 import vinyldns.core.domain.zone.ConfiguredDnsConnections
@@ -70,7 +70,6 @@ final case class VinylDNSConfig private (
   val httpConfig: HttpConfig = runtime.httpConfig
   val highValueDomainConfig: HighValueDomainConfig = runtime.highValueDomainConfig
   val manualReviewConfig: ManualReviewConfig = runtime.manualReviewConfig
-  val scheduledChangesConfig: ScheduledChangesConfig = runtime.scheduledChangesConfig
   val batchChangeConfig: BatchChangeConfig = runtime.batchChangeConfig
   val globalAcls: GlobalAcls = runtime.globalAcls
 
@@ -97,6 +96,13 @@ object VinylDNSConfig {
       .leftMap(failures => new ConfigReaderException[A](failures))
       .rethrowT
 
+  private def loadIOOpt[A](
+                            config: Config,
+                            path: String,
+                            default: A
+                          )(implicit cr: ConfigReader[A], classTag: ClassTag[A]): IO[A] =
+    if (config.hasPath(path)) loadIO[A](config, path) else IO.pure(default)
+
   def load(): IO[VinylDNSConfig] =
     loadFrom(RuntimeVinylDNSConfig.getRaw)
 
@@ -117,26 +123,28 @@ object VinylDNSConfig {
 
     for {
       // ---- runtime ----
-      limitsconfig <- loadIO[LimitsConfig](config, "vinyldns.api.limits")
-      validEmailConfig <- loadIO[ValidEmailConfig](config, "vinyldns.valid-email-config")
+      limitsconfig <- loadIOOpt[LimitsConfig](config, "vinyldns.api.limits", LimitsConfig(100, 100, 1000, 3000, 100, 100, 100))
+      validEmailConfig <- loadIOOpt[ValidEmailConfig](config, "vinyldns.valid-email-config", ValidEmailConfig(Nil, 0))
       serverConfig <- loadIO[ServerConfig](config, "vinyldns")
       batchChangeConfig <- loadIO[BatchChangeConfig](config, "vinyldns")
-      httpConfig <- loadIO[HttpConfig](config, "vinyldns.rest")
-      hvdConfig <- loadIO[HighValueDomainConfig](config, "vinyldns.high-value-domains")
+      httpConfig <- loadIOOpt[HttpConfig](config, "vinyldns.rest", HttpConfig("0.0.0.0", 9000))
+      hvdConfig <- loadIOOpt[HighValueDomainConfig](config, "vinyldns.high-value-domains", HighValueDomainConfig(Nil, Nil))
       scheduledChangesConfig <- loadIO[ScheduledChangesConfig](config, "vinyldns")
       manualReviewConfig <- loadIO[ManualReviewConfig](config, "vinyldns")
-      globalAcls <- loadIO[List[GlobalAcl]](config, "vinyldns.global-acl-rules").map(GlobalAcls.apply)
+      globalAcls <- if (config.hasPath("vinyldns.global-acl-rules"))
+                      loadIO[List[GlobalAcl]](config, "vinyldns.global-acl-rules").map(GlobalAcls.apply)
+                    else IO.pure(GlobalAcls(Nil))
 
       // ---- startup ----
-      backendConfigs <- loadIO[BackendConfigs](config, "vinyldns.backend")
-      dottedHostsConfig <- loadIO[DottedHostsConfig](config, "vinyldns.dotted-hosts")
+      backendConfigs <- loadIOOpt[BackendConfigs](config, "vinyldns.backend", BackendConfigs("default", Nil))
+      dottedHostsConfig <- loadIOOpt[DottedHostsConfig](config, "vinyldns.dotted-hosts", DottedHostsConfig(Nil))
       messageQueueConfig <- loadIO[MessageQueueConfig](config, "vinyldns.queue")
       dataStoreConfigs <- loadFromStringListIO[DataStoreConfig](config, "vinyldns.data-stores")
       notifierConfigs <- loadFromStringListIO[NotifierConfig](config, "vinyldns.notifiers")
       cryptoConfig <- IO(config.getConfig("vinyldns.crypto"))
       crypto <- CryptoAlgebra.load(cryptoConfig)
       connections <- ConfiguredDnsConnections.load(config, cryptoConfig)
-      metricSettings <- loadIO[APIMetricsSettings](config, "vinyldns.metrics")
+      metricSettings <- loadIOOpt[APIMetricsSettings](config, "vinyldns.metrics", APIMetricsSettings(MemoryMetricsSettings(logEnabled = false, logSeconds = 300)))
     } yield VinylDNSConfig(
       runtime = RuntimeConfig(
         serverConfig,
