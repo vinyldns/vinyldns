@@ -42,19 +42,19 @@ object ServerConfig {
 
   implicit val configReader: ConfigReader[ServerConfig] = ConfigReader.fromCursor { c =>
     c.asObjectCursor.map { oc =>
-      def optInt(key: String, default: Int): Int = {
+      def readInt(key: String): Int = {
         val cur = oc.atKeyOrUndefined(key)
-        if (cur.isUndefined) default else cur.asInt.fold(_ => default, identity)
+        if (cur.isUndefined) 0 else cur.asInt.fold(_ => 0, identity)
       }
-      def optBool(key: String, default: Boolean): Boolean = {
+      def readBool(key: String): Boolean = {
         val cur = oc.atKeyOrUndefined(key)
-        if (cur.isUndefined) default else cur.asBoolean.fold(_ => default, identity)
+        if (cur.isUndefined) false else cur.asBoolean.fold(_ => false, identity)
       }
-      def optString(key: String, default: String): String = {
+      def readString(key: String): String = {
         val cur = oc.atKeyOrUndefined(key)
-        if (cur.isUndefined) default else cur.asString.fold(_ => default, identity)
+        if (cur.isUndefined) "" else cur.asString.fold(_ => "", identity)
       }
-      def optListOfStrings(key: String): List[String] = {
+      def readListOfStrings(key: String): List[String] = {
         val cur = oc.atKeyOrUndefined(key)
         if (cur.isUndefined) Nil else ConfigReader[List[String]].from(cur).fold(_ => Nil, identity)
       }
@@ -70,19 +70,19 @@ object ServerConfig {
         )
       }
       ServerConfig(
-        optInt("health-check-timeout",                         10),
-        optInt("default-ttl",                                  7200),
-        optInt("max-zone-size",                                60000),
-        optInt("sync-delay",                                   10000),
-        optBool("validate-record-lookup-against-dns-backend",  false),
-        toCaseIgnoredRegexList(optListOfStrings("approved-name-servers")),
-        optString("color",                                     "blue"),
-        optString("version",                                   ""),
+        readInt("health-check-timeout"),
+        readInt("default-ttl"),
+        readInt("max-zone-size"),
+        readInt("sync-delay"),
+        readBool("validate-record-lookup-against-dns-backend"),
+        toCaseIgnoredRegexList(readListOfStrings("approved-name-servers")),
+        readString("color"),
+        readString("version"),
         zoneKeyName,
-        optBool("processing-disabled",                         false),
-        optBool("use-recordset-cache",                         false),
-        optBool("load-test-data",                              false),
-        optBool("is-zone-sync-schedule-allowed",               true)
+        readBool("processing-disabled"),
+        readBool("use-recordset-cache"),
+        readBool("load-test-data"),
+        readBool("is-zone-sync-schedule-allowed")
       )
     }
   }

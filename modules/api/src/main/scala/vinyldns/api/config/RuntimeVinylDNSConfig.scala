@@ -60,10 +60,16 @@ object RuntimeVinylDNSConfig {
       .load[DottedHostsConfig].getOrElse(DottedHostsConfig(Nil))
   @volatile private var _validEmailConfig: ValidEmailConfig =
     ConfigSource.fromConfig(rawConfig).at("vinyldns.valid-email-config")
-      .load[ValidEmailConfig].getOrElse(ValidEmailConfig(List("test.com"), 2))
-  @volatile private var _limitsConfig: LimitsConfig = LimitsConfig(100, 100, 1000, 3000, 100, 100, 100)
-  @volatile private var _sharedApprovedTypes: List[RecordType.Value] = Nil
-  @volatile private var _manualReviewConfig: ManualReviewConfig = ManualReviewConfig(enabled = true, Nil, Nil, Set.empty)
+      .load[ValidEmailConfig].getOrElse(ValidEmailConfig(Nil, 0))
+  @volatile private var _limitsConfig: LimitsConfig =
+    ConfigSource.fromConfig(rawConfig).at("vinyldns.api.limits")
+      .load[LimitsConfig].getOrElse(LimitsConfig(0, 0, 0, 0, 0, 0, 0))
+  @volatile private var _sharedApprovedTypes: List[RecordType.Value] =
+    ConfigSource.fromConfig(rawConfig).at("vinyldns")
+      .load[BatchChangeConfig].map(_.allowedRecordTypes).getOrElse(Nil)
+  @volatile private var _manualReviewConfig: ManualReviewConfig =
+    ConfigSource.fromConfig(rawConfig).at("vinyldns")
+      .load[ManualReviewConfig].getOrElse(ManualReviewConfig(enabled = false, Nil, Nil, Set.empty))
   @volatile private var _approvedNameServers: List[Regex] = Nil
   @volatile private var _globalAcls: GlobalAcls = GlobalAcls(Nil)
   // BackendResolver updated by applyDbOverrides(); all services hold a reference to the
@@ -189,10 +195,10 @@ object RuntimeVinylDNSConfig {
     appConfigRef.get.flatMap { snapshot =>
       IO {
         _limitsConfig = buildLimitsConfig(snapshot)
-        _sharedApprovedTypes = snapshot
+        snapshot
           .get("shared-approved-types")
           .map(_.split(",").toList.flatMap(s => RecordType.find(s.trim)))
-          .getOrElse(List(RecordType.A, RecordType.AAAA, RecordType.CNAME, RecordType.PTR, RecordType.TXT))
+          .foreach(_sharedApprovedTypes = _)
         _manualReviewConfig = parseManualReviewConfig(snapshot)
         parseFromJson[HighValueDomainConfig](snapshot, "high-value-domains").foreach(_highValueDomainConfig = _)
         parseFromJson[DottedHostsConfig](snapshot, "dotted-hosts").foreach(_dottedHostsConfig = _)
@@ -244,46 +250,46 @@ object RuntimeVinylDNSConfig {
   def globalAcls: GlobalAcls = _globalAcls
 
   def syncDelay: IO[Int] =
-    getOrElse("sync-delay", "10000").map(_.toInt)
+    get("sync-delay").map(_.map(_.toInt).getOrElse(_current.serverConfig.syncDelay))
 
   def maxZoneSize: IO[Int] =
-    getOrElse("max-zone-size", "60000").map(_.toInt)
+    get("max-zone-size").map(_.map(_.toInt).getOrElse(_current.serverConfig.maxZoneSize))
 
   def useRecordSetCache: IO[Boolean] =
-    getOrElse("use-recordset-cache", "false").map(_.toBoolean)
+    get("use-recordset-cache").map(_.map(_.toBoolean).getOrElse(_current.serverConfig.useRecordSetCache))
 
   def validateRecordLookupAgainstDnsBackend: IO[Boolean] =
-    getOrElse("validate-recordset-lookup-against-dns-backend", "false").map(_.toBoolean)
+    get("validate-recordset-lookup-against-dns-backend").map(_.map(_.toBoolean).getOrElse(_current.serverConfig.validateRecordLookupAgainstDnsBackend))
 
   def manualReviewEnabled: IO[Boolean] =
-    getOrElse("manual-batch-review-enabled", "true").map(_.toBoolean)
+    get("manual-batch-review-enabled").map(_.map(_.toBoolean).getOrElse(_current.manualReviewConfig.enabled))
 
   def scheduledChangesEnabled: IO[Boolean] =
-    getOrElse("scheduled-changes-enabled", "true").map(_.toBoolean)
+    get("scheduled-changes-enabled").map(_.map(_.toBoolean).getOrElse(_current.runtime.scheduledChangesConfig.enabled))
 
   def batchChangeLimit: IO[Int] =
-    getOrElse("batch-change-limit", "1000").map(_.toInt)
+    get("batch-change-limit").map(_.map(_.toInt).getOrElse(_current.batchChangeConfig.limit))
 
   def defaultTtl: IO[Long] =
-    getOrElse("default-ttl", "7200").map(_.toLong)
+    get("default-ttl").map(_.map(_.toLong).getOrElse(_current.serverConfig.defaultTtl.toLong))
 
   def loadTestData: IO[Boolean] =
-    getOrElse("load-test-data", "false").map(_.toBoolean)
+    get("load-test-data").map(_.map(_.toBoolean).getOrElse(_current.serverConfig.loadTestData))
 
   def isZoneSyncScheduleAllowed: IO[Boolean] =
-    getOrElse("is-zone-sync-schedule-allowed", "true").map(_.toBoolean)
+    get("is-zone-sync-schedule-allowed").map(_.map(_.toBoolean).getOrElse(_current.serverConfig.isZoneSyncScheduleAllowed))
 
   def restHost: IO[String] =
-    getOrElse("rest.host", "0.0.0.0")
+    get("rest.host").map(_.getOrElse(_current.httpConfig.host))
 
   def restPort: IO[Int] =
-    getOrElse("rest.port", "9000").map(_.toInt)
+    get("rest.port").map(_.map(_.toInt).getOrElse(_current.httpConfig.port))
 
   def queueMessagesPerPoll: IO[Int] =
-    getOrElse("queue.messages-per-poll", "10").map(_.toInt)
+    get("queue.messages-per-poll").map(_.map(_.toInt).getOrElse(_current.messageQueueConfig.messagesPerPoll))
 
   def queuePollingIntervalMillis: IO[Long] =
-    getOrElse("queue.polling-interval-millis", "250").map(_.toLong)
+    get("queue.polling-interval-millis").map(_.map(_.toLong).getOrElse(_current.messageQueueConfig.pollingInterval.toMillis))
 
   /** Limits config. Volatile var rebuilt by applyDbOverrides() — DB keys override file values. */
   def limitsConfig: LimitsConfig = _limitsConfig
@@ -293,7 +299,7 @@ object RuntimeVinylDNSConfig {
 
   /** Processing disabled flag — DB key: processing-disabled. Default: false. */
   def processingDisabled: IO[Boolean] =
-    getOrElse("processing-disabled", "false").map(_.toBoolean)
+    get("processing-disabled").map(_.map(_.toBoolean).getOrElse(_current.serverConfig.processingDisabled))
 
   // Effective startup configs — DB JSON blob overrides file at startup
   /**
@@ -349,14 +355,15 @@ object RuntimeVinylDNSConfig {
     }
 
   private def buildLimitsConfig(snapshot: Map[String, String]): LimitsConfig = {
+    val c = _current.limitsconfig
     LimitsConfig(
-      snapshot.get("batchchange-routing-max-items-limit").map(_.toInt).getOrElse(100),
-      snapshot.get("membership-routing-default-max-items").map(_.toInt).getOrElse(100),
-      snapshot.get("membership-routing-max-items-limit").map(_.toInt).getOrElse(1000),
-      snapshot.get("membership-routing-max-groups-list-limit").map(_.toInt).getOrElse(3000),
-      snapshot.get("recordset-routing-default-max-items").map(_.toInt).getOrElse(100),
-      snapshot.get("zone-routing-default-max-items").map(_.toInt).getOrElse(100),
-      snapshot.get("zone-routing-max-items-limit").map(_.toInt).getOrElse(100)
+      snapshot.get("batchchange-routing-max-items-limit").map(_.toInt).getOrElse(c.BATCHCHANGE_ROUTING_MAX_ITEMS_LIMIT),
+      snapshot.get("membership-routing-default-max-items").map(_.toInt).getOrElse(c.MEMBERSHIP_ROUTING_DEFAULT_MAX_ITEMS),
+      snapshot.get("membership-routing-max-items-limit").map(_.toInt).getOrElse(c.MEMBERSHIP_ROUTING_MAX_ITEMS_LIMIT),
+      snapshot.get("membership-routing-max-groups-list-limit").map(_.toInt).getOrElse(c.MEMBERSHIP_ROUTING_MAX_GROUPS_LIST_LIMIT),
+      snapshot.get("recordset-routing-default-max-items").map(_.toInt).getOrElse(c.RECORDSET_ROUTING_DEFAULT_MAX_ITEMS),
+      snapshot.get("zone-routing-default-max-items").map(_.toInt).getOrElse(c.ZONE_ROUTING_DEFAULT_MAX_ITEMS),
+      snapshot.get("zone-routing-max-items-limit").map(_.toInt).getOrElse(c.ZONE_ROUTING_MAX_ITEMS_LIMIT)
     )
   }
 }

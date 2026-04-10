@@ -28,23 +28,16 @@ final case class LimitsConfig(
     ZONE_ROUTING_MAX_ITEMS_LIMIT: Int
 )
 object LimitsConfig {
-  // All fields are DB-backed. Defaults match the DB insert script.
-  implicit val configReader: ConfigReader[LimitsConfig] = ConfigReader.fromCursor { c =>
-    c.asObjectCursor.map { oc =>
-      def optInt(key: String, default: Int): Int = {
-        val cur = oc.atKeyOrUndefined(key)
-        if (cur.isUndefined) default else cur.asInt.fold(_ => default, identity)
-      }
-      LimitsConfig(
-        optInt("batchchange-routing-max-items-limit",      100),
-        optInt("membership-routing-default-max-items",     100),
-        optInt("membership-routing-max-items-limit",       1000),
-        optInt("membership-routing-max-groups-list-limit", 3000),
-        optInt("recordset-routing-default-max-items",      100),
-        optInt("zone-routing-default-max-items",           100),
-        optInt("zone-routing-max-items-limit",             100)
-      )
-    }
-  }
-
+  // All fields are read from config (reference.conf defaults; DB overrides via buildLimitsConfig).
+  // No hardcoded fallbacks — defaults live exclusively in reference.conf under vinyldns.api.limits.
+  implicit val configReader: ConfigReader[LimitsConfig] =
+    ConfigReader.forProduct7[LimitsConfig, Int, Int, Int, Int, Int, Int, Int](
+      "batchchange-routing-max-items-limit",
+      "membership-routing-default-max-items",
+      "membership-routing-max-items-limit",
+      "membership-routing-max-groups-list-limit",
+      "recordset-routing-default-max-items",
+      "zone-routing-default-max-items",
+      "zone-routing-max-items-limit"
+    )(LimitsConfig.apply)
 }

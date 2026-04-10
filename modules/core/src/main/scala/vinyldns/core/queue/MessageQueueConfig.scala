@@ -30,25 +30,15 @@ final case class MessageQueueConfig(
 )
 object MessageQueueConfig {
   // pollingInterval and messagesPerPoll are DB-backed at runtime (overridden in Boot).
-  // Make them optional so they don't need to be in application.conf.
+  // Defaults live in reference.conf — no hardcoded fallbacks in code.
   implicit val configReader: ConfigReader[MessageQueueConfig] = ConfigReader.fromCursor { c =>
     for {
-      oc          <- c.asObjectCursor
-      className   <- oc.atKey("class-name").flatMap(_.asString)
-      settings    <- oc.atKey("settings").flatMap(_.asObjectCursor).map(_.objValue.toConfig)
-      maxRetries  <- {
-        val cur = oc.atKeyOrUndefined("max-retries")
-        if (cur.isUndefined) Right(100) else cur.asInt
-      }
-      pollingInterval <- {
-        val cur = oc.atKeyOrUndefined("polling-interval")
-        if (cur.isUndefined) Right(250.millis: FiniteDuration)
-        else ConfigReader[FiniteDuration].from(cur)
-      }
-      msgsPerPoll <- {
-        val cur = oc.atKeyOrUndefined("messages-per-poll")
-        if (cur.isUndefined) Right(10) else cur.asInt
-      }
+      oc              <- c.asObjectCursor
+      className       <- oc.atKey("class-name").flatMap(_.asString)
+      settings        <- oc.atKey("settings").flatMap(_.asObjectCursor).map(_.objValue.toConfig)
+      maxRetries      <- oc.atKey("max-retries").flatMap(_.asInt)
+      pollingInterval <- oc.atKey("polling-interval").flatMap(ConfigReader[FiniteDuration].from)
+      msgsPerPoll     <- oc.atKey("messages-per-poll").flatMap(_.asInt)
     } yield MessageQueueConfig(className, pollingInterval, msgsPerPoll, settings, maxRetries)
   }
 }

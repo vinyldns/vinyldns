@@ -25,27 +25,34 @@ import scala.reflect.ClassTag
 
 class ConfigReadersSpec extends AnyWordSpec with Matchers {
 
+  // Load at root from an isolated inline config — for tests that supply ALL values explicitly.
   private def load[A: ClassTag: ConfigReader](hocon: String): A =
     ConfigSource.fromConfig(ConfigFactory.parseString(hocon)).loadOrThrow[A]
+
+  // Load at a nested path, with reference.conf as fallback — for "defaults" and "partial" tests.
+  private def loadWithDefaults[A: ClassTag: ConfigReader](path: String, overrideHocon: String = "{}"): A =
+    ConfigSource.fromConfig(
+      ConfigFactory.parseString(overrideHocon).withFallback(ConfigFactory.load())
+    ).at(path).loadOrThrow[A]
 
 
   "ServerConfig configReader" should {
 
     "load all defaults when the block is empty" in {
-      val cfg = load[ServerConfig]("{}")
-      cfg.healthCheckTimeout          shouldBe 10
-      cfg.defaultTtl                  shouldBe 7200
-      cfg.maxZoneSize                 shouldBe 60000
-      cfg.syncDelay                   shouldBe 10000
+      val cfg = loadWithDefaults[ServerConfig]("vinyldns")
+      cfg.healthCheckTimeout                    shouldBe 10000
+      cfg.defaultTtl                            shouldBe 7200
+      cfg.maxZoneSize                           shouldBe 60000
+      cfg.syncDelay                             shouldBe 600000
       cfg.validateRecordLookupAgainstDnsBackend shouldBe false
-      cfg.processingDisabled          shouldBe false
-      cfg.useRecordSetCache           shouldBe false
-      cfg.approvedNameServers         shouldBe empty
-      cfg.color                       shouldBe "blue"
-      cfg.version                     shouldBe ""
-      cfg.keyName                     shouldBe ""
-      cfg.loadTestData                shouldBe false
-      cfg.isZoneSyncScheduleAllowed   shouldBe true
+      cfg.processingDisabled                    shouldBe false
+      cfg.useRecordSetCache                     shouldBe false
+      cfg.approvedNameServers                   should have length 2
+      cfg.color                                 shouldBe "green"
+      cfg.version                               shouldBe "0.0.0-local-dev"
+      cfg.keyName                               shouldBe "vinyldns."
+      cfg.loadTestData                          shouldBe false
+      cfg.isZoneSyncScheduleAllowed             shouldBe true
     }
 
     "load explicit values when provided" in {
@@ -102,7 +109,7 @@ class ConfigReadersSpec extends AnyWordSpec with Matchers {
   "LimitsConfig configReader" should {
 
     "load all defaults when the block is empty" in {
-      val cfg = load[LimitsConfig]("{}")
+      val cfg = loadWithDefaults[LimitsConfig]("vinyldns.api.limits")
       cfg.BATCHCHANGE_ROUTING_MAX_ITEMS_LIMIT       shouldBe 100
       cfg.MEMBERSHIP_ROUTING_DEFAULT_MAX_ITEMS      shouldBe 100
       cfg.MEMBERSHIP_ROUTING_MAX_ITEMS_LIMIT        shouldBe 1000
@@ -134,10 +141,11 @@ class ConfigReadersSpec extends AnyWordSpec with Matchers {
     }
 
     "load partial values and default the rest" in {
-      val cfg = load[LimitsConfig]("{ batchchange-routing-max-items-limit = 42 }")
+      val cfg = loadWithDefaults[LimitsConfig]("vinyldns.api.limits",
+        "vinyldns.api.limits.batchchange-routing-max-items-limit = 42")
       cfg.BATCHCHANGE_ROUTING_MAX_ITEMS_LIMIT  shouldBe 42
-      cfg.MEMBERSHIP_ROUTING_DEFAULT_MAX_ITEMS shouldBe 100   // default
-      cfg.ZONE_ROUTING_MAX_ITEMS_LIMIT         shouldBe 100   // default
+      cfg.MEMBERSHIP_ROUTING_DEFAULT_MAX_ITEMS shouldBe 100   // from reference.conf
+      cfg.ZONE_ROUTING_MAX_ITEMS_LIMIT         shouldBe 100   // from reference.conf
     }
   }
 

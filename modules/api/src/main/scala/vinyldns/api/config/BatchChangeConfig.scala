@@ -36,7 +36,7 @@ object BatchChangeConfig {
       case (limit, approvedTypes, v6) =>
         BatchChangeConfig(
           limit.getOrElse(1000),
-          approvedTypes.getOrElse(List("A","AAAA","CNAME","PTR","TXT")).flatMap(RecordType.find),
+          approvedTypes.getOrElse(Nil).flatMap(RecordType.find),
           v6
         )
     }

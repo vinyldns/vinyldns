@@ -24,7 +24,7 @@ import pureconfig._
 import pureconfig.error.ConfigReaderException
 import pureconfig.generic.auto._
 import vinyldns.api.domain.access.{GlobalAcl, GlobalAcls}
-import vinyldns.api.metrics.{APIMetricsSettings, MemoryMetricsSettings}
+import vinyldns.api.metrics.APIMetricsSettings
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.backend.BackendConfigs
 import vinyldns.core.domain.zone.ConfiguredDnsConnections
@@ -123,11 +123,11 @@ object VinylDNSConfig {
 
     for {
       // ---- runtime ----
-      limitsconfig <- loadIOOpt[LimitsConfig](config, "vinyldns.api.limits", LimitsConfig(100, 100, 1000, 3000, 100, 100, 100))
-      validEmailConfig <- loadIOOpt[ValidEmailConfig](config, "vinyldns.valid-email-config", ValidEmailConfig(Nil, 0))
+      limitsconfig <- loadIO[LimitsConfig](config, "vinyldns.api.limits")
+      validEmailConfig <- loadIO[ValidEmailConfig](config, "vinyldns.valid-email-config")
       serverConfig <- loadIO[ServerConfig](config, "vinyldns")
       batchChangeConfig <- loadIO[BatchChangeConfig](config, "vinyldns")
-      httpConfig <- loadIOOpt[HttpConfig](config, "vinyldns.rest", HttpConfig("0.0.0.0", 9000))
+      httpConfig <- loadIO[HttpConfig](config, "vinyldns.rest")
       hvdConfig <- loadIOOpt[HighValueDomainConfig](config, "vinyldns.high-value-domains", HighValueDomainConfig(Nil, Nil))
       scheduledChangesConfig <- loadIO[ScheduledChangesConfig](config, "vinyldns")
       manualReviewConfig <- loadIO[ManualReviewConfig](config, "vinyldns")
@@ -136,15 +136,15 @@ object VinylDNSConfig {
                     else IO.pure(GlobalAcls(Nil))
 
       // ---- startup ----
-      backendConfigs <- loadIOOpt[BackendConfigs](config, "vinyldns.backend", BackendConfigs("default", Nil))
-      dottedHostsConfig <- loadIOOpt[DottedHostsConfig](config, "vinyldns.dotted-hosts", DottedHostsConfig(Nil))
+      backendConfigs <- loadIO[BackendConfigs](config, "vinyldns.backend")
+      dottedHostsConfig <- loadIO[DottedHostsConfig](config, "vinyldns.dotted-hosts")
       messageQueueConfig <- loadIO[MessageQueueConfig](config, "vinyldns.queue")
       dataStoreConfigs <- loadFromStringListIO[DataStoreConfig](config, "vinyldns.data-stores")
       notifierConfigs <- loadFromStringListIO[NotifierConfig](config, "vinyldns.notifiers")
       cryptoConfig <- IO(config.getConfig("vinyldns.crypto"))
       crypto <- CryptoAlgebra.load(cryptoConfig)
       connections <- ConfiguredDnsConnections.load(config, cryptoConfig)
-      metricSettings <- loadIOOpt[APIMetricsSettings](config, "vinyldns.metrics", APIMetricsSettings(MemoryMetricsSettings(logEnabled = false, logSeconds = 300)))
+      metricSettings <- loadIO[APIMetricsSettings](config, "vinyldns.metrics")
     } yield VinylDNSConfig(
       runtime = RuntimeConfig(
         serverConfig,
