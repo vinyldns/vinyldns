@@ -43,7 +43,7 @@ import scala.concurrent.ExecutionContext
  *   1. Seed rows into app_config via appConfigRepository
  *   2. Call loadFromDb() + applyDbOverrides()
  *   3. Instantiate the service/validation that reads from RuntimeVinylDNSConfig
- *   4. Assert the business behaviour reflects the DB value — not a hardcoded default
+ *   4. Assert the business behaviour reflects the DB value
  */
 class DbConfigFunctionalIntegrationSpec
   extends AnyWordSpec
@@ -78,8 +78,6 @@ class DbConfigFunctionalIntegrationSpec
       RuntimeVinylDNSConfig.approvedNameServers
     )
 
-  // ─── high-value-domains ───────────────────────────────────────────────────
-
   "BatchChangeValidations high-value-domains from DB" should {
 
     "reject a record whose name matches a regex loaded from DB" in {
@@ -98,8 +96,6 @@ class DbConfigFunctionalIntegrationSpec
       validations().validateInputName(change, isApproved = false).isValid shouldBe true
     }
   }
-
-  // ─── manual-review-domains ────────────────────────────────────────────────
 
   "BatchChangeValidations manual-review-domains from DB" should {
 
@@ -122,8 +118,6 @@ class DbConfigFunctionalIntegrationSpec
       validations().validateInputName(change, isApproved = false).isValid shouldBe true
     }
   }
-
-  // ─── sync-delay ───────────────────────────────────────────────────────────
 
   "ZoneValidations sync-delay from DB" should {
 
@@ -153,8 +147,6 @@ class DbConfigFunctionalIntegrationSpec
         .isRight shouldBe true
     }
   }
-
-  // ─── valid-email ──────────────────────────────────────────────────────────
 
   "MembershipService valid-email config from DB" should {
 
@@ -186,8 +178,6 @@ class DbConfigFunctionalIntegrationSpec
     }
   }
 
-  // ─── limits ───────────────────────────────────────────────────────────────
-
   "RuntimeVinylDNSConfig limitsConfig from DB" should {
 
     "return updated MEMBERSHIP_ROUTING_MAX_GROUPS_LIST_LIMIT for route validation" in {
@@ -202,8 +192,6 @@ class DbConfigFunctionalIntegrationSpec
       RuntimeVinylDNSConfig.limitsConfig.BATCHCHANGE_ROUTING_MAX_ITEMS_LIMIT shouldBe 7
     }
   }
-
-  // ─── approved-name-servers ────────────────────────────────────────────────
 
   "RuntimeVinylDNSConfig approved-name-servers from DB" should {
 
@@ -220,9 +208,6 @@ class DbConfigFunctionalIntegrationSpec
     "BatchChangeValidations built after applyDb() uses the DB-sourced approved servers" in {
       seed("approved-name-servers", "ns1.only-this.com.")
       applyDb()
-
-      // approvedNameServers is injected at construction time — so building after applyDb()
-      // picks up the DB value. Verify RuntimeVinylDNSConfig itself has exactly the DB value.
       val patterns = RuntimeVinylDNSConfig.approvedNameServers.map(_.pattern.pattern())
       patterns should contain only "(?i)ns1.only-this.com."
     }
