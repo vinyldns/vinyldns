@@ -30,10 +30,13 @@ class MessageQueueConfigSpec extends AnyWordSpec with Matchers {
 
   "MessageQueueConfig configReader" should {
 
-    "use default polling-interval (250ms) and messages-per-poll (10) when absent" in {
+    "parse all fields when fully specified" in {
       val cfg = load(
         """{
-          |  class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
+          |  class-name        = "vinyldns.sqs.queue.SqsMessageQueueProvider"
+          |  polling-interval  = 250 milliseconds
+          |  messages-per-poll = 10
+          |  max-retries       = 100
           |  settings {}
           |}""".stripMargin
       )
@@ -46,9 +49,10 @@ class MessageQueueConfigSpec extends AnyWordSpec with Matchers {
     "load explicit polling-interval and messages-per-poll when provided" in {
       val cfg = load(
         """{
-          |  class-name       = "vinyldns.sqs.queue.SqsMessageQueueProvider"
-          |  polling-interval = 500 milliseconds
+          |  class-name        = "vinyldns.sqs.queue.SqsMessageQueueProvider"
+          |  polling-interval  = 500 milliseconds
           |  messages-per-poll = 20
+          |  max-retries       = 100
           |  settings {}
           |}""".stripMargin
       )
@@ -59,28 +63,23 @@ class MessageQueueConfigSpec extends AnyWordSpec with Matchers {
     "load explicit max-retries when provided" in {
       val cfg = load(
         """{
-          |  class-name  = "vinyldns.sqs.queue.SqsMessageQueueProvider"
-          |  max-retries = 5
+          |  class-name        = "vinyldns.sqs.queue.SqsMessageQueueProvider"
+          |  polling-interval  = 250 milliseconds
+          |  messages-per-poll = 10
+          |  max-retries       = 5
           |  settings {}
           |}""".stripMargin
       )
       cfg.maxRetries shouldBe 5
     }
 
-    "default max-retries to 100 when absent" in {
-      val cfg = load(
-        """{
-          |  class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
-          |  settings {}
-          |}""".stripMargin
-      )
-      cfg.maxRetries shouldBe 100
-    }
-
     "parse settings block into a Config" in {
       val cfg = load(
         """{
-          |  class-name = "vinyldns.sqs.queue.SqsMessageQueueProvider"
+          |  class-name        = "vinyldns.sqs.queue.SqsMessageQueueProvider"
+          |  polling-interval  = 250 milliseconds
+          |  messages-per-poll = 10
+          |  max-retries       = 100
           |  settings { queue-name = "test-queue" }
           |}""".stripMargin
       )

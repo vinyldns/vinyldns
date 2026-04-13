@@ -29,8 +29,6 @@ final case class MessageQueueConfig(
     maxRetries: Int
 )
 object MessageQueueConfig {
-  // pollingInterval and messagesPerPoll are DB-backed at runtime (overridden in Boot).
-  // Defaults live in reference.conf — no hardcoded fallbacks in code.
   implicit val configReader: ConfigReader[MessageQueueConfig] = ConfigReader.fromCursor { c =>
     for {
       oc              <- c.asObjectCursor
