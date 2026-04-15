@@ -30,6 +30,7 @@ import vinyldns.api.MySqlApiIntegrationSpec
  * calls loadFromDb() + applyDbOverrides(), then asserts the volatile
  * vars reflect the DB values — not hardcoded defaults or reference.conf.
  */
+
 class RuntimeVinylDNSConfigIntegrationSpec
   extends AnyWordSpec
     with Matchers
