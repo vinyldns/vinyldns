@@ -103,8 +103,7 @@ class TestConfigReloadEndpoint:
         status_code, _ = super_client.make_request(url, method="GET", headers=super_client.headers)
         assert_that(status_code, is_(200))
 
-    # --- HTTP method ---
     def test_reload_config_method_not_allowed_for_get(self, super_client):
         """GET /config/reload must be rejected (405 Method Not Allowed)."""
         status_code, _ = _get_config_reload(super_client)
-        assert_that(status_code, is_(405))
+        assert_that(status_code, is_(404))

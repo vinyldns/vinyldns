@@ -101,7 +101,6 @@ class RuntimeVinylDNSConfigIntegrationSpec
       applyDb()
       // reference.conf has A,AAAA,CNAME,PTR,TXT
       val types = RuntimeVinylDNSConfig.sharedApprovedTypes.map(_.toString)
-      println(types)
       types should contain theSameElementsAs List("A", "AAAA", "CNAME", "PTR", "TXT")
     }
 
