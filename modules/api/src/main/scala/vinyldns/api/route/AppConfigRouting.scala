@@ -145,16 +145,18 @@ class AppConfigRoute(
     }
 
   private def configReloadRoute: Route =
-    (path("config" / "reload") & post) {
-      authenticateAndExecute[String] { auth =>
-        EitherT(
-          if (!auth.isSuper)
-            IO.pure(Left(NotAuthorizedError("Not authorized"): Throwable))
-          else
-            RuntimeVinylDNSConfig.reload().map(_ => Right("Config reloaded successfully"))
-        )
-      } { msg =>
-        complete(StatusCodes.OK, msg)
+    path("config" / "reload") {
+      post {
+        authenticateAndExecute[String] { auth =>
+          EitherT(
+            if (!auth.isSuper)
+              IO.pure(Left(NotAuthorizedError("Not authorized"): Throwable))
+            else
+              RuntimeVinylDNSConfig.reload().map(_ => Right("Config reloaded successfully"))
+          )
+        } { msg =>
+          complete(StatusCodes.OK, msg)
+        }
       }
     }
 }
