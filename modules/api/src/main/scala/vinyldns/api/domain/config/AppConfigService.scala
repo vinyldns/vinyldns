@@ -138,17 +138,6 @@ class AppConfigService(
                         ): Result[Map[String, String]] =
     RuntimeVinylDNSConfig.getAll.toResult[Map[String, String]]
 
-  // Refresh in-memory cache from DB and reload file-based config
-  def refreshConfig(
-                     auth: AuthPrincipal
-                   ): Result[ConfigRefreshDiff] =
-    for {
-      oldSnapshot <- RuntimeVinylDNSConfig.getAll.toResult[Map[String, String]]
-      _ <- RuntimeVinylDNSConfig.refresh(appConfigRepo).toResult[Unit]
-      _ <- RuntimeVinylDNSConfig.reload().toResult[Unit]
-      newSnapshot <- RuntimeVinylDNSConfig.getAll.toResult[Map[String, String]]
-    } yield ConfigRefreshDiff.compute(oldSnapshot, newSnapshot)
-
   // ---------------------------
   // Validations
   // ---------------------------

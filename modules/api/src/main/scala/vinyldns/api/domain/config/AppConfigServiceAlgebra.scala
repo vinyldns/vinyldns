@@ -20,23 +20,6 @@ import vinyldns.api.Interfaces.Result
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.config._
 
-final case class ConfigRefreshDiff(
-    added: Map[String, String],
-    updated: Map[String, String],
-    removed: List[String]
-)
-
-object ConfigRefreshDiff {
-  val empty: ConfigRefreshDiff = ConfigRefreshDiff(Map.empty, Map.empty, Nil)
-
-  def compute(oldSnapshot: Map[String, String], newSnapshot: Map[String, String]): ConfigRefreshDiff = {
-    val added   = newSnapshot.filterKeys(!oldSnapshot.contains(_))
-    val removed = oldSnapshot.keys.filterNot(newSnapshot.contains).toList
-    val updated = newSnapshot.filter { case (k, v) => oldSnapshot.get(k).exists(_ != v) }
-    ConfigRefreshDiff(added, updated, removed)
-  }
-}
-
 trait AppConfigServiceAlgebra {
 
   def createAppConfig(
@@ -68,8 +51,4 @@ trait AppConfigServiceAlgebra {
   def getEffectiveConfig(
                           auth: AuthPrincipal
                         ): Result[Map[String, String]]
-
-  def refreshConfig(
-                     auth: AuthPrincipal
-                   ): Result[ConfigRefreshDiff]
 }

@@ -21,10 +21,12 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import org.slf4j.{Logger, LoggerFactory}
 import spray.json._
+import cats.data.EitherT
+import cats.effect.IO
+import vinyldns.api.config.RuntimeVinylDNSConfig
 import vinyldns.api.domain.zone._
-import vinyldns.api.domain.config.{AppConfigServiceAlgebra, ConfigRefreshDiff}
+import vinyldns.api.domain.config.AppConfigServiceAlgebra
 import vinyldns.core.domain.config._
-
 
 trait JsonSupport extends DefaultJsonProtocol {
 
@@ -41,7 +43,7 @@ class AppConfigRoute(
   with JsonSupport
   with VinylDNSDirectives[Throwable] {
 
-  def getRoutes: Route = configRoutes
+  def getRoutes: Route = configRoutes ~ configReloadRoute
 
   def logger: Logger = LoggerFactory.getLogger(classOf[AppConfig])
 
@@ -74,28 +76,10 @@ class AppConfigRoute(
       }
     }
 
-  implicit val configRefreshDiffFormat: RootJsonFormat[ConfigRefreshDiff] =
-    new RootJsonFormat[ConfigRefreshDiff] {
-      def write(d: ConfigRefreshDiff): JsValue = JsObject(
-        "added"   -> JsObject(d.added.mapValues(JsString(_))),
-        "updated" -> JsObject(d.updated.mapValues(JsString(_))),
-        "removed" -> JsArray(d.removed.map(JsString(_)): _*)
-      )
-      def read(json: JsValue): ConfigRefreshDiff = {
-        val obj = json.asJsObject
-        ConfigRefreshDiff(
-          added   = obj.fields.get("added").fold(Map.empty[String,String])(_.convertTo[Map[String,String]]),
-          updated = obj.fields.get("updated").fold(Map.empty[String,String])(_.convertTo[Map[String,String]]),
-          removed = obj.fields.get("removed").fold(List.empty[String])(_.convertTo[List[String]])
-        )
-      }
-    }
-
   val configRoutes: Route =
     pathPrefix("appconfig") {
       concat(
         createConfig,
-        refreshConfig,
         getEffectiveConfig,
         getConfig,
         getAllConfigs,
@@ -160,12 +144,17 @@ class AppConfigRoute(
       }
     }
 
-  private def refreshConfig: Route =
-    (post & path("refresh")) {
-      authenticateAndExecute[ConfigRefreshDiff] { auth =>
-        appConfigService.refreshConfig(auth)
-      } { diff =>
-        complete(StatusCodes.OK, diff.toJson)
+  private def configReloadRoute: Route =
+    (path("config" / "reload") & post) {
+      authenticateAndExecute[String] { auth =>
+        EitherT(
+          if (!auth.isSuper)
+            IO.pure(Left(NotAuthorizedError("Not authorized"): Throwable))
+          else
+            RuntimeVinylDNSConfig.reload().map(_ => Right("Config reloaded successfully"))
+        )
+      } { msg =>
+        complete(StatusCodes.OK, msg)
       }
     }
 }

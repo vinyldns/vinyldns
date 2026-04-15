@@ -179,7 +179,9 @@ object RuntimeVinylDNSConfig {
         val zoneList   = if (cfg.hasPath("zone-name-list")) cfg.getStringList("zone-name-list").asScala.toSet else Set.empty[String]
         ManualReviewConfig(enabled, toCaseIgnoredRegexList(domainList), ipList, zoneList)
       case None =>
-        ManualReviewConfig(enabled, Nil, Nil, Set.empty)
+        // No DB override for manual-review-domains: fall back to file-based lists
+        ManualReviewConfig(enabled, _current.manualReviewConfig.domainList,
+          _current.manualReviewConfig.ipList, _current.manualReviewConfig.zoneList)
     }
   }
 
