@@ -183,8 +183,11 @@ class GraphApiUserSyncProvider(
           "UTF-8"
         )
         val select = java.net.URLEncoder.encode("accountEnabled", "UTF-8")
+        // $count=true + ConsistencyLevel: eventual are required for advanced query
+        // properties like onPremisesSamAccountName, employeeId, etc.
+        // See https://learn.microsoft.com/en-us/graph/aad-advanced-queries
         val url =
-          s"https://graph.microsoft.com/v1.0/users?$$filter=$filter&$$select=$select"
+          s"https://graph.microsoft.com/v1.0/users?$$filter=$filter&$$select=$select&$$count=true"
 
         val conn = new URL(url).openConnection().asInstanceOf[HttpURLConnection]
         try {
@@ -197,8 +200,19 @@ class GraphApiUserSyncProvider(
             logger.info(s"User ${user.userName} not found in Graph API (404), marking as stale")
             Some(user)
           } else if (responseCode != 200) {
+            val errorBody = try {
+              val es = conn.getErrorStream
+              if (es != null) {
+                val reader = new BufferedReader(new InputStreamReader(es))
+                val sb = new StringBuilder
+                var line: String = null
+                while ({ line = reader.readLine(); line != null }) { sb.append(line) }
+                reader.close()
+                sb.toString()
+              } else ""
+            } catch { case _: Exception => "" }
             logger.error(
-              s"Graph API error for user ${user.userName}: HTTP $responseCode, treating as active (safe default)"
+              s"Graph API error for user ${user.userName}: HTTP $responseCode, body=$errorBody; treating as active (safe default)"
             )
             None
           } else {
