@@ -91,7 +91,7 @@ class CommandHandlerSpec
   "polling" should {
     "poll for messages" in {
       doReturn(IO.pure(messages.toList)).when(mq).receive(count)
-      val run = CommandHandler.startPolling(mq, count, 50.millis).take(1)
+      val run = CommandHandler.startPolling(mq, IO.pure(count), IO.pure(50.millis)).take(1)
       val result = run.compile.toVector.unsafeRunSync()
       val read = result.head.compile.toList.unsafeRunSync()
       read should contain theSameElementsAs messages
@@ -103,7 +103,7 @@ class CommandHandlerSpec
         .when(mq)
         .receive(count)
 
-      val run = CommandHandler.startPolling(mq, count, 10.millis).take(1)
+      val run = CommandHandler.startPolling(mq, IO.pure(count), IO.pure(10.millis)).take(1)
       val result = run.compile.toVector.unsafeRunSync()
       val read = result.head.compile.toList.unsafeRunSync()
       read should contain theSameElementsAs messages

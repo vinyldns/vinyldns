@@ -60,15 +60,16 @@ object CommandHandler {
       zoneSyncHandler: ZoneChange => IO[ZoneChange],
       batchChangeHandler: BatchChangeCommand => IO[Option[BatchChange]],
       mq: MessageQueue,
-      count: MessageCount,
-      pollingInterval: FiniteDuration,
+      getCount: IO[MessageCount],
+      getPollingInterval: IO[FiniteDuration],
       pauseSignal: SignallingRef[IO, Boolean],
       backendResolver: BackendResolver,
       maxOpen: Int = 4
   )(implicit timer: Timer[IO]): Stream[IO, Unit] = {
 
     // Polls queue for message batches, connected to the signal which is toggled in the status endpoint
-    val messageSource = startPolling(mq, count, pollingInterval).pauseWhen(pauseSignal)
+    // getCount and getPollingInterval are re-evaluated on each poll cycle, enabling DB-driven hot reload
+    val messageSource = startPolling(mq, getCount, getPollingInterval).pauseWhen(pauseSignal)
 
     // Increase timeouts for zone syncs and creates as they can take 10s of minutes
     val increaseTimeoutWhenSyncing = changeVisibilityTimeoutWhenSyncing(mq)
@@ -107,18 +108,22 @@ object CommandHandler {
   }
 
   /* Polls Message Queue for messages */
-  def startPolling(mq: MessageQueue, count: MessageCount, pollingInterval: FiniteDuration)(
+  // getCount and getPollingInterval are IO effects so they are re-read on every poll cycle,
+  // allowing DB-backed values to take effect without a restart.
+  def startPolling(mq: MessageQueue, getCount: IO[MessageCount], getPollingInterval: IO[FiniteDuration])(
       implicit timer: Timer[IO]
   ): Stream[IO, Stream[IO, CommandMessage]] = {
 
     def pollingStream(): Stream[IO, Stream[IO, CommandMessage]] =
-      // every delay duration, we poll
       Stream
-        .fixedDelay[IO](pollingInterval)
-        .evalMap[IO, Chunk[CommandMessage]] { _ =>
-          // get the messages from the queue, transform them to a Chunk of messages
-          mq.receive(count).map(msgs => Chunk(msgs: _*))
-        }
+        .repeatEval(
+          for {
+            interval <- getPollingInterval
+            _        <- timer.sleep(interval)
+            count    <- getCount
+            msgs     <- mq.receive(count)
+          } yield Chunk(msgs: _*)
+        )
         .map {
           // Need to produce a stream of streams so we can run "batches" in parallel
           Stream.chunk(_).covary[IO]
@@ -207,9 +212,9 @@ object CommandHandler {
 
   def run(
            mq: MessageQueue,
-           msgsPerPoll: MessageCount,
+           getMsgsPerPoll: IO[MessageCount],
            processingSignal: SignallingRef[IO, Boolean],
-           pollingInterval: FiniteDuration,
+           getPollingInterval: IO[FiniteDuration],
            zoneRepo: ZoneRepository,
            zoneChangeRepo: ZoneChangeRepository,
            recordSetRepo: RecordSetRepository,
@@ -245,8 +250,8 @@ object CommandHandler {
         zoneSyncHandler,
         batchChangeHandler,
         mq,
-        msgsPerPoll,
-        pollingInterval,
+        getMsgsPerPoll,
+        getPollingInterval,
         processingSignal,
         backendResolver
       )

@@ -22,7 +22,7 @@ import vinyldns.core.repository.RepositoryName.{RepositoryName}
 final case class DataStoreConfig(
     className: String,
     settings: Config,
-    repositories: RepositoriesConfig
+    repositories: RepositoriesConfig = RepositoriesConfig.empty
 )
 
 final case class RepositoriesConfig(
@@ -67,12 +67,13 @@ final case class RepositoriesConfig(
 }
 
 object RepositoriesConfig {
-  private val empty: Config = ConfigFactory.empty()
+  private val emptyConfig: Config = ConfigFactory.empty()
+  val empty: RepositoriesConfig =
+    RepositoriesConfig(None, None, None, None, None, None, None, None, None, None, None, None, None)
 
-  /** Creates a RepositoriesConfig that claims ownership of all the given repo names.
-   *  Used when a single datastore has no explicit repositories block — it owns everything. */
+  /** Creates a RepositoriesConfig that claims ownership of all the given repo names. */
   def forAll(names: List[RepositoryName]): RepositoriesConfig = {
-    def opt(name: RepositoryName): Option[Config] = if (names.contains(name)) Some(empty) else None
+    def opt(name: RepositoryName): Option[Config] = if (names.contains(name)) Some(emptyConfig) else None
     RepositoriesConfig(
       user          = opt(RepositoryName.user),
       group         = opt(RepositoryName.group),

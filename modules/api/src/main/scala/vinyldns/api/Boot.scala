@@ -104,8 +104,6 @@ object Boot extends App {
       }
       messageQueue <- MessageQueueLoader.load(vinyldnsConfig.messageQueueConfig)
       processingSignal <- RuntimeVinylDNSConfig.processingDisabled.flatMap(SignallingRef[IO, Boolean](_))
-      msgsPerPoll <- RuntimeVinylDNSConfig.queueMessagesPerPoll.flatMap(n => IO.fromEither(MessageCount(n)))
-      queuePollingIntervalMillis <- RuntimeVinylDNSConfig.queuePollingIntervalMillis
       effectiveNotifierConfigs <- RuntimeVinylDNSConfig.effectiveNotifierConfigs
       notifiers <- NotifierLoader.loadAll(
         effectiveNotifierConfigs,
@@ -128,9 +126,9 @@ object Boot extends App {
       }, 0, 1, TimeUnit.SECONDS)) } else IO.unit
       _ <- CommandHandler.run(
         messageQueue,
-        msgsPerPoll,
+        RuntimeVinylDNSConfig.queueMessagesPerPoll.flatMap(n => IO.fromEither(MessageCount(n))),
         processingSignal,
-        queuePollingIntervalMillis.millis,
+        RuntimeVinylDNSConfig.queuePollingIntervalMillis.map(_.millis),
         repositories.zoneRepository,
         repositories.zoneChangeRepository,
         repositories.recordSetRepository,
