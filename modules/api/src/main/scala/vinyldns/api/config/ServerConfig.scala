@@ -16,9 +16,11 @@
 
 package vinyldns.api.config
 
+import com.typesafe.config.ConfigObject
 import pureconfig.ConfigReader
 import vinyldns.api.domain.zone.ZoneRecordValidations
 
+import scala.util.Try
 import scala.util.matching.Regex
 
 final case class ServerConfig(
@@ -60,14 +62,25 @@ object ServerConfig {
       }
       val zoneKeyName: String = {
         val cur = oc.atKeyOrUndefined("defaultZoneConnection")
-        if (cur.isUndefined) ""
-        else cur.asObjectCursor.fold(
-          _ => "",
-          objCur => {
-            val kc = objCur.atKeyOrUndefined("keyName")
-            if (kc.isUndefined) "" else kc.asString.fold(_ => "", identity)
-          }
-        )
+        if (!cur.isUndefined) {
+          cur.asObjectCursor.fold(
+            _ => "",
+            objCur => {
+              val kc = objCur.atKeyOrUndefined("keyName")
+              if (kc.isUndefined) "" else kc.asString.fold(_ => "", identity)
+            }
+          )
+        } else {
+          // Fall back to new backend format: backend.backend-providers[0].settings.backends[0].zone-connection.key-name
+          Try {
+            val topConfig = oc.objValue.toConfig
+            val firstProvider = topConfig.getList("backend.backend-providers")
+              .get(0).asInstanceOf[ConfigObject].toConfig
+            val firstBackend = firstProvider.getList("settings.backends")
+              .get(0).asInstanceOf[ConfigObject].toConfig
+            firstBackend.getString("zone-connection.key-name")
+          }.getOrElse("")
+        }
       }
       ServerConfig(
         readInt("health-check-timeout"),

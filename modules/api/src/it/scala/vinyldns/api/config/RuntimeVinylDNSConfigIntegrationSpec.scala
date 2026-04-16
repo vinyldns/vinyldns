@@ -83,7 +83,7 @@ class RuntimeVinylDNSConfigIntegrationSpec
       applyDb()
       val limits = RuntimeVinylDNSConfig.limitsConfig
       limits.BATCHCHANGE_ROUTING_MAX_ITEMS_LIMIT      shouldBe 100
-      limits.MEMBERSHIP_ROUTING_MAX_GROUPS_LIST_LIMIT shouldBe 3000
+      limits.MEMBERSHIP_ROUTING_MAX_GROUPS_LIST_LIMIT shouldBe 1500
       limits.ZONE_ROUTING_MAX_ITEMS_LIMIT             shouldBe 100
     }
 

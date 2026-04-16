@@ -113,7 +113,7 @@ class ConfigReadersSpec extends AnyWordSpec with Matchers {
       cfg.BATCHCHANGE_ROUTING_MAX_ITEMS_LIMIT       shouldBe 100
       cfg.MEMBERSHIP_ROUTING_DEFAULT_MAX_ITEMS      shouldBe 100
       cfg.MEMBERSHIP_ROUTING_MAX_ITEMS_LIMIT        shouldBe 1000
-      cfg.MEMBERSHIP_ROUTING_MAX_GROUPS_LIST_LIMIT  shouldBe 3000
+      cfg.MEMBERSHIP_ROUTING_MAX_GROUPS_LIST_LIMIT  shouldBe 1500
       cfg.RECORDSET_ROUTING_DEFAULT_MAX_ITEMS       shouldBe 100
       cfg.ZONE_ROUTING_DEFAULT_MAX_ITEMS            shouldBe 100
       cfg.ZONE_ROUTING_MAX_ITEMS_LIMIT              shouldBe 100
@@ -144,8 +144,8 @@ class ConfigReadersSpec extends AnyWordSpec with Matchers {
       val cfg = loadWithDefaults[LimitsConfig]("vinyldns.api.limits",
         "vinyldns.api.limits.batchchange-routing-max-items-limit = 42")
       cfg.BATCHCHANGE_ROUTING_MAX_ITEMS_LIMIT  shouldBe 42
-      cfg.MEMBERSHIP_ROUTING_DEFAULT_MAX_ITEMS shouldBe 100   // from reference.conf
-      cfg.ZONE_ROUTING_MAX_ITEMS_LIMIT         shouldBe 100   // from reference.conf
+      cfg.MEMBERSHIP_ROUTING_DEFAULT_MAX_ITEMS shouldBe 100
+      cfg.ZONE_ROUTING_MAX_ITEMS_LIMIT         shouldBe 100
     }
   }
 

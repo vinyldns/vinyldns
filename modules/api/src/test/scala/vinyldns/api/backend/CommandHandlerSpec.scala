@@ -301,8 +301,8 @@ class CommandHandlerSpec
             mockZoneSyncProcessor,
             mockBatchChangeProcessor,
             mq,
-            count,
-            100.millis,
+            IO.pure(count),
+            IO.pure(100.millis),
             stop,
             mockBackendResolver,
             1
@@ -348,8 +348,8 @@ class CommandHandlerSpec
             mockZoneSyncProcessor,
             mockBatchChangeProcessor,
             mq,
-            count,
-            100.millis,
+            IO.pure(count),
+            IO.pure(100.millis),
             stop,
             mockBackendResolver
           )
@@ -400,9 +400,9 @@ class CommandHandlerSpec
         CommandHandler
           .run(
             mq,
-            count,
+            IO.pure(count),
             stop,
-            100.millis,
+            IO.pure(100.millis),
             zoneRepo,
             zoneChangeRepo,
             recordSetRepo,
