@@ -142,7 +142,7 @@ class AppConfigRoute(
     }
 
   private def configReloadRoute: Route =
-    path("config" / "reload") {
+    path("appconfig" / "reload") {
       post {
         authenticateAndExecute[String] { auth =>
           appConfigService.reloadConfig(auth)

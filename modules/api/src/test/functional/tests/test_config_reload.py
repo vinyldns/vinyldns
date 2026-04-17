@@ -1,11 +1,11 @@
 """
-tests for the /config/reload endpoint.
+tests for the /appconfig/reload endpoint.
 
 Access control:
   - Authenticated super users        → 200 OK
   - Authenticated non-super users    → 403 Not Authorized
   - Unauthenticated / bad credentials → 401 Unauthorized
-  - GET /config/reload               → 405 Method Not Allowed
+  - GET /appconfig/reload               → 405 Method Not Allowed
 """
 import pytest
 from hamcrest import *
@@ -53,7 +53,7 @@ def bad_client():
 def _get_config_reload(client: VinylDNSClient):
     """Issue a raw GET to /config/reload and return (status_code, body)."""
     from urllib.parse import urljoin
-    url = urljoin(client.index_url, "/config/reload")
+    url = urljoin(client.index_url, "/appconfig/reload")
     return client.make_request(url, method="GET", headers=client.headers)
 
 class TestConfigReloadEndpoint:

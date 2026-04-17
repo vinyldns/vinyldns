@@ -47,7 +47,7 @@ class TestConfigReloadRoute(
   override def getRoutes: Route = reloadConfigRoute
 
   val reloadConfigRoute: Route =
-    path("config" / "reload") {
+    path("appconfig" / "reload") {
       (post & monitor("Endpoint.reloadConfig")) {
         authenticateAndExecute { authPrincipal =>
           if (!authPrincipal.isSuper) {
@@ -99,55 +99,55 @@ class ConfigReloadRoutingSpec
   private val failRoute: Route =
     new TestConfigReloadRoute(new TestVinylDNSAuthenticator(superUserAuth), failingReload).reloadConfigRoute
 
-  "POST /config/reload" should {
+  "POST /appconfig/reload" should {
 
     "return 200 OK with success message for a super user" in {
-      Post("/config/reload") ~> superUserRoute ~> check {
+      Post("/appconfig/reload") ~> superUserRoute ~> check {
         status shouldBe StatusCodes.OK
         responseAs[String] should include("reloaded successfully")
       }
     }
 
     "return 403 Forbidden for a regular authenticated user" in {
-      Post("/config/reload") ~> okRoute ~> check {
+      Post("/appconfig/reload") ~> okRoute ~> check {
         status shouldBe StatusCodes.Forbidden
         responseAs[String] should include("is not authorized to reload")
       }
     }
 
     "return 403 Forbidden for a support user (not super)" in {
-      Post("/config/reload") ~> supportUserRoute ~> check {
+      Post("/appconfig/reload") ~> supportUserRoute ~> check {
         status shouldBe StatusCodes.Forbidden
         responseAs[String] should include("is not authorized to reload")
       }
     }
 
     "return 500 Internal Server Error when the reload effect fails" in {
-      Post("/config/reload") ~> failRoute ~> check {
+      Post("/appconfig/reload") ~> failRoute ~> check {
         status shouldBe StatusCodes.InternalServerError
       }
     }
 
     "reject GET requests as method not allowed" in {
-      Get("/config/reload") ~> Route.seal(okRoute) ~> check {
+      Get("/appconfig/reload") ~> Route.seal(okRoute) ~> check {
         status shouldBe StatusCodes.MethodNotAllowed
       }
     }
 
     "reject PUT requests as method not allowed" in {
-      Put("/config/reload") ~> Route.seal(okRoute) ~> check {
+      Put("/appconfig/reload") ~> Route.seal(okRoute) ~> check {
         status shouldBe StatusCodes.MethodNotAllowed
       }
     }
 
     "not route a different path" in {
-      Post("/config/other") ~> Route.seal(okRoute) ~> check {
+      Post("/appconfig/other") ~> Route.seal(okRoute) ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
   }
 
-  "POST /config/reload with RuntimeVinylDNSConfig" should {
+  "POST /appconfig/reload with RuntimeVinylDNSConfig" should {
 
     "actually invoke RuntimeVinylDNSConfig.reload and keep config valid" in {
       // Wire the real reload effect
@@ -158,7 +158,7 @@ class ConfigReloadRoutingSpec
           RuntimeVinylDNSConfig.reload()
         ).reloadConfigRoute
 
-      Post("/config/reload") ~> realRoute ~> check {
+      Post("/appappconfig/reload") ~> realRoute ~> check {
         status shouldBe StatusCodes.OK
         // After the HTTP call completes the reload IO has run; current must still be valid
         RuntimeVinylDNSConfig.current should not be null
@@ -174,7 +174,7 @@ class ConfigReloadRoutingSpec
           RuntimeVinylDNSConfig.reload()
         ).reloadConfigRoute
 
-      Post("/config/reload") ~> realRoute ~> check {
+      Post("/appconfig/reload") ~> realRoute ~> check {
         status shouldBe StatusCodes.OK
         val sync = RuntimeVinylDNSConfig.current
         val async = RuntimeVinylDNSConfig.currentIO.unsafeRunSync()

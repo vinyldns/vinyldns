@@ -166,7 +166,7 @@ class VinylDNSClient(object):
 
         :return: (status_code, response_body) tuple
         """
-        url = urljoin(self.index_url, "/config/reload")
+        url = urljoin(self.index_url, "/appconfig/reload")
         response, data = self.make_request(url, "POST", self.headers, **kwargs)
         return response, data
 
