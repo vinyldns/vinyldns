@@ -158,7 +158,7 @@ class ConfigReloadRoutingSpec
           RuntimeVinylDNSConfig.reload()
         ).reloadConfigRoute
 
-      Post("/appappconfig/reload") ~> realRoute ~> check {
+      Post("/appconfig/reload") ~> realRoute ~> check {
         status shouldBe StatusCodes.OK
         // After the HTTP call completes the reload IO has run; current must still be valid
         RuntimeVinylDNSConfig.current should not be null
