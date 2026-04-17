@@ -26,6 +26,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 import { AlertProvider } from './contexts/AlertContext';
 import { ProfileProvider } from './contexts/ProfileContext';
+import { BreadcrumbProvider } from './contexts/BreadcrumbContext';
 import { Layout } from './components/common/Layout';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
@@ -39,6 +40,7 @@ import { RecordsPage } from './pages/RecordsPage';
 import { DnsChangesPage } from './pages/DnsChangesPage';
 import { DnsChangeDetailPage } from './pages/DnsChangeDetailPage';
 import { DnsChangeNewPage } from './pages/DnsChangeNewPage';
+import { AdminPage } from './pages/AdminPage';
 
 // Bootstrap CSS + icons
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -59,11 +61,13 @@ const queryClient = new QueryClient({
  */
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ProfileProvider>
-      <Layout>
-        <ErrorBoundary>{children}</ErrorBoundary>
-      </Layout>
-    </ProfileProvider>
+    <BreadcrumbProvider>
+      <ProfileProvider>
+        <Layout>
+          <ErrorBoundary>{children}</ErrorBoundary>
+        </Layout>
+      </ProfileProvider>
+    </BreadcrumbProvider>
   );
 }
 
@@ -138,6 +142,15 @@ export function App() {
               element={
                 <AppLayout>
                   <DnsChangeDetailPage />
+                </AppLayout>
+              }
+            />
+
+            <Route
+              path="/admin"
+              element={
+                <AppLayout>
+                  <AdminPage />
                 </AppLayout>
               }
             />

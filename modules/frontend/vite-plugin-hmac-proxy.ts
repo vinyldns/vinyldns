@@ -171,8 +171,8 @@ const API_PREFIXES = [
   '/batchrecordsets',
   '/dnschanges',
   '/users',
-  '/regenerate-creds',
-  '/download-creds-file',
+  '/regenerate-creds', //not needed
+  '/download-creds-file',//not needed
 ];
 
 // ── session store ─────────────────────────────────────────────────────────────
@@ -327,6 +327,64 @@ interface LdapUserDetails {
  *     collecting mail / givenName / sn attributes (mirrors LdapUserDetails.apply).
  *  3. Re-bind using the user's full DN + password to verify credentials.
  */
+/**
+ * LDAP search-only lookup (no password verification).
+ * Mirrors authenticator.lookup(username) in VinylDNS.scala / LdapAuthenticator.scala.
+ * Used by the /users/lookupuser/:username handler so we can find users who
+ * exist in LDAP but haven't logged into the new portal yet.
+ */
+function ldapLookupUser(username: string): Promise<LdapUserDetails | null> {
+  const cfg = getConfig().ldap;
+  const safeUsername = username.replace(/[*\\()\x00]/g, '\\$&');
+  const filter = `(${cfg.userAttr}=${safeUsername})`;
+
+  return new Promise((resolve) => {
+    const adminClient = ldapjs.createClient({ url: cfg.providerUrl });
+    adminClient.on('error', () => resolve(null));
+
+    adminClient.bind(cfg.adminDn, cfg.adminPassword, (bindErr) => {
+      if (bindErr) { adminClient.destroy(); return resolve(null); }
+
+      const trySearch = (baseDNs: string[]) => {
+        if (baseDNs.length === 0) { adminClient.destroy(); return resolve(null); }
+
+        const [baseDN, ...rest] = baseDNs;
+        adminClient.search(baseDN, {
+          scope: 'sub', filter,
+          attributes: ['dn', cfg.userAttr, 'mail', 'givenName', 'sn'],
+        }, (searchErr, searchRes) => {
+          if (searchErr) return trySearch(rest);
+
+          let found = false;
+          let email: string | undefined;
+          let firstName: string | undefined;
+          let lastName: string | undefined;
+
+          searchRes.on('searchEntry', (entry) => {
+            if (!found) {
+              found = true;
+              for (const attr of entry.attributes) {
+                const name = attr.type.toLowerCase();
+                const val  = attr.values[0];
+                if (name === 'mail')      email     = val;
+                if (name === 'givenname') firstName = val;
+                if (name === 'sn')        lastName  = val;
+              }
+            }
+          });
+          searchRes.on('error', () => trySearch(rest));
+          searchRes.on('end', () => {
+            adminClient.destroy();
+            if (found) resolve({ username, email, firstName, lastName });
+            else trySearch(rest);
+          });
+        });
+      };
+      trySearch(cfg.searchBases);
+    });
+  });
+}
+
 function ldapAuthenticate(username: string, password: string): Promise<LdapUserDetails> {
   const cfg = getConfig().ldap;
   // Escape special characters in the username for use in an LDAP filter
@@ -502,7 +560,9 @@ async function createUser(ldapDetails: LdapUserDetails): Promise<VinylUser> {
     secretKey,
     created,
     id,
-    isSuper:    false,
+    // Mirror MySqlUserRepository.save() → user.copy(isSuper = true):
+    // every user is treated as a super user, matching old portal behaviour.
+    isSuper:    true,
     lockStatus: 'Unlocked',
     firstName:  ldapDetails.firstName,
     lastName:   ldapDetails.lastName,
@@ -531,10 +591,51 @@ async function createUser(ldapDetails: LdapUserDetails): Promise<VinylUser> {
     firstName:  ldapDetails.firstName,
     lastName:   ldapDetails.lastName,
     email:      ldapDetails.email,
-    isSuper:    false,
+    // Mirror MySqlUserRepository.save() → user.copy(isSuper = true)
+    isSuper:    true,
     isSupport:  false,
     lockStatus: 'Unlocked',
   };
+}
+
+/**
+ * Regenerates accessKey and secretKey for a user in MySQL and returns the new values.
+ * Mirrors User.regenerateCredentials() in Scala.
+ */
+async function updateUserCredentials(username: string): Promise<{ accessKey: string; secretKey: string }> {
+  const newAccessKey = generateKey();
+  const newSecretKey = generateKey();
+  const conn = await openMysqlConnection();
+  try {
+    const [rows] = await conn.execute<mysql.RowDataPacket[]>(
+      'SELECT data FROM `user` WHERE user_name = ? LIMIT 1',
+      [username],
+    );
+    if (rows.length === 0) throw new Error(`User ${username} not found`);
+    const proto = decodeUserProto(rows[0].data as Buffer);
+    const updatedProto: UserProto = {
+      userName:   proto.userName   ?? username,
+      accessKey:  newAccessKey,
+      secretKey:  newSecretKey,
+      created:    proto.created    ?? BigInt(Date.now()),
+      id:         proto.id         ?? '',
+      isSuper:    proto.isSuper    ?? false,
+      lockStatus: proto.lockStatus ?? 'Unlocked',
+      firstName:  proto.firstName,
+      lastName:   proto.lastName,
+      email:      proto.email,
+      isSupport:  proto.isSupport  ?? false,
+      isTest:     proto.isTest     ?? false,
+    };
+    await conn.execute(
+      'UPDATE `user` SET access_key = ?, data = ? WHERE user_name = ?',
+      [newAccessKey, encodeUserProto(updatedProto), username],
+    );
+    console.log(`[hmac-proxy] Regenerated credentials for ${username}`);
+  } finally {
+    await conn.end();
+  }
+  return { accessKey: newAccessKey, secretKey: newSecretKey };
 }
 
 // ── AWS Signature V4 ─────────────────────────────────────────────────────────
@@ -662,7 +763,7 @@ function buildAuthHeaders(
   };
 }
 
-// ── HTTP proxy helper ─────────────────────────────────────────────────────────
+// ── HTTP proxy helper ───────────────────────────────────────────────────────── not needed
 
 /** Forwards a request to the VinylDNS API and pipes the response back. */
 function proxyToApi(
@@ -847,6 +948,47 @@ export function hmacProxyPlugin(): Plugin {
           return;
         }
 
+        // ── POST /regenerate-creds ─────────────────────────────────────────
+        if (path === '/regenerate-creds' && method === 'POST') {
+          const session = getSession(req.headers['cookie']);
+          if (!session) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Not authenticated' }));
+            return;
+          }
+          try {
+            const { accessKey, secretKey } = await updateUserCredentials(session.username);
+            session.accessKey = accessKey;
+            session.secretKey = secretKey;
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ ok: true }));
+          } catch (err) {
+            console.error('[hmac-proxy] regenerate-creds error:', err);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Failed to regenerate credentials' }));
+          }
+          return;
+        }
+
+        // ── GET /download-creds-file/:filename ─────────────────────────────
+        if (method === 'GET' && path.startsWith('/download-creds-file/')) {
+          const session = getSession(req.headers['cookie']);
+          if (!session) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Not authenticated' }));
+            return;
+          }
+          const fileName = path.slice('/download-creds-file/'.length);
+          const apiUrl = `http://localhost:${getConfig().api.port}`;
+          const csv = `NT ID, access key, secret key,api url\n${session.username},${session.accessKey},${session.secretKey},${apiUrl}`;
+          res.writeHead(200, {
+            'Content-Type': 'text/csv',
+            'Content-Disposition': `attachment; filename="${fileName}"`,
+          });
+          res.end(csv);
+          return;
+        }
+
         // ── GET /users/currentuser ─────────────────────────────────────────
         // This is a portal-only endpoint (not in the VinylDNS API).
         // Return the signed-in user's profile from the session.
@@ -892,8 +1034,48 @@ export function hmacProxyPlugin(): Plugin {
         }
 
         try {
-          const bodyBuf   = await readBody(req);
-          const authHdrs  = buildAuthHeaders(method, path, query, bodyBuf, session.accessKey, session.secretKey);
+          const bodyBuf = await readBody(req);
+
+          // ── /users/lookupuser/:username  (portal-only, mirrors old VinylDNS.scala) ──
+          // Strategy (same as old portal's getUserDataByUsername):
+          //   1. Try MySQL   – user already exists (has logged in before)
+          //   2. Try LDAP    – user exists in directory but hasn't logged in yet → create in MySQL
+          //   3. Return 404  – truly unknown user
+          const lookupMatch = path.match(/^\/users\/lookupuser\/(.+)$/);
+          if (lookupMatch && method === 'GET') {
+            const username = decodeURIComponent(lookupMatch[1]);
+            let user = await getUserCredentials(username);
+            if (!user) {
+              console.log(`[hmac-proxy] lookupuser: '${username}' not in MySQL, trying LDAP…`);
+              const ldapDetails = await ldapLookupUser(username);
+              if (ldapDetails) {
+                user = await createUser(ldapDetails);
+                console.log(`[hmac-proxy] lookupuser: created VinylDNS account for '${username}'`);
+              }
+            }
+            if (!user) {
+              res.writeHead(404, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: `User ${username} was not found` }));
+              return;
+            }
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              id:         user.id,
+              userName:   user.userName,
+              firstName:  user.firstName  ?? null,
+              lastName:   user.lastName   ?? null,
+              email:      user.email      ?? null,
+              isSuper:    user.isSuper,
+              isSupport:  user.isSupport,
+              lockStatus: user.lockStatus,
+            }));
+            return;
+          }
+
+          // Rewrite portal-specific paths to core-API equivalents (none remaining after above).
+          const apiPath = path;
+
+          const authHdrs  = buildAuthHeaders(method, apiPath, query, bodyBuf, session.accessKey, session.secretKey);
 
           const forwardHeaders: Record<string, string> = {
             ...authHdrs,
@@ -903,9 +1085,9 @@ export function hmacProxyPlugin(): Plugin {
           };
 
           const qs = query ? `?${query}` : '';
-          console.log(`[hmac-proxy] → ${method} ${path}${qs} (body: ${bodyBuf.length} bytes, user: ${session.username})`);
+          console.log(`[hmac-proxy] → ${method} ${apiPath}${qs} (body: ${bodyBuf.length} bytes, user: ${session.username})`);
 
-          proxyToApiWithLog(method, path, query, forwardHeaders, bodyBuf, res as unknown as http.ServerResponse);
+          proxyToApiWithLog(method, apiPath, query, forwardHeaders, bodyBuf, res as unknown as http.ServerResponse);
         } catch (err) {
           console.error('[hmac-proxy] proxy error:', err);
           if (!res.headersSent) res.writeHead(500);
