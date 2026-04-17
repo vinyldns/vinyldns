@@ -39,8 +39,6 @@ final case class StartupConfig(
                                 messageQueueConfig: MessageQueueConfig,
                                 notifierConfigs: List[NotifierConfig],
                                 dataStoreConfigs: List[DataStoreConfig],
-                                backendConfigs: BackendConfigs,
-                                dottedHostsConfig: DottedHostsConfig,
                                 configuredDnsConnections: ConfiguredDnsConnections,
                                 apiMetricSettings: APIMetricsSettings,
                                 crypto: CryptoAlgebra
@@ -55,7 +53,9 @@ final case class RuntimeConfig(
                                 manualReviewConfig: ManualReviewConfig,
                                 scheduledChangesConfig: ScheduledChangesConfig,
                                 batchChangeConfig: BatchChangeConfig,
-                                globalAcls: GlobalAcls
+                                globalAcls: GlobalAcls,
+                                backendConfigs: BackendConfigs,
+                                dottedHostsConfig: DottedHostsConfig
                               )
 
 final case class VinylDNSConfig private (
@@ -72,13 +72,13 @@ final case class VinylDNSConfig private (
   val manualReviewConfig: ManualReviewConfig = runtime.manualReviewConfig
   val batchChangeConfig: BatchChangeConfig = runtime.batchChangeConfig
   val globalAcls: GlobalAcls = runtime.globalAcls
+  val backendConfigs: BackendConfigs = runtime.backendConfigs
+  val dottedHostsConfig: DottedHostsConfig = runtime.dottedHostsConfig
 
   // ---- startup config (non-reloadable)----
   val messageQueueConfig: MessageQueueConfig = startup.messageQueueConfig
   val notifierConfigs: List[NotifierConfig] = startup.notifierConfigs
   val dataStoreConfigs: List[DataStoreConfig] = startup.dataStoreConfigs
-  val backendConfigs: BackendConfigs = startup.backendConfigs
-  val dottedHostsConfig: DottedHostsConfig = startup.dottedHostsConfig
   val configuredDnsConnections: ConfiguredDnsConnections = startup.configuredDnsConnections
   val apiMetricSettings: APIMetricsSettings = startup.apiMetricSettings
   val crypto: CryptoAlgebra = startup.crypto
@@ -134,10 +134,10 @@ object VinylDNSConfig {
       globalAcls <- if (config.hasPath("vinyldns.global-acl-rules"))
                       loadIO[List[GlobalAcl]](config, "vinyldns.global-acl-rules").map(GlobalAcls.apply)
                     else IO.pure(GlobalAcls(Nil))
-
-      // ---- startup ----
       backendConfigs <- loadIO[BackendConfigs](config, "vinyldns.backend")
       dottedHostsConfig <- loadIO[DottedHostsConfig](config, "vinyldns.dotted-hosts")
+
+      // ---- startup ----
       messageQueueConfig <- loadIO[MessageQueueConfig](config, "vinyldns.queue")
       dataStoreConfigs <- loadFromStringListIO[DataStoreConfig](config, "vinyldns.data-stores")
       notifierConfigs <- loadFromStringListIO[NotifierConfig](config, "vinyldns.notifiers")
@@ -155,14 +155,14 @@ object VinylDNSConfig {
         manualReviewConfig,
         scheduledChangesConfig,
         batchChangeConfig,
-        globalAcls
+        globalAcls,
+        backendConfigs,
+        dottedHostsConfig
       ),
       startup = StartupConfig(
         messageQueueConfig,
         notifierConfigs,
         dataStoreConfigs,
-        backendConfigs,
-        dottedHostsConfig,
         connections,
         metricSettings,
         crypto
