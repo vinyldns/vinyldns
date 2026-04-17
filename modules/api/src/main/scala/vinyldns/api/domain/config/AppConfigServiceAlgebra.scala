@@ -51,4 +51,6 @@ trait AppConfigServiceAlgebra {
   def getEffectiveConfig(
                           auth: AuthPrincipal
                         ): Result[Map[String, String]]
+
+  def reloadConfig(auth: AuthPrincipal): Result[String]
 }

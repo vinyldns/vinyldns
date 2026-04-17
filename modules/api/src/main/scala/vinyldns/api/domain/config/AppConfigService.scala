@@ -20,7 +20,7 @@ import cats.effect.IO
 import cats.implicits.catsSyntaxEitherId
 import vinyldns.api.Interfaces._
 import vinyldns.api.config.RuntimeVinylDNSConfig
-import vinyldns.api.domain.zone.{ConfigAlreadyExists, ConfigNotFound, InvalidRequest}
+import vinyldns.api.domain.zone.{ConfigAlreadyExists, ConfigNotFound, InvalidRequest, NotAuthorizedError}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.config._
 import vinyldns.mysql.TransactionProvider
@@ -37,6 +37,9 @@ class AppConfigService(
                       ) extends AppConfigServiceAlgebra
   with TransactionProvider {
 
+  private def requireSuper(auth: AuthPrincipal): Result[Unit] =
+    ensuring(NotAuthorizedError("Not authorized. Super user access required."))(auth.isSuper).toResult
+
   // Create single config
   def createAppConfig(
                        key: String,
@@ -44,6 +47,7 @@ class AppConfigService(
                        auth: AuthPrincipal
                      ): Result[AppConfigResponse] =
     for {
+      _ <- requireSuper(auth)
       _ <- validateKeyValue(key, value)
 
       existing <- appConfigRepo
@@ -71,6 +75,7 @@ class AppConfigService(
                     auth: AuthPrincipal
                   ): Result[AppConfigResponse] =
     for {
+      _ <- requireSuper(auth)
       result <- appConfigRepo
         .getByKey(key)
         .toResult[Option[AppConfigResponse]]
@@ -87,7 +92,10 @@ class AppConfigService(
   def getAllAppConfigs(
                         auth: AuthPrincipal
                       ): Result[AppConfigListResponse] =
-    appConfigRepo.getAll.map(configs => AppConfigListResponse(configs.size, configs)).toResult[AppConfigListResponse]
+    for {
+      _ <- requireSuper(auth)
+      result <- appConfigRepo.getAll.map(configs => AppConfigListResponse(configs.size, configs)).toResult[AppConfigListResponse]
+    } yield result
 
   // Update
   def updateAppConfig(
@@ -96,6 +104,7 @@ class AppConfigService(
                        auth: AuthPrincipal
                      ): Result[AppConfigResponse] =
     for {
+      _ <- requireSuper(auth)
       _ <- validateKeyValue(key, value)
 
       updated <- appConfigRepo
@@ -116,6 +125,7 @@ class AppConfigService(
                        auth: AuthPrincipal
                      ): Result[Boolean] =
     for {
+      _ <- requireSuper(auth)
       deleted <- appConfigRepo
         .delete(key)
         .toResult[Boolean]
@@ -136,7 +146,17 @@ class AppConfigService(
   def getEffectiveConfig(
                           auth: AuthPrincipal
                         ): Result[Map[String, String]] =
-    RuntimeVinylDNSConfig.getAll.toResult[Map[String, String]]
+    for {
+      _ <- requireSuper(auth)
+      result <- RuntimeVinylDNSConfig.getAll.toResult[Map[String, String]]
+    } yield result
+
+  // Reload config from file + apply DB overrides
+  def reloadConfig(auth: AuthPrincipal): Result[String] =
+    for {
+      _ <- requireSuper(auth)
+      _ <- RuntimeVinylDNSConfig.reload().toResult[Unit]
+    } yield "Config reloaded successfully"
 
   // ---------------------------
   // Validations

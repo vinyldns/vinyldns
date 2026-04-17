@@ -21,9 +21,6 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import org.slf4j.{Logger, LoggerFactory}
 import spray.json._
-import cats.data.EitherT
-import cats.effect.IO
-import vinyldns.api.config.RuntimeVinylDNSConfig
 import vinyldns.api.domain.zone._
 import vinyldns.api.domain.config.AppConfigServiceAlgebra
 import vinyldns.core.domain.config._
@@ -148,12 +145,7 @@ class AppConfigRoute(
     path("config" / "reload") {
       post {
         authenticateAndExecute[String] { auth =>
-          EitherT(
-            if (!auth.isSuper)
-              IO.pure(Left(NotAuthorizedError("Not authorized"): Throwable))
-            else
-              RuntimeVinylDNSConfig.reload().map(_ => Right("Config reloaded successfully"))
-          )
+          appConfigService.reloadConfig(auth)
         } { msg =>
           complete(StatusCodes.OK, msg)
         }
