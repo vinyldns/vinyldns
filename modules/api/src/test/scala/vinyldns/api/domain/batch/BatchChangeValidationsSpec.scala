@@ -16,17 +16,18 @@
 
 package vinyldns.api.domain.batch
 
+import cats.effect.IO
 import cats.implicits._
 import cats.scalatest.{EitherMatchers, ValidatedMatchers}
 
 import java.time.Instant
 import org.scalacheck.Gen
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
-import org.scalatest.EitherValues
+import org.scalatest.{BeforeAndAfterAll, EitherValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
 import vinyldns.api.VinylDNSTestHelpers
-import vinyldns.api.config.ScheduledChangesConfig
+import vinyldns.api.config.RuntimeVinylDNSConfig
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.{DomainValidations, batch}
@@ -48,7 +49,10 @@ class BatchChangeValidationsSpec
     with ScalaCheckDrivenPropertyChecks
     with EitherMatchers
     with EitherValues
-    with ValidatedMatchers {
+    with ValidatedMatchers
+    with BeforeAndAfterAll {
+
+  override def beforeAll(): Unit = RuntimeVinylDNSConfig.init().unsafeRunSync()
 
   import Gen._
   import vinyldns.api.DomainGenerator._
@@ -56,17 +60,15 @@ class BatchChangeValidationsSpec
 
   private val maxChanges = 1000
   private val accessValidations = new AccessValidations(
-    sharedApprovedTypes = VinylDNSTestHelpers.sharedApprovedTypes
+    sharedApprovedTypesFn = () => VinylDNSTestHelpers.sharedApprovedTypes
   )
   private val defaultTtl = VinylDNSTestHelpers.defaultTtl
   private val underTest =
     new BatchChangeValidations(
       accessValidations,
-      VinylDNSTestHelpers.highValueDomainConfig,
       VinylDNSTestHelpers.manualReviewConfig,
-      VinylDNSTestHelpers.batchChangeConfig,
-      VinylDNSTestHelpers.scheduledChangesConfig,
-      VinylDNSTestHelpers.approvedNameServers
+      VinylDNSTestHelpers.approvedNameServers,
+      highValueDomainConfigFn = () => VinylDNSTestHelpers.highValueDomainConfig
     )
 
   import underTest._
@@ -216,7 +218,7 @@ class BatchChangeValidationsSpec
     )
 
   property("validateBatchChangeInputSize: should fail if batch has no changes") {
-    validateBatchChangeInputSize(BatchChangeInput(None, List())) should
+    validateBatchChangeInputSize(BatchChangeInput(None, List()),maxChanges) should
       haveInvalid[DomainValidationError](BatchChangeIsEmpty(maxChanges))
   }
 
@@ -224,11 +226,11 @@ class BatchChangeValidationsSpec
     "validateBatchChangeInputSize: should succeed with at least one but fewer than max inputs"
   ) {
     forAll(validBatchChangeInput(1, maxChanges)) { input: BatchChangeInput =>
-      validateBatchChangeInputSize(input).isValid shouldBe true
+      validateBatchChangeInputSize(input, maxChanges).isValid shouldBe true
     }
 
     forAll(validBatchChangeInput(maxChanges + 1, 10000)) { input: BatchChangeInput =>
-      validateBatchChangeInputSize(input) should haveInvalid[DomainValidationError](
+      validateBatchChangeInputSize(input, maxChanges) should haveInvalid[DomainValidationError](
         ChangeLimitExceeded(maxChanges)
       )
     }
@@ -312,7 +314,7 @@ class BatchChangeValidationsSpec
   }
 
   property("validateInputChanges: should succeed if all inputs are good") {
-    forAll(listOfN(3, validAChangeGen)) { input: List[ChangeInput] =>
+    forAll(listOfN(3, validAChangeGen)) { (input: List[ChangeInput]) =>
       val result = validateInputChanges(input, false)
       result.map(_ shouldBe valid)
     }
@@ -410,11 +412,9 @@ class BatchChangeValidationsSpec
     val bcv =
       new BatchChangeValidations(
         accessValidations,
-        VinylDNSTestHelpers.highValueDomainConfig,
         VinylDNSTestHelpers.manualReviewConfig,
-        VinylDNSTestHelpers.batchChangeConfig,
-        ScheduledChangesConfig(enabled = false),
-        VinylDNSTestHelpers.approvedNameServers
+        VinylDNSTestHelpers.approvedNameServers,
+        scheduledChangesEnabledFn = () => IO.pure(false)
       )
     bcv.validateBatchChangeInput(input, None, okAuth).value.unsafeRunSync() shouldBe Left(
       ScheduledChangesDisabled
@@ -432,11 +432,9 @@ class BatchChangeValidationsSpec
     val bcv =
       new BatchChangeValidations(
         accessValidations,
-        VinylDNSTestHelpers.highValueDomainConfig,
         VinylDNSTestHelpers.manualReviewConfig,
-        VinylDNSTestHelpers.batchChangeConfig,
-        ScheduledChangesConfig(enabled = true),
-        VinylDNSTestHelpers.approvedNameServers
+        VinylDNSTestHelpers.approvedNameServers,
+        scheduledChangesEnabledFn = () => IO.pure(true)
       )
     bcv.validateBatchChangeInput(input, None, okAuth).value.unsafeRunSync() shouldBe Left(
       ScheduledTimeMustBeInFuture

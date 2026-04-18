@@ -28,6 +28,8 @@ final case class LimitsConfig(
     ZONE_ROUTING_MAX_ITEMS_LIMIT: Int
 )
 object LimitsConfig {
+  // All fields are read from config (reference.conf defaults; DB overrides via buildLimitsConfig).
+  // No hardcoded fallbacks — defaults live exclusively in reference.conf under vinyldns.api.limits.
   implicit val configReader: ConfigReader[LimitsConfig] =
     ConfigReader.forProduct7[LimitsConfig, Int, Int, Int, Int, Int, Int, Int](
       "batchchange-routing-max-items-limit",
@@ -37,25 +39,5 @@ object LimitsConfig {
       "recordset-routing-default-max-items",
       "zone-routing-default-max-items",
       "zone-routing-max-items-limit"
-    ) {
-      case (
-          batchchange_routing_max_items_limit,
-          membership_routing_default_max_items,
-          membership_routing_max_items_limit,
-          membership_routing_max_groups_list_limit,
-          recordset_routing_default_max_items,
-          zone_routing_default_max_items,
-          zone_routing_max_items_limit
-          ) =>
-        LimitsConfig(
-          batchchange_routing_max_items_limit,
-          membership_routing_default_max_items,
-          membership_routing_max_items_limit,
-          membership_routing_max_groups_list_limit,
-          recordset_routing_default_max_items,
-          zone_routing_default_max_items,
-          zone_routing_max_items_limit
-        )
-    }
-
+    )(LimitsConfig.apply)
 }

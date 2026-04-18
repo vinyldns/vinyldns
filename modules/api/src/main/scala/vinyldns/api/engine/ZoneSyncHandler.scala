@@ -44,12 +44,13 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
              zoneChangeRepository: ZoneChangeRepository,
              zoneRepository: ZoneRepository,
              backendResolver: BackendResolver,
-             maxZoneSize: Int,
+             maxZoneSize: IO[Int],
              vinyldnsLoader: (Zone, RecordSetRepository, RecordSetCacheRepository) => VinylDNSZoneViewLoader =
         VinylDNSZoneViewLoader.apply
   ): ZoneChange => IO[ZoneChange] =
     zoneChange =>
       for {
+        size <- maxZoneSize
         _ <- saveZoneAndChange(zoneRepository, zoneChangeRepository, zoneChange) // initial save to store zone status
         // as Syncing
         syncChange <- runSync(
@@ -58,7 +59,7 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
           recordSetCacheRepository,
           zoneChange,
           backendResolver,
-          maxZoneSize,
+          size,
           vinyldnsLoader
         )
         _ <- saveZoneAndChange(zoneRepository, zoneChangeRepository, syncChange) // final save to store zone status

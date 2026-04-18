@@ -27,7 +27,7 @@ object HighValueDomainConfig {
   import ZoneRecordValidations.toCaseIgnoredRegexList
   implicit val configReader: ConfigReader[HighValueDomainConfig] =
     ConfigReader.forProduct2[HighValueDomainConfig, List[String], List[String]](
-      "regex-list",
+      "fqdn-regex-list",
       "ip-list"
     ) {
       case (regexList, ipList) =>

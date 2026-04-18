@@ -20,7 +20,7 @@ import cats.effect.IO
 import cats.implicits._
 import scalikejdbc.DB
 import vinyldns.api.Interfaces._
-import vinyldns.api.config.ValidEmailConfig
+import vinyldns.api.config.{RuntimeVinylDNSConfig, ValidEmailConfig}
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.LockStatus.LockStatus
@@ -31,15 +31,14 @@ import vinyldns.core.Messages._
 import vinyldns.mysql.TransactionProvider
 
 object MembershipService {
-  def apply(dataAccessor: ApiDataAccessor,emailConfig:ValidEmailConfig): MembershipService =
+  def apply(dataAccessor: ApiDataAccessor): MembershipService =
     new MembershipService(
       dataAccessor.groupRepository,
       dataAccessor.userRepository,
       dataAccessor.membershipRepository,
       dataAccessor.zoneRepository,
       dataAccessor.groupChangeRepository,
-      dataAccessor.recordSetRepository,
-      emailConfig
+      dataAccessor.recordSetRepository
     )
 }
 
@@ -50,8 +49,10 @@ class MembershipService(
     zoneRepo: ZoneRepository,
     groupChangeRepo: GroupChangeRepository,
     recordSetRepo: RecordSetRepository,
-    validDomains: ValidEmailConfig
+    private val validEmailConfigFn: () => ValidEmailConfig = () => RuntimeVinylDNSConfig.validEmailConfig
 ) extends MembershipServiceAlgebra with TransactionProvider {
+
+  private def validDomains: ValidEmailConfig = validEmailConfigFn()
 
   import MembershipValidations._
 
