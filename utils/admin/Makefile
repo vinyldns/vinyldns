@@ -27,7 +27,7 @@ endif
 
 .ONESHELL:
 
-.PHONY: all build run
+.PHONY: all build run proto
 
 all: build run
 
@@ -41,3 +41,9 @@ run:
 	docker network create --driver bridge vinyldns_net &> /dev/null || true
 	USE_TTY="" && test -t 1 && USE_TTY="-t"
 	docker run -i $${USE_TTY} --network vinyldns_net --rm $(DOCKER_PARAMS) $(IMAGE_NAME) $(WITH_ARGS)
+
+proto:
+	@set -euo pipefail
+	cp ../../modules/core/src/main/protobuf/VinylDNSProto.proto .
+	protoc VinylDNSProto.proto --python_out=.
+	rm VinylDNSProto.proto
