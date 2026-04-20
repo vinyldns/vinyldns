@@ -24,7 +24,7 @@ import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.LockStatus
 import vinyldns.core.route.Monitored
-
+import vinyldns.core.Messages._
 import scala.util.matching.Regex
 
 sealed abstract class VinylDNSAuthenticationError(msg: String) extends Throwable(msg)
@@ -69,7 +69,7 @@ class ProductionVinylDNSAuthenticator(
         header.name.compareToIgnoreCase("Authorization") == 0
       }
       .map(header => IO.pure(header.value))
-      .getOrElse(IO.raiseError(AuthMissing("Authorization header not found")))
+      .getOrElse(IO.raiseError(AuthMissing(AuthMissingErrorMsg)))
 
   /**
     * Parses the auth header into an Aws Regex.Match.  If the auth header cannot be parsed, an
@@ -81,7 +81,7 @@ class ProductionVinylDNSAuthenticator(
     Aws4Authenticator
       .parseAuthHeader(header)
       .map(IO.pure)
-      .getOrElse(IO.raiseError(AuthRejected("Authorization header could not be parsed")))
+      .getOrElse(IO.raiseError(AuthRejected(AuthRejectedErrorMsg)))
 
   /**
     * Gets the access key from the request.  Normalizes the exceptions coming out of the authenticator
@@ -112,7 +112,7 @@ class ProductionVinylDNSAuthenticator(
       case auth if authenticator.authenticateReq(req, auth.subgroups, secretKey, content) =>
         IO.unit
       case _ =>
-        IO.raiseError(AuthRejected(s"Request signature could not be validated"))
+        IO.raiseError(AuthRejected(RequestSignatureErrorMsg))
     }
 
   /**
@@ -157,10 +157,10 @@ class ProductionVinylDNSAuthenticator(
       case Some(ok) =>
         if (ok.signedInUser.lockStatus == LockStatus.Locked) {
           IO.raiseError(
-            AccountLocked(s"Account with username ${ok.signedInUser.userName} is locked")
+            AccountLocked(AccountLockedErrorMsg.format(ok.signedInUser.userName))
           )
         } else IO.pure(ok)
       case None =>
-        IO.raiseError(AuthRejected(s"Account with accessKey $accessKey specified was not found"))
+        IO.raiseError(AuthRejected(AccountAccessKeyErrorMsg.format(accessKey)))
     }
 }
