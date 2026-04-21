@@ -50,13 +50,14 @@
                 return promis
             };
 
-            this.getBatchChanges = function (maxItems, startFrom, ignoreAccess, approvalStatus, userName, dateTimeRangeStart, dateTimeRangeEnd) {
+            this.getBatchChanges = function (maxItems, startFrom, ignoreAccess, approvalStatus, userName, groupName, dateTimeRangeStart, dateTimeRangeEnd) {
                 var params = {
                     "maxItems": maxItems,
                     "startFrom": startFrom,
                     "ignoreAccess": ignoreAccess,
                     "approvalStatus": approvalStatus,
                     "userName": userName,
+                    "groupName": groupName,
                     "dateTimeRangeStart": dateTimeRangeStart,
                     "dateTimeRangeEnd": dateTimeRangeEnd
                 };
