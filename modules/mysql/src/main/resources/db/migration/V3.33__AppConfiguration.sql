@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS app_config (
   config_key    VARCHAR(255)  NOT NULL,
   config_value  MEDIUMTEXT    NOT NULL,
   created_at    DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  created_by    VARCHAR(255)  NOT NULL DEFAULT 'system',
   updated_at    DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  updated_by    VARCHAR(255)  NOT NULL DEFAULT 'system',
   PRIMARY KEY (config_key)
 );
