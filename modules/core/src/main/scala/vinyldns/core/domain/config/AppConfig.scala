@@ -24,7 +24,9 @@ case class AppConfigResponse(
                                 key: String,
                                 value: String,
                                 createdAt: String,
-                                updatedAt: String
+                                updatedAt: String,
+                                createdBy: String,
+                                updatedBy: String
                               )
 
 case class AppConfigListResponse(

@@ -29,7 +29,7 @@ trait JsonSupport extends DefaultJsonProtocol {
 
   implicit val appConfigFormat: RootJsonFormat[AppConfig] = jsonFormat2(AppConfig)
   implicit val appConfigResponseFormat: RootJsonFormat[AppConfigResponse] =
-    jsonFormat4(AppConfigResponse)
+    jsonFormat6(AppConfigResponse)
 }
 
 

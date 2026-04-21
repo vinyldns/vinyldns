@@ -25,9 +25,10 @@ import vinyldns.core.domain.backend.{Backend, BackendConfigs, BackendResolver}
 import vinyldns.core.domain.config.AppConfigRepository
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.Zone
-import vinyldns.core.health.HealthCheck
 import vinyldns.core.health.HealthCheck.HealthCheck
-import vinyldns.core.notifier.NotifierConfig
+import cats.effect.ContextShift
+import vinyldns.core.notifier.{AllNotifiers, Notification, NotifierConfig, NotifierLoader}
+import vinyldns.core.domain.membership.{GroupRepository, UserRepository}
 import vinyldns.api.domain.access.{GlobalAcl, GlobalAcls}
 import vinyldns.api.domain.zone.ZoneRecordValidations
 import pureconfig._
@@ -49,7 +50,7 @@ object RuntimeVinylDNSConfig {
 
   // ---------------------------------------------------------------
   // Volatile vars for complex structured configs.
-  // Updated by reload() when POST /appconfig/refresh is called.
+  // Updated by reload() when POST /appconfig/reload is called.
   // Services read these synchronously per-request.
   // ---------------------------------------------------------------
   @volatile private var _highValueDomainConfig: HighValueDomainConfig =
@@ -72,14 +73,28 @@ object RuntimeVinylDNSConfig {
       .load[ManualReviewConfig].getOrElse(ManualReviewConfig(enabled = false, Nil, Nil, Set.empty))
   @volatile private var _approvedNameServers: List[Regex] = Nil
   @volatile private var _globalAcls: GlobalAcls = GlobalAcls(Nil)
-  // BackendResolver updated by applyDbOverrides(); all services hold a reference to the
-  // dynamicBackendResolver proxy which reads the volatile var on every call.
   @volatile private var _backendResolver: BackendResolver = _
+  @volatile private var _notifiers: AllNotifiers = _
+  @volatile private var _userRepository: UserRepository = _
+  @volatile private var _groupRepository: GroupRepository = _
+
+  /**
+   * Stable-reference proxy for AllNotifiers.
+   * Pass this to all services at startup — notify() calls delegate through
+   * the volatile `_notifiers`, so a DB update + POST /config/reload
+   * transparently swaps the underlying notifier list without restarting.
+   */
+  private implicit val _proxyCs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
+
+  val dynamicNotifiers: AllNotifiers = new AllNotifiers(Nil) {
+    override def notify(notification: Notification[_]): IO[Unit] = _notifiers.notify(notification)
+  }
 
   /**
    * Stable-reference proxy for BackendResolver.
    * Pass this to all services at startup — method calls delegate through
-   * the volatile `_backendResolver`, so a DB update + POST /appconfig/refresh
+   * the volatile `_backendResolver`, so a DB update + POST /appconfig/reload
    * transparently swaps the underlying resolver without restarting.
    */
   val dynamicBackendResolver: BackendResolver = new BackendResolver {
@@ -110,6 +125,18 @@ object RuntimeVinylDNSConfig {
       }
     } yield ()
 
+  def initNotifiers(
+      notifiers: AllNotifiers,
+      userRepo: UserRepository,
+      groupRepo: GroupRepository
+  ): IO[Unit] =
+    IO {
+      _notifiers = notifiers
+      _userRepository = userRepo
+      _groupRepository = groupRepo
+      logger.info("[RuntimeConfig] Notifiers initialized")
+    }
+
   def loadFromDb(repo: AppConfigRepository): IO[Unit] =
     repo.getAll.flatMap { rows =>
       val snapshot = rows.map(r => r.key -> r.value).toMap
@@ -123,7 +150,7 @@ object RuntimeVinylDNSConfig {
         appConfigRef.set(updated)
       }
       .handleErrorWith { err =>
-        IO(logger.warn(s"[RuntimeConfig:refresh] Failed – retaining stale values. Cause: $err"))
+        IO(logger.warn(s"[RuntimeConfig:reload] Failed – retaining stale values. Cause: $err"))
       }
 
   def getAll: IO[Map[String, String]] = appConfigRef.get
@@ -138,7 +165,7 @@ object RuntimeVinylDNSConfig {
   def getRaw: Config = rawConfig
 
   /** Re-reads application.conf and refreshes ALL non-bootstrap configs including complex ones.
-   *  Called by POST /appconfig/refresh so file edits also take effect without restart. */
+   *  Called by POST /appconfig/reload so file edits also take effect without restart. */
   def reload(): IO[Unit] =
     for {
       _ <- IO {
@@ -164,7 +191,7 @@ object RuntimeVinylDNSConfig {
    * Rebuilds volatile vars that can be overridden by DB values.
    * Called after loadFromDb() at startup and inside reload().
    * Also rebuilds the BackendResolver from the DB blob so
-   * POST /appconfig/refresh dynamically swaps DNS backends.
+   * POST /appconfig/reload dynamically swaps DNS backends.
    */
   private def parseManualReviewConfig(snapshot: Map[String, String]): ManualReviewConfig = {
     import ZoneRecordValidations.toCaseIgnoredRegexList
@@ -216,7 +243,7 @@ object RuntimeVinylDNSConfig {
                   acls => _globalAcls = GlobalAcls(acls))
         }
       }
-    } >> effectiveBackendConfigs.flatMap { cfg =>
+    } >> backendConfigs.flatMap { cfg =>
       BackendResolver.apply(cfg).flatMap { resolver =>
         IO {
           _backendResolver = resolver
@@ -231,24 +258,37 @@ object RuntimeVinylDNSConfig {
             logger.info("[RuntimeConfig:applyDbOverrides] BackendResolver built from static config (DB fallback)")
           }
         }
-    }
+    } >> rebuildNotifiers()
 
-  /** High-value domain config. Refreshed when reload() is called (POST /appconfig/refresh). */
+  private def rebuildNotifiers(): IO[Unit] = {
+    val userRepo  = _userRepository
+    val groupRepo = _groupRepository
+    if (userRepo == null || groupRepo == null) {
+      IO(logger.debug("[RuntimeConfig:rebuildNotifiers] Repositories not yet initialised — skipping notifier rebuild"))
+    } else {
+      notifierConfigs.flatMap { configs =>
+        NotifierLoader.loadAll(configs, userRepo, groupRepo).flatMap { newNotifiers =>
+          IO {
+            _notifiers = newNotifiers
+            logger.info("[RuntimeConfig:applyDbOverrides] Notifiers rebuilt from effective configs (DB overrides applied)")
+          }
+        }
+      }.handleErrorWith { err =>
+        IO(logger.warn(s"[RuntimeConfig:rebuildNotifiers] Notifier rebuild failed — retaining existing notifiers. Cause: $err"))
+      }
+    }
+  }
+
   def highValueDomainConfig: HighValueDomainConfig = _highValueDomainConfig
 
-  /** Dotted-hosts config. Refreshed when reload() is called. */
   def dottedHostsConfig: DottedHostsConfig = _dottedHostsConfig
 
-  /** Valid email config. Refreshed when reload() is called. */
   def validEmailConfig: ValidEmailConfig = _validEmailConfig
 
-  /** Manual review config. Updated by applyDbOverrides() from DB key 'manual-review-domains'. */
   def manualReviewConfig: ManualReviewConfig = _manualReviewConfig
 
-  /** Approved name servers. Updated by applyDbOverrides() from DB key 'approved-name-servers' (comma-separated). */
   def approvedNameServers: List[Regex] = _approvedNameServers
 
-  /** Global ACL rules. Updated by applyDbOverrides() from DB key 'global-acl-rules' (JSON array). */
   def globalAcls: GlobalAcls = _globalAcls
 
   def syncDelay: IO[Int] =
@@ -281,78 +321,103 @@ object RuntimeVinylDNSConfig {
   def isZoneSyncScheduleAllowed: IO[Boolean] =
     get("is-zone-sync-schedule-allowed").map(_.map(_.toBoolean).getOrElse(_current.serverConfig.isZoneSyncScheduleAllowed))
 
-  def restHost: IO[String] =
-    get("rest.host").map(_.getOrElse(_current.httpConfig.host))
-
-  def restPort: IO[Int] =
-    get("rest.port").map(_.map(_.toInt).getOrElse(_current.httpConfig.port))
-
   def queueMessagesPerPoll: IO[Int] =
     get("queue.messages-per-poll").map(_.map(_.toInt).getOrElse(_current.messageQueueConfig.messagesPerPoll))
 
   def queuePollingIntervalMillis: IO[Long] =
     get("queue.polling-interval-millis").map(_.map(_.toLong).getOrElse(_current.messageQueueConfig.pollingInterval.toMillis))
 
-  /** Limits config. Volatile var rebuilt by applyDbOverrides() — DB keys override file values. */
+  def multiRecordBatchChangeEnabled: IO[Boolean] =
+    get("multi-record-batch-change-enabled").map(_.map(_.toBoolean).getOrElse(false))
+
   def limitsConfig: LimitsConfig = _limitsConfig
 
-  /** Shared approved record types. Volatile var, DB key: shared-approved-types (comma-separated). */
   def sharedApprovedTypes: List[RecordType.Value] = _sharedApprovedTypes
 
-  /** Processing disabled flag — DB key: processing-disabled. Default: false. */
   def processingDisabled: IO[Boolean] =
     get("processing-disabled").map(_.map(_.toBoolean).getOrElse(_current.serverConfig.processingDisabled))
 
-  // Effective startup configs — DB JSON blob overrides file at startup
-  /**
-   * Returns BackendConfigs loaded from the DB blob at key "backend.config-json".
-   * The application.conf backend section is ignored at runtime — the DB is the
-   * single source of truth for backend configuration.
-   * Fails with a clear error if the key is missing from the DB.
-   */
-  def effectiveBackendConfigs: IO[BackendConfigs] =
-    get("backend-dns-zone.config-json").flatMap {
+  def backendConfigs: IO[BackendConfigs] =
+    get("backend-dns-zone").flatMap {
       case Some(json) =>
         IO(ConfigFactory.parseString(json))
           .flatMap { cfg =>
-            implicit val cs: cats.effect.ContextShift[IO] = IO.contextShift(scala.concurrent.ExecutionContext.global)
             BackendConfigs.load(cfg)
           }
           .handleErrorWith { err =>
             IO.raiseError(new RuntimeException(
-              s"[RuntimeConfig] Failed to parse backend-dns-zone.config-json from DB: $err"
+              s"[RuntimeConfig] Failed to parse backend-dns-zone from DB: $err"
             ))
           }
       case None =>
         IO.raiseError(new RuntimeException(
-          "[RuntimeConfig] 'backend-dns-zone.config-json' not found in app_config table. " +
+          "[RuntimeConfig] 'backend-dns-zone' not found in app_config table. " +
           "Insert the backend configuration into the DB before starting."
         ))
     }
 
-  /**
-   * Returns notifier configs with DB key overrides applied only to email settings.
-   * SNS settings are read exclusively from application.conf (they are secured credentials).
-   *
-   * DB key format for email: `email.settings.{key}`
-   *   e.g. email.settings.from = "VinylDNS <no-reply@example.com>"
-   */
-  def effectiveNotifierConfigs: IO[List[NotifierConfig]] =
+  def notifierConfigs: IO[List[NotifierConfig]] =
     appConfigRef.get.map { snapshot =>
-      _current.notifierConfigs.map { nc =>
-        val isEmail = nc.className.toLowerCase.contains("email")
-        if (!isEmail) nc
-        else {
-          val prefix = "email.settings."
-          val overrideMap = snapshot
-            .filter { case (k, _) => k.startsWith(prefix) }
-            .map    { case (k, v) => k.stripPrefix(prefix) -> v }
-          if (overrideMap.isEmpty) nc
-          else {
-            val overrideCfg = ConfigFactory.parseMap(overrideMap.asJava)
-            NotifierConfig(nc.className, overrideCfg.withFallback(nc.settings))
+
+      snapshot.get("notifiers") match {
+
+        // ── DB-driven: build configs entirely from DB keys ──────────────────
+        case Some(json) =>
+          val names = json.trim.stripPrefix("[").stripSuffix("]")
+            .split(",")
+            .map(_.trim.stripPrefix("\"").stripSuffix("\"").trim.toLowerCase)
+            .filter(_.nonEmpty)
+            .toList
+
+          names.flatMap {
+            case "email" =>
+              val prefix = "email.settings."
+              val overrideMap = snapshot
+                .filter { case (k, _) => k.startsWith(prefix) }
+                .map    { case (k, v) => k.stripPrefix(prefix) -> v }
+              // Merge DB overrides on top of any file-based email settings (empty if not in config)
+              val fileSettings = _current.notifierConfigs
+                .find(_.className.toLowerCase.contains("email"))
+                .map(_.settings)
+                .getOrElse(ConfigFactory.empty())
+              val effectiveSettings =
+                if (overrideMap.isEmpty) fileSettings
+                else ConfigFactory.parseMap(overrideMap.asJava).withFallback(fileSettings)
+              List(NotifierConfig("vinyldns.api.notifier.email.EmailNotifierProvider", effectiveSettings))
+
+            case "sns" =>
+              val prefix = "sns.settings."
+              val overrideMap = snapshot
+                .filter { case (k, _) => k.startsWith(prefix) }
+                .map    { case (k, v) => k.stripPrefix(prefix) -> v }
+              val fileSettings = _current.notifierConfigs
+                .find(_.className.toLowerCase.contains("sns"))
+                .map(_.settings)
+                .getOrElse(ConfigFactory.empty())
+              val effectiveSettings =
+                if (overrideMap.isEmpty) fileSettings
+                else ConfigFactory.parseMap(overrideMap.asJava).withFallback(fileSettings)
+              List(NotifierConfig("vinyldns.api.notifier.sns.SnsNotifierProvider", effectiveSettings))
+
+            case other =>
+              logger.warn(s"[RuntimeConfig:effectiveNotifierConfigs] Unknown notifier name '$other' in DB — skipping")
+              Nil
           }
-        }
+
+        // ── No DB key: fall back to application.conf list ───────────────────
+        case None =>
+          val emailPrefix = "email.settings."
+          val emailOverrideMap = snapshot
+            .filter { case (k, _) => k.startsWith(emailPrefix) }
+            .map    { case (k, v) => k.stripPrefix(emailPrefix) -> v }
+          _current.notifierConfigs.map { nc =>
+            val isEmail = nc.className.toLowerCase.contains("email")
+            if (!isEmail || emailOverrideMap.isEmpty) nc
+            else {
+              val overrideCfg = ConfigFactory.parseMap(emailOverrideMap.asJava)
+              NotifierConfig(nc.className, overrideCfg.withFallback(nc.settings))
+            }
+          }
       }
     }
 

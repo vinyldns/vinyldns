@@ -68,7 +68,7 @@ object Boot extends App {
     vinyldnsBannerText
   }
 
-  /* Boot straps the entire application, if anything fails, we all fail! */
+  /* Boot straps the entire application, */
   def runApp(): IO[Future[Http.ServerBinding]] =
     // Use an effect type to lift anything that can fail into the effect type.  This ensures
     // that if anything fails, the app does not start!
@@ -91,8 +91,8 @@ object Boot extends App {
       backendResolver = RuntimeVinylDNSConfig.dynamicBackendResolver
       loadTestData <- RuntimeVinylDNSConfig.loadTestData
       isZoneSyncScheduleAllowed <- RuntimeVinylDNSConfig.isZoneSyncScheduleAllowed
-      restHost <- RuntimeVinylDNSConfig.restHost
-      restPort <- RuntimeVinylDNSConfig.restPort
+      restHost = vinyldnsConfig.httpConfig.host
+      restPort = vinyldnsConfig.httpConfig.port
       _ <- if (loadTestData) {
         TestDataLoader.loadTestData(
           repositories.userRepository,
@@ -104,12 +104,13 @@ object Boot extends App {
       }
       messageQueue <- MessageQueueLoader.load(vinyldnsConfig.messageQueueConfig)
       processingSignal <- RuntimeVinylDNSConfig.processingDisabled.flatMap(SignallingRef[IO, Boolean](_))
-      effectiveNotifierConfigs <- RuntimeVinylDNSConfig.effectiveNotifierConfigs
+      effectiveNotifierConfigs <- RuntimeVinylDNSConfig.notifierConfigs
       notifiers <- NotifierLoader.loadAll(
         effectiveNotifierConfigs,
         repositories.userRepository,
         repositories.groupRepository
       )
+      _ <- RuntimeVinylDNSConfig.initNotifiers(notifiers, repositories.userRepository, repositories.groupRepository)
       _ <- APIMetrics.initialize(vinyldnsConfig.apiMetricSettings)
       // Schedule the zone sync task to be executed every 5 seconds
       _ <- if (isZoneSyncScheduleAllowed){ IO(executor.scheduleAtFixedRate(() => {
@@ -135,7 +136,7 @@ object Boot extends App {
         repositories.recordChangeRepository,
         repositories.recordSetCacheRepository,
         repositories.batchChangeRepository,
-        notifiers,
+        RuntimeVinylDNSConfig.dynamicNotifiers,
         backendResolver,
         RuntimeVinylDNSConfig.maxZoneSize
       ).start
@@ -169,7 +170,7 @@ object Boot extends App {
           RuntimeVinylDNSConfig.validateRecordLookupAgainstDnsBackend,
           RuntimeVinylDNSConfig.approvedNameServers,
           RuntimeVinylDNSConfig.useRecordSetCache,
-          notifiers
+          RuntimeVinylDNSConfig.dynamicNotifiers
         )
       val zoneService = ZoneService(
         repositories,
@@ -200,7 +201,7 @@ object Boot extends App {
         batchChangeConverter,
         RuntimeVinylDNSConfig.manualReviewEnabled,
         authPrincipalProvider,
-        notifiers,
+        RuntimeVinylDNSConfig.dynamicNotifiers,
         RuntimeVinylDNSConfig.scheduledChangesEnabled,
         vinyldnsConfig.batchChangeConfig.v6DiscoveryNibbleBoundaries,
         RuntimeVinylDNSConfig.defaultTtl

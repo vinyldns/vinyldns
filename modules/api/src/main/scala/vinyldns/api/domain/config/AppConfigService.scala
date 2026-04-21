@@ -62,7 +62,7 @@ class AppConfigService(
       }).toResult
 
       result <- appConfigRepo
-        .create(key, value)
+        .create(key, value, auth.userName)
         .toResult[AppConfigResponse]
 
       _ <- RuntimeVinylDNSConfig.refresh(appConfigRepo).toResult[Unit]
@@ -108,7 +108,7 @@ class AppConfigService(
       _ <- validateKeyValue(key, value)
 
       updated <- appConfigRepo
-        .update(key, value)
+        .update(key, value, auth.userName)
         .toResult[Option[AppConfigResponse]]
 
       result <- updated
@@ -151,10 +151,11 @@ class AppConfigService(
       result <- RuntimeVinylDNSConfig.getAll.toResult[Map[String, String]]
     } yield result
 
-  // Reload config from file + apply DB overrides
+  // Reload config from file AND re-query DB, then apply DB overrides
   def reloadConfig(auth: AuthPrincipal): Result[String] =
     for {
       _ <- requireSuper(auth)
+      _ <- RuntimeVinylDNSConfig.refresh(appConfigRepo).toResult[Unit]
       _ <- RuntimeVinylDNSConfig.reload().toResult[Unit]
     } yield "Config reloaded successfully"
 

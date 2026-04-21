@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
 import vinyldns.core.route.Monitored
 import java.io.{PrintWriter, StringWriter}
 
-final case class AllNotifiers(notifiers: List[Notifier])(implicit val cs: ContextShift[IO])
+case class AllNotifiers(notifiers: List[Notifier])(implicit val cs: ContextShift[IO])
     extends Monitored {
 
   private val logger = LoggerFactory.getLogger("AllNotifiers")

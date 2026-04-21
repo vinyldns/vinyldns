@@ -29,14 +29,14 @@ class MySqlAppConfigRepository extends AppConfigRepository {
 
   private final val CREATE_APP_CONFIG =
     sql"""
-      INSERT INTO app_config (config_key, config_value)
-      VALUES ({key}, {value})
+      INSERT INTO app_config (config_key, config_value, created_by, updated_by)
+      VALUES ({key}, {value}, {createdBy}, {createdBy})
     """
 
   private final val UPDATE_APP_CONFIG =
     sql"""
       UPDATE app_config
-      SET config_value = {value}, updated_at = NOW(3)
+      SET config_value = {value}, updated_at = NOW(3), updated_by = {updatedBy}
       WHERE config_key = {key}
     """
 
@@ -45,14 +45,14 @@ class MySqlAppConfigRepository extends AppConfigRepository {
 
   private final val FETCH_APP_CONFIG =
     sql"""
-      SELECT config_key, config_value, created_at, updated_at
+      SELECT config_key, config_value, created_at, updated_at, created_by, updated_by
       FROM app_config
       WHERE config_key = {key}
     """
 
   private final val GET_APP_CONFIG =
     sql"""
-      SELECT config_key, config_value, created_at, updated_at
+      SELECT config_key, config_value, created_at, updated_at, created_by, updated_by
       FROM app_config
       ORDER BY config_key
     """
@@ -69,7 +69,7 @@ class MySqlAppConfigRepository extends AppConfigRepository {
       .apply()
   }
 
-  override def create(key: String, value: String): IO[AppConfigResponse] =
+  override def create(key: String, value: String, createdBy: String): IO[AppConfigResponse] =
     monitor("repo.AppConfig.create") {
       IO {
         logger.debug(s"Creating app_config key=[$key]")
@@ -90,7 +90,7 @@ class MySqlAppConfigRepository extends AppConfigRepository {
           }
 
           CREATE_APP_CONFIG
-            .bindByName('key -> key, 'value -> value)
+            .bindByName('key -> key, 'value -> value, 'createdBy -> createdBy)
             .update
             .apply()
 
@@ -122,14 +122,14 @@ class MySqlAppConfigRepository extends AppConfigRepository {
       }
     }
 
-  override def update(key: String, value: String): IO[Option[AppConfigResponse]] =
+  override def update(key: String, value: String, updatedBy: String): IO[Option[AppConfigResponse]] =
     monitor("repo.AppConfig.update") {
       IO {
         logger.debug(s"Updating app_config key=[$key]")
         DB.localTx { implicit session =>
           val rows =
             UPDATE_APP_CONFIG
-              .bindByName('key -> key, 'value -> value)
+              .bindByName('key -> key, 'value -> value, 'updatedBy -> updatedBy)
               .update
               .apply()
 
@@ -167,6 +167,8 @@ class MySqlAppConfigRepository extends AppConfigRepository {
       key = rs.string("config_key"),
       value = rs.string("config_value"),
       createdAt = rs.timestamp("created_at").toInstant.toString,
-      updatedAt = rs.timestamp("updated_at").toInstant.toString
+      updatedAt = rs.timestamp("updated_at").toInstant.toString,
+      createdBy = rs.string("created_by"),
+      updatedBy = rs.string("updated_by")
     )
 }

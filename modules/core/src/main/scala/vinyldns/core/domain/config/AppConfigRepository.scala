@@ -20,9 +20,9 @@ import cats.effect.IO
 import vinyldns.core.repository.Repository
 
 trait AppConfigRepository extends Repository{
-  def create(key: String, value: String): IO[AppConfigResponse]
+  def create(key: String, value: String, createdBy: String): IO[AppConfigResponse]
   def getByKey(key: String): IO[Option[AppConfigResponse]]
   def getAll: IO[List[AppConfigResponse]]
-  def update(key: String, value: String): IO[Option[AppConfigResponse]]
+  def update(key: String, value: String, updatedBy: String): IO[Option[AppConfigResponse]]
   def delete(key: String): IO[Boolean]
 }
