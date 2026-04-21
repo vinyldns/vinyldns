@@ -366,6 +366,7 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
         function success(response) {
             $log.debug('recordsService::getZone-success');
             $scope.zoneInfo = response.data.zone;
+            $scope.$parent.zoneInfo = response.data.zone;
             $scope.updateZoneInfo = angular.copy($scope.zoneInfo);
             $scope.updateZoneInfo.hiddenKey = '';
             $scope.updateZoneInfo.hiddenTransferKey = '';

@@ -141,7 +141,8 @@ trait ProtobufConversions {
       isTest = zn.getIsTest,
       backendId = if (zn.hasBackendId) Some(zn.getBackendId) else None,
       recurrenceSchedule = if (zn.hasRecurrenceSchedule) Some(zn.getRecurrenceSchedule) else None,
-      scheduleRequestor = if (zn.hasScheduleRequestor) Some(zn.getScheduleRequestor) else None
+      scheduleRequestor = if (zn.hasScheduleRequestor) Some(zn.getScheduleRequestor) else None,
+      customMessage = if (zn.hasCustomMessage) Some(zn.getCustomMessage) else None
     )
   }
 
@@ -420,6 +421,7 @@ trait ProtobufConversions {
     zone.backendId.foreach(bid => builder.setBackendId(bid))
     zone.recurrenceSchedule.foreach(rs => builder.setRecurrenceSchedule(rs))
     zone.scheduleRequestor.foreach(rs => builder.setScheduleRequestor(rs))
+    zone.customMessage.foreach(rs => builder.setCustomMessage(rs))
     builder.build()
   }
 

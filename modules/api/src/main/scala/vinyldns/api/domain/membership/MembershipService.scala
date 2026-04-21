@@ -79,13 +79,14 @@ class MembershipService(
       name: String,
       email: String,
       description: Option[String],
+      customMessage: Option[String],
       memberIds: Set[String],
       adminUserIds: Set[String],
       authPrincipal: AuthPrincipal
   ): Result[Group] =
     for {
       existingGroup <- getExistingGroup(groupId)
-      newGroup = existingGroup.withUpdates(name, email, description, memberIds, adminUserIds)
+      newGroup = existingGroup.withUpdates(name, email, description, memberIds, adminUserIds, customMessage)
       _ <- groupValidation(newGroup)
       _ <- emailValidation(newGroup.email)
       _ <- canEditGroup(existingGroup, authPrincipal).toResult

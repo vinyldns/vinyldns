@@ -52,7 +52,8 @@ final case class Zone(
     scheduleRequestor: Option[String] = None,
     latestSync: Option[Instant] = None,
     isTest: Boolean = false,
-    backendId: Option[String] = None
+    backendId: Option[String] = None,
+    customMessage: Option[String] = None
 ) {
   val isIPv4: Boolean = name.toLowerCase.endsWith("in-addr.arpa.")
   val isIPv6: Boolean = name.toLowerCase.endsWith("ip6.arpa.")
@@ -82,6 +83,7 @@ final case class Zone(
     scheduleRequestor.map(sb.append("scheduleRequestor=\"").append(_).append("\"; "))
     updated.map(sb.append("updated=\"").append(_).append("\"; "))
     latestSync.map(sb.append("latestSync=\"").append(_).append("\"; "))
+    customMessage.map(sb.append("customMessage=\"").append(_).append("\"; "))
     sb.append("]")
     sb.toString
   }
@@ -102,7 +104,8 @@ object Zone {
       backendId = backendId,
       isTest = isTest,
       recurrenceSchedule = recurrenceSchedule,
-      scheduleRequestor = scheduleRequestor
+      scheduleRequestor = scheduleRequestor,
+      customMessage = customMessage
     )
   }
 
@@ -119,7 +122,8 @@ object Zone {
       adminGroupId = adminGroupId,
       backendId = backendId,
       recurrenceSchedule = recurrenceSchedule,
-      scheduleRequestor = scheduleRequestor
+      scheduleRequestor = scheduleRequestor,
+      customMessage = customMessage
     )
   }
 }
@@ -134,7 +138,8 @@ final case class CreateZoneInput(
     adminGroupId: String,
     backendId: Option[String] = None,
     recurrenceSchedule: Option[String] = None,
-    scheduleRequestor: Option[String] = None
+    scheduleRequestor: Option[String] = None,
+    customMessage: Option[String] = None
 )
 
 final case class UpdateZoneInput(
@@ -148,8 +153,9 @@ final case class UpdateZoneInput(
     adminGroupId: String,
     recurrenceSchedule: Option[String] = None,
     scheduleRequestor: Option[String] = None,
-    backendId: Option[String] = None
-)
+    backendId: Option[String] = None,
+    customMessage: Option[String] = None
+    )
 
 final case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
 
