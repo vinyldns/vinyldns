@@ -14,7 +14,12 @@ def test_create_group_success(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         result = client.create_group(new_group, status=200)
 
@@ -45,7 +50,12 @@ def test_create_group_success_wildcard(shared_zone_test_context):
             "email": "test@ok.dummy.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         result = client.create_group(new_group, status=200)
 
@@ -76,7 +86,12 @@ def test_create_group_success_number_of_dots(shared_zone_test_context):
             "email": "test@ok.dummy.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         result = client.create_group(new_group, status=200)
 
@@ -107,7 +122,12 @@ def test_creator_is_an_admin(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": []
+            "admins": [],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         result = client.create_group(new_group, status=200)
 
@@ -136,7 +156,12 @@ def test_create_group_without_name(shared_zone_test_context):
         "email": "test@test.com",
         "description": "this is a description",
         "members": [{"id": "ok"}],
-        "admins": [{"id": "ok"}]
+        "admins": [{"id": "ok"}],
+        "membershipAccessStatus": {
+            "pendingReviewMember": [],
+            "rejectedMember": [],
+            "approvedMember": []
+        }
     }
     errors = client.create_group(new_group, status=400)["errors"]
     assert_that(errors[0], is_("Missing Group.name"))
@@ -152,7 +177,12 @@ def test_create_group_without_email(shared_zone_test_context):
         "name": "without-email",
         "description": "this is a description",
         "members": [{"id": "ok"}],
-        "admins": [{"id": "ok"}]
+        "admins": [{"id": "ok"}],
+        "membershipAccessStatus": {
+            "pendingReviewMember": [],
+            "rejectedMember": [],
+            "approvedMember": []
+        }
     }
     errors = client.create_group(new_group, status=400)["errors"]
     assert_that(errors[0], is_("Missing Group.email"))
@@ -167,7 +197,12 @@ def test_create_group_without_name_or_email(shared_zone_test_context):
     new_group = {
         "description": "this is a description",
         "members": [{"id": "ok"}],
-        "admins": [{"id": "ok"}]
+        "admins": [{"id": "ok"}],
+        "membershipAccessStatus": {
+            "pendingReviewMember": [],
+            "rejectedMember": [],
+            "approvedMember": []
+        }
     }
     errors = client.create_group(new_group, status=400)["errors"]
     assert_that(errors, has_length(2))
@@ -186,7 +221,12 @@ def test_create_group_with_invalid_email_domain(shared_zone_test_context):
             "email": "test@abc.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         error = client.create_group(new_group, status=400)
         assert_that(error, is_("Please enter a valid Email. Valid domains should end with test.com,dummy.com"))
@@ -201,7 +241,12 @@ def test_create_group_with_invalid_email(shared_zone_test_context):
         "email": "test.abc.com",
         "description": "this is a description",
         "members": [{"id": "ok"}],
-        "admins": [{"id": "ok"}]
+        "admins": [{"id": "ok"}],
+        "membershipAccessStatus": {
+            "pendingReviewMember": [],
+            "rejectedMember": [],
+            "approvedMember": []
+        }
     }
     error = client.create_group(new_group, status=400)
     assert_that(error, is_("Please enter a valid Email."))
@@ -217,7 +262,12 @@ def test_create_group_with_invalid_email_number_of_dots(shared_zone_test_context
         "email": "test@ok.ok.dummy.com",
         "description": "this is a description",
         "members": [{"id": "ok"}],
-        "admins": [{"id": "ok"}]
+        "admins": [{"id": "ok"}],
+        "membershipAccessStatus": {
+            "pendingReviewMember": [],
+            "rejectedMember": [],
+            "approvedMember": []
+        }
     }
     error = client.create_group(new_group, status=400)
     assert_that(error, is_("Please enter a valid Email. Number of dots allowed after @ is 2"))
@@ -231,7 +281,13 @@ def test_create_group_without_members_or_admins(shared_zone_test_context):
     new_group = {
         "name": "some-group-name",
         "email": "test@test.com",
-        "description": "this is a description"
+        "description": "this is a description",
+        "membershipAccessStatus": {
+            "pendingReviewMember": [],
+            "rejectedMember": [],
+            "approvedMember": []
+        }
+
     }
     errors = client.create_group(new_group, status=400)["errors"]
     assert_that(errors, has_length(2))
@@ -254,7 +310,12 @@ def test_create_group_adds_admins_as_members(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         result = client.create_group(new_group, status=200)
 
@@ -283,7 +344,12 @@ def test_create_group_duplicate(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
 
         result = client.create_group(new_group, status=200)
@@ -306,7 +372,12 @@ def test_create_group_no_members(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [],
-            "admins": []
+            "admins": [],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
 
         result = client.create_group(new_group, status=200)
@@ -330,7 +401,12 @@ def test_create_group_adds_admins_to_member_list(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "dummy"}]
+            "admins": [{"id": "dummy"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
 
         result = client.create_group(new_group, status=200)

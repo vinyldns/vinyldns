@@ -17,13 +17,14 @@
 package vinyldns.mysql.repository
 
 import cats.effect.IO
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
-import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeRepository, GroupChangeType}
+import vinyldns.core.domain.membership.{Group, GroupChange, GroupChangeRepository, GroupChangeType, MemberStatus, MembershipAccess, MembershipAccessStatus}
 import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
 
 class MySqlGroupChangeRepositoryIntegrationSpec
@@ -47,7 +48,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
   override protected def afterAll(): Unit = clear()
 
   def generateGroupChanges(groupId: String, numChanges: Int): Seq[GroupChange] = {
-    val group = Group(name = "test", id = groupId, email = "test@test.com")
+    val group = Group(name = "test", id = groupId, email = "test@test.com",membershipAccessStatus = Some(MembershipAccessStatus(Set(),Set(),Set())))
     for {
       i <- 1 to numChanges
     } yield GroupChange(
@@ -69,6 +70,7 @@ class MySqlGroupChangeRepositoryIntegrationSpec
   "MySqlGroupChangeRepository.save" should {
     "successfully save a group change" in {
       val groupChange = generateGroupChanges("group-1", 1).head
+
       saveGroupChangeData(repo, groupChange).unsafeRunSync() shouldBe groupChange
       repo.getGroupChange(groupChange.id).unsafeRunSync() shouldBe Some(groupChange)
     }
@@ -170,6 +172,113 @@ class MySqlGroupChangeRepositoryIntegrationSpec
           .unsafeRunSync()
       pageThree.changes shouldBe expectedPageThree
       pageThree.nextId shouldBe expectedPageThreeNext
+    }
+  }
+  "MySqlGroupChangeRepository membership access" should {
+    "save and retrieve a group change with membership access status" in {
+      val pendingMembers = Set(
+        MembershipAccess(userId = "user1", submittedBy = "admin1", status = MemberStatus.PendingReview.toString),
+        MembershipAccess(userId = "user2", submittedBy = "admin1", status = MemberStatus.PendingReview.toString)
+      )
+      val rejectedMembers = Set(
+        MembershipAccess(userId = "user3", submittedBy = "admin1", status = MemberStatus.Rejected.toString)
+      )
+      val approvedMembers = Set(
+        MembershipAccess(userId = "user4", submittedBy = "admin1", status = MemberStatus.Approved.toString)
+      )
+
+      val group = Group(
+        id = "group-with-access",
+        name = "test-group",
+        email = "test@test.com",
+        membershipAccessStatus = Some(MembershipAccessStatus(pendingMembers, rejectedMembers, approvedMembers))
+      )
+
+      val created = Instant.now.truncatedTo(ChronoUnit.MILLIS)
+      val groupChange = GroupChange(group, GroupChangeType.Create, "test-user", Some(group), created.toString)
+
+      saveGroupChangeData(repo, groupChange).unsafeRunSync() shouldBe groupChange
+      val retrieved = repo.getGroupChange(groupChange.id).unsafeRunSync()
+
+      retrieved shouldBe Some(groupChange)
+      retrieved.get.newGroup.membershipAccessStatus.isDefined shouldBe true
+      retrieved.get.newGroup.membershipAccessStatus.get.pendingReviewMember should contain theSameElementsAs pendingMembers
+      retrieved.get.newGroup.membershipAccessStatus.get.rejectedMember should contain theSameElementsAs rejectedMembers
+      retrieved.get.newGroup.membershipAccessStatus.get.approvedMember should contain theSameElementsAs approvedMembers
+    }
+
+    "update a group change with new membership access status" in {
+      // First create and save a group change
+      val initialGroup = Group(
+        id = "group-update-test",
+        name = "test-group",
+        email = "test@test.com",
+        membershipAccessStatus = Some(MembershipAccessStatus(Set(), Set(), Set()))
+      )
+
+      val initialCreated = Instant.now.truncatedTo(ChronoUnit.MILLIS)
+      val initialChange = GroupChange(initialGroup, GroupChangeType.Create, "test-user",
+        Some(initialGroup), initialCreated.toString)
+      saveGroupChangeData(repo, initialChange).unsafeRunSync()
+
+      // Then update with new membership access
+      val updatedMembers = Set(
+        MembershipAccess(userId = "new-user", submittedBy = "admin2", status = MemberStatus.Approved.toString)
+      )
+      val updatedGroup = initialGroup.copy(
+        membershipAccessStatus = Some(MembershipAccessStatus(Set(), Set(), updatedMembers))
+      )
+      val updatedCreated = initialCreated.plusSeconds(1)
+      val updatedChange = initialChange.copy(
+        newGroup = updatedGroup,
+        changeType = GroupChangeType.Update,
+        oldGroup = Some(updatedGroup),
+        created = updatedCreated
+      )
+
+      saveGroupChangeData(repo, updatedChange).unsafeRunSync()
+      val result = repo.getGroupChange(initialChange.id).unsafeRunSync()
+
+      result.get.newGroup.membershipAccessStatus.get.approvedMember should contain theSameElementsAs updatedMembers
+      result.get.changeType shouldBe GroupChangeType.Update
+    }
+
+    "handle empty membership access sets" in {
+      val group = Group(
+        id = "empty-access-group",
+        name = "test-empty",
+        email = "empty@test.com",
+        membershipAccessStatus = Some(MembershipAccessStatus(Set(), Set(), Set()))
+      )
+
+      val created = Instant.now.truncatedTo(ChronoUnit.MILLIS)
+      val groupChange = GroupChange(group, GroupChangeType.Create, "test-user",
+        Some(group), created.toString)
+
+      saveGroupChangeData(repo, groupChange).unsafeRunSync()
+      val result = repo.getGroupChange(groupChange.id).unsafeRunSync()
+
+      result.get.newGroup.membershipAccessStatus.get.pendingReviewMember shouldBe empty
+      result.get.newGroup.membershipAccessStatus.get.rejectedMember shouldBe empty
+      result.get.newGroup.membershipAccessStatus.get.approvedMember shouldBe empty
+    }
+
+    "handle null membership access status" in {
+      val group = Group(
+        id = "null-access-group",
+        name = "test-null",
+        email = "null@test.com",
+        membershipAccessStatus = None
+      )
+
+      val created = Instant.now.truncatedTo(ChronoUnit.MILLIS)
+      val groupChange = GroupChange(group, GroupChangeType.Create, "test-user",
+        Some(group), created.toString)
+
+      saveGroupChangeData(repo, groupChange).unsafeRunSync()
+      val result = repo.getGroupChange(groupChange.id).unsafeRunSync()
+
+      result.get.newGroup.membershipAccessStatus shouldBe Some(MembershipAccessStatus(Set(),Set(),Set()))
     }
   }
 }

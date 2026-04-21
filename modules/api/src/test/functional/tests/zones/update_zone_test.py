@@ -1107,7 +1107,12 @@ def test_user_can_update_zone_to_another_admin_group(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}, {"id": "dummy"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
 
         group = client.create_group(new_joint_group, status=200)

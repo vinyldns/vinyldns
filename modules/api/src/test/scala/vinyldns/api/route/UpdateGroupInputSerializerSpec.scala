@@ -112,4 +112,34 @@ class UpdateGroupInputSerializerSpec
       result should haveInvalid("Missing Group.admins")
     }
   }
+  "deserialize MemberStatusGroupInput from JSON with all fields present" in {
+    val members = Set("user1", "user2")
+    val admins = Set("admin1", "admin2")
+    val accessMembers = Set("pending1", "pending2")
+    val json =
+      ("members" -> Extraction.decompose(members)) ~~
+        ("admins" -> Extraction.decompose(admins)) ~~
+        ("membershipAccessStatus" -> Extraction.decompose(accessMembers))
+    val result = MemberStatusGroupInputSerializer.fromJson(json).toOption.get
+
+    result.pendingReviewMember shouldBe members
+    result.rejectedMember shouldBe admins
+    result.approvedMember shouldBe accessMembers
+  }
+
+  "deserialize MemberStatusGroupInput with missing fields using defaults" in {
+    val json = ("members" -> Extraction.decompose(Set("user1")))
+    val result = MemberStatusGroupInputSerializer.fromJson(json).toOption.get
+    result.pendingReviewMember shouldBe Set("user1")
+    result.rejectedMember shouldBe Set.empty
+    result.approvedMember shouldBe Set.empty
+  }
+
+  "deserialize MemberStatusGroupInput from empty JSON using all defaults" in {
+    val json = JObject()
+    val result = MemberStatusGroupInputSerializer.fromJson(json).toOption.get
+    result.pendingReviewMember shouldBe Set.empty
+    result.rejectedMember shouldBe Set.empty
+    result.approvedMember shouldBe Set.empty
+  }
 }
