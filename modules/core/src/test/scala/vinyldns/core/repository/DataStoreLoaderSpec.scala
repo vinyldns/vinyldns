@@ -54,10 +54,12 @@ class DataStoreLoaderSpec
     enabled,
     enabled,
     enabled,
+    enabled,
     enabled
   )
 
   val allDisabledReposConfig = RepositoriesConfig(
+    None,
     None,
     None,
     None,
@@ -129,9 +131,14 @@ class DataStoreLoaderSpec
     }
 
     "throw an exception if getValidatedConfigs fails" in {
+      // Two datastores both with all repos disabled — auto-assign only applies to a single
+      // datastore, so this still fails validation (no repo has an owner).
       val loadCall =
         DataStoreLoader.loadAll(
-          List(goodConfig.copy(repositories = allDisabledReposConfig)),
+          List(
+            goodConfig.copy(repositories = allDisabledReposConfig),
+            goodConfig.copy(repositories = allDisabledReposConfig)
+          ),
           crypto,
           TestAccessorProvider
         )
@@ -203,6 +210,26 @@ class DataStoreLoaderSpec
       val outcome = DataStoreLoader.getValidatedConfigs(List(config), List(user, membership, group))
       val message = outcome.leftValue.getMessage
       message shouldBe "Config validation error: Must have one repo of type user"
+    }
+    "auto-assign all repos to a single datastore with no repositories block" in {
+      val emptyReposConfig = goodConfig.copy(repositories = allDisabledReposConfig)
+      val repoNames = List(user, group, membership)
+
+      val outcome = DataStoreLoader.getValidatedConfigs(List(emptyReposConfig), repoNames)
+      outcome.isRight shouldBe true
+      val result = outcome.value
+      result should have length 1
+      result.head.repositories.hasKey(user) shouldBe true
+      result.head.repositories.hasKey(group) shouldBe true
+      result.head.repositories.hasKey(membership) shouldBe true
+    }
+    "not auto-assign when multiple datastores are present" in {
+      val emptyConfig1 = goodConfig.copy(repositories = allDisabledReposConfig)
+      val emptyConfig2 = goodConfig.copy(repositories = allDisabledReposConfig)
+
+      val outcome = DataStoreLoader.getValidatedConfigs(List(emptyConfig1, emptyConfig2), List(user, group))
+      outcome.isLeft shouldBe true
+      outcome.leftValue.getMessage should include("Must have one repo of type user")
     }
   }
 

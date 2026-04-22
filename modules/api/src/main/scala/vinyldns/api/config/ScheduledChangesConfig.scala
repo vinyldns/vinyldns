@@ -20,8 +20,9 @@ import pureconfig.ConfigReader
 
 final case class ScheduledChangesConfig(enabled: Boolean)
 object ScheduledChangesConfig {
+  // enabled is DB-backed — optional, defaults to true.
   implicit val configReader: ConfigReader[ScheduledChangesConfig] =
-    ConfigReader.forProduct1[ScheduledChangesConfig, Boolean]("scheduled-changes-enabled")(
-      ScheduledChangesConfig(_)
+    ConfigReader.forProduct1[ScheduledChangesConfig, Option[Boolean]]("scheduled-changes-enabled")(
+      opt => ScheduledChangesConfig(opt.getOrElse(true))
     )
 }

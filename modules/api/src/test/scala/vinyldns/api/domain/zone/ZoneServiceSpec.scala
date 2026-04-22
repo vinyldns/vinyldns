@@ -25,11 +25,10 @@ import cats.implicits._
 import vinyldns.api.Interfaces._
 import cats.effect._
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
-import vinyldns.api.config.ValidEmailConfig
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.membership.{EmailValidationError, MembershipService}
+import vinyldns.api.config.ValidEmailConfig
 import vinyldns.core.domain.record.RecordSetRepository
-//import vinyldns.api.domain.membership.{EmailValidationError, MembershipService}
 import vinyldns.api.repository.TestDataLoader
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
@@ -64,15 +63,13 @@ class ZoneServiceSpec
   private val mockMembershipRepo = mock[MembershipRepository]
   private val mockGroupChangeRepo = mock[GroupChangeRepository]
   private val mockRecordSetRepo = mock[RecordSetRepository]
-  private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com", "*dummy.com"),2)
-  private val mockValidEmailConfigNew = ValidEmailConfig(valid_domains = List(),2)
   private val mockMembershipService = new MembershipService(mockGroupRepo,
     mockUserRepo,
     mockMembershipRepo,
     mockZoneRepo,
     mockGroupChangeRepo,
-    mockRecordSetRepo,
-    mockValidEmailConfig)
+    mockRecordSetRepo
+    )
 
 
 
@@ -97,7 +94,7 @@ class ZoneServiceSpec
     mockZoneChangeRepo,
     TestConnectionValidator,
     mockMessageQueue,
-    new ZoneValidations(1000),
+    new ZoneValidations(IO(1000)),
     new AccessValidations(),
     mockBackendResolver,
     NoOpCrypto.instance,
@@ -110,7 +107,7 @@ class ZoneServiceSpec
     mockZoneChangeRepo,
     TestConnectionValidator,
     mockMessageQueue,
-    new ZoneValidations(1000),
+    new ZoneValidations(IO(1000)),
     new AccessValidations(),
     mockBackendResolver,
     NoOpCrypto.instance,
@@ -120,7 +117,8 @@ class ZoneServiceSpec
       mockZoneRepo,
       mockGroupChangeRepo,
       mockRecordSetRepo,
-      mockValidEmailConfigNew)
+      () => ValidEmailConfig(Nil, 100)
+      )
   )
 
   private val createZoneAuthorized = CreateZoneInput(

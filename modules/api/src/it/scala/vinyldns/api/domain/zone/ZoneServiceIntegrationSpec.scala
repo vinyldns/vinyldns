@@ -126,7 +126,7 @@ class ZoneServiceIntegrationSpec
       mock[ZoneChangeRepository],
       mock[ZoneConnectionValidator],
       TestMessageQueue,
-      new ZoneValidations(1000),
+      new ZoneValidations(IO(1000)),
       new AccessValidations(),
       mockBackendResolver,
       NoOpCrypto.instance,

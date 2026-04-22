@@ -86,14 +86,24 @@ object DataStoreLoader {
 
   /*
    * Validates that there's exactly one repo defined across all datastore configs. Returns only
-   * DataStoreConfigs with at least one defined repo if valid
+   * DataStoreConfigs with at least one defined repo if valid.
+   *
+   * If there is exactly one DataStoreConfig and it has no repositories block, all required repos
+   * are automatically assigned to it — no need for an explicit repositories {} block in config.
    */
   def getValidatedConfigs(
       configs: List[DataStoreConfig],
       repoNames: List[RepositoryName]
   ): Either[DataStoreStartupError, List[DataStoreConfig]] = {
 
-    val repoConfigs = configs.map(_.repositories)
+    // Auto-expand: single datastore with empty repos owns all required repos
+    val expandedConfigs = configs match {
+      case List(single) if !single.repositories.nonEmpty =>
+        List(single.copy(repositories = RepositoriesConfig.forAll(repoNames)))
+      case _ => configs
+    }
+
+    val repoConfigs = expandedConfigs.map(_.repositories)
 
     def existsOnce(repoName: RepositoryName): ValidatedNel[String, Unit] = {
       val definedRepos = repoConfigs.flatMap(_.get(repoName))
@@ -109,7 +119,7 @@ object DataStoreLoader {
     val combinedValidations = repoNames.map(existsOnce).reduce(_ |+| _)
 
     combinedValidations.toEither
-      .map(_ => configs.filter(_.repositories.nonEmpty))
+      .map(_ => expandedConfigs.filter(_.repositories.nonEmpty))
       .leftMap { errors =>
         val errorString = errors.toList.mkString(", ")
         DataStoreStartupError(s"Config validation error: $errorString")

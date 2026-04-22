@@ -26,16 +26,17 @@ final case class BatchChangeConfig(
     v6DiscoveryNibbleBoundaries: V6DiscoveryNibbleBoundaries
 )
 object BatchChangeConfig {
+  // limit and allowedRecordTypes are DB-backed — optional with defaults.
   implicit val configReader: ConfigReader[BatchChangeConfig] =
-    ConfigReader.forProduct3[BatchChangeConfig, Int, List[String], V6DiscoveryNibbleBoundaries](
+    ConfigReader.forProduct3[BatchChangeConfig, Option[Int], Option[List[String]], V6DiscoveryNibbleBoundaries](
       "batch-change-limit",
       "shared-approved-types",
       "v6-discovery-nibble-boundaries"
     ) {
       case (limit, approvedTypes, v6) =>
         BatchChangeConfig(
-          limit,
-          approvedTypes.flatMap(RecordType.find),
+          limit.getOrElse(1000),
+          approvedTypes.getOrElse(Nil).flatMap(RecordType.find),
           v6
         )
     }

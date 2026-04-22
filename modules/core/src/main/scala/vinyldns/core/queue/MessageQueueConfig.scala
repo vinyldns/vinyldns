@@ -17,7 +17,8 @@
 package vinyldns.core.queue
 
 import com.typesafe.config.Config
-
+import pureconfig.ConfigReader
+import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 
 final case class MessageQueueConfig(
@@ -27,3 +28,15 @@ final case class MessageQueueConfig(
     settings: Config,
     maxRetries: Int
 )
+object MessageQueueConfig {
+  implicit val configReader: ConfigReader[MessageQueueConfig] = ConfigReader.fromCursor { c =>
+    for {
+      oc              <- c.asObjectCursor
+      className       <- oc.atKey("class-name").flatMap(_.asString)
+      settings        <- oc.atKey("settings").flatMap(_.asObjectCursor).map(_.objValue.toConfig)
+      maxRetries      <- oc.atKey("max-retries").flatMap(_.asInt)
+      pollingInterval <- oc.atKey("polling-interval").flatMap(ConfigReader[FiniteDuration].from)
+      msgsPerPoll     <- oc.atKey("messages-per-poll").flatMap(_.asInt)
+    } yield MessageQueueConfig(className, pollingInterval, msgsPerPoll, settings, maxRetries)
+  }
+}

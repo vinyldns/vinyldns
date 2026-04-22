@@ -16,7 +16,9 @@
 
 package vinyldns.api.domain.zone
 
+import cats.effect.IO
 import cats.scalatest.EitherMatchers
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.scalatestplus.mockito.MockitoSugar
@@ -34,22 +36,22 @@ class ZoneValidationsSpec
     with ResultHelpers
     with EitherMatchers {
 
-  val testing = new ZoneValidations(syncDelayMillis = 10000)
+  val testing = new ZoneValidations(syncDelayMillis = IO(10000))
 
   import testing._
 
   "outsideSyncDelay" should {
     "return ok when the zone has not been synced" in {
       val zone = okZone.copy(latestSync = None)
-      outsideSyncDelay(zone) should be(right)
+      outsideSyncDelay(zone).unsafeRunSync() should be(right)
     }
     "return ok when the zone sync is not within the sync delay" in {
       val zone = okZone.copy(latestSync = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS).minusMillis(10001)))
-      outsideSyncDelay(zone) should be(right)
+      outsideSyncDelay(zone).unsafeRunSync() should be(right)
     }
     "return RecentSyncError when the zone sync is within the sync delay" in {
       val zone = okZone.copy(latestSync = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)))
-      val error = leftValue(outsideSyncDelay(zone))
+      val error = leftValue(outsideSyncDelay(zone).unsafeRunSync())
       error shouldBe a[RecentSyncError]
     }
   }

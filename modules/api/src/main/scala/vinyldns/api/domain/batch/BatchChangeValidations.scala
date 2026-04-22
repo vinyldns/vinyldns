@@ -19,8 +19,9 @@ package vinyldns.api.domain.batch
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import cats.data._
+import cats.effect.IO
 import cats.implicits._
-import vinyldns.api.config.{BatchChangeConfig, HighValueDomainConfig, ManualReviewConfig, ScheduledChangesConfig}
+import vinyldns.api.config.{HighValueDomainConfig, ManualReviewConfig, RuntimeVinylDNSConfig}
 import vinyldns.api.domain.DomainValidations._
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -82,12 +83,16 @@ trait BatchChangeValidationsAlgebra {
 
 class BatchChangeValidations(
     accessValidation: AccessValidationsAlgebra,
-    highValueDomainConfig: HighValueDomainConfig,
     manualReviewConfig: ManualReviewConfig,
-    batchChangeConfig: BatchChangeConfig,
-    scheduledChangesConfig: ScheduledChangesConfig,
-    approvedNameServers: List[Regex]
+    approvedNameServers: List[Regex],
+    private val highValueDomainConfigFn: () => HighValueDomainConfig = () => RuntimeVinylDNSConfig.highValueDomainConfig,
+    private val scheduledChangesEnabledFn: () => IO[Boolean] = () => RuntimeVinylDNSConfig.scheduledChangesEnabled,
+    private val batchChangeLimitFn: () => IO[Int] = () => RuntimeVinylDNSConfig.batchChangeLimit,
+    private val multiRecordBatchChangeEnabledFn: () => IO[Boolean] = () => RuntimeVinylDNSConfig.multiRecordBatchChangeEnabled
 ) extends BatchChangeValidationsAlgebra {
+
+  private def highValueDomainConfig: HighValueDomainConfig = highValueDomainConfigFn()
+  private def multiRecordBatchChangeEnabled: Boolean = multiRecordBatchChangeEnabledFn().unsafeRunSync()
 
   import RecordType._
   import accessValidation._
@@ -96,27 +101,27 @@ class BatchChangeValidations(
       input: BatchChangeInput,
       existingGroup: Option[Group],
       authPrincipal: AuthPrincipal
-  ): BatchResult[Unit] = {
-    val validations = validateBatchChangeInputSize(input) |+| validateOwnerGroupId(
-      input.ownerGroupId,
-      existingGroup,
-      authPrincipal
-    )
-
+  ): BatchResult[Unit] =
     for {
+      limit <- batchChangeLimitFn().toBatchResult
+      scheduledEnabled <- scheduledChangesEnabledFn().toBatchResult
+      validations = validateBatchChangeInputSize(input, limit) |+| validateOwnerGroupId(
+        input.ownerGroupId,
+        existingGroup,
+        authPrincipal
+      )
       _ <- validations
         .leftMap[BatchChangeErrorResponse](nel => InvalidBatchChangeInput(nel.toList))
         .toEither
         .toBatchResult
-      _ <- validateScheduledChange(input, scheduledChangesConfig.enabled).toBatchResult
+      _ <- validateScheduledChange(input, scheduledEnabled).toBatchResult
     } yield ()
-  }
 
-  def validateBatchChangeInputSize(input: BatchChangeInput): SingleValidation[Unit] =
+  def validateBatchChangeInputSize(input: BatchChangeInput, limit: Int): SingleValidation[Unit] =
     if (input.changes.isEmpty) {
-      BatchChangeIsEmpty(batchChangeConfig.limit).invalidNel
-    } else if (input.changes.length > batchChangeConfig.limit) {
-      ChangeLimitExceeded(batchChangeConfig.limit).invalidNel
+      BatchChangeIsEmpty(limit).invalidNel
+    } else if (input.changes.length > limit) {
+      ChangeLimitExceeded(limit).invalidNel
     } else {
       ().validNel
     }
@@ -398,6 +403,11 @@ class BatchChangeValidations(
     val commonValidations: SingleValidation[Unit] = {
       groupedChanges.getExistingRecordSet(change.recordKey) match {
         case Some(rs) =>
+          val multiRecordCheck: SingleValidation[Unit] =
+            if (!multiRecordBatchChangeEnabled && rs.records.size > 1)
+              ExistingMultiRecordError(change.inputChange.inputName, rs).invalidNel
+            else ().validNel
+          multiRecordCheck |+|
           userCanUpdateRecordSet(change, auth, rs.ownerGroupId, List(change.inputChange.record)) |+|
             ownerGroupProvidedIfNeeded(
               change,
@@ -497,8 +507,17 @@ class BatchChangeValidations(
       }
     }
 
+    // Check if this add would create a multi-record set when multi-record is disabled
+    val multiRecordCheck: SingleValidation[Unit] = {
+      val proposedAdds = groupedChanges.getProposedAdds(change.recordKey)
+      if (!multiRecordBatchChangeEnabled && proposedAdds.size > 1)
+        MultiRecordError(change.inputChange.inputName, change.inputChange.typ).invalidNel
+      else ().validNel
+    }
+
     val validations =
       typedValidations |+|
+        multiRecordCheck |+|
         commonValidations |+|
         noIncompatibleRecordExists(change, groupedChanges) |+|
         userCanAddRecordSet(change, auth) |+|

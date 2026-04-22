@@ -139,7 +139,7 @@ class ZoneService(
     for {
       zone <- getZoneOrFail(zoneId)
       _ <- canChangeZone(auth, zone.name, zone.adminGroupId).toResult
-      _ <- outsideSyncDelay(zone).toResult
+      _ <- cats.data.EitherT(outsideSyncDelay(zone))
       syncZoneChange <- ZoneChangeGenerator.forSync(zone, auth).toResult
       _ <- messageQueue.send(syncZoneChange).toResult[Unit]
     } yield syncZoneChange

@@ -57,7 +57,7 @@ class VinylDNSDirectivesSpec
     LimitsConfig(100,100,1000,1500,100,100,100)
 
   val zoneRoute: Route =
-    new ZoneRoute(mock[ZoneServiceAlgebra],testLimitConfig, mock[VinylDNSAuthenticator], NoOpCrypto.instance).getRoutes
+    new ZoneRoute(mock[ZoneServiceAlgebra], mock[VinylDNSAuthenticator], NoOpCrypto.instance).getRoutes
 
   val zoneService: ZoneServiceAlgebra = mock[ZoneServiceAlgebra]
 

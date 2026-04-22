@@ -84,15 +84,15 @@ class RecordSetServiceSpec
     mockUserRepo,
     mockMessageQueue,
     new AccessValidations(
-      sharedApprovedTypes = VinylDNSTestHelpers.sharedApprovedTypes
+      sharedApprovedTypesFn = () => VinylDNSTestHelpers.sharedApprovedTypes
     ),
     mockBackendResolver,
-    false,
-    VinylDNSTestHelpers.highValueDomainConfig,
-    VinylDNSTestHelpers.dottedHostsConfig,
+    IO(false),
     VinylDNSTestHelpers.approvedNameServers,
-    true,
-    mockNotifiers
+    IO(true),
+    mockNotifiers,
+    () => VinylDNSTestHelpers.highValueDomainConfig,
+    () => VinylDNSTestHelpers.dottedHostsConfig
   )
 
   val underTestWithDnsBackendValidations = new RecordSetService(
@@ -104,15 +104,15 @@ class RecordSetServiceSpec
     mockUserRepo,
     mockMessageQueue,
     new AccessValidations(
-      sharedApprovedTypes = VinylDNSTestHelpers.sharedApprovedTypes
+      sharedApprovedTypesFn = () => VinylDNSTestHelpers.sharedApprovedTypes
     ),
     mockBackendResolver,
-    true,
-    VinylDNSTestHelpers.highValueDomainConfig,
-    VinylDNSTestHelpers.dottedHostsConfig,
+    IO(true),
     VinylDNSTestHelpers.approvedNameServers,
-    true,
-    mockNotifiers
+    IO(true),
+    mockNotifiers,
+    () => VinylDNSTestHelpers.highValueDomainConfig,
+    () => VinylDNSTestHelpers.dottedHostsConfig
   )
 
   val underTestWithEmptyDottedHostsConfig = new RecordSetService(
@@ -124,15 +124,15 @@ class RecordSetServiceSpec
     mockUserRepo,
     mockMessageQueue,
     new AccessValidations(
-      sharedApprovedTypes = VinylDNSTestHelpers.sharedApprovedTypes
+      sharedApprovedTypesFn = () => VinylDNSTestHelpers.sharedApprovedTypes
     ),
     mockBackendResolver,
-    true,
-    VinylDNSTestHelpers.highValueDomainConfig,
-    VinylDNSTestHelpers.emptyDottedHostsConfig,
+    IO(true),
     VinylDNSTestHelpers.approvedNameServers,
-    true,
-    mockNotifiers
+    IO(true),
+    mockNotifiers,
+    () => VinylDNSTestHelpers.highValueDomainConfig,
+    () => VinylDNSTestHelpers.emptyDottedHostsConfig
   )
 
   def getDottedHostsConfigGroupsAllowed(zone: Zone, config: DottedHostsConfig): List[String] = {

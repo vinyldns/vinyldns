@@ -17,10 +17,15 @@
 package vinyldns.api
 import com.typesafe.config.{Config, ConfigFactory}
 import scalikejdbc.DB
+import vinyldns.core.domain.config.AppConfigRepository
+import vinyldns.core.repository.RepositoryName
 import vinyldns.mysql.MySqlIntegrationSpec
 
 trait MySqlApiIntegrationSpec extends MySqlIntegrationSpec {
   val mysqlConfig: Config = ConfigFactory.load().getConfig("vinyldns.mysql")
+
+  lazy val appConfigRepository: AppConfigRepository =
+    instance.get[AppConfigRepository](RepositoryName.appConfig).get
 
   def clearRecordSetRepo(): Unit =
     DB.localTx { s =>
@@ -35,5 +40,10 @@ trait MySqlApiIntegrationSpec extends MySqlIntegrationSpec {
   def clearGroupRepo(): Unit =
     DB.localTx { s =>
       s.executeUpdate("DELETE FROM `groups`")
+    }
+
+  def clearAppConfigRepo(): Unit =
+    DB.localTx { s =>
+      s.executeUpdate("DELETE FROM app_config")
     }
 }
