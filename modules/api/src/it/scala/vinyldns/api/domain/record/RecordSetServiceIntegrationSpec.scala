@@ -321,7 +321,7 @@ class RecordSetServiceIntegrationSpec
     // Seed high-value-domains config into the app_config table
     val hvdJson =
       """{"fqdn-regex-list":["high-value-domain.*"],"ip-list":[]}"""
-    appConfigRepository.create("high-value-domains", hvdJson).unsafeRunSync()
+    appConfigRepository.create("high-value-domains", hvdJson, "professor").unsafeRunSync()
     highValueDomainConfigFromDb = ConfigSource
       .fromConfig(ConfigFactory.parseString(hvdJson))
       .load[HighValueDomainConfig]
@@ -330,7 +330,7 @@ class RecordSetServiceIntegrationSpec
     // Seed dotted-hosts config into the app_config table so the service reads it from DB
     val dottedHostsJson =
       """{"allowed-settings":[{"zone":"dummy.","user-list":["testuser"],"group-list":["dummy-group"],"record-types":["AAAA"],"dots-limit":3}]}"""
-    appConfigRepository.create("dotted-hosts", dottedHostsJson).unsafeRunSync()
+    appConfigRepository.create("dotted-hosts", dottedHostsJson, "professor").unsafeRunSync()
     dottedHostsConfigFromDb = ConfigSource
       .fromConfig(ConfigFactory.parseString(dottedHostsJson))
       .load[DottedHostsConfig]

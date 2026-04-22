@@ -64,8 +64,8 @@ class DbConfigFunctionalIntegrationSpec
   override def afterEach(): Unit =
     clearAppConfigRepo()
 
-  private def seed(key: String, value: String): Unit =
-    appConfigRepository.create(key, value).unsafeRunSync()
+  private def seed(key: String, value: String, createdBy: String): Unit =
+    appConfigRepository.create(key, value, createdBy).unsafeRunSync()
 
   private def applyDb(): Unit =
     (RuntimeVinylDNSConfig.loadFromDb(appConfigRepository) >>
@@ -81,7 +81,7 @@ class DbConfigFunctionalIntegrationSpec
   "BatchChangeValidations high-value-domains from DB" should {
 
     "reject a record whose name matches a regex loaded from DB" in {
-      seed("high-value-domains", """{"fqdn-regex-list":["db-hvd.*"],"ip-list":[]}""")
+      seed("high-value-domains", """{"fqdn-regex-list":["db-hvd.*"],"ip-list":[]}""", "bob")
       applyDb()
 
       val change = AddChangeInput("db-hvd-blocked.example.", RecordType.A, None, Some(300L), AData("1.1.1.1"))
@@ -89,7 +89,7 @@ class DbConfigFunctionalIntegrationSpec
     }
 
     "allow a record whose name does NOT match HVD regex loaded from DB" in {
-      seed("high-value-domains", """{"fqdn-regex-list":["db-hvd.*"],"ip-list":[]}""")
+      seed("high-value-domains", """{"fqdn-regex-list":["db-hvd.*"],"ip-list":[]}""", "bob")
       applyDb()
 
       val change = AddChangeInput("safe-name.example.", RecordType.A, None, Some(300L), AData("1.1.1.1"))
@@ -100,9 +100,9 @@ class DbConfigFunctionalIntegrationSpec
   "BatchChangeValidations manual-review-domains from DB" should {
 
     "flag a domain for manual review when domain regex is loaded from DB" in {
-      seed("manual-batch-review-enabled", "true")
+      seed("manual-batch-review-enabled", "true", "system")
       seed("manual-review-domains",
-        """{"domain-list":["needs-review.*"],"ip-list":[],"zone-name-list":[]}""")
+        """{"domain-list":["needs-review.*"],"ip-list":[],"zone-name-list":[]}""", "bob")
       applyDb()
 
       val change = AddChangeInput("needs-review.example.", RecordType.A, None, Some(300L), AData("1.1.1.1"))
@@ -111,7 +111,7 @@ class DbConfigFunctionalIntegrationSpec
 
     "allow a domain not matching the DB pattern" in {
       seed("manual-review-domains",
-        """{"domain-list":["needs-review.*"],"ip-list":[],"zone-name-list":[]}""")
+        """{"domain-list":["needs-review.*"],"ip-list":[],"zone-name-list":[]}""", "bob")
       applyDb()
 
       val change = AddChangeInput("safe.example.", RecordType.A, None, Some(300L), AData("1.1.1.1"))
@@ -122,7 +122,7 @@ class DbConfigFunctionalIntegrationSpec
   "ZoneValidations sync-delay from DB" should {
 
     "block a sync when sync-delay from DB has not yet elapsed" in {
-      seed("sync-delay", "999999999")
+      seed("sync-delay", "999999999", "bob")
       applyDb()
 
       val recentlySyncedZone = Zone("example.com.", "admin@example.com",
@@ -135,7 +135,7 @@ class DbConfigFunctionalIntegrationSpec
     }
 
     "allow a sync when sync-delay in DB is 0" in {
-      seed("sync-delay", "0")
+      seed("sync-delay", "0" , "bob")
       applyDb()
 
       val recentlySyncedZone = Zone("example.com.", "admin@example.com",
@@ -151,7 +151,7 @@ class DbConfigFunctionalIntegrationSpec
   "MembershipService valid-email config from DB" should {
 
     "enforce email domain restriction loaded from DB" in {
-      seed("valid-email", """{"email-domains":["allowed.com"],"number-of-dots":1}""")
+      seed("valid-email", """{"email-domains":["allowed.com"],"number-of-dots":1}""", "bob")
       applyDb()
 
       val svc = new MembershipService(
@@ -166,7 +166,7 @@ class DbConfigFunctionalIntegrationSpec
     }
 
     "allow an email matching the domain loaded from DB" in {
-      seed("valid-email", """{"email-domains":["allowed.com"],"number-of-dots":1}""")
+      seed("valid-email", """{"email-domains":["allowed.com"],"number-of-dots":1}""", "bob")
       applyDb()
 
       val svc = new MembershipService(
@@ -181,13 +181,13 @@ class DbConfigFunctionalIntegrationSpec
   "RuntimeVinylDNSConfig limitsConfig from DB" should {
 
     "return updated MEMBERSHIP_ROUTING_MAX_GROUPS_LIST_LIMIT for route validation" in {
-      seed("membership-routing-max-groups-list-limit", "42")
+      seed("membership-routing-max-groups-list-limit", "42" , "bob")
       applyDb()
       RuntimeVinylDNSConfig.limitsConfig.MEMBERSHIP_ROUTING_MAX_GROUPS_LIST_LIMIT shouldBe 42
     }
 
     "return updated BATCHCHANGE_ROUTING_MAX_ITEMS_LIMIT for route validation" in {
-      seed("batchchange-routing-max-items-limit", "7")
+      seed("batchchange-routing-max-items-limit", "7", "bob")
       applyDb()
       RuntimeVinylDNSConfig.limitsConfig.BATCHCHANGE_ROUTING_MAX_ITEMS_LIMIT shouldBe 7
     }
@@ -196,7 +196,7 @@ class DbConfigFunctionalIntegrationSpec
   "RuntimeVinylDNSConfig approved-name-servers from DB" should {
 
     "reflect the list loaded from DB" in {
-      seed("approved-name-servers", "ns1.custom.com.,ns2.custom.com.")
+      seed("approved-name-servers", "ns1.custom.com.,ns2.custom.com.", "bob")
       applyDb()
 
       val patterns = RuntimeVinylDNSConfig.approvedNameServers.map(_.pattern.pattern())
@@ -206,7 +206,7 @@ class DbConfigFunctionalIntegrationSpec
     }
 
     "BatchChangeValidations built after applyDb() uses the DB-sourced approved servers" in {
-      seed("approved-name-servers", "ns1.only-this.com.")
+      seed("approved-name-servers", "ns1.only-this.com.", "bob")
       applyDb()
       val patterns = RuntimeVinylDNSConfig.approvedNameServers.map(_.pattern.pattern())
       patterns should contain only "(?i)ns1.only-this.com."

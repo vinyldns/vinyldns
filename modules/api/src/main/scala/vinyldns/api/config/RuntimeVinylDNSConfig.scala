@@ -328,7 +328,7 @@ object RuntimeVinylDNSConfig {
     get("queue.polling-interval-millis").map(_.map(_.toLong).getOrElse(_current.messageQueueConfig.pollingInterval.toMillis))
 
   def multiRecordBatchChangeEnabled: IO[Boolean] =
-    get("multi-record-batch-change-enabled").map(_.map(_.toBoolean).getOrElse(false))
+    get("multi-record-batch-change-enabled").map(_.map(_.toBoolean).getOrElse(true))
 
   def limitsConfig: LimitsConfig = _limitsConfig
 

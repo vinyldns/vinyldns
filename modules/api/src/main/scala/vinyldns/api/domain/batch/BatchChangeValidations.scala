@@ -511,7 +511,7 @@ class BatchChangeValidations(
     val multiRecordCheck: SingleValidation[Unit] = {
       val proposedAdds = groupedChanges.getProposedAdds(change.recordKey)
       if (!multiRecordBatchChangeEnabled && proposedAdds.size > 1)
-        NewMultiRecordError(change.inputChange.inputName, change.inputChange.typ).invalidNel
+        MultiRecordError(change.inputChange.inputName, change.inputChange.typ).invalidNel
       else ().validNel
     }
 

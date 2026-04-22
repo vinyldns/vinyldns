@@ -48,8 +48,8 @@ class RuntimeVinylDNSConfigIntegrationSpec
   override def afterEach(): Unit =
     clearAppConfigRepo()
 
-  private def seed(key: String, value: String): Unit =
-    appConfigRepository.create(key, value).unsafeRunSync()
+  private def seed(key: String, value: String, createdBy: String): Unit =
+    appConfigRepository.create(key, value, createdBy).unsafeRunSync()
 
   private def applyDb(): Unit =
     (RuntimeVinylDNSConfig.loadFromDb(appConfigRepository) >>
@@ -60,13 +60,13 @@ class RuntimeVinylDNSConfigIntegrationSpec
   "RuntimeVinylDNSConfig DB overrides" should {
 
     "override limitsConfig from DB keys" in {
-      seed("batchchange-routing-max-items-limit",      "55")
-      seed("membership-routing-default-max-items",     "22")
-      seed("membership-routing-max-items-limit",       "444")
-      seed("membership-routing-max-groups-list-limit", "999")
-      seed("recordset-routing-default-max-items",      "33")
-      seed("zone-routing-default-max-items",           "44")
-      seed("zone-routing-max-items-limit",             "77")
+      seed("batchchange-routing-max-items-limit",      "55", "professor")
+      seed("membership-routing-default-max-items",     "22", "professor")
+      seed("membership-routing-max-items-limit",       "444", "professor")
+      seed("membership-routing-max-groups-list-limit", "999", "professor")
+      seed("recordset-routing-default-max-items",      "33", "professor")
+      seed("zone-routing-default-max-items",           "44", "professor")
+      seed("zone-routing-max-items-limit",             "77", "professor")
       applyDb()
 
       val limits = RuntimeVinylDNSConfig.limitsConfig
@@ -90,7 +90,7 @@ class RuntimeVinylDNSConfigIntegrationSpec
     // ─── shared-approved-types ────────────────────────────────────────────────
 
     "override sharedApprovedTypes from DB" in {
-      seed("shared-approved-types", "A,AAAA")
+      seed("shared-approved-types", "A,AAAA", "professor")
       applyDb()
 
       val types = RuntimeVinylDNSConfig.sharedApprovedTypes.map(_.toString)
@@ -108,7 +108,7 @@ class RuntimeVinylDNSConfigIntegrationSpec
 
     "override highValueDomainConfig from DB" in {
       seed("high-value-domains",
-        """{"fqdn-regex-list":["hvd-test.*"],"ip-list":["192.0.2.1"]}""")
+        """{"fqdn-regex-list":["hvd-test.*"],"ip-list":["192.0.2.1"]}""", "professor")
       applyDb()
 
       val hvd = RuntimeVinylDNSConfig.highValueDomainConfig
@@ -128,7 +128,7 @@ class RuntimeVinylDNSConfigIntegrationSpec
 
     "override dottedHostsConfig from DB" in {
       seed("dotted-hosts",
-        """{"allowed-settings":[{"zone":"test.","user-list":["alice"],"group-list":[],"record-types":["A"],"dots-limit":2}]}""")
+        """{"allowed-settings":[{"zone":"test.","user-list":["alice"],"group-list":[],"record-types":["A"],"dots-limit":2}]}""", "professor")
       applyDb()
 
       val dh = RuntimeVinylDNSConfig.dottedHostsConfig
@@ -146,7 +146,7 @@ class RuntimeVinylDNSConfigIntegrationSpec
     // ─── approved-name-servers ────────────────────────────────────────────────
 
     "override approvedNameServers from DB" in {
-      seed("approved-name-servers", "ns1.custom.com.,ns2.custom.com.")
+      seed("approved-name-servers", "ns1.custom.com.,ns2.custom.com.", "professor")
       applyDb()
 
       val ns = RuntimeVinylDNSConfig.approvedNameServers.map(_.pattern.pattern())
@@ -163,15 +163,15 @@ class RuntimeVinylDNSConfigIntegrationSpec
     // ─── manual-review ────────────────────────────────────────────────────────
 
     "override manualReviewConfig enabled flag from DB" in {
-      seed("manual-batch-review-enabled", "false")
+      seed("manual-batch-review-enabled", "false", "professor")
       applyDb()
       RuntimeVinylDNSConfig.manualReviewConfig.enabled shouldBe false
     }
 
     "override manualReviewConfig domain/ip/zone lists from DB" in {
-      seed("manual-batch-review-enabled", "true")
+      seed("manual-batch-review-enabled", "true", "professor")
       seed("manual-review-domains",
-        """{"domain-list":["needs-review\\\\."],"ip-list":["192.0.2.254"],"zone-name-list":["restricted."]}""")
+        """{"domain-list":["needs-review\\\\."],"ip-list":["192.0.2.254"],"zone-name-list":["restricted."]}""", "professor")
       applyDb()
 
       val mr = RuntimeVinylDNSConfig.manualReviewConfig
@@ -185,7 +185,7 @@ class RuntimeVinylDNSConfigIntegrationSpec
 
     "override validEmailConfig from DB" in {
       seed("valid-email",
-        """{"email-domains":["example.com","*.corp.com"],"number-of-dots":3}""")
+        """{"email-domains":["example.com","*.corp.com"],"number-of-dots":3}""", "professor")
       applyDb()
 
       val ve = RuntimeVinylDNSConfig.validEmailConfig
@@ -203,7 +203,7 @@ class RuntimeVinylDNSConfigIntegrationSpec
 
     "override globalAcls from DB" in {
       seed("global-acl-rules",
-        """[{"group-ids":["acl-group"],"fqdn-regex-list":[".*test-zone.*"]}]""")
+        """[{"group-ids":["acl-group"],"fqdn-regex-list":[".*test-zone.*"]}]""", "professor")
       applyDb()
 
       RuntimeVinylDNSConfig.globalAcls.acls should have length 1
@@ -217,37 +217,37 @@ class RuntimeVinylDNSConfigIntegrationSpec
     // ─── scalar IO methods ────────────────────────────────────────────────────
 
     "read syncDelay from DB" in {
-      seed("sync-delay", "12345")
+      seed("sync-delay", "12345", "professor")
       applyDb()
       RuntimeVinylDNSConfig.syncDelay.unsafeRunSync() shouldBe 12345
     }
 
     "read maxZoneSize from DB" in {
-      seed("max-zone-size", "9999")
+      seed("max-zone-size", "9999", "professor")
       applyDb()
       RuntimeVinylDNSConfig.maxZoneSize.unsafeRunSync() shouldBe 9999
     }
 
     "read batchChangeLimit from DB" in {
-      seed("batch-change-limit", "250")
+      seed("batch-change-limit", "250", "professor")
       applyDb()
       RuntimeVinylDNSConfig.batchChangeLimit.unsafeRunSync() shouldBe 250
     }
 
     "read scheduledChangesEnabled from DB" in {
-      seed("scheduled-changes-enabled", "false")
+      seed("scheduled-changes-enabled", "false", "professor")
       applyDb()
       RuntimeVinylDNSConfig.scheduledChangesEnabled.unsafeRunSync() shouldBe false
     }
 
     "read processingDisabled from DB" in {
-      seed("processing-disabled", "true")
+      seed("processing-disabled", "true", "professor")
       applyDb()
       RuntimeVinylDNSConfig.processingDisabled.unsafeRunSync() shouldBe true
     }
 
     "read useRecordSetCache from DB" in {
-      seed("use-recordset-cache", "true")
+      seed("use-recordset-cache", "true", "professor")
       applyDb()
       RuntimeVinylDNSConfig.useRecordSetCache.unsafeRunSync() shouldBe true
     }
