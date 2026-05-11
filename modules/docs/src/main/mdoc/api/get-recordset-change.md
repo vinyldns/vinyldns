@@ -13,6 +13,12 @@ When you submit a change for processing, the response is a Change model.  You ca
 
 > GET /zones/{zoneId}/recordsets/{recordSetId}/changes/{recordChangeId}
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /zones/2467dc05-68eb-4498-a9d5-78d24bb0893c/recordsets/9a41b99c-8e67-445f-bcf3-f9c7cd1f2357/changes/fef81f0b-f439-462d-88df-c773d3686c9b
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |

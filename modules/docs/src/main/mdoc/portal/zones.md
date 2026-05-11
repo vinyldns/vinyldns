@@ -20,6 +20,7 @@ Those records are accessible via the [DNS Changes](./dns-changes.html) area of t
 * [Manage records](manage-records.html)
 * [Manage access](manage-access.html)
 * [Understand connections](connections.html)
+* [RecordSets Ownership Transfer](recordsets-ownership-transfer.html)
 
 [![Zones page - My Zones tab](../img/portal/zones-my-zones.png){:.screenshot}](../img/portal/zones-my-zones.png)
 

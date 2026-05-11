@@ -21,6 +21,12 @@ startFrom     | *any*         | no          | In order to advance through pages 
 maxItems      | int           | no          | The number of items to return in the page.  Valid values are 1 - 100. Defaults to 100 if not provided. |
 ignoreAccess       | boolean       | no          | If false, returns only zones the requesting user owns or has ACL access to. If true, returns zones in the system, regardless of ownership. Defaults to false if not provided. |
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /zones/deleted/changes?nameFilter=example*&maxItems=50&ignoreAccess=true
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |
