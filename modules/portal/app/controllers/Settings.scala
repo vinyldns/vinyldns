@@ -36,15 +36,15 @@ class Settings(private val config: Configuration) {
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
 
-  val ldapUser: String = config.get[String]("LDAP.user")
-  val ldapPwd: String = config.get[String]("LDAP.password")
-  val ldapDomain: String = config.get[String]("LDAP.domain")
+  lazy val ldapUser: String = config.get[String]("LDAP.user")
+  lazy val ldapPwd: String = config.get[String]("LDAP.password")
+  lazy val ldapDomain: String = config.get[String]("LDAP.domain")
 
-  val ldapSearchBase: List[LdapSearchDomain] = config.get[List[LdapSearchDomain]]("LDAP.searchBase")
-  val ldapCtxFactory: String = config.get[String]("LDAP.context.initialContextFactory")
-  val ldapSecurityAuthentication: String = config.get[String]("LDAP.context.securityAuthentication")
-  val ldapProviderUrl: URI = new URI(config.get[String]("LDAP.context.providerUrl"))
-  val ldapUserNameAttribute: String =
+  lazy val ldapSearchBase: List[LdapSearchDomain] = config.get[List[LdapSearchDomain]]("LDAP.searchBase")
+  lazy val ldapCtxFactory: String = config.get[String]("LDAP.context.initialContextFactory")
+  lazy val ldapSecurityAuthentication: String = config.get[String]("LDAP.context.securityAuthentication")
+  lazy val ldapProviderUrl: URI = new URI(config.get[String]("LDAP.context.providerUrl"))
+  lazy val ldapUserNameAttribute: String =
     config.getOptional[String]("LDAP.userNameAttribute").getOrElse("sAMAccountName")
 
   val ldapSyncEnabled: Boolean =
@@ -53,6 +53,33 @@ class Settings(private val config: Configuration) {
     .getOptional[Int]("LDAP.user-sync.hours-polling-interval")
     .getOrElse(24)
     .hours
+
+  val userSyncProvider: String =
+    config.getOptional[String]("user-sync.provider").getOrElse("none")
+
+  val userSyncPollingInterval: FiniteDuration = config
+    .getOptional[Int]("user-sync.polling-interval-hours")
+    .getOrElse(24)
+    .hours
+
+  val userSyncDryRun: Boolean =
+    config.getOptional[Boolean]("user-sync.dry-run").getOrElse(false)
+
+  val graphApiUsernameAttribute: String =
+    config.getOptional[String]("user-sync.graph-api.username-attribute")
+      .getOrElse("onPremisesSamAccountName")
+
+  val oidcEnabled: Boolean =
+    config.getOptional[Boolean]("oidc.enabled").getOrElse(false)
+
+  lazy val oidcTenantId: String =
+    config.get[String]("oidc.tenant-id")
+
+  lazy val oidcClientId: String =
+    config.get[String]("oidc.client-id")
+
+  lazy val oidcSecret: String =
+    config.get[String]("oidc.secret")
 
   val portalTestLogin: Boolean = config.getOptional[Boolean]("portal.test_login").getOrElse(false)
 
@@ -72,6 +99,24 @@ class Settings(private val config: Configuration) {
     }
 
   val cryptoConfig = IO(config.get[Config]("crypto"))
+
+  def validateLdapConfig(): Unit = {
+    ldapUser; ldapPwd; ldapDomain; ldapSearchBase
+    ldapCtxFactory; ldapSecurityAuthentication; ldapProviderUrl
+    ldapUserNameAttribute
+  }
+
+  def validateOidcConfig(): Unit =
+    try {
+      oidcTenantId; oidcClientId; oidcSecret
+    } catch {
+      case e: com.typesafe.config.ConfigException.Missing =>
+        throw new IllegalArgumentException(
+          "OIDC configuration incomplete for graph-api user sync. " +
+            "The oidc.tenant-id, oidc.client-id, and oidc.secret settings are all required " +
+            s"when user-sync.provider is set to 'graph-api': ${e.getMessage}"
+        )
+    }
 
   implicit def ldapSearchDomainLoader: ConfigLoader[List[LdapSearchDomain]] =
     new ConfigLoader[List[LdapSearchDomain]] {
