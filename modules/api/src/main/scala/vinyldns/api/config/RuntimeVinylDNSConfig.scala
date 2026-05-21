@@ -81,7 +81,6 @@ object RuntimeVinylDNSConfig {
   /**
    * Stable-reference proxy for AllNotifiers.
    * Pass this to all services at startup — notify() calls delegate through
-   * the volatile `_notifiers`, so a DB update + POST /config/reload
    * transparently swaps the underlying notifier list without restarting.
    */
   private implicit val _proxyCs: ContextShift[IO] =

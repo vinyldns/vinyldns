@@ -71,7 +71,6 @@ object ServerConfig {
             }
           )
         } else {
-          // Fall back to new backend format: backend.backend-providers[0].settings.backends[0].zone-connection.key-name
           Try {
             val topConfig = oc.objValue.toConfig
             val firstProvider = topConfig.getList("backend.backend-providers")
