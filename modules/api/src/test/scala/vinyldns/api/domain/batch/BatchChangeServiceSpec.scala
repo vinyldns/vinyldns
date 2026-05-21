@@ -211,6 +211,7 @@ class BatchChangeServiceSpec
     status = SingleChangeStatus.Pending,
     validationErrors = List.empty
   )
+
   private val listOfOkGroupInfo: List[GroupInfo] = {List(okGroup).map(GroupInfo.apply)}
 
   private val listMyGroupsResponse = ListMyGroupsResponse(
