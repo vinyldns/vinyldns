@@ -31,6 +31,7 @@
             $scope.groups = [];
             $scope.recordFqdn = undefined;
             $scope.recordType = undefined;
+            $scope.recordId = undefined;
             $scope.recordsetChanges = {};
             $scope.currentRecord = {};
             $scope.zoneInfo = {};
@@ -59,6 +60,25 @@
                 CONFIRM_DELETE: 4,
                 VIEW_DETAILS: 5
             };
+
+            // Function to copy the Record ID to clipboard
+            $scope.copyToClipboard = function(type) {
+                let valueToCopy = '';
+                let alert_message = '';
+                if (type === 'record') {
+                    valueToCopy = $scope.recordId;
+                    alert_message = 'Successfully copied Record ID to clipboard';
+                } else if (type === 'zone') {
+                    valueToCopy = $scope.zoneId;
+                    alert_message = 'Successfully copied Zone ID to clipboard';
+                }
+
+                 utilityService.copyToClipboard(valueToCopy);
+                 // Trigger success alert using utilityService
+                 var alert = utilityService.success(alert_message);
+                 $scope.alerts.push(alert);
+            };
+
             // read-only data for setting various classes/attributes in record modal
             $scope.recordModalParams = {
                 readOnly: {
@@ -118,9 +138,11 @@
                           .append("<div>" + recordSet + "</div>")
                           .appendTo(ul); };
 
-            $scope.viewRecordHistory = function(recordFqdn, recordType, zoneId) {
+            $scope.viewRecordHistory = function(recordFqdn, recordType, zoneId, recordId) {
                $scope.recordFqdn = recordFqdn;
                $scope.recordType = recordType;
+               $scope.recordId = recordId;
+               $scope.zoneId = zoneId;
                $scope.refreshRecordChangeHistory($scope.recordFqdn, $scope.recordType, zoneId);
                $("#record_history_modal").modal("show");
             };

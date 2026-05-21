@@ -30,6 +30,7 @@ function usage() {
   echo -e "\t-t, --timeout      the time to wait (in seconds) for the Portal and API to start (default: 60)"
   echo -e "\t-u, --update       remove the local quickstart images to force a rebuild"
   echo -e "\t-v, --version-tag  specify Docker image tag version (default: latest)"
+  echo -e "\t-l, --local        build the VinylDNS API and Portal artifacts locally before starting containers"
   echo
   echo -e "\t-h, --help         show this help"
 }
@@ -85,6 +86,8 @@ UPDATE=0
 CLEAN=0
 ENV_FILE="${DIR}/.env"
 SHELL_REQUESTED=0
+EXPLICIT_VERSION=0
+LOCAL=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
   -t | --timeout)
@@ -139,10 +142,15 @@ while [[ $# -gt 0 ]]; do
     shift
     ;;
   -v | --version-tag)
+    EXPLICIT_VERSION=1
     export VINYLDNS_VERSION=$2
     export VINYLDNS_BASE_VERSION=${VINYLDNS_VERSION}
     export VINYLDNS_IMAGE_VERSION=${VINYLDNS_VERSION}
     shift
+    shift
+    ;;
+  -l | --local)
+    LOCAL=true
     shift
     ;;
   *)
@@ -162,12 +170,16 @@ if [[ $SHELL_REQUESTED -eq 1 ]]; then
   exit
 fi
 
-# The version of VinylDNS docker image to run
-export VINYLDNS_VERSION=latest
+# The version of VinylDNS docker image to run (if not explicitly set)
+if [[ -z "${VINYLDNS_VERSION:-}" ]]; then
+  export VINYLDNS_VERSION=latest
+fi
 # The base/starting version of VinylDNS docker build image to use (vinyldns/build:<version>)
 export VINYLDNS_BASE_VERSION=latest
 # The version of the images to build
-export VINYLDNS_IMAGE_VERSION=${VINYLDNS_VERSION}
+if [[ -z "${VINYLDNS_IMAGE_VERSION:-}" ]]; then
+  export VINYLDNS_IMAGE_VERSION=${VINYLDNS_VERSION}
+fi
 
 # Make the list of services unique
 SERVICE=$(echo "$SERVICE" | uniq)
@@ -180,9 +192,11 @@ if [[ $RESET_DOCKER -eq 1 ]] || [[ $CLEAN -eq 1 ]]; then
   fi
 fi
 
-if [ -n "${BUILD}" ] || [ -n "$(docker images vinyldns/portal:local-dev --format '{{.Repository}}:{{.Tag}}')" ]; then
-  VINYLDNS_IMAGE_VERSION="local-dev"
-  export VINYLDNS_VERSION=${VINYLDNS_IMAGE_VERSION}
+if [[ $EXPLICIT_VERSION -eq 0 ]]; then
+  if [ -n "${BUILD}" ] || [ -n "$(docker images vinyldns/portal:local-dev --format '{{.Repository}}:{{.Tag}}')" ]; then
+    VINYLDNS_IMAGE_VERSION="local-dev"
+    export VINYLDNS_VERSION=${VINYLDNS_IMAGE_VERSION}
+  fi
 fi
 
 # Update images if requested
@@ -195,6 +209,34 @@ if [[ $UPDATE -eq 1 ]]; then
   echo "${F_GREEN}Successfully removed all local VinylDNS Docker images and running containers tagged ${F_RESET}'${VINYLDNS_IMAGE_VERSION}'${F_YELLOW}...${F_RESET}"
   if [ -z "${BUILD}" ]; then
     echo "${F_LRED}You may need to re-run with the '--build' flag...${F_RESET}"
+  fi
+fi
+
+if [ "$LOCAL" = true ]; then
+  if [ ! -f "${DIR}/../artifacts/vinyldns-api.jar" ]; then
+    echo "Building VinylDNS API JAR locally..."
+    (
+      cd "${DIR}/.." || exit 1
+      sbt -Dbuild.scalafmtOnCompile=false \
+          -Dbuild.lintOnCompile=false \
+          build-api
+    )
+    echo "Local VinylDNS API JAR built successfully: artifacts/vinyldns-api.jar"
+  else
+    echo "Using existing VinylDNS API JAR: artifacts/vinyldns-api.jar"
+  fi
+
+  if [ ! -f "${DIR}/../artifacts/vinyldns-portal.zip" ]; then
+    echo "Building VinylDNS Portal artifact locally..."
+    (
+      cd "${DIR}/.." || exit 1
+      sbt -Dbuild.scalafmtOnCompile=false \
+          -Dbuild.lintOnCompile=false \
+          build-portal
+    )
+    echo "Local VinylDNS Portal artifact built successfully: artifacts/vinyldns-portal.zip"
+  else
+    echo "Using existing VinylDNS Portal artifact: artifacts/vinyldns-portal.zip"
   fi
 fi
 

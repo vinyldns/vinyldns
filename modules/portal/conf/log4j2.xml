@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Appenders>
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <EcsLayout
+                    serviceName="vinyldns-portal"
+                    serviceNodeName="vinyldns-portal"
+                    eventDataset="vinyldns-portal"
+                    includeOrigin="true"
+            />
+        </Console>
+    </Appenders>
+    <Loggers>
+        <logger name="play" level="INFO" />
+        <logger name="application" level="DEBUG" />
+        <logger name="com.zaxxer.hikari" level="ERROR">
+            <AppenderRef ref="CONSOLE"/>
+        </logger>
+
+
+        <Root level="INFO">
+            <AppenderRef ref="CONSOLE"/>
+        </Root>
+    </Loggers>
+</Configuration>
