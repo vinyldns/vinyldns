@@ -78,6 +78,7 @@ class BatchChangeRoute(
           "startFrom".as[Int].?,
           "maxItems".as[Int].?(MAX_ITEMS_LIMIT),
           "ignoreAccess".as[Boolean].?(false),
+          "isMyGroupAccess".as[Boolean].?(false),
           "approvalStatus".as[String].?
         ) {
           (
@@ -87,6 +88,7 @@ class BatchChangeRoute(
               startFrom: Option[Int],
               maxItems: Int,
               ignoreAccess: Boolean,
+              isMyGroupAccess: Boolean,
               approvalStatus: Option[String]
           ) =>
             {
@@ -107,6 +109,7 @@ class BatchChangeRoute(
                         maxItems,
                         ignoreAccess,
                         // TODO: Update batch status from None to its actual value when the feature is ready for release
+                        isMyGroupAccess,
                         None,
                         convertApprovalStatus
                       )

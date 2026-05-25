@@ -256,37 +256,47 @@ class MySqlBatchChangeRepository
     }
 
   def getBatchChangeSummaries(
-      userId: Option[String],
-      userName: Option[String] = None,
-      dateTimeStartRange: Option[String] = None,
-      dateTimeEndRange: Option[String] = None,
-      startFrom: Option[Int] = None,
-      maxItems: Int = 100,
-      batchStatus: Option[BatchChangeStatus],
-      approvalStatus: Option[BatchChangeApprovalStatus]
-  ): IO[BatchChangeSummaryList] =
+                               userId: Option[String],
+                               groups: Set[String] = Set.empty,
+                               userName: Option[String] = None,
+                               dateTimeStartRange: Option[String] = None,
+                               dateTimeEndRange: Option[String] = None,
+                               startFrom: Option[Int] = None,
+                               maxItems: Int = 100,
+                               batchStatus: Option[BatchChangeStatus],
+                               approvalStatus: Option[BatchChangeApprovalStatus]
+                             ): IO[BatchChangeSummaryList] =
     monitor("repo.BatchChangeJDBC.getBatchChangeSummaries") {
       IO {
         DB.readOnly { implicit s =>
           val startValue = startFrom.getOrElse(0)
           val sb = new StringBuilder
           sb.append(GET_BATCH_CHANGE_SUMMARY_BASE)
+          println("asdfdasfdasfasdfads                                      adfasdfas                    asdfasdfasdfsadf",groups)
 
-          val uid = userId.map(u => s"bc.user_id = '$u'")
+          val groupFilter: Option[String] =
+            if (groups.nonEmpty)
+              Some(s"bc.owner_group_id IN (${groups.map(gid => s"'$gid'").mkString(",")})")
+            else None
+
+          val uid = if (groups.isEmpty) userId.map(u => s"bc.user_id = '$u'") else None
+          val uname = if (groups.isEmpty) userName.map(uname => s"bc.user_name = '$uname'") else None
           val as = approvalStatus.map(a => s"bc.approval_status = '${fromApprovalStatus(a)}'")
           val bs = batchStatus.map(b => s"bc.batch_status = '${fromBatchStatus(b)}'")
-          val uname = userName.map(uname => s"bc.user_name = '$uname'")
-          val dtRange = if(dateTimeStartRange.isDefined && dateTimeEndRange.isDefined) {
-            Some(s"(bc.created_time >= '${dateTimeStartRange.get}' AND bc.created_time <= '${dateTimeEndRange.get}')")
-          } else {
-            None
-          }
-          val opts = uid ++ as ++ bs ++ uname ++ dtRange
+          val dtRange =
+            if (dateTimeStartRange.isDefined && dateTimeEndRange.isDefined)
+              Some(s"(bc.created_time >= '${dateTimeStartRange.get}' AND bc.created_time <= '${dateTimeEndRange.get}')")
+            else None
+
+          val opts = Seq(groupFilter, uid, as, bs, uname, dtRange).flatten
 
           if (opts.nonEmpty) sb.append("WHERE ").append(opts.mkString(" AND "))
 
           sb.append(GET_BATCH_CHANGE_SUMMARY_END)
           val query = sb.toString()
+
+          println("asdfdasfdasfasdfads                                      adfasdfas                    asdfasdfasdfsadf",query)
+
 
           val queryResult =
             SQL(query)
@@ -297,24 +307,21 @@ class MySqlBatchChangeRepository
                 val complete = res.int("complete_count")
                 val cancelled = res.int("cancelled_count")
                 val approvalStatus = toApprovalStatus(res.intOpt("approval_status"))
-                val schedTime =
-                  res.timestampOpt("scheduled_time").map(st => st.toInstant)
-                val cancelledTimestamp =
-                  res.timestampOpt("cancelled_timestamp").map(st => st.toInstant)
+                val schedTime = res.timestampOpt("scheduled_time").map(st => st.toInstant)
+                val cancelledTimestamp = res.timestampOpt("cancelled_timestamp").map(st => st.toInstant)
                 BatchChangeSummary(
                   res.string("user_id"),
                   res.string("user_name"),
                   Option(res.string("comments")),
                   res.timestamp("created_time").toInstant,
                   pending + failed + complete + cancelled,
-                  BatchChangeStatus
-                    .calculateBatchStatus(
-                      approvalStatus,
-                      pending > 0,
-                      failed > 0,
-                      complete > 0,
-                      schedTime.isDefined
-                    ),
+                  BatchChangeStatus.calculateBatchStatus(
+                    approvalStatus,
+                    pending > 0,
+                    failed > 0,
+                    complete > 0,
+                    schedTime.isDefined
+                  ),
                   Option(res.string("owner_group_id")),
                   res.string("id"),
                   None,
@@ -332,12 +339,14 @@ class MySqlBatchChangeRepository
           val maxQueries = queryResult.take(maxItems)
           val nextId = if (queryResult.size <= maxItems) None else Some(startValue + maxItems)
           val ignoreAccess = userId.isEmpty
+          val isMyGroupAccess = groups.nonEmpty
           BatchChangeSummaryList(
             maxQueries,
             startFrom,
             nextId,
             maxItems,
             ignoreAccess,
+            isMyGroupAccess,
             batchStatus,
             approvalStatus
           )

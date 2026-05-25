@@ -114,6 +114,7 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
 
   def getBatchChangeSummaries(
       userId: Option[String],
+      groups: Set[String] = Set.empty,
       userName: Option[String] = None,
       dateTimeStartRange: Option[String] = None,
       dateTimeEndRange: Option[String] = None,
@@ -130,9 +131,12 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
     val startInstant = dateTimeStartRange.map(dt => LocalDateTime.parse(dt, formatter).atZone(ZoneId.of("UTC")).toInstant)
     val endInstant = dateTimeEndRange.map(dt => LocalDateTime.parse(dt, formatter).atZone(ZoneId.of("UTC")).toInstant)
 
+    val effectiveUserId = if (groups.nonEmpty) None else userId
+    val effectiveUserName = if (groups.nonEmpty) None else userName
+
     val userBatchChanges = batches.values.toList
-      .filter(b => userId.forall(_ == b.userId))
-      .filter(bu => userName.forall(_ == bu.userName))
+      .filter(b => if (groups.nonEmpty) b.ownerGroupId.exists(groups.contains) else effectiveUserId.forall(_ == b.userId))
+      .filter(bu => effectiveUserName.forall(_ == bu.userName))
       .filter(bdtsi => startInstant.forall(_.isBefore(bdtsi.createdTimestamp)))
       .filter(bdtei => endInstant.forall(_.isAfter(bdtei.createdTimestamp)))
       .filter(as => approvalStatus.forall(_ == as.approvalStatus))
@@ -160,6 +164,7 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
     val limited = sorted.slice(start, until)
     val nextId = if (limited.size < maxItems) None else Some(start + limited.size)
     val ignoreAccess = userId.isDefined
+    val isMyGroupAccess = groups.nonEmpty
     IO.pure(
       BatchChangeSummaryList(
         limited,
@@ -167,9 +172,10 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
         nextId = nextId,
         maxItems = maxItems,
         ignoreAccess = ignoreAccess,
+        isMyGroupAccess = isMyGroupAccess,
         batchStatus = batchStatus,
         approvalStatus = approvalStatus,
-        userName = userName,
+        userName = if (groups.nonEmpty) None else userName,
         dateTimeStartRange = dateTimeStartRange,
         dateTimeEndRange = dateTimeEndRange
       )

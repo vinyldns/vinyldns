@@ -949,6 +949,109 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       batchChangeSummaries.batchChanges shouldBe empty
     }
 
+    "get batch change summaries filtered by owner group IDs" in {
+      val groupId = UUID.randomUUID().toString
+      val changeWithGroup = change_one.copy(
+        createdTimestamp = timeBase.plusMillis(500),
+        ownerGroupId = Some(groupId)
+      )
+      val changeWithOtherGroup = change_two.copy(
+        createdTimestamp = timeBase.plusMillis(1500),
+        ownerGroupId = Some(UUID.randomUUID().toString)
+      )
+      val changeWithNoGroup = change_three.copy(
+        createdTimestamp = timeBase.plusMillis(2500),
+        ownerGroupId = None
+      )
+
+      val f =
+        for {
+          _ <- repo.save(changeWithGroup)
+          _ <- repo.save(changeWithOtherGroup)
+          _ <- repo.save(changeWithNoGroup)
+
+          retrieved <- repo.getBatchChangeSummaries(None, groups = Set(groupId))
+        } yield retrieved
+
+      val result = f.unsafeRunSync()
+      result.isMyGroupAccess shouldBe true
+      result.batchChanges.length shouldBe 1
+      result.batchChanges.head.id shouldBe changeWithGroup.id
+    }
+
+    "get batch change summaries filtered by multiple owner group IDs" in {
+      val groupId1 = UUID.randomUUID().toString
+      val groupId2 = UUID.randomUUID().toString
+      val changeWithGroup1 = change_one.copy(
+        createdTimestamp = timeBase.plusMillis(500),
+        ownerGroupId = Some(groupId1)
+      )
+      val changeWithGroup2 = change_two.copy(
+        createdTimestamp = timeBase.plusMillis(1500),
+        ownerGroupId = Some(groupId2)
+      )
+      val changeWithUnrelatedGroup = change_three.copy(
+        createdTimestamp = timeBase.plusMillis(2500),
+        ownerGroupId = Some(UUID.randomUUID().toString)
+      )
+
+      val f =
+        for {
+          _ <- repo.save(changeWithGroup1)
+          _ <- repo.save(changeWithGroup2)
+          _ <- repo.save(changeWithUnrelatedGroup)
+
+          retrieved <- repo.getBatchChangeSummaries(None, groups = Set(groupId1, groupId2))
+        } yield retrieved
+
+      val result = f.unsafeRunSync()
+      result.isMyGroupAccess shouldBe true
+      result.batchChanges.length shouldBe 2
+      result.batchChanges.map(_.id) should contain allOf (changeWithGroup1.id, changeWithGroup2.id)
+    }
+
+    "return empty list when groups filter does not match any batch changes" in {
+      val f =
+        for {
+          _ <- repo.save(change_one)
+          _ <- repo.save(change_two)
+
+          retrieved <- repo.getBatchChangeSummaries(None, groups = Set(UUID.randomUUID().toString))
+        } yield retrieved
+
+      val result = f.unsafeRunSync()
+      result.isMyGroupAccess shouldBe true
+      result.batchChanges shouldBe empty
+    }
+
+    "ignore userId and userName filters when groups are non-empty" in {
+      val groupId = UUID.randomUUID().toString
+      val changeOwnedByGroup = change_one.copy(
+        userId = "anotherUser",
+        userName = "anotherUser",
+        ownerGroupId = Some(groupId),
+        createdTimestamp = timeBase.plusMillis(500)
+      )
+
+      val f =
+        for {
+          _ <- repo.save(changeOwnedByGroup)
+          _ <- repo.save(otherUserBatchChange)
+
+          // passing userId and userName alongside groups should use groups-based filtering
+          retrieved <- repo.getBatchChangeSummaries(
+            Some("anotherUser"),
+            groups = Set(groupId),
+            userName = Some("anotherUser")
+          )
+        } yield retrieved
+
+      val result = f.unsafeRunSync()
+      result.isMyGroupAccess shouldBe true
+      result.batchChanges.length shouldBe 1
+      result.batchChanges.head.id shouldBe changeOwnedByGroup.id
+    }
+
     "properly status check (pending)" in {
       val chg = randomBatchChange(
         List(
