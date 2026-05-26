@@ -600,7 +600,7 @@ class BatchChangeService(
     val startDateTime = if(dateTimeStartRange.isDefined && dateTimeStartRange.get.isEmpty) None else dateTimeStartRange
     val endDateTime = if(dateTimeEndRange.isDefined && dateTimeEndRange.get.isEmpty) None else dateTimeEndRange
     for {
-      groups <-  membershipRepo.getGroupsForUser(auth.userId).toBatchResult
+      groups <- (if (isMyGroupAccess) membershipRepo.getGroupsForUser(auth.userId) else IO.pure(Set.empty[String])).toBatchResult
       listResults <- batchChangeRepo
         .getBatchChangeSummaries(userId, groups, submitterUserName, startDateTime, endDateTime, startFrom, maxItems, batchStatus, approvalStatus)
         .toBatchResult
@@ -619,6 +619,7 @@ class BatchChangeService(
       listWithGroupNames = listResults.copy(
         batchChanges = summariesWithReviewerUserNames,
         ignoreAccess = ignoreAccess,
+        isMyGroupAccess = isMyGroupAccess,
         approvalStatus = approvalStatus,
         userName = userName,
         dateTimeStartRange = dateTimeStartRange,
