@@ -17,8 +17,8 @@
 package vinyldns.mysql.repository
 
 import java.util.UUID
-
 import cats.effect._
+
 import java.time.temporal.ChronoUnit
 import java.time.Instant
 import org.scalatest._
@@ -671,7 +671,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
           retrieved <- repo.getBatchChangeSummaries(
             None,
-            Some(pendingBatchChange.userName),
+            userName = Some(pendingBatchChange.userName),
             approvalStatus = Some(BatchChangeApprovalStatus.AutoApproved)
           )
         } yield retrieved
@@ -699,7 +699,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
           retrieved <- repo.getBatchChangeSummaries(
             Some(pendingBatchChange.userId),
-            Some(pendingBatchChange.userName),
+            userName = Some(pendingBatchChange.userName),
             approvalStatus = Some(BatchChangeApprovalStatus.AutoApproved)
           )
         } yield retrieved

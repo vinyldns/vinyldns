@@ -272,7 +272,6 @@ class MySqlBatchChangeRepository
           val startValue = startFrom.getOrElse(0)
           val sb = new StringBuilder
           sb.append(GET_BATCH_CHANGE_SUMMARY_BASE)
-          println("asdfdasfdasfasdfads                                      adfasdfas                    asdfasdfasdfsadf",groups)
 
           val groupFilter: Option[String] =
             if (groups.nonEmpty)
@@ -294,9 +293,6 @@ class MySqlBatchChangeRepository
 
           sb.append(GET_BATCH_CHANGE_SUMMARY_END)
           val query = sb.toString()
-
-          println("asdfdasfdasfasdfads                                      adfasdfas                    asdfasdfasdfsadf",query)
-
 
           val queryResult =
             SQL(query)
