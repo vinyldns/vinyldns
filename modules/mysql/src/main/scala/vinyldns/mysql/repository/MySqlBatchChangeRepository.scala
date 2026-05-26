@@ -288,7 +288,6 @@ class MySqlBatchChangeRepository
             else None
 
           val opts = Seq(groupFilter, uid, as, bs, uname, dtRange).flatten
-
           if (opts.nonEmpty) sb.append("WHERE ").append(opts.mkString(" AND "))
 
           sb.append(GET_BATCH_CHANGE_SUMMARY_END)
