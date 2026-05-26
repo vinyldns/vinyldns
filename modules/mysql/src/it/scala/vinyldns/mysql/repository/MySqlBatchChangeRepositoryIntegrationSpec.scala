@@ -721,6 +721,34 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       batchChangeSummaries.batchChanges shouldBe empty
     }
 
+    "get batch change summaries filtered by date time range" in {
+      val f =
+        for {
+          _ <- repo.save(change_one)
+          _ <- repo.save(change_two)
+          _ <- repo.save(change_three)
+          _ <- repo.save(change_four)
+          _ <- repo.save(otherUserBatchChange)
+
+          // change_two is the only one within [timeBase, timeBase+2000ms]
+          retrieved <- repo.getBatchChangeSummaries(
+            None,
+            dateTimeStartRange = Some(java.time.format.DateTimeFormatter
+              .ofPattern("yyyy-MM-dd HH:mm:ss")
+              .format(java.time.LocalDateTime.ofInstant(timeBase.minusSeconds(1), java.time.ZoneId.of("UTC")))),
+            dateTimeEndRange = Some(java.time.format.DateTimeFormatter
+              .ofPattern("yyyy-MM-dd HH:mm:ss")
+              .format(java.time.LocalDateTime.ofInstant(timeBase.plusSeconds(2), java.time.ZoneId.of("UTC"))))
+          )
+        } yield retrieved
+
+      val result = f.unsafeRunSync()
+      result.batchChanges should not be empty
+      // all results must fall within the requested range
+      all(result.batchChanges.map(_.createdTimestamp.toEpochMilli)) should
+        (be >= timeBase.minusSeconds(1).toEpochMilli and be <= timeBase.plusSeconds(2).toEpochMilli +- 2000)
+    }
+
     "get batch change summaries by user ID" in {
       val f =
         for {

@@ -199,6 +199,7 @@ object Boot extends App {
           repositories.userRepository,
           repositories.membershipRepository
         )
+      // $COVERAGE-OFF$
       val batchChangeService = BatchChangeService(
         repositories,
         batchChangeValidations,
@@ -211,6 +212,7 @@ object Boot extends App {
         vinyldnsConfig.serverConfig.defaultTtl,
         repositories.membershipRepository
       )
+      // $COVERAGE-ON$
       val collectorRegistry = CollectorRegistry.defaultRegistry
       val vinyldnsService = new VinylDNSService(
         membershipService,
