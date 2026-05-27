@@ -654,3 +654,39 @@ input[type="file"] {
     background-color: #f0f0f0;
     border-radius: 4px;
 }
+
+.dropdown-container {
+    width: 100%;
+}
+
+.dropdown-toggle-btn {
+    text-align: left;
+    padding-right: 30px;
+    white-space: normal;
+    word-wrap: break-word;
+    min-height: 38px;
+    height: auto;
+}
+
+.dropdown-caret {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.dropdown-menu-box {
+    padding: 10px;
+    width: 100%;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.dropdown-search-input {
+    margin-bottom: 10px;
+}
+
+.dropdown-label {
+    width: 100%;
+    font-weight: normal;
+}

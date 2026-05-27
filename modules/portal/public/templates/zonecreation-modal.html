@@ -1,0 +1,232 @@
+<form name="addZoneCreationForm" ng-submit="addZoneCreationForm.$valid && addZoneCreation()" role="form" class="form-horizontal" novalidate>
+    <modal modal-id="zone_creation_modal" modal-title="Create a New Zone">
+        <modal-body>
+            <p>
+                Use this form to create a new zone.
+            </p>
+            <br />
+            <modal-element label="Zone Name" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.nameval.$invalid">
+                <input id="generate-zone-name" type="text" ng-model="createZone.zoneName" name="nameval" class="form-control" ng-disabled="isEditMode" required/>
+                <span class="help-block">Name for the DNS zone, for example:<code>"vinyldns.example.net."</code>.</span>
+            </modal-element>
+            <modal-element label="Email" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.emailval.$invalid">
+                <input id="generate-zone-email" type="text" ng-model="createZone.email" name="emailval" class="form-control" ng-disabled="isEditMode" required/>
+                <span class="help-block">
+                    The email distribution list for the zone.  Typically the distribution email for the org that owns
+                    the zone.
+                </span>
+                <div>
+                    <h5>
+                        <a data-toggle="collapse" data-target="#collapseCreateZoneInstruction" aria-expanded="false" aria-controls="collapseInstruction">
+                            <span class="badge" id="validDomainsCreateZone" ng-show="validEmailDomains && validEmailDomains.length>0">Valid Domains for Email <span class="fa fa-chevron-down"></span></span>
+                        </a>
+                    </h5>
+                </div>
+                <div class="collapse" id="collapseCreateZoneInstruction">
+                    <div class="well">
+                        <p>
+                            List Of Valid Email Domains:
+                            <li ng-repeat="validDomains in validEmailDomains">
+                                {{validDomains}}
+                            </li>
+                        </p>
+                        <hr/>
+                    </div>
+                </div>
+            </modal-element>
+            <modal-element label="Admin Group" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.admingroup.$invalid">
+                <select id="generate-zone-admin-group" name="admingroup" class="form-control" ng-model="createZone.groupId" ng-disabled="isEditMode"
+                        required>
+                    <option value="" disabled selected hidden>Select a Admin Group</option>
+                    <option ng-repeat="group in myGroups | orderBy: 'name'" value="{{ group.id }}">
+                        {{group.name}}
+                        <span ng-show="group.description">({{group.description}})</span></option>
+                </select>
+                <span class="help-block">
+                    The Vinyl Group that will be given admin rights to the zone.  All users in the admin group
+                    will have the ability to manage <i>all</i>
+                    records in the zone, as well as change zone level information
+                    and access rules. <a href="/groups">You can create a new group from the Groups page.</a>
+                </span>
+            </modal-element>
+            <modal-element label="Name Server"
+                           invalid-when="addZoneCreationForm.$submitted && createZone.providerParams.nameservers.length === 0" ng-if="!isEditMode">
+
+                <input type="hidden"
+                       name="nameservers"
+                       ng-model="createZone.providerParams.nameservers"
+                       ng-required="createZone.providerParams.nameservers.length === 0"/>
+
+                <!-- Dropdown -->
+                <div class="dropdown dropdown-container">
+                    <button class="btn btn-default dropdown-toggle form-control text-left dropdown-toggle-btn"
+                            type="button"
+                            data-toggle="dropdown"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                            ng-disabled="isEditMode" >
+                        <span ng-if="createZone.providerParams.nameservers.length === 0">Select a NameServer</span>
+                        <span ng-if="createZone.providerParams.nameservers.length > 0">{{ createZone.providerParams.nameservers.join(', ') }}</span>
+                        <span class="caret pull-right dropdown-caret"></span>
+                    </button>
+
+                    <ul class="dropdown-menu dropdown-menu-box">
+                        <!-- Search Input -->
+                        <li>
+                            <input type="text"
+                                   class="form-control dropdown-search-input"
+                                   placeholder="Search..."
+                                   ng-model="searchNs" />
+                        </li>
+
+                        <!-- Filtered List -->
+                        <li ng-repeat="ns in nameservers | filter:searchNs">
+                            <label class="dropdown-label">
+                                <input type="checkbox"
+                                       ng-model="nameserverSelection[ns]"
+                                       ng-change="updateNameserverSelection(ns)">
+                                {{ ns }}
+                            </label>
+                        </li>
+                    </ul>
+                </div>
+                <span class="help-block">
+                    The Name Server for a pre-configured DNS connection configuration. Please contact your DNS admin team
+                    for more information if you believe you need a custom connection. In most cases, the default
+                    connection will suffice.
+                </span>
+            </modal-element>
+
+            <modal-element label="Name Servers" ng-if="isEditMode">
+                <div ng-repeat="ns in createZone.providerParams.nameservers track by $index" class="form-group" style="margin-bottom: 10px;">
+                    <input type="text" class="form-control"
+                           ng-model="createZone.providerParams.nameservers[$index]"
+                           name="nameserver-{{$index}}"
+                           disabled />
+                </div>
+            </modal-element>
+
+            <modal-element label="DNS Provider" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.allowedDNSProviders.$invalid">
+                <select id="zone-provider"
+                        name="allowedDNSProviders"
+                        class="form-control"
+                        ng-model="createZone.provider"
+                        ng-change="getCreateZoneTemplate(createZone.provider)"
+                        ng-options="dnsProvider for dnsProvider in provider"
+                        ng-disabled="isEditMode" required>
+                    <option value="" disabled selected hidden>Select a provider</option>
+                </select>
+
+                <span class="help-block">
+                    The DNS Provider for a pre-configured DNS connection configuration. Please contact your DNS admin team
+                    for more information if you believe you need a custom connection. In most cases, the default
+                    connection will suffice.
+                </span>
+            </modal-element>
+
+            <div ng-repeat="field in zoneFields">
+
+                <!-- Multi-Select -->
+                <modal-element ng-if="field.type === 'Multi-Select'" label="{{ field.label }}"
+                               invalid-when="addZoneCreationForm.$submitted && (createZone.providerParams[field.field] || []).length === 0"
+                >
+                    <input type="hidden"
+                           name="providerParams_{{ field.field }}"
+                           ng-model="createZone.providerParams[field.field]"
+                           ng-required="isDynamicZoneFieldRequired(field.field) && (createZone.providerParams[field.field] || []).length === 0"
+                    />
+
+                    <div class="dropdown dropdown-container">
+                        <button class="btn btn-default dropdown-toggle form-control text-left dropdown-toggle-btn"
+                                type="button"
+                                data-toggle="dropdown"
+                                aria-haspopup="true"
+                                aria-expanded="false"
+                                ng-disabled="!field.editable"
+                        >
+                            <span ng-if="!createZone.providerParams[field.field] || createZone.providerParams[field.field].length === 0">
+                                Select {{ field.label }}
+                            </span>
+                            <span ng-if="createZone.providerParams[field.field] && createZone.providerParams[field.field].length > 0">
+                                {{ createZone.providerParams[field.field].join(', ') }}
+                            </span>
+                            <span class="caret pull-right dropdown-caret"></span>
+                        </button>
+
+                        <ul class="dropdown-menu dropdown-menu-box">
+                            <li>
+                                <input type="text"
+                                       class="form-control dropdown-search-input"
+                                       placeholder="Search..."
+                                       ng-model="search[field.field]" />
+                            </li>
+                            <li ng-repeat="value in field.value | filter:search[field.field]">
+                                <label class="dropdown-label">
+                                    <input type="checkbox"
+                                           ng-checked="createZone.providerParams[field.field].indexOf(value) > -1"
+                                           ng-click="dynamicZoneFieldToggleSelection(field.field, value)">
+                                    {{ value }}
+                                </label>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <span class="help-block">
+                        {{ field.label }} for DNS Zone, for example: <code>{{field.value}}</code>
+                    </span>
+                </modal-element>
+
+                <!-- Select -->
+                <modal-element ng-if="field.type === 'Select'" label="{{ field.label }}"
+                               ng-init="createZone.providerParams[field.field] = createZone.providerParams[field.field] || null"
+                               invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm['providerParams_' + field.field].$invalid">
+                    <select class="form-control"
+                            name="providerParams_{{ field.field }}"
+                            ng-model="createZone.providerParams[field.field]"
+                            ng-required="isDynamicZoneFieldRequired(field.field)"
+                            ng-options="opt for opt in field.value track by opt"
+                            ng-disabled="!field.editable"
+                    >
+                        <option value="" disabled selected hidden> Select {{ field.label }} </option>
+                    </select>
+                    <span class="help-block">
+                        {{ field.label }} for DNS Zone, for example: <code>{{ field.value }}</code>
+                    </span>
+                </modal-element>
+
+                <!-- String/Integer -->
+                <modal-element ng-if="field.type === 'String' || field.type === 'Integer'"
+                               label="{{ formatLabel(field.label) }}"
+                               invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm['providerParams_' + field.field].$invalid">
+                    <input type="{{ field.type === 'Integer' ? 'number' : 'text' }}"
+                           class="form-control"
+                           name="providerParams_{{ field.field }}"
+                           ng-model="createZone.providerParams[field.field]"
+                           ng-required="isDynamicZoneFieldRequired(field.field)"
+                           ng-disabled="!field.editable"
+                    />
+                    <span class="help-block">{{ field.label }} for DNS Zone, for example:<code>{{field.value}}</code></span>
+                </modal-element>
+            </div>
+
+        </modal-body>
+        <modal-footer>
+            <button type="button" class="btn btn-default pull-left" ng-click="resetCreateZone()">Clear Form</button>
+            <!-- Update Button -->
+            <button id="update-zone-button"
+                    class="btn btn-warning pull-right"
+                    ng-if="isEditMode">
+                Update
+            </button>
+            <!-- Create Button -->
+            <button id="create-zone-button"
+                    class="btn btn-primary pull-right"
+                    ng-if="!isEditMode">
+                Create
+            </button>
+            <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="resetCreateZone()">
+                Close
+            </button>
+        </modal-footer>
+    </modal>
+</form>

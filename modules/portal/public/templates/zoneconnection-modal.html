@@ -64,8 +64,8 @@
             </div>
             <modal-element label="Backend Id">
                 <select id="zone-backendId" name="backendIdVal" class="form-control" ng-model="currentZone.backendId">
-                    <option value=""></option>
-                    <option ng-repeat="id in backendIds" value="{{id}}">
+                    <option value="">Select the Backend Id</option>
+                    <option ng-repeat="id in backendIds" value="{{id}}" ng-if="!isEditMode">
                         {{id}}
                     </option>
                 </select>
@@ -97,7 +97,7 @@
 
             <modal-element label="Key Algorithm">
                 <select id="zone-dns-key-algorithm" name="keyAlg" class="form-control" ng-model="currentZone.connection.algorithm">
-                    <option value=""></option>
+                    <option value="">Select the Key Algorithm</option>
                     <option ng-repeat="alg in keyAlgorithms" value="{{alg}}">
                         {{alg}}
                     </option>
@@ -139,7 +139,7 @@
 
             <modal-element label="Key Algorithm">
                 <select id="zone-transfer-key-algorithm" name="transferkeyAlg" class="form-control" ng-model="currentZone.transferConnection.algorithm">
-                    <option value=""></option>
+                    <option value="">Select the Key Algorithm</option>
                     <option ng-repeat="alg in keyAlgorithms" value="{{alg}}">
                         {{alg}}
                     </option>
