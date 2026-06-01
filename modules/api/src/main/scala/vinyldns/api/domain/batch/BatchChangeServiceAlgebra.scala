@@ -40,6 +40,7 @@ trait BatchChangeServiceAlgebra {
       startFrom: Option[Int],
       maxItems: Int,
       ignoreAccess: Boolean,
+      isMyGroupAccess: Boolean,
       batchStatus: Option[BatchChangeStatus],
       approvalStatus: Option[BatchChangeApprovalStatus]
   ): BatchResult[BatchChangeSummaryList]

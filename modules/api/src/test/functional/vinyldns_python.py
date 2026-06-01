@@ -669,7 +669,8 @@ class VinylDNSClient(object):
         _, data = self.make_request(url, "POST", self.headers, **kwargs)
         return data
 
-    def list_batch_change_summaries(self, start_from=None, max_items=None, ignore_access=False, approval_status=None,
+    def list_batch_change_summaries(self, start_from=None, max_items=None, ignore_access=False,
+                                    is_my_group_access=False, approval_status=None,
                                     **kwargs):
         """
         Gets list of user's batch change summaries
@@ -682,6 +683,8 @@ class VinylDNSClient(object):
             args.append("maxItems={0}".format(max_items))
         if ignore_access:
             args.append("ignoreAccess={0}".format(ignore_access))
+        if is_my_group_access:
+            args.append("isMyGroupAccess={0}".format(is_my_group_access))
         if approval_status:
             args.append("approvalStatus={0}".format(approval_status))
 
