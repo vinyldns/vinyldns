@@ -279,7 +279,7 @@ class MySqlBatchChangeRepository
             else None
 
           val uid = if (groups.isEmpty) userId.map(u => s"bc.user_id = '$u'") else None
-          val uname = if (groups.isEmpty) userName.map(uname => s"bc.user_name = '$uname'") else None
+          val uname = userName.map(uname => s"bc.user_name = '$uname'")
           val as = approvalStatus.map(a => s"bc.approval_status = '${fromApprovalStatus(a)}'")
           val bs = batchStatus.map(b => s"bc.batch_status = '${fromBatchStatus(b)}'")
           val dtRange =

@@ -132,7 +132,7 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
     val endInstant = dateTimeEndRange.map(dt => LocalDateTime.parse(dt, formatter).atZone(ZoneId.of("UTC")).toInstant)
 
     val effectiveUserId = if (groups.nonEmpty) None else userId
-    val effectiveUserName = if (groups.nonEmpty) None else userName
+    val effectiveUserName = userName
 
     val userBatchChanges = batches.values.toList
       .filter(b => if (groups.nonEmpty) b.ownerGroupId.exists(groups.contains) else effectiveUserId.forall(_ == b.userId))
@@ -175,7 +175,7 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
         isMyGroupAccess = isMyGroupAccess,
         batchStatus = batchStatus,
         approvalStatus = approvalStatus,
-        userName = if (groups.nonEmpty) None else userName,
+        userName = userName,
         dateTimeStartRange = dateTimeStartRange,
         dateTimeEndRange = dateTimeEndRange
       )

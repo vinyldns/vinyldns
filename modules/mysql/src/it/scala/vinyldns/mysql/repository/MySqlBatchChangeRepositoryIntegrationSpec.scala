@@ -746,7 +746,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       result.batchChanges should not be empty
       // all results must fall within the requested range
       all(result.batchChanges.map(_.createdTimestamp.toEpochMilli)) should
-        (be >= timeBase.minusSeconds(1).toEpochMilli and be <= timeBase.plusSeconds(2).toEpochMilli +- 2000)
+        (be >= timeBase.minusSeconds(1).toEpochMilli and be <= (timeBase.plusSeconds(2).toEpochMilli + 2000))
     }
 
     "get batch change summaries by user ID" in {
@@ -1052,7 +1052,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       result.batchChanges shouldBe empty
     }
 
-    "ignore userId and userName filters when groups are non-empty" in {
+    "apply userName filter alongside groups filter, ignore userId filter when groups are non-empty" in {
       val groupId = UUID.randomUUID().toString
       val changeOwnedByGroup = change_one.copy(
         userId = "anotherUser",
@@ -1066,7 +1066,6 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           _ <- repo.save(changeOwnedByGroup)
           _ <- repo.save(otherUserBatchChange)
 
-          // passing userId and userName alongside groups should use groups-based filtering
           retrieved <- repo.getBatchChangeSummaries(
             Some("anotherUser"),
             groups = Set(groupId),
@@ -1078,6 +1077,32 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       result.isMyGroupAccess shouldBe true
       result.batchChanges.length shouldBe 1
       result.batchChanges.head.id shouldBe changeOwnedByGroup.id
+    }
+
+    "return empty list when groups match but userName filter does not match" in {
+      val groupId = UUID.randomUUID().toString
+      val changeOwnedByGroup = change_one.copy(
+        userId = "someUser",
+        userName = "someUser",
+        ownerGroupId = Some(groupId),
+        createdTimestamp = timeBase.plusMillis(600)
+      )
+
+      val f =
+        for {
+          _ <- repo.save(changeOwnedByGroup)
+
+          // groups matches the change, but userName filter excludes it
+          retrieved <- repo.getBatchChangeSummaries(
+            None,
+            groups = Set(groupId),
+            userName = Some("wrongUser")
+          )
+        } yield retrieved
+
+      val result = f.unsafeRunSync()
+      result.isMyGroupAccess shouldBe true
+      result.batchChanges shouldBe empty
     }
 
     "properly status check (pending)" in {
