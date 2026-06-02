@@ -370,10 +370,7 @@ object RuntimeVinylDNSConfig {
             ))
           }
       case None =>
-        IO.raiseError(new RuntimeException(
-          "[RuntimeConfig] 'backend-dns-zone' not found in app_config table. " +
-          "Insert the backend configuration into the DB before starting."
-        ))
+        IO.pure(_current.backendConfigs)
     }
 
   def notifierConfigs: IO[List[NotifierConfig]] =
@@ -403,7 +400,10 @@ object RuntimeVinylDNSConfig {
               val effectiveSettings =
                 if (overrideMap.isEmpty) fileSettings
                 else ConfigFactory.parseMap(overrideMap.asJava).withFallback(fileSettings)
-              List(NotifierConfig("vinyldns.api.notifier.email.EmailNotifierProvider", effectiveSettings))
+              if (effectiveSettings.isEmpty) {
+                logger.warn("[RuntimeConfig:notifierConfigs] Skipping email notifier — no settings found in DB or application.conf")
+                Nil
+              } else List(NotifierConfig("vinyldns.api.notifier.email.EmailNotifierProvider", effectiveSettings))
 
             case "sns" =>
               val prefix = "sns.settings."
@@ -417,7 +417,10 @@ object RuntimeVinylDNSConfig {
               val effectiveSettings =
                 if (overrideMap.isEmpty) fileSettings
                 else ConfigFactory.parseMap(overrideMap.asJava).withFallback(fileSettings)
-              List(NotifierConfig("vinyldns.api.notifier.sns.SnsNotifierProvider", effectiveSettings))
+              if (effectiveSettings.isEmpty) {
+                logger.warn("[RuntimeConfig:notifierConfigs] Skipping sns notifier — no settings found in DB or application.conf")
+                Nil
+              } else List(NotifierConfig("vinyldns.api.notifier.sns.SnsNotifierProvider", effectiveSettings))
 
             case other =>
               logger.warn(s"[RuntimeConfig:effectiveNotifierConfigs] Unknown notifier name '$other' in DB — skipping")

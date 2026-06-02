@@ -62,7 +62,7 @@ class TestConfigReloadEndpoint:
         """A super user can trigger a config reload (200 OK)."""
         status_code, data = super_client.reload_config(status=200)
         assert_that(status_code, is_(200))
-        assert_that(data, contains_string("reloaded successfully"))
+        assert_that(data["message"], contains_string("reloaded successfully"))
 
     def test_reload_config_forbidden_for_regular_user(self, ok_client):
         """Regular (non-super) users are not authorized to reload config (403 Forbidden)."""
@@ -79,7 +79,7 @@ class TestConfigReloadEndpoint:
         for _ in range(3):
             status_code, data = super_client.reload_config(status=200)
             assert_that(status_code, is_(200))
-            assert_that(data, contains_string("reloaded successfully"))
+            assert_that(data["message"], contains_string("reloaded successfully"))
 
     def test_color_endpoint_still_responds_after_reload(self, super_client):
         """GET /color must continue to return a valid color string after reload."""
