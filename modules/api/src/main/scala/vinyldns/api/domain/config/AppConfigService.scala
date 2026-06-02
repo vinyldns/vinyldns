@@ -159,7 +159,7 @@ class AppConfigService(
     } yield {
       val updated = diff.collect { case (k, (Some(b), Some(a))) => k -> ConfigChange(Some(b), Some(a)) }
       val added   = diff.collect { case (k, (None,    Some(a))) => k -> a }
-      val removed = diff.collect { case (k, (Some(_), None))    => k }.keys.toList.sorted
+      val removed = diff.collect { case (k, (Some(_), None))    => k }.toList.sorted
       ReloadConfigResponse("Config reloaded successfully", updated, added, removed)
     }
 

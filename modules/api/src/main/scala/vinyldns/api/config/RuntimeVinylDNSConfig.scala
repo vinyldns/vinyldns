@@ -22,7 +22,7 @@ import cats.implicits._
 import com.typesafe.config.{Config, ConfigFactory}
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.backend.{Backend, BackendConfigs, BackendResolver}
-import vinyldns.core.domain.config.{AppConfigRepository, ConfigChange, EffectiveConfigResponse}
+import vinyldns.core.domain.config.{AppConfigRepository, EffectiveConfigResponse}
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.health.HealthCheck.HealthCheck
