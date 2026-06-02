@@ -22,7 +22,7 @@ import cats.implicits._
 import com.typesafe.config.{Config, ConfigFactory}
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.backend.{Backend, BackendConfigs, BackendResolver}
-import vinyldns.core.domain.config.AppConfigRepository
+import vinyldns.core.domain.config.{AppConfigRepository, ConfigChange, EffectiveConfigResponse}
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.health.HealthCheck.HealthCheck
@@ -154,6 +154,25 @@ object RuntimeVinylDNSConfig {
 
   def getAll: IO[Map[String, String]] = appConfigRef.get
   def get(key: String): IO[Option[String]] = appConfigRef.get.map(_.get(key))
+
+  def getEffectiveDetailed: IO[EffectiveConfigResponse] =
+    appConfigRef.get.map { dbSnapshot =>
+      val refKeys = ConfigFactory.defaultReference()
+        .getConfig("vinyldns").root().keySet().asScala.toSet
+      val referenceDefaults = refKeys.filterNot(dbSnapshot.contains).toList.sorted
+      EffectiveConfigResponse(dbSnapshot, referenceDefaults)
+    }
+
+  def reloadWithDiff(repo: AppConfigRepository): IO[Map[String, (Option[String], Option[String])]] =
+    for {
+      before <- appConfigRef.get
+      _      <- refresh(repo)
+      _      <- reload()
+      after  <- appConfigRef.get
+    } yield (before.keySet ++ after.keySet)
+      .map(k => k -> (before.get(k), after.get(k)))
+      .filter { case (_, (b, a)) => b != a }
+      .toMap
   def getOrElse(key: String, default: String): IO[String] =
     get(key).map(_.filter(_.nonEmpty).getOrElse(default))
 
@@ -231,10 +250,12 @@ object RuntimeVinylDNSConfig {
         parseFromJson[HighValueDomainConfig](snapshot, "high-value-domains").foreach(_highValueDomainConfig = _)
         parseFromJson[DottedHostsConfig](snapshot, "dotted-hosts").foreach(_dottedHostsConfig = _)
         parseFromJson[ValidEmailConfig](snapshot, "valid-email").foreach(_validEmailConfig = _)
-        snapshot.get("approved-name-servers").foreach { csv =>
-          _approvedNameServers = ZoneRecordValidations.toCaseIgnoredRegexList(
-            csv.split(",").map(_.trim).filter(_.nonEmpty).toList
-          )
+        snapshot.get("approved-name-servers").foreach { rawValue =>
+          val names = if (rawValue.trim.startsWith("["))
+            ConfigFactory.parseString(s"v = $rawValue").getStringList("v").asScala.toList
+          else
+            rawValue.split(",").map(_.trim).filter(_.nonEmpty).toList
+          _approvedNameServers = ZoneRecordValidations.toCaseIgnoredRegexList(names)
         }
         snapshot.get("global-acl-rules").foreach { json =>
           ConfigSource.fromConfig(ConfigFactory.parseString(s"rules = $json")).at("rules").load[List[GlobalAcl]]

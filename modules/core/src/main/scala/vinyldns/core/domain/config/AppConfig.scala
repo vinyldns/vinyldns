@@ -33,3 +33,17 @@ case class AppConfigListResponse(
                                   total: Int,
                                   configs: List[AppConfigResponse]
                                 )
+
+case class EffectiveConfigResponse(
+                                    dbOverrides: Map[String, String],
+                                    referenceDefaults: List[String]
+                                  )
+
+case class ConfigChange(from: Option[String], to: Option[String])
+
+case class ReloadConfigResponse(
+                                 message: String,
+                                 updated: Map[String, ConfigChange],
+                                 added: Map[String, String],
+                                 removed: List[String]
+                               )

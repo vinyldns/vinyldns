@@ -73,6 +73,53 @@ class AppConfigRoute(
       }
     }
 
+  implicit val effectiveConfigFormat: RootJsonFormat[EffectiveConfigResponse] =
+    new RootJsonFormat[EffectiveConfigResponse] {
+      def write(r: EffectiveConfigResponse): JsValue = JsObject(
+        "db-overrides"       -> JsObject(r.dbOverrides.mapValues(JsString(_))),
+        "reference-defaults" -> JsArray(r.referenceDefaults.map(JsString(_)): _*)
+      )
+      def read(json: JsValue): EffectiveConfigResponse = {
+        val obj = json.asJsObject
+        EffectiveConfigResponse(
+          dbOverrides       = obj.fields("db-overrides").convertTo[Map[String, String]],
+          referenceDefaults = obj.fields("reference-defaults").convertTo[List[String]]
+        )
+      }
+    }
+
+  implicit val configChangeFormat: RootJsonFormat[ConfigChange] =
+    new RootJsonFormat[ConfigChange] {
+      def write(c: ConfigChange): JsValue = JsObject(
+        "from" -> c.from.map(s => JsString(s): JsValue).getOrElse(JsNull),
+        "to"   -> c.to.map(s   => JsString(s): JsValue).getOrElse(JsNull)
+      )
+      def read(json: JsValue): ConfigChange = {
+        val obj = json.asJsObject
+        def optStr(k: String) = obj.fields.get(k).flatMap { case JsString(s) => Some(s); case _ => None }
+        ConfigChange(from = optStr("from"), to = optStr("to"))
+      }
+    }
+
+  implicit val reloadConfigResponseFormat: RootJsonFormat[ReloadConfigResponse] =
+    new RootJsonFormat[ReloadConfigResponse] {
+      def write(r: ReloadConfigResponse): JsValue = JsObject(
+        "message" -> JsString(r.message),
+        "updated" -> JsObject(r.updated.mapValues(configChangeFormat.write)),
+        "added"   -> JsObject(r.added.mapValues(JsString(_))),
+        "removed" -> JsArray(r.removed.map(JsString(_)): _*)
+      )
+      def read(json: JsValue): ReloadConfigResponse = {
+        val obj = json.asJsObject
+        ReloadConfigResponse(
+          message = obj.fields("message").convertTo[String],
+          updated = obj.fields("updated").asJsObject.fields.mapValues(configChangeFormat.read),
+          added   = obj.fields("added").convertTo[Map[String, String]],
+          removed = obj.fields("removed").convertTo[List[String]]
+        )
+      }
+    }
+
   val configRoutes: Route =
     pathPrefix("appconfig") {
       concat(
@@ -97,10 +144,10 @@ class AppConfigRoute(
 
   private def getEffectiveConfig: Route =
     (get & path("effective")) {
-      authenticateAndExecute[Map[String, String]] { auth =>
+      authenticateAndExecute[EffectiveConfigResponse] { auth =>
         appConfigService.getEffectiveConfig(auth)
-      } { snapshot =>
-        complete(StatusCodes.OK, snapshot.toJson)
+      } { result =>
+        complete(StatusCodes.OK, result.toJson)
       }
     }
 
@@ -137,17 +184,17 @@ class AppConfigRoute(
       authenticateAndExecute[Boolean] { auth =>
         appConfigService.deleteAppConfig(key, auth)
       } { _ =>
-        complete(StatusCodes.NoContent)
+        complete(StatusCodes.OK, s"Config with key [$key] deleted successfully")
       }
     }
 
   private def configReloadRoute: Route =
     path("appconfig" / "reload") {
       post {
-        authenticateAndExecute[String] { auth =>
+        authenticateAndExecute[ReloadConfigResponse] { auth =>
           appConfigService.reloadConfig(auth)
-        } { msg =>
-          complete(StatusCodes.OK, msg)
+        } { response =>
+          complete(StatusCodes.OK, response.toJson)
         }
       }
     }

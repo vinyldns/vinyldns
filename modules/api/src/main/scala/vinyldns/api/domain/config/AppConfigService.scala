@@ -145,19 +145,23 @@ class AppConfigService(
   // Get the current in-memory effective snapshot
   def getEffectiveConfig(
                           auth: AuthPrincipal
-                        ): Result[Map[String, String]] =
+                        ): Result[EffectiveConfigResponse] =
     for {
       _ <- requireSuper(auth)
-      result <- RuntimeVinylDNSConfig.getAll.toResult[Map[String, String]]
+      result <- RuntimeVinylDNSConfig.getEffectiveDetailed.toResult[EffectiveConfigResponse]
     } yield result
 
   // Reload config from file AND re-query DB, then apply DB overrides
-  def reloadConfig(auth: AuthPrincipal): Result[String] =
+  def reloadConfig(auth: AuthPrincipal): Result[ReloadConfigResponse] =
     for {
       _ <- requireSuper(auth)
-      _ <- RuntimeVinylDNSConfig.refresh(appConfigRepo).toResult[Unit]
-      _ <- RuntimeVinylDNSConfig.reload().toResult[Unit]
-    } yield "Config reloaded successfully"
+      diff <- RuntimeVinylDNSConfig.reloadWithDiff(appConfigRepo).toResult[Map[String, (Option[String], Option[String])]]
+    } yield {
+      val updated = diff.collect { case (k, (Some(b), Some(a))) => k -> ConfigChange(Some(b), Some(a)) }
+      val added   = diff.collect { case (k, (None,    Some(a))) => k -> a }
+      val removed = diff.collect { case (k, (Some(_), None))    => k }.keys.toList.sorted
+      ReloadConfigResponse("Config reloaded successfully", updated, added, removed)
+    }
 
   // ---------------------------
   // Validations
