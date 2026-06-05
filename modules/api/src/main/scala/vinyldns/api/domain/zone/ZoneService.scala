@@ -507,8 +507,7 @@ class ZoneService(
           maxItems,
           ignoreAccess
         )
-        generatedZones = if (ignoreAccess) listZonesResult.generatedZones
-                         else listZonesResult.generatedZones.filter(z => canSeeGenerateZone(authPrincipal, z).isRight)
+        generatedZones = listZonesResult.generatedZones
         groupIds = generatedZones.map(_.groupId).toSet
         groups <- groupRepository.getGroups(groupIds)
         generateZoneSummaryInfos = generateZoneSummaryInfoMapping(generatedZones, authPrincipal, groups)
@@ -529,8 +528,7 @@ class ZoneService(
           groupIds,
           ignoreAccess
         )
-        generatedZones = if (ignoreAccess) listZonesResult.generatedZones
-                         else listZonesResult.generatedZones.filter(z => canSeeGenerateZone(authPrincipal, z).isRight)
+        generatedZones = listZonesResult.generatedZones
         groups <- groupRepository.getGroups(groupIds)
         generateZoneSummaryInfos = generateZoneSummaryInfoMapping(generatedZones, authPrincipal, groups)
       } yield ListGeneratedZonesResponse(

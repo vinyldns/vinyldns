@@ -214,7 +214,7 @@ class ZoneServiceSpec
     "return an error response for provider params not supported the correct provider" in {
       doReturn(IO.pure(Some(generateBindZone))).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
       val result =
-        underTest.handleUpdateGeneratedZoneRequest(generateBindZoneAuthorized.copy(groupId = "update-group-id"), okAuth).value.unsafeRunSync().swap.toOption.get
+        underTest.handleUpdateGeneratedZoneRequest(generateBindZoneAuthorized.copy(groupId = okGroup.id), okAuth).value.unsafeRunSync().swap.toOption.get
       result shouldBe InvalidRequest(s"Unsupported DNS provider: ${generateBindZoneAuthorized.provider}")
     }
 
@@ -225,13 +225,13 @@ class ZoneServiceSpec
         .save(any[GenerateZone])
 
       val result =
-        underTest.handleUpdateGeneratedZoneRequest(updatePdnsZoneAuthorized.copy(groupId = "update-group-id",providerParams = Map(
+        underTest.handleUpdateGeneratedZoneRequest(updatePdnsZoneAuthorized.copy(groupId = okGroup.id,providerParams = Map(
           "kind"-> JString("Native")
         )), okAuth).value.unsafeRunSync().toOption.get
       result.zoneName shouldBe updatePdnsZoneAuthorized.zoneName
       result.providerParams shouldBe Map("nameservers" -> JArray(List(JString("ns1.parent.com."))), "kind" -> JString("Native"))
       result.provider shouldBe updatePdnsZoneAuthorized.provider
-      result.groupId shouldBe "update-group-id"
+      result.groupId shouldBe okGroup.id
     }
 
     "return an error response for invalid request in provider params" in {
@@ -241,7 +241,7 @@ class ZoneServiceSpec
         .save(any[GenerateZone])
 
       val result =
-        underTest.handleUpdateGeneratedZoneRequest(generatePdnsInvalidZone.copy(groupId = "update-group-id"), okAuth).value.unsafeRunSync().swap.toOption.get
+        underTest.handleUpdateGeneratedZoneRequest(generatePdnsInvalidZone.copy(groupId = okGroup.id), okAuth).value.unsafeRunSync().swap.toOption.get
 
       result shouldBe InvalidRequest("" +
         "JSON schema validation error: $: " +
