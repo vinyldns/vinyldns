@@ -21,7 +21,7 @@ import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
-import vinyldns.core.TestMembershipData.{okAuth, okGroup}
+import vinyldns.core.TestMembershipData.{okGroup}
 import vinyldns.core.TestZoneData.{generateBindZone, generatePdnsZone}
 import vinyldns.core.domain.zone._
 import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
@@ -118,18 +118,18 @@ class MySqlGenerateZoneRepositoryIntegrationSpec
   "MySqlGenerateZoneRepository.listGenerateZones" should {
     "get a list of zones" in {
       saveZones(testZones).unsafeRunSync()
-      repo.listGenerateZones(okAuth).unsafeRunSync().generatedZones.head shouldBe testZones.head
+      repo.listGenerateZones().unsafeRunSync().generatedZones.head shouldBe testZones.head
     }
     "get a list of zones by name filter" in {
       saveZones(testZones).unsafeRunSync()
-      repo.listGenerateZones(okAuth, zoneNameFilter=Some("1.")).unsafeRunSync().generatedZones.head shouldBe testZones.head
+      repo.listGenerateZones( zoneNameFilter=Some("1.")).unsafeRunSync().generatedZones.head shouldBe testZones.head
     }
   }
   "MySqlGenerateZoneRepository.listGeneratedZonesByAdminGroupIds" should {
     "get a list of zones" in {
       saveZones(testZones).unsafeRunSync()
       // testZones has foo as owner group id so its listing generateBindZone which has okgroup id.
-      repo.listGeneratedZonesByAdminGroupIds(okAuth,adminGroupIds=Set(okGroup.id)).unsafeRunSync().generatedZones.head shouldBe generateBindZone
+      repo.listGeneratedZonesByAdminGroupIds(adminGroupIds=Set(okGroup.id)).unsafeRunSync().generatedZones.head shouldBe generateBindZone
     }
   }
 }

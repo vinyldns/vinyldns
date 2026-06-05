@@ -201,7 +201,7 @@ class ZoneService(
 
       // Authorization and existence checks
       _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
-      _ <- generateZoneDoesNotExist(request.zoneName).toResult
+      _ <- generateZoneDoesNotExist(request.zoneName)
 
       // Send request
       _ <- logger.info(s"Request: provider=${request.provider}, path=$endpoint, request=$requestJsonOpt").toResult
@@ -499,7 +499,6 @@ class ZoneService(
     if(!searchByAdminGroup || nameFilter.isEmpty){
       for {
         listZonesResult <- generateZoneRepository.listGenerateZones(
-          authPrincipal,
           nameFilter,
           startFrom,
           maxItems,
@@ -521,7 +520,6 @@ class ZoneService(
       for {
         groupIds <- getGroupsIdsByName(nameFilter.get)
         listZonesResult <- generateZoneRepository.listGeneratedZonesByAdminGroupIds(
-          authPrincipal,
           startFrom,
           maxItems,
           groupIds,
@@ -843,20 +841,19 @@ class ZoneService(
       }
       .toResult
 
-  private def generateZoneDoesNotExist(zoneName: String): Either[Throwable, Unit] = {
-    val existingZoneOpt: Option[GenerateZone] =
-      generateZoneRepository.getGenerateZoneByName(zoneName).unsafeRunSync()
-
-    existingZoneOpt match {
-      case Some(existingZone) =>
-        Left(ZoneAlreadyExistsError(
-          s"Zone with name $zoneName already exists. " +
-            s"Please contact ${existingZone.groupId} to request access."
-        ))
-      case None =>
-        Right(())
-    }
-  }
+  private def generateZoneDoesNotExist(zoneName: String): Result[Unit] =
+    generateZoneRepository
+      .getGenerateZoneByName(zoneName)
+      .map {
+        case Some(existingZone) =>
+          ZoneAlreadyExistsError(
+            s"Zone with name $zoneName already exists. " +
+              s"Please contact ${existingZone.groupId} to request access."
+          ).asLeft
+        case None =>
+          ().asRight
+      }
+      .toResult
 
 //  private def generateZoneExists(zoneName: String): Either[Throwable, Unit] = {
 //    val existingZoneOpt: Option[GenerateZone] =

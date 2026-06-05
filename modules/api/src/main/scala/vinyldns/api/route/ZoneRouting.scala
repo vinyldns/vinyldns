@@ -160,13 +160,6 @@ class ZoneRoute(
         }
       }
     } ~
-    path("zones" / "generate" / Segment) { id =>
-      (delete & monitor("Endpoint.deleteGeneratedZone")) {
-        authenticateAndExecute(zoneService.handleDeleteGeneratedZoneRequest(id, _)) { response =>
-          complete(StatusCodes.Accepted, response)
-        }
-      }
-    } ~
     path("zones" / "generate" / "info") {
       (get & monitor("Endpoint.listGeneratedZones")) {
         parameters(
@@ -200,13 +193,14 @@ class ZoneRoute(
         }
       }
     } ~
-    path("zones" /"generate"/ "name" / Segment) { zoneName =>
-      get & monitor("Endpoint.getGenerateZoneByName")
-      authenticateAndExecute(zoneService.getGenerateZoneByName(zoneName, _)) { zone =>
-        complete(StatusCodes.OK, zone)
+    path("zones" / "generate" / "name" / Segment) { zoneName =>
+      (get & monitor("Endpoint.getGenerateZoneByName")) {
+        authenticateAndExecute(zoneService.getGenerateZoneByName(zoneName, _)) { zone =>
+          complete(StatusCodes.OK, zone)
+        }
       }
     } ~
-    path("zones" /"generate" / "id" / Segment) { id =>
+    path("zones" / "generate" / "id" / Segment) { id =>
       (get & monitor("Endpoint.getGenerateZone")) {
         authenticateAndExecute(zoneService.getGeneratedZoneById(id, _)) { zone =>
           complete(StatusCodes.OK, zone)
@@ -224,6 +218,13 @@ class ZoneRoute(
       (get & monitor("Endpoint.getBackendIds")) {
         authenticateAndExecute(_ => zoneService.dnsNameServers()) { NS =>
           complete(StatusCodes.OK, NS)
+        }
+      }
+    } ~
+    path("zones" / "generate" / Segment) { id =>
+      (delete & monitor("Endpoint.deleteGeneratedZone")) {
+        authenticateAndExecute(zoneService.handleDeleteGeneratedZoneRequest(id, _)) { response =>
+          complete(StatusCodes.Accepted, response)
         }
       }
     } ~

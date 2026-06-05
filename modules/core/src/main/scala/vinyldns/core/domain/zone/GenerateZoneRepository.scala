@@ -17,7 +17,6 @@
 package vinyldns.core.domain.zone
 
 import cats.effect._
-import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.repository.Repository
 
 trait GenerateZoneRepository extends Repository {
@@ -31,7 +30,6 @@ trait GenerateZoneRepository extends Repository {
   def delete(generateZone: GenerateZone): IO[GenerateZone]
 
   def listGenerateZones(
-                         authPrincipal: AuthPrincipal,
                          zoneNameFilter: Option[String] = None,
                          startFrom: Option[String] = None,
                          maxItems: Int = 100,
@@ -39,7 +37,6 @@ trait GenerateZoneRepository extends Repository {
                        ): IO[ListGeneratedZonesResults]
 
   def listGeneratedZonesByAdminGroupIds(
-                                         authPrincipal: AuthPrincipal,
                                          startFrom: Option[String] = None,
                                          maxItems: Int = 100,
                                          adminGroupIds: Set[String],

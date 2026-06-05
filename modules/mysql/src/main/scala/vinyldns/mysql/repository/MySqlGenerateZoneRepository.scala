@@ -19,7 +19,6 @@ package vinyldns.mysql.repository
 import cats.effect.IO
 import scalikejdbc._
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
-import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone.{GenerateZone, GenerateZoneRepository, ListGeneratedZonesResults}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
@@ -85,7 +84,7 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
                   'name -> generateZone.zoneName,
                   'provider -> generateZone.provider,
                   'adminGroupId -> generateZone.groupId,
-                  'response -> toPB(generateZone.response.get).toByteArray,
+                  'response -> generateZone.response.map(r => toPB(r).toByteArray).orNull,
                   'data -> toPB(generateZone).toByteArray
               )
               .update()
@@ -141,7 +140,6 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
     }
 
   def listGenerateZones(
-                         authPrincipal: AuthPrincipal,
                          zoneNameFilter: Option[String] = None,
                          startFrom: Option[String] = None,
                          maxItems: Int = 100,
@@ -150,32 +148,27 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
     monitor("repo.ZoneJDBC.listGeneratedZones") {
       IO {
         DB.readOnly { implicit s =>
-          val sb = new StringBuilder
-          sb.append(BASE_GENERATE_ZONE_SEARCH_SQL)
-
           val filters = if (zoneNameFilter.isDefined && (zoneNameFilter.get.takeRight(1) == "." || zoneNameFilter.get.contains("*"))) {
             List(
-              zoneNameFilter.map(flt => s"gz.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
-              startFrom.map(os => s"gz.name > '$os'")
+              zoneNameFilter.map(flt => sqls"gz.name LIKE ${ensureTrailingDot(flt.replace('*', '%'))}"),
+              startFrom.map(os => sqls"gz.name > $os")
             ).flatten
           } else {
             List(
-              zoneNameFilter.map(flt => s"gz.name LIKE '${flt.concat("%")}'"),
-              startFrom.map(os => s"gz.name > '$os'")
+              zoneNameFilter.map(flt => sqls"gz.name LIKE ${flt.concat("%")}"),
+              startFrom.map(os => sqls"gz.name > $os")
             ).flatten
           }
 
-          if (filters.nonEmpty) {
-            sb.append(" WHERE ")
-            sb.append(filters.mkString(" AND "))
-          }
+          val baseQuery = sqls"${BASE_GENERATE_ZONE_SEARCH_SQL}"
 
-          sb.append(s" GROUP BY gz.name ")
-          sb.append(s" LIMIT ${maxItems + 1}")
+          val withWhere = if (filters.nonEmpty) {
+            baseQuery.append(sqls" WHERE ").append(SQLSyntax.join(filters, sqls" AND "))
+          } else baseQuery
 
-          val query = sb.toString
+          val fullQuery = withWhere.append(sqls" GROUP BY gz.name LIMIT ${maxItems + 1}")
 
-          val results: List[GenerateZone] = SQL(query)
+          val results: List[GenerateZone] = sql"$fullQuery"
             .map(extractGenerateZone(1))
             .list()
             .apply()
@@ -198,7 +191,6 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
     }
 
   def listGeneratedZonesByAdminGroupIds(
-                                         authPrincipal: AuthPrincipal,
                                          startFrom: Option[String] = None,
                                          maxItems: Int = 100,
                                          adminGroupIds: Set[String],
@@ -207,28 +199,22 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
     monitor("repo.ZoneJDBC.listZonesByAdminGroupIds") {
       IO {
         DB.readOnly { implicit s =>
-
-          val sb = new StringBuilder
-          sb.append(BASE_GENERATE_ZONE_SEARCH_SQL)
-
-          if(adminGroupIds.nonEmpty) {
-            val groupIds = adminGroupIds.map(x => "'" + x + "'").mkString(",")
-            sb.append(s" WHERE admin_group_id IN ($groupIds) ")
+          val groupIdList = adminGroupIds.toSeq
+          val groupIdCondition = if (adminGroupIds.nonEmpty) {
+            sqls"admin_group_id IN ($groupIdList)"
           } else {
-            sb.append(s" WHERE admin_group_id IN ('') ")
+            sqls"admin_group_id IN ('')"
           }
 
-          if(startFrom.isDefined){
-            sb.append(" AND ")
-            sb.append(s"gz.name > '${startFrom.get}'")
-          }
+          val startFromCondition = startFrom.map(os => sqls"gz.name > $os")
 
-          sb.append(s" GROUP BY gz.name ")
-          sb.append(s" LIMIT ${maxItems + 1}")
+          val conditions = List(Some(groupIdCondition), startFromCondition).flatten
 
-          val query = sb.toString
+          val baseQuery = sqls"${BASE_GENERATE_ZONE_SEARCH_SQL} WHERE "
+          val withConditions = baseQuery.append(SQLSyntax.join(conditions, sqls" AND "))
+          val fullQuery = withConditions.append(sqls" GROUP BY gz.name LIMIT ${maxItems + 1}")
 
-          val results: List[GenerateZone] = SQL(query)
+          val results: List[GenerateZone] = sql"$fullQuery"
             .map(extractGenerateZone(1))
             .list()
             .apply()
