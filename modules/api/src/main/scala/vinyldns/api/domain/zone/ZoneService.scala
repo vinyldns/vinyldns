@@ -202,6 +202,7 @@ class ZoneService(
       requestJsonOpt = buildGenerateZoneRequestJson(providerConfig.requestTemplates.get("create-zone"), request)
 
       // Authorization and existence checks
+      _ <- adminGroupExists(request.groupId)
       _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
       _ <- generateZoneDoesNotExist(request.zoneName)
 
