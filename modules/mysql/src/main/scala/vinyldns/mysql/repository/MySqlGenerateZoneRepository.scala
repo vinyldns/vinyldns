@@ -30,7 +30,6 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
 
   final val MAX_RETRIES = 10
 
-
   /**
     * use INSERT INTO ON DUPLICATE KEY UPDATE for the generate zone, which will update the values if the zone already exists
     * similar to a PUT in a KV store
