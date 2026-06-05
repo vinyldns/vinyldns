@@ -162,11 +162,13 @@ class ZoneService(
   def getGenerateZoneByName(zoneName: String, auth: AuthPrincipal): Result[GenerateZone] =
     for {
       generateZone <- getGenerateZoneByNameOrFail(ensureTrailingDot(zoneName))
+      _ <- canSeeGenerateZone(auth, generateZone).toResult
     } yield generateZone
 
   def getGeneratedZoneById(zoneId: String, auth: AuthPrincipal): Result[GenerateZone] =
     for {
       generateZone <- getGeneratedZoneOrFail(zoneId)
+      _ <- canSeeGenerateZone(auth, generateZone).toResult
     } yield generateZone
 
   def createConnection(apiUrl: String): HttpURLConnection = {
@@ -237,6 +239,7 @@ class ZoneService(
       existingGeneratedZone <- getGenerateZoneByName(request.zoneName, auth)
       _ <- membershipService.emailValidation(request.email)
       _ <- canChangeZone(auth, existingGeneratedZone.zoneName, existingGeneratedZone.groupId).toResult
+      _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
 
       // Validate input
       providerConfig <- validateProvider(request.provider, dnsProviderApiConnection.providers).toResult
@@ -504,7 +507,8 @@ class ZoneService(
           maxItems,
           ignoreAccess
         )
-        generatedZones = listZonesResult.generatedZones
+        generatedZones = if (ignoreAccess) listZonesResult.generatedZones
+                         else listZonesResult.generatedZones.filter(z => canSeeGenerateZone(authPrincipal, z).isRight)
         groupIds = generatedZones.map(_.groupId).toSet
         groups <- groupRepository.getGroups(groupIds)
         generateZoneSummaryInfos = generateZoneSummaryInfoMapping(generatedZones, authPrincipal, groups)
@@ -525,7 +529,8 @@ class ZoneService(
           groupIds,
           ignoreAccess
         )
-        generatedZones = listZonesResult.generatedZones
+        generatedZones = if (ignoreAccess) listZonesResult.generatedZones
+                         else listZonesResult.generatedZones.filter(z => canSeeGenerateZone(authPrincipal, z).isRight)
         groups <- groupRepository.getGroups(groupIds)
         generateZoneSummaryInfos = generateZoneSummaryInfoMapping(generatedZones, authPrincipal, groups)
       } yield ListGeneratedZonesResponse(

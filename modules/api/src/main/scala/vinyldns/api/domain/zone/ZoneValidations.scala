@@ -56,7 +56,7 @@ class ZoneValidations(syncDelayMillis: Int) {
 
   def isValidGenerateZoneConn(responseCode : Int, responseMsg : String): Either[Throwable, Unit] =
     ensuring(InvalidRequest(responseMsg)) {
-      responseCode <= 400
+      responseCode >= 200 && responseCode < 300
     }
 
   def aclRuleMaskIsValid(rule: ACLRule): Either[Throwable, Unit] =
