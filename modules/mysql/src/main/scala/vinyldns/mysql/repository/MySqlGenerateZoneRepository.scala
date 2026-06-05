@@ -35,7 +35,7 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
     * use INSERT INTO ON DUPLICATE KEY UPDATE for the generate zone, which will update the values if the zone already exists
     * similar to a PUT in a KV store
     */
-  private final val PUT_GENERATE_ZONE =
+  private final val PUT_GENERATE_ZONE: SQL[Nothing, NoExtractor] =
     sql"""
          |INSERT INTO generate_zone(id, name, provider, admin_group_id, response, data)
          |     VALUES ({id}, {name}, {provider}, {adminGroupId}, {response}, {data}) ON DUPLICATE KEY
@@ -46,33 +46,17 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
          |            data=VALUES(data);
         """.stripMargin
 
-  private final val DELETE_GENERATED_ZONE =
-    sql"""
-         |DELETE
-         |  FROM generate_zone
-         | WHERE id = (?)
-         |
-      """.stripMargin
+  private final val DELETE_GENERATED_ZONE: SQLSyntax =
+    sqls"DELETE FROM generate_zone WHERE id = ?"
 
-  private final val GET_GENERATED_ZONE_BY_NAME =
-    sql"""
-         |SELECT data
-         |  FROM generate_zone
-         | WHERE name = ?
-        """.stripMargin
+  private final val GET_GENERATED_ZONE_BY_NAME: SQLSyntax =
+    sqls"SELECT data FROM generate_zone WHERE name = ?"
 
-  private final val GET_GENERATED_ZONE_BY_ID =
-    sql"""
-         |SELECT data
-         |  FROM generate_zone
-         | WHERE id = ?
-        """.stripMargin
+  private final val GET_GENERATED_ZONE_BY_ID: SQLSyntax =
+    sqls"SELECT data FROM generate_zone WHERE id = ?"
 
-  private final val BASE_GENERATE_ZONE_SEARCH_SQL =
-    """
-      |SELECT gz.data
-      |  FROM generate_zone gz
-       """.stripMargin
+  private final val BASE_GENERATE_ZONE_SEARCH_SQL: SQLSyntax =
+    sqls"SELECT gz.data FROM generate_zone gz"
 
    def save(generateZone: GenerateZone): IO[GenerateZone] = {
       monitor("repo.generateZone.save") {
@@ -96,7 +80,7 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
 
 
   private def deleteGeneratedZone(generateZone: GenerateZone)(implicit session: DBSession): GenerateZone = {
-    DELETE_GENERATED_ZONE.bind(generateZone.id).update().apply()
+    sql"$DELETE_GENERATED_ZONE".bind(generateZone.id).update().apply()
     generateZone
   }
 
@@ -116,10 +100,10 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
     }
 
   private def getGenerateZoneByNameInSession(zoneName: String)(implicit session: DBSession): Option[GenerateZone] =
-    GET_GENERATED_ZONE_BY_NAME.bind(zoneName).map(extractGenerateZone(1)).first().apply()
+    sql"$GET_GENERATED_ZONE_BY_NAME".bind(zoneName).map(extractGenerateZone(1)).first().apply()
 
   private def getGenerateZoneByIdInSession(zoneId: String)(implicit session: DBSession): Option[GenerateZone] =
-    GET_GENERATED_ZONE_BY_ID.bind(zoneId).map(extractGenerateZone(1)).first().apply()
+    sql"$GET_GENERATED_ZONE_BY_ID".bind(zoneId).map(extractGenerateZone(1)).first().apply()
 
   def getGenerateZoneByName(zoneName: String): IO[Option[GenerateZone]] =
     monitor("repo.ZoneJDBC.getGenerateZoneByName") {
@@ -160,7 +144,7 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
             ).flatten
           }
 
-          val baseQuery = sqls"${BASE_GENERATE_ZONE_SEARCH_SQL}"
+          val baseQuery = BASE_GENERATE_ZONE_SEARCH_SQL
 
           val withWhere = if (filters.nonEmpty) {
             baseQuery.append(sqls" WHERE ").append(SQLSyntax.join(filters, sqls" AND "))
@@ -210,7 +194,7 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
 
           val conditions = List(Some(groupIdCondition), startFromCondition).flatten
 
-          val baseQuery = sqls"${BASE_GENERATE_ZONE_SEARCH_SQL} WHERE "
+          val baseQuery = BASE_GENERATE_ZONE_SEARCH_SQL.append(sqls" WHERE ")
           val withConditions = baseQuery.append(SQLSyntax.join(conditions, sqls" AND "))
           val fullQuery = withConditions.append(sqls" GROUP BY gz.name LIMIT ${maxItems + 1}")
 
