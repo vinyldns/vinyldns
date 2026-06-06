@@ -240,6 +240,7 @@ class ZoneService(
       existingGeneratedZone <- getGenerateZoneByName(request.zoneName, auth)
       _ <- membershipService.emailValidation(request.email)
       _ <- canChangeZone(auth, existingGeneratedZone.zoneName, existingGeneratedZone.groupId).toResult
+      _ <- adminGroupExists(request.groupId)
       _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
 
       // Validate input
