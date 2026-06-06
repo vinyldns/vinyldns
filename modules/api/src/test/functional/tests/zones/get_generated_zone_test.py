@@ -56,11 +56,19 @@ def test_get_generate_zone_by_name_without_trailing_dot_succeeds(shared_zone_tes
     assert_that(result["zoneName"], is_(shared_zone_test_context.system_test_generate_zone["zoneName"]))
     assert_that(result["groupId"], is_(shared_zone_test_context.ok_group["id"]))
 
-def test_get_generate_zone_by_name_succeeds_without_access(shared_zone_test_context):
+def test_get_generate_zone_by_name_fails_without_access(shared_zone_test_context):
     """
-    Test get an existing zone by name without access
+    Test get an existing zone by name without access returns 403
     """
     client = shared_zone_test_context.dummy_vinyldns_client
+
+    client.get_generate_zone_by_name(shared_zone_test_context.system_test_generate_zone["zoneName"], status=403)
+
+def test_get_generate_zone_by_name_succeeds_with_access(shared_zone_test_context):
+    """
+    Test get an existing zone by name with access succeeds
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
 
     result = client.get_generate_zone_by_name(shared_zone_test_context.system_test_generate_zone["zoneName"], status=200)
     assert_that(result["id"], is_(shared_zone_test_context.system_test_generate_zone["id"]))
