@@ -294,7 +294,6 @@ class ZoneService(
     for {
       generatedZone <- getGeneratedZoneOrFail(generatedZoneId)
       _ <- canChangeZone(auth, generatedZone.zoneName, generatedZone.groupId).toResult
-
       providerConfig <- validateProvider(generatedZone.provider, dnsProviderApiConnection.providers).toResult
       request = ZoneGenerationInput(
         zoneName = generatedZone.zoneName,
