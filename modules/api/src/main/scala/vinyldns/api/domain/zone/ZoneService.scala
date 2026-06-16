@@ -503,6 +503,7 @@ class ZoneService(
     if(!searchByAdminGroup || nameFilter.isEmpty){
       for {
         listZonesResult <- generateZoneRepository.listGenerateZones(
+          authPrincipal,
           nameFilter,
           startFrom,
           maxItems,
@@ -524,6 +525,7 @@ class ZoneService(
       for {
         groupIds <- getGroupsIdsByName(nameFilter.get)
         listZonesResult <- generateZoneRepository.listGeneratedZonesByAdminGroupIds(
+          authPrincipal,
           startFrom,
           maxItems,
           groupIds,

@@ -19,6 +19,7 @@ package vinyldns.mysql.repository
 import cats.effect.IO
 import scalikejdbc._
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone.{GenerateZone, GenerateZoneRepository, ListGeneratedZonesResults}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
@@ -56,6 +57,22 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
 
   private final val BASE_GENERATE_ZONE_SEARCH_SQL: SQLSyntax =
     sqls"SELECT gz.data FROM generate_zone gz"
+
+  /**
+    * Generated zones are only accessible to members of their admin group (there is no per-zone
+    * ACL table as there is for regular zones). Mirror the access semantics of
+    * MySqlZoneRepository.withAccessors: super/support users, or callers that explicitly pass
+    * ignoreAccess, see all zones; everyone else is restricted to zones owned by a group they
+    * belong to. A user who belongs to no groups sees nothing.
+    */
+  private def accessFilter(authPrincipal: AuthPrincipal, ignoreAccess: Boolean): Option[SQLSyntax] =
+    if (ignoreAccess || authPrincipal.isSystemAdmin) {
+      None
+    } else {
+      val memberGroupIds = authPrincipal.memberGroupIds
+      if (memberGroupIds.nonEmpty) Some(sqls"gz.admin_group_id IN ($memberGroupIds)")
+      else Some(sqls"gz.admin_group_id IN ('')")
+    }
 
    def save(generateZone: GenerateZone): IO[GenerateZone] = {
       monitor("repo.generateZone.save") {
@@ -123,6 +140,7 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
     }
 
   def listGenerateZones(
+                         authPrincipal: AuthPrincipal,
                          zoneNameFilter: Option[String] = None,
                          startFrom: Option[String] = None,
                          maxItems: Int = 100,
@@ -131,7 +149,7 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
     monitor("repo.ZoneJDBC.listGeneratedZones") {
       IO {
         DB.readOnly { implicit s =>
-          val filters = if (zoneNameFilter.isDefined && (zoneNameFilter.get.takeRight(1) == "." || zoneNameFilter.get.contains("*"))) {
+          val nameFilters = if (zoneNameFilter.isDefined && (zoneNameFilter.get.takeRight(1) == "." || zoneNameFilter.get.contains("*"))) {
             List(
               zoneNameFilter.map(flt => sqls"gz.name LIKE ${ensureTrailingDot(flt.replace('*', '%'))}"),
               startFrom.map(os => sqls"gz.name > $os")
@@ -142,6 +160,8 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
               startFrom.map(os => sqls"gz.name > $os")
             ).flatten
           }
+
+          val filters = nameFilters ++ accessFilter(authPrincipal, ignoreAccess).toList
 
           val baseQuery = BASE_GENERATE_ZONE_SEARCH_SQL
 
@@ -174,6 +194,7 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
     }
 
   def listGeneratedZonesByAdminGroupIds(
+                                         authPrincipal: AuthPrincipal,
                                          startFrom: Option[String] = None,
                                          maxItems: Int = 100,
                                          adminGroupIds: Set[String],
@@ -184,14 +205,16 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
         DB.readOnly { implicit s =>
           val groupIdList = adminGroupIds.toSeq
           val groupIdCondition = if (adminGroupIds.nonEmpty) {
-            sqls"admin_group_id IN ($groupIdList)"
+            sqls"gz.admin_group_id IN ($groupIdList)"
           } else {
-            sqls"admin_group_id IN ('')"
+            sqls"gz.admin_group_id IN ('')"
           }
 
           val startFromCondition = startFrom.map(os => sqls"gz.name > $os")
 
-          val conditions = List(Some(groupIdCondition), startFromCondition).flatten
+          val conditions =
+            List(Some(groupIdCondition), startFromCondition).flatten ++
+              accessFilter(authPrincipal, ignoreAccess).toList
 
           val baseQuery = BASE_GENERATE_ZONE_SEARCH_SQL.append(sqls" WHERE ")
           val withConditions = baseQuery.append(SQLSyntax.join(conditions, sqls" AND "))
