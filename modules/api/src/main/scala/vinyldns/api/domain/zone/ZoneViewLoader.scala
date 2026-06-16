@@ -20,7 +20,7 @@ import cats.effect._
 import org.slf4j.LoggerFactory
 import vinyldns.api.backend.dns.DnsConversions
 import vinyldns.core.domain.backend.Backend
-import vinyldns.core.domain.record.{NameSort, RecordSetCacheRepository, RecordSetRepository, RecordTypeSort}
+import vinyldns.core.domain.record.{NameSort, RecordSet, RecordSetCacheRepository, RecordSetRepository, RecordTypeSort}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.route.Monitored
 
@@ -55,28 +55,46 @@ object VinylDNSZoneViewLoader {
 case class VinylDNSZoneViewLoader(
     zone: Zone,
     recordSetRepository: RecordSetRepository,
-    recordSetCacheRepository: RecordSetCacheRepository
+    recordSetCacheRepository: RecordSetCacheRepository,
+    pageSize: Int = 5000
 ) extends ZoneViewLoader
     with Monitored {
   def load: () => IO[ZoneView] =
     () =>
       monitor("vinyldns.loadZoneView") {
-        recordSetRepository
-          .listRecordSets(
-            zoneId = Some(zone.id),
-            startFrom = None,
-            maxItems = None,
-            recordNameFilter = None,
-            recordTypeFilter = None,
-            recordOwnerGroupFilter = None,
-            nameSort = NameSort.ASC,
-            recordTypeSort = RecordTypeSort.ASC
+        loadAllPages(startFrom = None, accumulated = List.empty).map { allRecordSets =>
+          VinylDNSZoneViewLoader.logger.info(
+            s"vinyldns.loadZoneView zoneName=${zone.name}; rsCount=${allRecordSets.size}"
           )
-          .map { result =>
-            VinylDNSZoneViewLoader.logger.info(
-              s"vinyldns.loadZoneView zoneName=${zone.name}; rsCount=${result.recordSets.size}"
-            )
-            ZoneView(zone, result.recordSets)
-          }
+          ZoneView(zone, allRecordSets)
+        }
+      }
+
+  private def loadAllPages(
+      startFrom: Option[String],
+      accumulated: List[RecordSet],
+      pageNumber: Int = 1
+  ): IO[List[RecordSet]] =
+    recordSetRepository
+      .listRecordSets(
+        zoneId = Some(zone.id),
+        startFrom = startFrom,
+        maxItems = Some(pageSize),
+        recordNameFilter = None,
+        recordTypeFilter = None,
+        recordOwnerGroupFilter = None,
+        nameSort = NameSort.ASC,
+        recordTypeSort = RecordTypeSort.ASC
+      )
+      .flatMap { result =>
+        val newAccumulated = accumulated ++ result.recordSets
+        VinylDNSZoneViewLoader.logger.info(
+          s"vinyldns.loadZoneView.page zoneName=${zone.name}; page=$pageNumber; " +
+            s"pageRecords=${result.recordSets.size}; totalSoFar=${newAccumulated.size}"
+        )
+        result.nextId match {
+          case Some(next) => loadAllPages(Some(next), newAccumulated, pageNumber + 1)
+          case None => IO.pure(newAccumulated)
+        }
       }
 }

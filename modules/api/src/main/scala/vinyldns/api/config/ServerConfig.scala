@@ -36,12 +36,13 @@ final case class ServerConfig(
                                useRecordSetCache: Boolean,
                                loadTestData: Boolean,
                                isZoneSyncScheduleAllowed: Boolean,
+                               zoneSyncPageSize: Int,
                              )
 object ServerConfig {
 
   import ZoneRecordValidations.toCaseIgnoredRegexList
 
-  implicit val configReader: ConfigReader[ServerConfig] = ConfigReader.forProduct13[
+  implicit val configReader: ConfigReader[ServerConfig] = ConfigReader.forProduct14[
     ServerConfig,
     Int,
     Int,
@@ -55,7 +56,8 @@ object ServerConfig {
     Boolean,
     Boolean,
     Boolean,
-    Boolean
+    Boolean,
+    Int
   ](
     "health-check-timeout",
     "default-ttl",
@@ -69,7 +71,8 @@ object ServerConfig {
     "processing-disabled",
     "use-recordset-cache",
     "load-test-data",
-    "is-zone-sync-schedule-allowed"
+    "is-zone-sync-schedule-allowed",
+    "zone-sync-page-size"
   ) {
     case (
       timeout,
@@ -84,7 +87,8 @@ object ServerConfig {
       processingDisabled,
       useRecordSetCache,
       loadTestData,
-      isZoneSyncScheduleAllowed) =>
+      isZoneSyncScheduleAllowed,
+      zoneSyncPageSize) =>
       ServerConfig(
         timeout,
         ttl,
@@ -98,7 +102,8 @@ object ServerConfig {
         processingDisabled,
         useRecordSetCache,
         loadTestData,
-        isZoneSyncScheduleAllowed
+        isZoneSyncScheduleAllowed,
+        zoneSyncPageSize
       )
   }
 }

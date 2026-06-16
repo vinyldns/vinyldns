@@ -85,7 +85,7 @@ trait VinylDNSTestHelpers {
     LimitsConfig(100,100,1000,1500,100,100,100)
 
   val testServerConfig: ServerConfig =
-    ServerConfig(100, 100, 100, 100, true, approvedNameServers, "blue", "unset", "vinyldns.", false, true, true, true)
+    ServerConfig(100, 100, 100, 100, true, approvedNameServers, "blue", "unset", "vinyldns.", false, true, true, true, 5000)
 
   val batchChangeConfig: BatchChangeConfig =
     BatchChangeConfig(batchChangeLimit, sharedApprovedTypes, v6DiscoveryNibbleBoundaries)
