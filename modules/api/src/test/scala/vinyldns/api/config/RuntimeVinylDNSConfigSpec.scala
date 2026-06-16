@@ -148,6 +148,157 @@ class RuntimeVinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAnd
     }
   }
 
+  // ── getEffectiveDetailed ──────────────────────────────────────────────────────
+
+  "RuntimeVinylDNSConfig.getEffectiveDetailed" should {
+
+    // Inline stub repo for unit-level tests (no MySQL needed)
+    import cats.effect.IO
+    import vinyldns.core.domain.config.{AppConfigRepository, AppConfigResponse}
+    import java.time.Instant
+
+    def stubRepo(dbStore: Map[String, String]): AppConfigRepository = new AppConfigRepository {
+      private def r(k: String, v: String) =
+        AppConfigResponse(k, v, Instant.now.toString, Instant.now.toString, "test", "test")
+      def create(k: String, v: String, by: String)           = IO.pure(r(k, v))
+      def getByKey(k: String)                                = IO.pure(dbStore.get(k).map(r(k, _)))
+      def getAll                                             = IO.pure(dbStore.map { case (k, v) => r(k, v) }.toList)
+      def update(k: String, v: String, by: String)           = IO.pure(dbStore.get(k).map(_ => r(k, v)))
+      def delete(k: String)                                  = IO.pure(dbStore.contains(k))
+    }
+
+    "return effective map equal to the current in-memory snapshot" in {
+      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      val repo = stubRepo(Map.empty)
+      val resp = RuntimeVinylDNSConfig.getEffectiveDetailed(repo).unsafeRunSync()
+      resp.effective shouldBe RuntimeVinylDNSConfig.getAll.unsafeRunSync()
+    }
+
+    "return empty pending when DB matches memory" in {
+      val kvs  = Map("sync-delay" -> "10000")
+      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      RuntimeVinylDNSConfig.loadFromDb(stubRepo(kvs)).unsafeRunSync()
+
+      val resp = RuntimeVinylDNSConfig.getEffectiveDetailed(stubRepo(kvs)).unsafeRunSync()
+      resp.pending shouldBe empty
+    }
+
+    "return pending entry when DB value differs from memory" in {
+      val initialKvs = Map("sync-delay" -> "10000")
+      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      RuntimeVinylDNSConfig.loadFromDb(stubRepo(initialKvs)).unsafeRunSync()
+
+      // DB updated but memory not reloaded
+      val updatedRepo = stubRepo(Map("sync-delay" -> "99999"))
+      val resp = RuntimeVinylDNSConfig.getEffectiveDetailed(updatedRepo).unsafeRunSync()
+      resp.pending should contain key "sync-delay"
+      resp.pending("sync-delay").from shouldBe Some("10000")
+      resp.pending("sync-delay").to   shouldBe Some("99999")
+    }
+
+    "return pending with None from when DB has a key not yet in memory" in {
+      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      val resp = RuntimeVinylDNSConfig.getEffectiveDetailed(stubRepo(Map("brand-new" -> "val"))).unsafeRunSync()
+      resp.pending should contain key "brand-new"
+      resp.pending("brand-new").from shouldBe None
+      resp.pending("brand-new").to   shouldBe Some("val")
+    }
+
+    "return pending with None to when memory has a key absent from DB" in {
+      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      RuntimeVinylDNSConfig.loadFromDb(stubRepo(Map("old-key" -> "v"))).unsafeRunSync()
+
+      val resp = RuntimeVinylDNSConfig.getEffectiveDetailed(stubRepo(Map.empty)).unsafeRunSync()
+      resp.pending should contain key "old-key"
+      resp.pending("old-key").from shouldBe Some("v")
+      resp.pending("old-key").to   shouldBe None
+    }
+
+    "return non-empty reference-defaults when no DB keys are loaded" in {
+      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      val resp = RuntimeVinylDNSConfig.getEffectiveDetailed(stubRepo(Map.empty)).unsafeRunSync()
+      resp.referenceDefaults should not be empty
+    }
+
+    "exclude a key from reference-defaults once it is loaded into memory" in {
+      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      val before = RuntimeVinylDNSConfig.getEffectiveDetailed(stubRepo(Map.empty)).unsafeRunSync()
+      val someRefKey = before.referenceDefaults.head
+
+      // Seed that key into memory
+      RuntimeVinylDNSConfig.loadFromDb(stubRepo(Map(someRefKey -> "x"))).unsafeRunSync()
+      val after = RuntimeVinylDNSConfig.getEffectiveDetailed(stubRepo(Map(someRefKey -> "x"))).unsafeRunSync()
+      after.referenceDefaults should not contain someRefKey
+    }
+  }
+
+  // ── reloadWithDiff ────────────────────────────────────────────────────────────
+
+  "RuntimeVinylDNSConfig.reloadWithDiff" should {
+
+    import cats.effect.IO
+    import vinyldns.core.domain.config.{AppConfigRepository, AppConfigResponse}
+    import java.time.Instant
+
+    def stubRepo(dbStore: Map[String, String]): AppConfigRepository = new AppConfigRepository {
+      private def r(k: String, v: String) =
+        AppConfigResponse(k, v, Instant.now.toString, Instant.now.toString, "test", "test")
+      def create(k: String, v: String, by: String)  = IO.pure(r(k, v))
+      def getByKey(k: String)                       = IO.pure(dbStore.get(k).map(r(k, _)))
+      def getAll                                    = IO.pure(dbStore.map { case (k, v) => r(k, v) }.toList)
+      def update(k: String, v: String, by: String)  = IO.pure(dbStore.get(k).map(_ => r(k, v)))
+      def delete(k: String)                         = IO.pure(dbStore.contains(k))
+    }
+
+    "return an empty diff when DB and memory are already in sync" in {
+      val repo = stubRepo(Map("sync-delay" -> "10000"))
+      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      RuntimeVinylDNSConfig.loadFromDb(repo).unsafeRunSync()
+
+      val diff = RuntimeVinylDNSConfig.reloadWithDiff(repo).unsafeRunSync()
+      diff shouldBe empty
+    }
+
+    "return a diff entry when DB has an updated value" in {
+      val repo = stubRepo(Map("sync-delay" -> "10000"))
+      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      RuntimeVinylDNSConfig.loadFromDb(repo).unsafeRunSync()
+
+      val updatedRepo = stubRepo(Map("sync-delay" -> "99999"))
+      val diff = RuntimeVinylDNSConfig.reloadWithDiff(updatedRepo).unsafeRunSync()
+      diff should contain key "sync-delay"
+      diff("sync-delay") shouldBe (Some("10000"), Some("99999"))
+    }
+
+    "return a diff entry when a new key is added to DB" in {
+      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      val repo = stubRepo(Map("brand-new" -> "val"))
+      val diff = RuntimeVinylDNSConfig.reloadWithDiff(repo).unsafeRunSync()
+      diff should contain key "brand-new"
+      diff("brand-new") shouldBe (None, Some("val"))
+    }
+
+    "return a diff entry when a key is removed from DB" in {
+      val repo = stubRepo(Map("old-key" -> "v"))
+      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      RuntimeVinylDNSConfig.loadFromDb(repo).unsafeRunSync()
+
+      val diff = RuntimeVinylDNSConfig.reloadWithDiff(stubRepo(Map.empty)).unsafeRunSync()
+      diff should contain key "old-key"
+      diff("old-key") shouldBe (Some("v"), None)
+    }
+
+    "update appConfigRef after reload so a second diff is empty" in {
+      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      val repo = stubRepo(Map("sync-delay" -> "20000"))
+      RuntimeVinylDNSConfig.reloadWithDiff(repo).unsafeRunSync()
+
+      // Same repo again — memory now matches DB
+      val diff2 = RuntimeVinylDNSConfig.reloadWithDiff(repo).unsafeRunSync()
+      diff2 shouldBe empty
+    }
+  }
+
   "Boot: system <- IO(ActorSystem(VinylDNS, RuntimeVinylDNSConfig.getRaw))" should {
 
     "create an ActorSystem from getRaw without throwing" in {

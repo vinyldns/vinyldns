@@ -76,14 +76,16 @@ class AppConfigRoute(
   implicit val effectiveConfigFormat: RootJsonFormat[EffectiveConfigResponse] =
     new RootJsonFormat[EffectiveConfigResponse] {
       def write(r: EffectiveConfigResponse): JsValue = JsObject(
-        "db-overrides"       -> JsObject(r.dbOverrides.mapValues(JsString(_))),
-        "reference-defaults" -> JsArray(r.referenceDefaults.map(JsString(_)): _*)
+        "effective"          -> JsObject(r.effective.mapValues(JsString(_))),
+        "reference-defaults" -> JsArray(r.referenceDefaults.map(JsString(_)): _*),
+        "pending"            -> JsObject(r.pending.mapValues(configChangeFormat.write))
       )
       def read(json: JsValue): EffectiveConfigResponse = {
         val obj = json.asJsObject
         EffectiveConfigResponse(
-          dbOverrides       = obj.fields("db-overrides").convertTo[Map[String, String]],
-          referenceDefaults = obj.fields("reference-defaults").convertTo[List[String]]
+          effective         = obj.fields("effective").convertTo[Map[String, String]],
+          referenceDefaults = obj.fields("reference-defaults").convertTo[List[String]],
+          pending           = obj.fields("pending").asJsObject.fields.mapValues(configChangeFormat.read)
         )
       }
     }

@@ -65,8 +65,6 @@ class AppConfigService(
         .create(key, value, auth.userName)
         .toResult[AppConfigResponse]
 
-      _ <- RuntimeVinylDNSConfig.refresh(appConfigRepo).toResult[Unit]
-
     } yield result
 
   // Get by key
@@ -115,8 +113,6 @@ class AppConfigService(
         .toRight(ConfigNotFound(s"Config with key [$key] not found"))
         .toResult
 
-      _ <- RuntimeVinylDNSConfig.refresh(appConfigRepo).toResult[Unit]
-
     } yield result
 
   // Delete
@@ -138,8 +134,6 @@ class AppConfigService(
         )
         .toResult
 
-      _ <- RuntimeVinylDNSConfig.refresh(appConfigRepo).toResult[Unit]
-
     } yield result
 
   // Get the current in-memory effective snapshot
@@ -148,7 +142,7 @@ class AppConfigService(
                         ): Result[EffectiveConfigResponse] =
     for {
       _ <- requireSuper(auth)
-      result <- RuntimeVinylDNSConfig.getEffectiveDetailed.toResult[EffectiveConfigResponse]
+      result <- RuntimeVinylDNSConfig.getEffectiveDetailed(appConfigRepo).toResult[EffectiveConfigResponse]
     } yield result
 
   // Reload config from file AND re-query DB, then apply DB overrides
@@ -160,7 +154,11 @@ class AppConfigService(
       val updated = diff.collect { case (k, (Some(b), Some(a))) => k -> ConfigChange(Some(b), Some(a)) }
       val added   = diff.collect { case (k, (None,    Some(a))) => k -> a }
       val removed = diff.collect { case (k, (Some(_), None))    => k }.toList.sorted
-      ReloadConfigResponse("Config reloaded successfully", updated, added, removed)
+      val message = if (updated.isEmpty && added.isEmpty && removed.isEmpty)
+        "Config is already up to date."
+      else
+        "Config reloaded successfully"
+      ReloadConfigResponse(message, updated, added, removed)
     }
 
   // ---------------------------

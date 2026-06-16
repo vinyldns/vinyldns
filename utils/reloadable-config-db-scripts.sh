@@ -135,7 +135,7 @@ INSERT INTO app_config (config_key, config_value, created_at, updated_at, create
  NOW(), NOW(), 'system', 'system'),
 
 -- ── Valid Email Config ────────────────────────────────────────────────────────
-('valid-email',
+('valid-email-config',
  '{"email-domains": ["test.com", "*dummy.com"], "number-of-dots": 2}',
  NOW(), NOW(), 'system', 'system'),
 

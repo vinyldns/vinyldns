@@ -35,8 +35,9 @@ case class AppConfigListResponse(
                                 )
 
 case class EffectiveConfigResponse(
-                                    dbOverrides: Map[String, String],
-                                    referenceDefaults: List[String]
+                                    effective: Map[String, String],
+                                    referenceDefaults: List[String],
+                                    pending: Map[String, ConfigChange]
                                   )
 
 case class ConfigChange(from: Option[String], to: Option[String])

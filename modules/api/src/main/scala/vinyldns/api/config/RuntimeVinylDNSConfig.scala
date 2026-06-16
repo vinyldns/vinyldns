@@ -22,7 +22,7 @@ import cats.implicits._
 import com.typesafe.config.{Config, ConfigFactory}
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.core.domain.backend.{Backend, BackendConfigs, BackendResolver}
-import vinyldns.core.domain.config.{AppConfigRepository, EffectiveConfigResponse}
+import vinyldns.core.domain.config.{AppConfigRepository, ConfigChange, EffectiveConfigResponse}
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.health.HealthCheck.HealthCheck
@@ -155,13 +155,20 @@ object RuntimeVinylDNSConfig {
   def getAll: IO[Map[String, String]] = appConfigRef.get
   def get(key: String): IO[Option[String]] = appConfigRef.get.map(_.get(key))
 
-  def getEffectiveDetailed: IO[EffectiveConfigResponse] =
-    appConfigRef.get.map { dbSnapshot =>
-      val refKeys = ConfigFactory.defaultReference()
-        .getConfig("vinyldns").root().keySet().asScala.toSet
-      val referenceDefaults = refKeys.filterNot(dbSnapshot.contains).toList.sorted
-      EffectiveConfigResponse(dbSnapshot, referenceDefaults)
-    }
+  def getEffectiveDetailed(repo: AppConfigRepository): IO[EffectiveConfigResponse] =
+    for {
+      memSnapshot <- appConfigRef.get
+      dbRows      <- repo.getAll
+      dbSnapshot   = dbRows.map(r => r.key -> r.value).toMap
+      refKeys      = ConfigFactory.defaultReference().getConfig("vinyldns").root().keySet().asScala.toSet
+      referenceDefaults = refKeys.filterNot(memSnapshot.contains).toList.sorted
+      pending = (memSnapshot.keySet ++ dbSnapshot.keySet).toList.flatMap { key =>
+        val mem = memSnapshot.get(key)
+        val db  = dbSnapshot.get(key)
+        if (mem != db) List(key -> ConfigChange(mem, db))
+        else Nil
+      }.toMap
+    } yield EffectiveConfigResponse(memSnapshot, referenceDefaults, pending)
 
   def reloadWithDiff(repo: AppConfigRepository): IO[Map[String, (Option[String], Option[String])]] =
     for {
@@ -249,7 +256,7 @@ object RuntimeVinylDNSConfig {
         _manualReviewConfig = parseManualReviewConfig(snapshot)
         parseFromJson[HighValueDomainConfig](snapshot, "high-value-domains").foreach(_highValueDomainConfig = _)
         parseFromJson[DottedHostsConfig](snapshot, "dotted-hosts").foreach(_dottedHostsConfig = _)
-        parseFromJson[ValidEmailConfig](snapshot, "valid-email").foreach(_validEmailConfig = _)
+        parseFromJson[ValidEmailConfig](snapshot, "valid-email-config").foreach(_validEmailConfig = _)
         snapshot.get("approved-name-servers").foreach { rawValue =>
           val names = if (rawValue.trim.startsWith("["))
             ConfigFactory.parseString(s"v = $rawValue").getStringList("v").asScala.toList

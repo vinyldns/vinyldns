@@ -258,4 +258,123 @@ class RuntimeVinylDNSConfigIntegrationSpec
       RuntimeVinylDNSConfig.syncDelay.unsafeRunSync() shouldBe 600000
     }
   }
+
+  // ─── getEffectiveDetailed ─────────────────────────────────────────────────────
+
+  "RuntimeVinylDNSConfig.getEffectiveDetailed" should {
+
+    "return effective map matching in-memory snapshot (not live DB)" in {
+      seed("sync-delay", "10000", "it-test")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+
+      val resp = RuntimeVinylDNSConfig.getEffectiveDetailed(appConfigRepository).unsafeRunSync()
+      resp.effective should contain("sync-delay" -> "10000")
+    }
+
+    "return empty pending when DB and memory are in sync" in {
+      seed("sync-delay", "10000", "it-test")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+
+      val resp = RuntimeVinylDNSConfig.getEffectiveDetailed(appConfigRepository).unsafeRunSync()
+      resp.pending shouldBe empty
+    }
+
+    "return pending entry with from/to when DB updated but not reloaded" in {
+      seed("sync-delay", "10000", "it-test")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+
+      // Update DB value — do NOT call loadFromDb/reload
+      appConfigRepository.update("sync-delay", "99999", "it-test").unsafeRunSync()
+
+      val resp = RuntimeVinylDNSConfig.getEffectiveDetailed(appConfigRepository).unsafeRunSync()
+      resp.pending should contain key "sync-delay"
+      resp.pending("sync-delay").from shouldBe Some("10000")
+      resp.pending("sync-delay").to   shouldBe Some("99999")
+    }
+
+    "return pending entry with None from when a new DB row was added without reload" in {
+      // Memory starts empty
+      val resp = RuntimeVinylDNSConfig.getEffectiveDetailed(appConfigRepository).unsafeRunSync()
+      resp.effective.contains("sync-delay") shouldBe false
+
+      // Add to DB
+      seed("sync-delay", "12345", "it-test")
+      val resp2 = RuntimeVinylDNSConfig.getEffectiveDetailed(appConfigRepository).unsafeRunSync()
+      resp2.pending should contain key "sync-delay"
+      resp2.pending("sync-delay").from shouldBe None
+      resp2.pending("sync-delay").to   shouldBe Some("12345")
+    }
+
+    "return pending entry with None to when a DB row was deleted without reload" in {
+      seed("sync-delay", "10000", "it-test")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+
+      appConfigRepository.delete("sync-delay").unsafeRunSync()
+
+      val resp = RuntimeVinylDNSConfig.getEffectiveDetailed(appConfigRepository).unsafeRunSync()
+      resp.pending should contain key "sync-delay"
+      resp.pending("sync-delay").from shouldBe Some("10000")
+      resp.pending("sync-delay").to   shouldBe None
+    }
+
+    "exclude a key from reference-defaults once it exists in memory" in {
+      val emptyResp = RuntimeVinylDNSConfig.getEffectiveDetailed(appConfigRepository).unsafeRunSync()
+      val someRefKey = emptyResp.referenceDefaults.head
+
+      seed(someRefKey, "any", "it-test")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+
+      val loadedResp = RuntimeVinylDNSConfig.getEffectiveDetailed(appConfigRepository).unsafeRunSync()
+      loadedResp.referenceDefaults should not contain someRefKey
+    }
+  }
+
+  // ─── reloadWithDiff ───────────────────────────────────────────────────────────
+
+  "RuntimeVinylDNSConfig.reloadWithDiff" should {
+
+    "return empty diff when DB and memory are already in sync" in {
+      seed("sync-delay", "10000", "it-test")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+
+      val diff = RuntimeVinylDNSConfig.reloadWithDiff(appConfigRepository).unsafeRunSync()
+      diff shouldBe empty
+    }
+
+    "return diff entry when DB has an updated value" in {
+      seed("sync-delay", "10000", "it-test")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+
+      appConfigRepository.update("sync-delay", "99999", "it-test").unsafeRunSync()
+      val diff = RuntimeVinylDNSConfig.reloadWithDiff(appConfigRepository).unsafeRunSync()
+      diff should contain key "sync-delay"
+      diff("sync-delay") shouldBe (Some("10000"), Some("99999"))
+    }
+
+    "return diff entry when a new key is added to DB" in {
+      seed("brand-new", "val", "it-test")
+      val diff = RuntimeVinylDNSConfig.reloadWithDiff(appConfigRepository).unsafeRunSync()
+      diff should contain key "brand-new"
+      diff("brand-new") shouldBe (None, Some("val"))
+    }
+
+    "return diff entry when a key is deleted from DB" in {
+      seed("old-key", "v", "it-test")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+
+      appConfigRepository.delete("old-key").unsafeRunSync()
+      val diff = RuntimeVinylDNSConfig.reloadWithDiff(appConfigRepository).unsafeRunSync()
+      diff should contain key "old-key"
+      diff("old-key") shouldBe (Some("v"), None)
+    }
+
+    "update in-memory snapshot so subsequent diff is empty" in {
+      seed("sync-delay", "20000", "it-test")
+      RuntimeVinylDNSConfig.reloadWithDiff(appConfigRepository).unsafeRunSync()
+
+      val diff2 = RuntimeVinylDNSConfig.reloadWithDiff(appConfigRepository).unsafeRunSync()
+      diff2 shouldBe empty
+    }
+  }
 }
+

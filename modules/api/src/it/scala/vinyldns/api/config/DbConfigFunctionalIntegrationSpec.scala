@@ -27,7 +27,8 @@ import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.batch.{AddChangeInput, BatchChangeValidations}
 import vinyldns.api.domain.membership.MembershipService
 import vinyldns.api.domain.zone.ZoneValidations
-import vinyldns.core.TestMembershipData.{okAuth, okUser}
+import vinyldns.api.domain.config.AppConfigService
+import vinyldns.core.TestMembershipData.{okAuth, okUser, superUserAuth}
 import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.record.{AData, RecordType}
 import vinyldns.core.domain.zone.Zone
@@ -210,6 +211,178 @@ class DbConfigFunctionalIntegrationSpec
       applyDb()
       val patterns = RuntimeVinylDNSConfig.approvedNameServers.map(_.pattern.pattern())
       patterns should contain only "(?i)ns1.only-this.com."
+    }
+  }
+
+  // ── AppConfigService.reloadConfig end-to-end ──────────────────────────────────
+
+  "AppConfigService.reloadConfig" should {
+
+    "return 'Config is already up to date.' when DB and memory are in sync" in {
+      seed("sync-delay", "10000", "system")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+
+      val svc    = AppConfigService(appConfigRepository)
+      val result = svc.reloadConfig(superUserAuth).value.unsafeRunSync()
+      result.isRight shouldBe true
+      result.toOption.get.message shouldBe "Config is already up to date."
+      result.toOption.get.updated shouldBe empty
+      result.toOption.get.added   shouldBe empty
+      result.toOption.get.removed shouldBe empty
+    }
+
+    "return 'Config reloaded successfully' and populate updated when a value changed in DB" in {
+      seed("sync-delay", "10000", "system")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+
+      // Change the DB value — do NOT reload memory yet
+      appConfigRepository.update("sync-delay", "20000", "system").unsafeRunSync()
+
+      val svc    = AppConfigService(appConfigRepository)
+      val result = svc.reloadConfig(superUserAuth).value.unsafeRunSync()
+      result.isRight shouldBe true
+      val resp = result.toOption.get
+      resp.message shouldBe "Config reloaded successfully"
+      resp.updated should contain key "sync-delay"
+      resp.updated("sync-delay").from shouldBe Some("10000")
+      resp.updated("sync-delay").to   shouldBe Some("20000")
+    }
+
+    "return 'Config reloaded successfully' and populate added when a new DB row is inserted" in {
+      val svc    = AppConfigService(appConfigRepository)
+      seed("brand-new-key", "val", "system")
+
+      val result = svc.reloadConfig(superUserAuth).value.unsafeRunSync()
+      result.isRight shouldBe true
+      val resp = result.toOption.get
+      resp.message shouldBe "Config reloaded successfully"
+      resp.added should contain("brand-new-key" -> "val")
+    }
+
+    "return 'Config reloaded successfully' and populate removed when a DB row is deleted" in {
+      seed("to-be-deleted", "v", "system")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+
+      appConfigRepository.delete("to-be-deleted").unsafeRunSync()
+
+      val svc    = AppConfigService(appConfigRepository)
+      val result = svc.reloadConfig(superUserAuth).value.unsafeRunSync()
+      result.isRight shouldBe true
+      val resp = result.toOption.get
+      resp.message  shouldBe "Config reloaded successfully"
+      resp.removed should contain("to-be-deleted")
+    }
+
+    "apply DB values to runtime after reload (sync-delay actually changes)" in {
+      seed("sync-delay", "10000", "system")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+      appConfigRepository.update("sync-delay", "55555", "system").unsafeRunSync()
+
+      val svc = AppConfigService(appConfigRepository)
+      svc.reloadConfig(superUserAuth).value.unsafeRunSync()
+
+      RuntimeVinylDNSConfig.syncDelay.unsafeRunSync() shouldBe 55555
+    }
+
+    "return NotAuthorizedError for a non-super user" in {
+      val svc    = AppConfigService(appConfigRepository)
+      val result = svc.reloadConfig(okAuth).value.unsafeRunSync()
+      result.isLeft shouldBe true
+    }
+  }
+
+  // ── AppConfigService.getEffectiveConfig end-to-end ───────────────────────────
+
+  "AppConfigService.getEffectiveConfig" should {
+
+    "return the current in-memory effective snapshot" in {
+      seed("sync-delay", "10000", "system")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+
+      val svc    = AppConfigService(appConfigRepository)
+      val result = svc.getEffectiveConfig(superUserAuth).value.unsafeRunSync()
+      result.isRight shouldBe true
+      result.toOption.get.effective should contain("sync-delay" -> "10000")
+    }
+
+    "return non-empty pending when DB updated but not reloaded" in {
+      seed("sync-delay", "10000", "system")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+      appConfigRepository.update("sync-delay", "99999", "system").unsafeRunSync()
+
+      val svc    = AppConfigService(appConfigRepository)
+      val result = svc.getEffectiveConfig(superUserAuth).value.unsafeRunSync()
+      val resp   = result.toOption.get
+      resp.pending should contain key "sync-delay"
+      resp.pending("sync-delay").from shouldBe Some("10000")
+      resp.pending("sync-delay").to   shouldBe Some("99999")
+    }
+
+    "return empty pending after reload is called" in {
+      seed("sync-delay", "10000", "system")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+      appConfigRepository.update("sync-delay", "99999", "system").unsafeRunSync()
+
+      val svc = AppConfigService(appConfigRepository)
+      svc.reloadConfig(superUserAuth).value.unsafeRunSync()
+
+      val result = svc.getEffectiveConfig(superUserAuth).value.unsafeRunSync()
+      result.toOption.get.pending shouldBe empty
+    }
+
+    "return NotAuthorizedError for a non-super user" in {
+      val svc    = AppConfigService(appConfigRepository)
+      val result = svc.getEffectiveConfig(okAuth).value.unsafeRunSync()
+      result.isLeft shouldBe true
+    }
+  }
+
+  // ── CRUD does NOT refresh in-memory snapshot ──────────────────────────────────
+
+  "AppConfigService CRUD operations" should {
+
+    "not update in-memory snapshot after create" in {
+      val svc    = AppConfigService(appConfigRepository)
+      val before = RuntimeVinylDNSConfig.getAll.unsafeRunSync()
+
+      svc.createAppConfig("crud-key", "v", superUserAuth).value.unsafeRunSync()
+
+      RuntimeVinylDNSConfig.getAll.unsafeRunSync() shouldBe before
+      RuntimeVinylDNSConfig.get("crud-key").unsafeRunSync() shouldBe None
+    }
+
+    "not update in-memory snapshot after update" in {
+      seed("sync-delay", "10000", "system")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+
+      val svc = AppConfigService(appConfigRepository)
+      svc.updateAppConfig("sync-delay", "99999", superUserAuth).value.unsafeRunSync()
+
+      // Memory still has old value
+      RuntimeVinylDNSConfig.get("sync-delay").unsafeRunSync() shouldBe Some("10000")
+    }
+
+    "not update in-memory snapshot after delete" in {
+      seed("sync-delay", "10000", "system")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+
+      val svc = AppConfigService(appConfigRepository)
+      svc.deleteAppConfig("sync-delay", superUserAuth).value.unsafeRunSync()
+
+      // Memory still has the key — only reload removes it
+      RuntimeVinylDNSConfig.get("sync-delay").unsafeRunSync() shouldBe Some("10000")
+    }
+
+    "show the CRUD change as pending in getEffectiveConfig until reload" in {
+      seed("sync-delay", "10000", "system")
+      RuntimeVinylDNSConfig.loadFromDb(appConfigRepository).unsafeRunSync()
+
+      val svc = AppConfigService(appConfigRepository)
+      svc.updateAppConfig("sync-delay", "77777", superUserAuth).value.unsafeRunSync()
+
+      val effective = svc.getEffectiveConfig(superUserAuth).value.unsafeRunSync()
+      effective.toOption.get.pending should contain key "sync-delay"
+      effective.toOption.get.pending("sync-delay").to shouldBe Some("77777")
     }
   }
 }
