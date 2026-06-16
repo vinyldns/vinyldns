@@ -172,8 +172,16 @@ class ZoneService(
       _ <- canSeeGenerateZone(auth, generateZone).toResult
     } yield generateZone
 
+  // Bound external provider calls so a slow or hung provider cannot block the request thread
+  // indefinitely. Values are in milliseconds.
+  private val dnsProviderConnectTimeoutMs = 10000
+  private val dnsProviderReadTimeoutMs = 30000
+
   def createConnection(apiUrl: String): HttpURLConnection = {
-   new URL(apiUrl).openConnection().asInstanceOf[HttpURLConnection]
+    val connection = new URL(apiUrl).openConnection().asInstanceOf[HttpURLConnection]
+    connection.setConnectTimeout(dnsProviderConnectTimeoutMs)
+    connection.setReadTimeout(dnsProviderReadTimeoutMs)
+    connection
   }
 
   private def schemaValidationResult(

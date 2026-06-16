@@ -168,6 +168,14 @@ class ZoneServiceSpec
     }
   }
 
+  "createConnection" should {
+    "set connect and read timeouts so a hung provider cannot block indefinitely" in {
+      val connection = underTestNew.createConnection("http://localhost:65500/zones")
+      connection.getConnectTimeout should be > 0
+      connection.getReadTimeout should be > 0
+    }
+  }
+
   "Generating Zones" should {
     "reject the request when the provider has no schema for the operation (fail closed)" in {
       val noSchemaConnection = DnsProviderApiConnection(
