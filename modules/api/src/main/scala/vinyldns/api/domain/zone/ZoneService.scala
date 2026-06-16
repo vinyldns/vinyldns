@@ -23,6 +23,7 @@ import vinyldns.api.Interfaces
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.Encryption
 import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
 import vinyldns.core.domain.zone.{ZoneCommandResult, _}
 import vinyldns.core.queue.MessageQueue
@@ -209,7 +210,7 @@ class ZoneService(
       // Send request
       _ <- logger.info(s"Request: provider=${request.provider}, path=$endpoint, request=$requestJsonOpt").toResult
       dnsProviderConn <- createConnection(endpoint).toResult
-      dnsConnResponse <- createDnsZoneService(providerConfig.apiKey, "create-zone", requestJsonOpt, dnsProviderConn).toResult
+      dnsConnResponse <- createDnsZoneService(Encryption.decrypt(crypto, providerConfig.apiKey), "create-zone", requestJsonOpt, dnsProviderConn).toResult
 
       // Process response
       responseCode = dnsConnResponse.getResponseCode
@@ -257,7 +258,7 @@ class ZoneService(
       // Send request
       _ <- logger.info(s"Request: provider=${request.provider}, path=$endpoint, request=$requestJsonOpt").toResult
       dnsProviderConn <- createConnection(endpoint).toResult
-      dnsConnResponse <- createDnsZoneService(providerConfig.apiKey, "update-zone", requestJsonOpt, dnsProviderConn).toResult
+      dnsConnResponse <- createDnsZoneService(Encryption.decrypt(crypto, providerConfig.apiKey), "update-zone", requestJsonOpt, dnsProviderConn).toResult
 
       // Process response
       responseCode = dnsConnResponse.getResponseCode
@@ -312,7 +313,7 @@ class ZoneService(
       }
 
       dnsProviderConn <- createConnection(endpoint).toResult
-      dnsConnResponse <- createDnsZoneService(providerConfig.apiKey, "delete-zone", None, dnsProviderConn).toResult
+      dnsConnResponse <- createDnsZoneService(Encryption.decrypt(crypto, providerConfig.apiKey), "delete-zone", None, dnsProviderConn).toResult
 
       // Process response
       responseCode = dnsConnResponse.getResponseCode

@@ -149,7 +149,7 @@ object TestZoneData {
                     "additionalProperties": false
                   }"""
         ),
-        apiKey = "test-api-key"
+        apiKey = Encrypted("test-api-key")
       )
     ),
     nameServers = List("ns1.parent.com.,ns2.parent.com."),

@@ -345,7 +345,7 @@ case class DnsProviderConfig(
     endpoints: Map[String, String],
     requestTemplates: Map[String, String],
     schemas: Map[String, String],
-    apiKey: String
+    apiKey: Encrypted
   )
 
 case class DnsProviderApiConnection(
@@ -435,7 +435,8 @@ object ConfiguredDnsConnections {
         val endpoints = configToMap(providerConfig.getConfig("endpoints"))
         val requestTemplates = configToMap(providerConfig.getConfig("request-templates"))
         val schemas = configToMap(providerConfig.getConfig("schemas"))
-        val apiKey = providerConfig.getString("api-key")
+        // Encrypt the provider API key at load time so it is never held in memory as plaintext.
+        val apiKey = Encryption(crypto, providerConfig.getString("api-key"))
 
         provider -> DnsProviderConfig(
           endpoints = endpoints,
