@@ -169,6 +169,48 @@ class ZoneServiceSpec
   }
 
   "Generating Zones" should {
+    "reject the request when the provider has no schema for the operation (fail closed)" in {
+      val noSchemaConnection = DnsProviderApiConnection(
+        providers = Map(
+          "powerdns" -> DnsProviderConfig(
+            endpoints = Map("create-zone" -> "http://localhost:19005/zones"),
+            requestTemplates = Map.empty,
+            schemas = Map.empty, // no schema configured for create-zone
+            apiKey = Encrypted("test-api-key")
+          )
+        ),
+        nameServers = List.empty,
+        allowedProviders = List("powerdns")
+      )
+      val svc = new ZoneService(
+        mockZoneRepo,
+        mockGroupRepo,
+        mockUserRepo,
+        mockZoneChangeRepo,
+        TestConnectionValidator,
+        mockMessageQueue,
+        new ZoneValidations(1000),
+        new AccessValidations(),
+        mockBackendResolver,
+        NoOpCrypto.instance,
+        mockMembershipService,
+        noSchemaConnection,
+        mockGenerateZoneRepository
+      ) {
+        override def createConnection(endpoint: String): HttpURLConnection = mockConnection
+      }
+
+      val result =
+        svc
+          .handleGenerateZoneRequest(generatePdnsZoneAuthorized.copy(groupId = okGroup.id), okAuth)
+          .value
+          .unsafeRunSync()
+          .swap
+          .toOption
+          .get
+      result.getMessage should include("No request-validation schema is configured")
+    }
+
     "return an error response for provider not supported" in {
       doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
       val result =

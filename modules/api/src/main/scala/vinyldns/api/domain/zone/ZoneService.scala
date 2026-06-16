@@ -182,7 +182,17 @@ class ZoneService(
                                       params: Map[String, JValue]
                                     ): Result[Unit] = providerConfig.schemas.get(operation) match {
     case Some(schema) => JsonSchemaValidator.validate(schema, params).toResult
-    case None => result(())
+    case None =>
+      // Fail closed: without a schema we cannot validate the provider params, so refuse to
+      // forward unvalidated input to the provider. A missing schema is an operator
+      // misconfiguration, not a client error, so surface it as a server-side failure.
+      val failure: Either[Throwable, Unit] = Left(
+        new RuntimeException(
+          s"No request-validation schema is configured for operation '$operation'; " +
+            "refusing to process provider parameters without one."
+        )
+      )
+      failure.toResult
   }
 
   def handleGenerateZoneRequest(
