@@ -129,14 +129,13 @@ trait DnsJsonProtocol extends JsonValidation {
   case object ZoneGenerationInputSerializer extends ValidationSerializer[ZoneGenerationInput] {
     override def fromJson(js: JValue): ValidatedNel[String, ZoneGenerationInput] = {
       // Validate standard fields (not provider specific)
+      // Server-owned fields (id, status, response) are deliberately not read from the request
+      // body so clients cannot set them; the server assigns them.
       val std = (
         (js \ "groupId").required[String]("Missing group id"),
         (js \ "email").required[String]("Missing email"),
         (js \ "provider").required[String]("Missing provider"),
-        (js \ "zoneName").required[String]("Missing zone name"),
-        (js \ "status").default(GenerateZoneStatus, GenerateZoneStatus.Active),
-        (js \ "id").default[String](UUID.randomUUID().toString),
-        (js \ "response").optional[ZoneGenerationResponse]
+        (js \ "zoneName").required[String]("Missing zone name")
       )
 
       // Extract providerParams from the nested "providerParams" field
@@ -147,15 +146,12 @@ trait DnsJsonProtocol extends JsonValidation {
       }
 
       // Build the result (ignores any non-standard fields outside "providerParams")
-      std.mapN { (groupId, email, provider, zoneName, status, id, response) =>
+      std.mapN { (groupId, email, provider, zoneName) =>
         ZoneGenerationInput(
           groupId = groupId,
           email = email,
           provider = provider,
           zoneName = zoneName,
-          status = status,
-          id = id,
-          response = response,
           providerParams = providerParams
         )
       }

@@ -112,8 +112,7 @@ class ZoneRoutingSpec
     "test@test.com",
     "powerdns",
     okZone.name,
-    providerParams = powerDNSProviderParams,
-    response=Some(pdnsZoneGenerationResponse)
+    providerParams = powerDNSProviderParams
   )
 
   private val badAdminIdZoneGenerationInput = ZoneGenerationInput(
@@ -121,9 +120,7 @@ class ZoneRoutingSpec
     email = badAdminIdGenerateZone.email,
     provider = badAdminIdGenerateZone.provider,
     zoneName = badAdminIdGenerateZone.zoneName,
-    id = null,
-    providerParams = Map.empty,
-    response = None
+    providerParams = Map.empty
   )
 
   private val alreadyExistsZoneGenerationInput = ZoneGenerationInput(
@@ -131,9 +128,7 @@ class ZoneRoutingSpec
     email = alreadyExistsGenerateZone.email,
     provider = alreadyExistsGenerateZone.provider,
     zoneName = alreadyExistsGenerateZone.zoneName,
-    id = null,
-    providerParams = Map.empty,
-    response = None
+    providerParams = Map.empty
   )
 
   private val generateMarkTwainZoneAuthorized = GenerateZone(
@@ -771,7 +766,7 @@ class ZoneRoutingSpec
         case badAdminIdGenerateZone.zoneName => Left(InvalidGroupError(s"$request"))
         case errorGenerateZone.zoneName => Left(new RuntimeException("fail"))
         case nonSuperUserSharedZoneGenerateZone.zoneName => Left(NotAuthorizedError("unauth"))
-        case _ => Right(GenerateZone(request.groupId, request.email, request.provider, request.zoneName, request.status, request.providerParams, request.response))
+        case _ => Right(GenerateZone(request.groupId, request.email, request.provider, request.zoneName, providerParams = request.providerParams))
       }
       outcome.toResult
     }
@@ -834,7 +829,7 @@ class ZoneRoutingSpec
   def zoneJson(zone: Zone): String = compact(render(Extraction.decompose(zone)))
 
   def generateZoneJson(name: String, email: String): String =
-    generateZoneJson(ZoneGenerationInput(name, email, null, null, status = null, id = null))
+    generateZoneJson(ZoneGenerationInput(name, email, null, null))
 
   def generateZoneJson(zone: ZoneGenerationInput): String = compact(render(Extraction.decompose(zone)))
 
@@ -1084,6 +1079,24 @@ class ZoneRoutingSpec
     "return 202 Accepted when the generate zone is created" in {
       postGenerateZone(generatePdnsZoneAuthorizedInput) ~> zoneRoute ~> check {
         status shouldBe Accepted
+      }
+    }
+
+    "ignore client-supplied server-owned fields (id, status)" in {
+      val tampered: JValue =
+        ("groupId" -> okGroup.id) ~~
+          ("email" -> "test@test.com") ~~
+          ("provider" -> "powerdns") ~~
+          ("zoneName" -> okZone.name) ~~
+          ("id" -> "attacker-supplied-id") ~~
+          ("status" -> "Deleted")
+
+      postGenerateZone(tampered) ~> zoneRoute ~> check {
+        status shouldBe Accepted
+        val result = responseAs[GenerateZone]
+        result.id should not be "attacker-supplied-id"
+        // client sent status "Deleted"; server must ignore it and default to Active
+        result.status.toString shouldBe "Active"
       }
     }
 

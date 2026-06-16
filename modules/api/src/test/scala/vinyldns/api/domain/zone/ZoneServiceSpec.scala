@@ -273,7 +273,7 @@ class ZoneServiceSpec
         .delete(any[GenerateZone])
 
       val result =
-        underTest.handleDeleteGeneratedZoneRequest(generatePdnsZoneAuthorized.id, okAuth).value.unsafeRunSync().toOption.get
+        underTest.handleDeleteGeneratedZoneRequest(generatePdnsZone.id, okAuth).value.unsafeRunSync().toOption.get
       result.zoneName shouldBe generatePdnsZoneAuthorized.zoneName
     }
 
@@ -282,7 +282,7 @@ class ZoneServiceSpec
 
       val noAuth = AuthPrincipal(TestDataLoader.okUser, Seq())
       val error =
-        underTest.handleDeleteGeneratedZoneRequest(generatePdnsZoneAuthorized.id, noAuth).value.unsafeRunSync().swap.toOption.get
+        underTest.handleDeleteGeneratedZoneRequest(generatePdnsZone.id, noAuth).value.unsafeRunSync().swap.toOption.get
       error shouldBe a[NotAuthorizedError]
     }
   }

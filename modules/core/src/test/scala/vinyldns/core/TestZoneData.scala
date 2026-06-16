@@ -237,8 +237,7 @@ val createZoneAuthorized = ConnectZoneInput(
     "test@test.com",
     "bind",
     okZone.name,
-    providerParams = bindProviderParams,
-    response=Some(bindZoneGenerationResponse)
+    providerParams = bindProviderParams
   )
 
   val generatePdnsZoneAuthorized = ZoneGenerationInput(
@@ -246,8 +245,7 @@ val createZoneAuthorized = ConnectZoneInput(
     "test@test.com",
     "powerdns",
     okZone.name,
-    providerParams = powerDNSProviderParams,
-    response=Some(pdnsZoneGenerationResponse)
+    providerParams = powerDNSProviderParams
   )
 
   val updatePdnsZoneAuthorized = ZoneGenerationInput(
@@ -255,8 +253,7 @@ val createZoneAuthorized = ConnectZoneInput(
     "test@test.com",
     "powerdns",
     okZone.name,
-    providerParams = updatePowerDNSProviderParams,
-    response=Some(pdnsZoneGenerationResponse)
+    providerParams = updatePowerDNSProviderParams
   )
 
   val generatePdnsInvalidZone = ZoneGenerationInput(
@@ -264,8 +261,7 @@ val createZoneAuthorized = ConnectZoneInput(
     "test@test.com",
     "powerdns",
     okZone.name,
-    providerParams = bindProviderParams,
-    response=Some(pdnsZoneGenerationResponse)
+    providerParams = bindProviderParams
   )
 
 val updateZoneAuthorized = UpdateZoneInput(
@@ -310,9 +306,7 @@ val updateZoneAuthorized = UpdateZoneInput(
     "test@test.com",
     "bind",
     okZone.name,
-    providerParams = bindProviderParams,
-    response=Some(bindZoneGenerationResponse),
-    id = "bindZoneId"
+    providerParams = bindProviderParams
   )
 
   val abcGenerateZone = GenerateZone(

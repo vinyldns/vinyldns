@@ -177,9 +177,7 @@ object GenerateZone {
       email,
       provider,
       zoneName,
-      status,
-      providerParams,
-      response
+      providerParams = providerParams
     )
   }
 
@@ -256,16 +254,16 @@ case class ZoneGenerationResponse(
                                    changeType: GenerateZoneChangeType
                                  )
 
+// Client-supplied request to generate a zone. Server-owned fields (id, status, response)
+// are intentionally not part of this model so clients cannot set them; the server assigns
+// them when constructing the GenerateZone.
 case class ZoneGenerationInput(
     groupId: String,
     email: String,
     provider: String,
     zoneName: String,
-    status: GenerateZoneStatus = GenerateZoneStatus.Active,
-    providerParams: Map[String, JValue] = Map.empty,
-    response: Option[ZoneGenerationResponse] = None,
-    id: String = UUID.randomUUID().toString
-                              )
+    providerParams: Map[String, JValue] = Map.empty
+)
 
 final case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
 
