@@ -181,10 +181,10 @@ class RuntimeVinylDNSConfigIntegrationSpec
       mr.zoneList   should contain("restricted.")
     }
 
-    // ─── valid-email ──────────────────────────────────────────────────────────
+    // ─── valid-email-config ───────────────────────────────────────────────────
 
     "override validEmailConfig from DB" in {
-      seed("valid-email",
+      seed("valid-email-config",
         """{"email-domains":["example.com","*.corp.com"],"number-of-dots":3}""", "professor")
       applyDb()
 
@@ -193,7 +193,7 @@ class RuntimeVinylDNSConfigIntegrationSpec
       ve.number_of_dots   shouldBe 3
     }
 
-    "keep reference.conf validEmailConfig when DB has no valid-email key" in {
+    "keep reference.conf validEmailConfig when DB has no valid-email-config key" in {
       applyDb()
       val ve = RuntimeVinylDNSConfig.validEmailConfig
       ve.valid_domains should not be empty
