@@ -149,11 +149,6 @@ class MySqlGenerateZoneRepositoryIntegrationSpec
         repo.listGenerateZones(superUserAuth).unsafeRunSync().generatedZones.map(_.zoneName)
       zoneNames should contain(generateBindZone.zoneName)
     }
-    "return zones for a non-member when ignoreAccess is set" in {
-      val zoneNames =
-        repo.listGenerateZones(dummyAuth, ignoreAccess = true).unsafeRunSync().generatedZones.map(_.zoneName)
-      zoneNames should contain(generateBindZone.zoneName)
-    }
     "not return another group's zones via the admin-group search path for a non-member" in {
       val zoneNames =
         repo

@@ -493,12 +493,11 @@ class ZoneRoutingSpec
                    nameFilter: Option[String],
                    startFrom: Option[String],
                    maxItems: Int,
-                   searchByAdminGroup: Boolean,
-                   ignoreAccess: Boolean = false
+                   searchByAdminGroup: Boolean
                  ): Result[ListGeneratedZonesResponse] = {
 
-      val outcome = (authPrincipal, nameFilter, startFrom, maxItems, ignoreAccess) match {
-        case (_, None, Some("zone3."), 3, false) =>
+      val outcome = (authPrincipal, nameFilter, startFrom, maxItems) match {
+        case (_, None, Some("zone3."), 3) =>
           Right(
             ListGeneratedZonesResponse(
               zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
@@ -508,7 +507,7 @@ class ZoneRoutingSpec
               maxItems = 3
             )
           )
-        case (_, None, Some("zone4."), 4, false) =>
+        case (_, None, Some("zone4."), 4) =>
           Right(
             ListGeneratedZonesResponse(
               zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
@@ -519,7 +518,7 @@ class ZoneRoutingSpec
             )
           )
 
-        case (_, None, None, 3, false) =>
+        case (_, None, None, 3) =>
           Right(
             ListGeneratedZonesResponse(
               zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
@@ -530,7 +529,7 @@ class ZoneRoutingSpec
             )
           )
 
-        case (_, Some(filter), Some("zone4."), 4, false) =>
+        case (_, Some(filter), Some("zone4."), 4) =>
           Right(
             ListGeneratedZonesResponse(
               zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
@@ -541,19 +540,7 @@ class ZoneRoutingSpec
             )
           )
 
-        case (_, Some(filter), Some("zone4."), 4, true) =>
-          Right(
-            ListGeneratedZonesResponse(
-              zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
-              nameFilter = Some(filter),
-              startFrom = Some("zone4."),
-              nextId = None,
-              maxItems = 4,
-              ignoreAccess = true
-            )
-          )
-
-        case (_, None, None, 6, true) =>
+        case (_, None, None, 6) =>
           Right(
             ListGeneratedZonesResponse(
               zones = List(
@@ -567,12 +554,11 @@ class ZoneRoutingSpec
               nameFilter = None,
               startFrom = None,
               nextId = None,
-              maxItems = 6,
-              ignoreAccess = true,
+              maxItems = 6
             )
           )
 
-        case (_, None, None, _, _) =>
+        case (_, None, None, _) =>
           Right(
             ListGeneratedZonesResponse(
               zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
@@ -1140,6 +1126,21 @@ class ZoneRoutingSpec
         )
       }
     }
+
+    "reject a request whose providerParams is not a JSON object" in {
+      val badParams: JValue =
+        ("groupId" -> okGroup.id) ~~
+          ("email" -> "test@test.com") ~~
+          ("provider" -> "powerdns") ~~
+          ("zoneName" -> okZone.name) ~~
+          ("providerParams" -> "not-an-object")
+
+      postGenerateZone(badParams) ~> Route.seal(zoneRoute) ~> check {
+        status shouldBe BadRequest
+        val errs = (responseAs[JValue] \ "errors").extractOpt[List[String]]
+        errs.get should contain("providerParams must be a JSON object")
+      }
+    }
   }
 
 
@@ -1525,7 +1526,6 @@ class ZoneRoutingSpec
         resp.nextId shouldBe None
         resp.maxItems shouldBe 4
         resp.startFrom shouldBe Some("zone4.")
-        resp.ignoreAccess shouldBe false
       }
     }
 
@@ -1538,7 +1538,6 @@ class ZoneRoutingSpec
         resp.nextId shouldBe Some("zone3.")
         resp.maxItems shouldBe 3
         resp.startFrom shouldBe None
-        resp.ignoreAccess shouldBe false
       }
     }
 
@@ -1552,7 +1551,6 @@ class ZoneRoutingSpec
         resp.maxItems shouldBe 4
         resp.startFrom shouldBe Some("zone4.")
         resp.nameFilter shouldBe Some("foo")
-        resp.ignoreAccess shouldBe false
       }
     }
 
@@ -1566,12 +1564,11 @@ class ZoneRoutingSpec
         resp.maxItems shouldBe 4
         resp.startFrom shouldBe Some("zone4.")
         resp.nameFilter shouldBe Some("ok")
-        resp.ignoreAccess shouldBe false
       }
     }
 
     "return all zones when list all is true" in {
-      Get(s"/zones/generate/info?maxItems=6&ignoreAccess=true") ~> zoneRoute ~> check {
+      Get(s"/zones/generate/info?maxItems=6") ~> zoneRoute ~> check {
         val resp = responseAs[ListGeneratedZonesResponse]
         val zones = resp.zones
         (zones.map(_.id) should contain)
@@ -1580,7 +1577,6 @@ class ZoneRoutingSpec
         resp.maxItems shouldBe 6
         resp.startFrom shouldBe None
         resp.nameFilter shouldBe None
-        resp.ignoreAccess shouldBe true
       }
     }
 

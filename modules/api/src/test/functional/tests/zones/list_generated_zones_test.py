@@ -74,14 +74,6 @@ def test_list_generated_zones_max_items_100(shared_zone_test_context):
     assert_that(result["maxItems"], is_(100))
 
 
-def test_list_generated_zones_ignore_access_default_false(shared_zone_test_context):
-    """
-    Test that the default ignore access value for a list zones request is false
-    """
-    result = shared_zone_test_context.list_zones_client.list_generated_zones(status=200)
-    assert_that(result["ignoreAccess"], is_(False))
-
-
 def test_list_generated_zones_invalid_max_items_fails(shared_zone_test_context):
     """
     Test that passing in an invalid value for max items fails
@@ -208,12 +200,12 @@ def test_list_generated_zones_with_search_last_page(list_generated_zone_context,
     assert_that(result["startFrom"], is_(list_generated_zone_context.search_generate_zone2["zoneName"]))
 
 
-def test_list_generated_zones_ignore_access_success(shared_zone_test_context):
+def test_list_generated_zones_admin_sees_all(shared_zone_test_context):
     """
-    Test that we can retrieve a list of zones regardless of zone access
+    Test that a super/support admin can retrieve all generated zones regardless of group membership.
+    (Non-admin callers are always access-scoped; see test_list_generated_zones_success.)
     """
-    result = shared_zone_test_context.list_generated_zones_client.list_generated_zones(ignore_access=True, status=200)
+    result = shared_zone_test_context.super_user_client.list_generated_zones(status=200)
     retrieved = result["zones"]
 
-    assert_that(result["ignoreAccess"], is_(True))
     assert_that(len(retrieved), greater_than(5))

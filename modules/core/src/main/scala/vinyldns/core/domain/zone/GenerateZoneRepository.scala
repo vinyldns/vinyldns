@@ -34,15 +34,13 @@ trait GenerateZoneRepository extends Repository {
                          authPrincipal: AuthPrincipal,
                          zoneNameFilter: Option[String] = None,
                          startFrom: Option[String] = None,
-                         maxItems: Int = 100,
-                         ignoreAccess: Boolean = false
+                         maxItems: Int = 100
                        ): IO[ListGeneratedZonesResults]
 
   def listGeneratedZonesByAdminGroupIds(
                                          authPrincipal: AuthPrincipal,
                                          startFrom: Option[String] = None,
                                          maxItems: Int = 100,
-                                         adminGroupIds: Set[String],
-                                         ignoreAccess: Boolean = false
+                                         adminGroupIds: Set[String]
                                        ): IO[ListGeneratedZonesResults]
 }

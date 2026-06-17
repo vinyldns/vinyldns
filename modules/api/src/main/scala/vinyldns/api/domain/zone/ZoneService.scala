@@ -516,8 +516,7 @@ class ZoneService(
                           nameFilter: Option[String] = None,
                           startFrom: Option[String] = None,
                           maxItems: Int = 100,
-                          searchByAdminGroup: Boolean = false,
-                          ignoreAccess: Boolean = false
+                          searchByAdminGroup: Boolean = false
                         ): Result[ListGeneratedZonesResponse] = {
     if(!searchByAdminGroup || nameFilter.isEmpty){
       for {
@@ -525,8 +524,7 @@ class ZoneService(
           authPrincipal,
           nameFilter,
           startFrom,
-          maxItems,
-          ignoreAccess
+          maxItems
         )
         generatedZones = listZonesResult.generatedZones
         groupIds = generatedZones.map(_.groupId).toSet
@@ -537,8 +535,7 @@ class ZoneService(
         listZonesResult.zonesFilter,
         listZonesResult.startFrom,
         listZonesResult.nextId,
-        listZonesResult.maxItems,
-        listZonesResult.ignoreAccess
+        listZonesResult.maxItems
       )}
     else {
       for {
@@ -547,8 +544,7 @@ class ZoneService(
           authPrincipal,
           startFrom,
           maxItems,
-          groupIds,
-          ignoreAccess
+          groupIds
         )
         generatedZones = listZonesResult.generatedZones
         groups <- groupRepository.getGroups(groupIds)
@@ -558,8 +554,7 @@ class ZoneService(
         nameFilter,
         listZonesResult.startFrom,
         listZonesResult.nextId,
-        listZonesResult.maxItems,
-        listZonesResult.ignoreAccess
+        listZonesResult.maxItems
       )
     }
   }.toResult

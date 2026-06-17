@@ -371,8 +371,7 @@ case class ListGeneratedZonesResponse(
                                        nameFilter: Option[String],
                                        startFrom: Option[String] = None,
                                        nextId: Option[String] = None,
-                                       maxItems: Int = 100,
-                                       ignoreAccess: Boolean = false
+                                       maxItems: Int = 100
                                      )
 
 case class RecordSetCount( count: Int = 0 )

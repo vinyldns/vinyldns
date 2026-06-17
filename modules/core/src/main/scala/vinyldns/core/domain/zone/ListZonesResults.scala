@@ -31,6 +31,5 @@ case class ListGeneratedZonesResults(
                                       nextId: Option[String] = None,
                                       startFrom: Option[String] = None,
                                       maxItems: Int = 100,
-                                      ignoreAccess: Boolean = false,
                                       zonesFilter: Option[String] = None
                                     )
