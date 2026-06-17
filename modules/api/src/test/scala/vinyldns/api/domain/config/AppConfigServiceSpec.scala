@@ -17,6 +17,7 @@
 package vinyldns.api.domain.config
 
 import cats.effect.IO
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -35,7 +36,7 @@ import java.time.Instant
  *   3. reloadConfig returns "Config reloaded successfully" when there are changes
  *   4. getEffectiveConfig returns effective/referenceDefaults/pending fields
  */
-class AppConfigServiceSpec extends AnyWordSpec with Matchers with BeforeAndAfterEach {
+class AppConfigServiceSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
   // ── In-memory stub AppConfigRepository ──────────────────────────────────────
   class StubAppConfigRepo(initial: Map[String, String] = Map.empty) extends AppConfigRepository {
@@ -69,8 +70,17 @@ class AppConfigServiceSpec extends AnyWordSpec with Matchers with BeforeAndAfter
     }
   }
 
-  override def beforeEach(): Unit =
+  private val emptyRepo = new StubAppConfigRepo(Map.empty)
+
+  // init() reassigns the appConfigRef field to a new Ref — call it ONCE per spec,
+  // not before each test, to avoid a race with RuntimeVinylDNSConfigSpec (which also
+  // calls init()) when SBT runs specs in parallel.
+  override def beforeAll(): Unit =
     RuntimeVinylDNSConfig.init().unsafeRunSync()
+
+  // Just reset the Ref's contents without recreating it.
+  override def beforeEach(): Unit =
+    RuntimeVinylDNSConfig.loadFromDb(emptyRepo).unsafeRunSync()
 
   private def serviceWith(repo: StubAppConfigRepo) = AppConfigService(repo)
 
@@ -78,7 +88,6 @@ class AppConfigServiceSpec extends AnyWordSpec with Matchers with BeforeAndAfter
 
     "return 'Config is already up to date.' when DB equals in-memory snapshot" in {
       val repo = new StubAppConfigRepo(Map("sync-delay" -> "10000"))
-      // Pre-seed memory so it matches the DB
       RuntimeVinylDNSConfig.loadFromDb(repo).unsafeRunSync()
 
       val result = serviceWith(repo).reloadConfig(superUserAuth).value.unsafeRunSync()
@@ -88,9 +97,6 @@ class AppConfigServiceSpec extends AnyWordSpec with Matchers with BeforeAndAfter
 
     "return 'Config reloaded successfully' when DB has an updated value" in {
       val repo = new StubAppConfigRepo(Map("sync-delay" -> "10000"))
-      // Memory starts empty (no loadFromDb yet)
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
-      // DB now has a different value than what's in memory
       repo.setStore(Map("sync-delay" -> "20000"))
 
       val result = serviceWith(repo).reloadConfig(superUserAuth).value.unsafeRunSync()
@@ -100,8 +106,6 @@ class AppConfigServiceSpec extends AnyWordSpec with Matchers with BeforeAndAfter
 
     "return 'Config reloaded successfully' when DB has a newly added key" in {
       val repo = new StubAppConfigRepo(Map.empty)
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
-      // DB now has a new key not in memory
       repo.setStore(Map("max-zone-size" -> "50000"))
 
       val result = serviceWith(repo).reloadConfig(superUserAuth).value.unsafeRunSync()
@@ -134,7 +138,6 @@ class AppConfigServiceSpec extends AnyWordSpec with Matchers with BeforeAndAfter
 
     "populate added map for newly inserted DB keys" in {
       val repo = new StubAppConfigRepo(Map.empty)
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
       repo.setStore(Map("new-key" -> "new-value"))
 
       val result = serviceWith(repo).reloadConfig(superUserAuth).value.unsafeRunSync()
@@ -165,13 +168,10 @@ class AppConfigServiceSpec extends AnyWordSpec with Matchers with BeforeAndAfter
 
     "write to DB without updating in-memory appConfigRef" in {
       val repo = new StubAppConfigRepo()
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
-
       val before = RuntimeVinylDNSConfig.getAll.unsafeRunSync()
       serviceWith(repo).createAppConfig("k1", "v1", superUserAuth).value.unsafeRunSync()
       val after = RuntimeVinylDNSConfig.getAll.unsafeRunSync()
 
-      // appConfigRef must NOT have changed — k1 absent in memory
       after shouldBe before
       after.contains("k1") shouldBe false
     }
@@ -189,12 +189,10 @@ class AppConfigServiceSpec extends AnyWordSpec with Matchers with BeforeAndAfter
 
     "write updated value to DB without updating in-memory appConfigRef" in {
       val repo = new StubAppConfigRepo(Map("sync-delay" -> "10000"))
-      // Pre-load so memory has sync-delay = 10000
       RuntimeVinylDNSConfig.loadFromDb(repo).unsafeRunSync()
 
       serviceWith(repo).updateAppConfig("sync-delay", "99999", superUserAuth).value.unsafeRunSync()
 
-      // Memory should still have the OLD value — reload not called
       RuntimeVinylDNSConfig.get("sync-delay").unsafeRunSync() shouldBe Some("10000")
     }
 
@@ -214,7 +212,6 @@ class AppConfigServiceSpec extends AnyWordSpec with Matchers with BeforeAndAfter
 
       serviceWith(repo).deleteAppConfig("sync-delay", superUserAuth).value.unsafeRunSync()
 
-      // Memory should still have the key — reload not called
       RuntimeVinylDNSConfig.get("sync-delay").unsafeRunSync() shouldBe Some("10000")
     }
   }
@@ -235,7 +232,6 @@ class AppConfigServiceSpec extends AnyWordSpec with Matchers with BeforeAndAfter
     "return pending with from/to when DB differs from memory" in {
       val repo = new StubAppConfigRepo(Map("sync-delay" -> "10000"))
       RuntimeVinylDNSConfig.loadFromDb(repo).unsafeRunSync()
-      // Update DB but do not reload
       repo.setStore(Map("sync-delay" -> "99999"))
 
       val result = serviceWith(repo).getEffectiveConfig(superUserAuth).value.unsafeRunSync()
@@ -255,7 +251,6 @@ class AppConfigServiceSpec extends AnyWordSpec with Matchers with BeforeAndAfter
 
     "return pending with null from when DB has a new key not in memory" in {
       val repo = new StubAppConfigRepo(Map.empty)
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
       repo.setStore(Map("brand-new-key" -> "val"))
 
       val result = serviceWith(repo).getEffectiveConfig(superUserAuth).value.unsafeRunSync()
@@ -267,10 +262,7 @@ class AppConfigServiceSpec extends AnyWordSpec with Matchers with BeforeAndAfter
 
     "return reference-defaults for keys in reference.conf not present in memory" in {
       val repo = new StubAppConfigRepo(Map.empty)
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
-
       val result = serviceWith(repo).getEffectiveConfig(superUserAuth).value.unsafeRunSync()
-      // At least some reference keys should be listed
       result.toOption.get.referenceDefaults should not be empty
     }
 

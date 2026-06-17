@@ -173,8 +173,8 @@ object RuntimeVinylDNSConfig {
   def reloadWithDiff(repo: AppConfigRepository): IO[Map[String, (Option[String], Option[String])]] =
     for {
       before <- appConfigRef.get
-      _      <- refresh(repo)
       _      <- reload()
+      _      <- refresh(repo)
       after  <- appConfigRef.get
     } yield (before.keySet ++ after.keySet)
       .map(k => k -> (before.get(k), after.get(k)))

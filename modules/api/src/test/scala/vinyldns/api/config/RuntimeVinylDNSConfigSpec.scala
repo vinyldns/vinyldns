@@ -49,7 +49,6 @@ class RuntimeVinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAnd
     "make currentIO return the same value as current after init" in {
       val fromIO  = RuntimeVinylDNSConfig.currentIO.unsafeRunSync()
       val fromSync = RuntimeVinylDNSConfig.current
-      // Value equality on the config fields we care about
       fromIO.serverConfig.color  shouldBe fromSync.serverConfig.color
       fromIO.serverConfig.keyName shouldBe fromSync.serverConfig.keyName
       fromIO.validEmailConfig    shouldBe fromSync.validEmailConfig
@@ -100,7 +99,6 @@ class RuntimeVinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAnd
       Await.result(Future.sequence(futures), 30.seconds)
 
       RuntimeVinylDNSConfig.current should not be null
-      // currentIO and current must agree after concurrent reloads complete
       val fromIO   = RuntimeVinylDNSConfig.currentIO.unsafeRunSync()
       val fromSync = RuntimeVinylDNSConfig.current
       fromIO.serverConfig.color shouldBe fromSync.serverConfig.color
@@ -168,7 +166,7 @@ class RuntimeVinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAnd
     }
 
     "return effective map equal to the current in-memory snapshot" in {
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      RuntimeVinylDNSConfig.loadFromDb(stubRepo(Map.empty)).unsafeRunSync()
       val repo = stubRepo(Map.empty)
       val resp = RuntimeVinylDNSConfig.getEffectiveDetailed(repo).unsafeRunSync()
       resp.effective shouldBe RuntimeVinylDNSConfig.getAll.unsafeRunSync()
@@ -176,7 +174,7 @@ class RuntimeVinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAnd
 
     "return empty pending when DB matches memory" in {
       val kvs  = Map("sync-delay" -> "10000")
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      RuntimeVinylDNSConfig.loadFromDb(stubRepo(Map.empty)).unsafeRunSync()
       RuntimeVinylDNSConfig.loadFromDb(stubRepo(kvs)).unsafeRunSync()
 
       val resp = RuntimeVinylDNSConfig.getEffectiveDetailed(stubRepo(kvs)).unsafeRunSync()
@@ -185,7 +183,7 @@ class RuntimeVinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAnd
 
     "return pending entry when DB value differs from memory" in {
       val initialKvs = Map("sync-delay" -> "10000")
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      RuntimeVinylDNSConfig.loadFromDb(stubRepo(Map.empty)).unsafeRunSync()
       RuntimeVinylDNSConfig.loadFromDb(stubRepo(initialKvs)).unsafeRunSync()
 
       // DB updated but memory not reloaded
@@ -197,7 +195,7 @@ class RuntimeVinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAnd
     }
 
     "return pending with None from when DB has a key not yet in memory" in {
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      RuntimeVinylDNSConfig.loadFromDb(stubRepo(Map.empty)).unsafeRunSync()
       val resp = RuntimeVinylDNSConfig.getEffectiveDetailed(stubRepo(Map("brand-new" -> "val"))).unsafeRunSync()
       resp.pending should contain key "brand-new"
       resp.pending("brand-new").from shouldBe None
@@ -205,7 +203,7 @@ class RuntimeVinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAnd
     }
 
     "return pending with None to when memory has a key absent from DB" in {
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      RuntimeVinylDNSConfig.loadFromDb(stubRepo(Map.empty)).unsafeRunSync()
       RuntimeVinylDNSConfig.loadFromDb(stubRepo(Map("old-key" -> "v"))).unsafeRunSync()
 
       val resp = RuntimeVinylDNSConfig.getEffectiveDetailed(stubRepo(Map.empty)).unsafeRunSync()
@@ -215,13 +213,13 @@ class RuntimeVinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAnd
     }
 
     "return non-empty reference-defaults when no DB keys are loaded" in {
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      RuntimeVinylDNSConfig.loadFromDb(stubRepo(Map.empty)).unsafeRunSync()
       val resp = RuntimeVinylDNSConfig.getEffectiveDetailed(stubRepo(Map.empty)).unsafeRunSync()
       resp.referenceDefaults should not be empty
     }
 
     "exclude a key from reference-defaults once it is loaded into memory" in {
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      RuntimeVinylDNSConfig.loadFromDb(stubRepo(Map.empty)).unsafeRunSync()
       val before = RuntimeVinylDNSConfig.getEffectiveDetailed(stubRepo(Map.empty)).unsafeRunSync()
       val someRefKey = before.referenceDefaults.head
 
@@ -252,7 +250,6 @@ class RuntimeVinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAnd
 
     "return an empty diff when DB and memory are already in sync" in {
       val repo = stubRepo(Map("sync-delay" -> "10000"))
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
       RuntimeVinylDNSConfig.loadFromDb(repo).unsafeRunSync()
 
       val diff = RuntimeVinylDNSConfig.reloadWithDiff(repo).unsafeRunSync()
@@ -261,7 +258,6 @@ class RuntimeVinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAnd
 
     "return a diff entry when DB has an updated value" in {
       val repo = stubRepo(Map("sync-delay" -> "10000"))
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
       RuntimeVinylDNSConfig.loadFromDb(repo).unsafeRunSync()
 
       val updatedRepo = stubRepo(Map("sync-delay" -> "99999"))
@@ -271,7 +267,7 @@ class RuntimeVinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAnd
     }
 
     "return a diff entry when a new key is added to DB" in {
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      RuntimeVinylDNSConfig.loadFromDb(stubRepo(Map.empty)).unsafeRunSync()
       val repo = stubRepo(Map("brand-new" -> "val"))
       val diff = RuntimeVinylDNSConfig.reloadWithDiff(repo).unsafeRunSync()
       diff should contain key "brand-new"
@@ -280,7 +276,6 @@ class RuntimeVinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAnd
 
     "return a diff entry when a key is removed from DB" in {
       val repo = stubRepo(Map("old-key" -> "v"))
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
       RuntimeVinylDNSConfig.loadFromDb(repo).unsafeRunSync()
 
       val diff = RuntimeVinylDNSConfig.reloadWithDiff(stubRepo(Map.empty)).unsafeRunSync()
@@ -289,7 +284,7 @@ class RuntimeVinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAnd
     }
 
     "update appConfigRef after reload so a second diff is empty" in {
-      RuntimeVinylDNSConfig.init().unsafeRunSync()
+      RuntimeVinylDNSConfig.loadFromDb(stubRepo(Map.empty)).unsafeRunSync()
       val repo = stubRepo(Map("sync-delay" -> "20000"))
       RuntimeVinylDNSConfig.reloadWithDiff(repo).unsafeRunSync()
 
