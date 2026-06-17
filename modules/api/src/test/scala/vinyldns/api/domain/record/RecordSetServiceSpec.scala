@@ -1520,9 +1520,25 @@ class RecordSetServiceSpec
       doReturn(IO.pure(Some(aaaa)))
         .when(mockRecordRepo)
         .getRecordSet(aaaa.id)
+      doReturn(IO.pure(Some(aaaa.copy(zoneId = zoneNotAuthorized.id))))
+        .when(mockRecordRepo)
+        .getRecordSet(aaaa.id)
       val result =
         underTest.deleteRecordSet(aaaa.id, zoneNotAuthorized.id, okAuth).value.unsafeRunSync().swap.toOption.get
       result shouldBe a[NotAuthorizedError]
+    }
+    "fail if the requested zone does not match the record zone" in {
+      val record = aaaa.copy(status = RecordSetStatus.Active, zoneId = okZone.id)
+      doReturn(IO.pure(Some(record)))
+        .when(mockRecordRepo)
+        .getRecordSet(record.id)
+
+      val result =
+        underTest.deleteRecordSet(record.id, zoneNotAuthorized.id, okAuth).value.unsafeRunSync().swap.toOption.get
+
+      result shouldBe RecordSetNotFoundError(
+        s"RecordSet with id ${record.id} does not exist in zone ${zoneNotAuthorized.id}."
+      )
     }
     "fail if the record is a high value domain" in {
       val record =
@@ -1792,7 +1808,8 @@ class RecordSetServiceSpec
           recordTypeFilter = any[Option[Set[RecordType.RecordType]]],
           recordOwnerGroupFilter = any[Option[String]],
           nameSort = any[NameSort.NameSort],
-          recordTypeSort = any[RecordTypeSort.RecordTypeSort]
+          recordTypeSort = any[RecordTypeSort.RecordTypeSort],
+          authPrincipal = any[Option[AuthPrincipal]]
         )
 
       val result: ListGlobalRecordSetsResponse =
@@ -1867,7 +1884,8 @@ class RecordSetServiceSpec
           recordNameFilter = any[Option[String]],
           recordTypeFilter = any[Option[Set[RecordType.RecordType]]],
           recordOwnerGroupFilter = any[Option[String]],
-          nameSort = any[NameSort.NameSort]
+          nameSort = any[NameSort.NameSort],
+          authPrincipal = any[Option[AuthPrincipal]]
         )
 
       val result =
@@ -1912,6 +1930,60 @@ class RecordSetServiceSpec
 
       result shouldBe an[InvalidRequest]
     }
+
+    "exclude recordsets in zones the caller cannot access" in {
+      doReturn(IO.pure(Set(okGroup)))
+        .when(mockGroupRepo)
+        .getGroups(any[Set[String]])
+
+      doReturn(IO.pure(Set(sharedZone)))
+        .when(mockZoneRepo)
+        .getZones(Set(sharedZone.id))
+
+      doReturn(
+        IO.pure(
+          ListRecordSetResults(
+            List(sharedZoneRecord),
+            recordNameFilter = Some("aaaa*"),
+            nameSort = NameSort.ASC,
+            recordTypeSort = RecordTypeSort.NONE
+          )
+        )
+      ).when(mockRecordDataRepo)
+        .listRecordSetData(
+          zoneId = any[Option[String]],
+          startFrom = any[Option[String]],
+          maxItems = any[Option[Int]],
+          recordNameFilter = any[Option[String]],
+          recordTypeFilter = any[Option[Set[RecordType.RecordType]]],
+          recordOwnerGroupFilter = any[Option[String]],
+          nameSort = any[NameSort.NameSort],
+          authPrincipal = any[Option[AuthPrincipal]]
+        )
+
+      val result =
+        underTest
+          .searchRecordSets(
+            startFrom = None,
+            maxItems = None,
+            recordNameFilter = "aaaa*",
+            recordTypeFilter = None,
+            recordOwnerGroupFilter = None,
+            nameSort = NameSort.ASC,
+            authPrincipal = okAuth,
+            recordTypeSort = RecordTypeSort.ASC
+          )
+          .value.unsafeRunSync().toOption.get
+
+      result.recordSets shouldBe List(
+        RecordSetGlobalInfo(
+          sharedZoneRecord,
+          sharedZone.name,
+          sharedZone.shared,
+          Some(okGroup.name)
+        )
+      )
+    }
   }
 
 
@@ -1938,7 +2010,8 @@ class RecordSetServiceSpec
           recordTypeFilter = None,
           recordOwnerGroupFilter = None,
           nameSort = NameSort.ASC,
-          recordTypeSort = RecordTypeSort.ASC
+          recordTypeSort = RecordTypeSort.ASC,
+          authPrincipal = None
         )
 
       val result: ListRecordSetsByZoneResponse =
@@ -1983,7 +2056,8 @@ class RecordSetServiceSpec
           recordTypeFilter = None,
           recordOwnerGroupFilter = None,
           nameSort = NameSort.ASC,
-          recordTypeSort = RecordTypeSort.ASC
+          recordTypeSort = RecordTypeSort.ASC,
+          authPrincipal = None
         )
 
       val result: ListRecordSetsByZoneResponse =
@@ -2153,6 +2227,15 @@ class RecordSetServiceSpec
             maxItems = 3)
 
         result shouldBe changesWithName
+      }
+
+      "return NotAuthorizedError when the caller cannot access the requested zone" in {
+        val error =
+          underTest
+            .listFailedRecordSetChanges(authPrincipal = okAuth, Some(zoneNotAuthorized.id))
+            .value.unsafeRunSync().swap.toOption.get
+
+        error shouldBe a[NotAuthorizedError]
       }
     }
 
@@ -3213,4 +3296,3 @@ class RecordSetServiceSpec
     }
   }
 }
-
