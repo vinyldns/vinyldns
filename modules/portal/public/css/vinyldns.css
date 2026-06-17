@@ -450,6 +450,10 @@ input[type="file"] {
     word-break: break-all;
 }
 
+.preserve-line-breaks {
+    white-space: pre-line;
+}
+
 .no-wrap {
     white-space: nowrap;
     word-break: keep-all;

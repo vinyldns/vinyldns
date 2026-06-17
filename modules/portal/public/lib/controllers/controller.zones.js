@@ -40,6 +40,50 @@ angular.module('controller.zones', [])
 
     $scope.keyAlgorithms = ['HMAC-MD5', 'HMAC-SHA1', 'HMAC-SHA224', 'HMAC-SHA256', 'HMAC-SHA384', 'HMAC-SHA512'];
 
+    function escapeRegExp(value) {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    function renderAutocompleteItem(ul, item, term) {
+        var label = String(item.label || "");
+        var $item = $("<li></li>").data("ui-autocomplete-item", item.value);
+        var $content = $("<div></div>");
+
+        if (!term) {
+            return $item.append($content.text(label)).appendTo(ul);
+        }
+
+        var matcher = new RegExp(escapeRegExp(String(term)), "gi");
+        var lastIndex = 0;
+
+        label.replace(matcher, function (match, offset) {
+            if (offset > lastIndex) {
+                $content.append(document.createTextNode(label.slice(lastIndex, offset)));
+            }
+
+            $("<b></b>").text(match).appendTo($content);
+            lastIndex = offset + match.length;
+            return match;
+        });
+
+        if (lastIndex === 0) {
+            $content.text(label);
+        } else if (lastIndex < label.length) {
+            $content.append(document.createTextNode(label.slice(lastIndex)));
+        }
+
+        return $item.append($content).appendTo(ul);
+    }
+
+    function applyAutocompleteRenderer(autocomplete) {
+        var instance = autocomplete.autocomplete("instance");
+        if (instance) {
+            instance._renderItem = function (ul, item) {
+                return renderAutocompleteItem(ul, item, this.term);
+            };
+        }
+    }
+
     // Paging status for zone sets
     var zonesPaging = pagingService.getNewPagingParams(100);
     var allZonesPaging = pagingService.getNewPagingParams(100);
@@ -96,7 +140,7 @@ angular.module('controller.zones', [])
 
     $.zoneAutocompleteSearch = function() {
         // Autocomplete for zone search
-        $(".zone-search-text").autocomplete({
+        var zoneSearch = $(".zone-search-text").autocomplete({
           source: function( request, response ) {
             $.ajax({
               url: "/api/zones?maxItems=100",
@@ -123,6 +167,8 @@ angular.module('controller.zones', [])
             $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
           }
         });
+
+        applyAutocompleteRenderer(zoneSearch);
     };
 
     // Should be the default autocomplete search result option
@@ -131,7 +177,7 @@ angular.module('controller.zones', [])
     $('.isGroupSearch').change(function() {
         if(this.checked) {
             // Autocomplete for search by admin group
-            $(".zone-search-text").autocomplete({
+            var zoneSearch = $(".zone-search-text").autocomplete({
               source: function( request, response ) {
                 $.ajax({
                   url: "/api/groups?maxItems=100&abridged=true",
@@ -158,19 +204,12 @@ angular.module('controller.zones', [])
                 $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
               }
             });
+
+            applyAutocompleteRenderer(zoneSearch);
         } else {
             $.zoneAutocompleteSearch();
         }
     });
-
-    // Autocomplete text-highlight
-    $.ui.autocomplete.prototype._renderItem = function(ul, item) {
-            let txt = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
-            return $("<li></li>")
-                  .data("ui-autocomplete-item", item.value)
-                  .append("<div>" + txt + "</div>")
-                  .appendTo(ul);
-    };
 
     /* Refreshes zone data set and then re-displays */
     $scope.refreshZones = function () {

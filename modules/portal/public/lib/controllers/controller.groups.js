@@ -31,6 +31,41 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     $scope.validEmailDomains= [];
     $scope.maxGroupItemsDisplay = 3000;
 
+    function escapeRegExp(value) {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    function renderAutocompleteItem(ul, item, term) {
+        var label = String(item.label || "");
+        var $item = $("<li></li>").data("ui-autocomplete-item", item.value);
+        var $content = $("<div></div>");
+
+        if (!term) {
+            return $item.append($content.text(label)).appendTo(ul);
+        }
+
+        var matcher = new RegExp(escapeRegExp(String(term)), "gi");
+        var lastIndex = 0;
+
+        label.replace(matcher, function (match, offset) {
+            if (offset > lastIndex) {
+                $content.append(document.createTextNode(label.slice(lastIndex, offset)));
+            }
+
+            $("<b></b>").text(match).appendTo($content);
+            lastIndex = offset + match.length;
+            return match;
+        });
+
+        if (lastIndex === 0) {
+            $content.text(label);
+        } else if (lastIndex < label.length) {
+            $content.append(document.createTextNode(label.slice(lastIndex)));
+        }
+
+        return $item.append($content).appendTo(ul);
+    }
+
     // Paging status for group sets
     var groupsPaging = pagingService.getNewPagingParams(100);
     var allGroupsPaging = pagingService.getNewPagingParams(100);
@@ -74,7 +109,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         return true;
     };
     // Autocomplete for group search
-    $("#group-search-text").autocomplete({
+    var groupSearch = $("#group-search-text").autocomplete({
       source: function( request, response ) {
         $.ajax({
           url: "/api/groups?maxItems=100&abridged=true",
@@ -102,14 +137,12 @@ angular.module('controller.groups', []).controller('GroupsController', function 
       }
     });
 
-    // Autocomplete text-highlight
-    $.ui.autocomplete.prototype._renderItem = function(ul, item) {
-            let txt = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
-            return $("<li></li>")
-                  .data("ui-autocomplete-item", item.value)
-                  .append("<div>" + txt + "</div>")
-                  .appendTo(ul);
-    };
+    var groupSearchInstance = groupSearch.autocomplete("instance");
+    if (groupSearchInstance) {
+        groupSearchInstance._renderItem = function (ul, item) {
+            return renderAutocompleteItem(ul, item, this.term);
+        };
+    }
 
     $scope.createGroup = function (name, email, description) {
         //prevent user executing service call multiple times
