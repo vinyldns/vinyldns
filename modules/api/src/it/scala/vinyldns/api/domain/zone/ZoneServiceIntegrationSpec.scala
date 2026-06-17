@@ -40,7 +40,7 @@ import vinyldns.api.{MySqlApiIntegrationSpec, ResultHelpers}
 import vinyldns.core.TestMembershipData.{abcAuth, okAuth, okGroup, okUser}
 import vinyldns.core.TestZoneData.{abcZone, okZone}
 import vinyldns.core.crypto.NoOpCrypto
-import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.backend.BackendResolver
 import vinyldns.core.domain.membership.{GroupRepository, UserRepository}
@@ -97,7 +97,7 @@ class ZoneServiceIntegrationSpec
           "create-zone" -> """{ "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "PowerDNS Create Zone", "type": "object", "required": ["kind", "nameservers"], "properties": { "kind": { "type": "string", "enum": ["Native", "Master"] }, "nameservers": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^[a-zA-Z0-9.-]+\\.$" } }, "masters": { "type": "array", "items": { "type": "string" } } }, "additionalProperties": false }""",
           "update-zone" -> """{ "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "PowerDNS Update Zone", "type": "object", "properties": { "kind": { "type": "string", "enum": ["Native", "Master"] }, "masters": { "type": "array", "items": { "type": "string" } } }, "additionalProperties": false }"""
         ),
-        apiKey = "test-api-key"
+        apiKey = Encrypted("test-api-key")
       )
     ),
 

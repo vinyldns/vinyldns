@@ -21,7 +21,7 @@ import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
-import vinyldns.core.TestMembershipData.{okGroup}
+import vinyldns.core.TestMembershipData.{dummyAuth, okAuth, okGroup, superUserAuth}
 import vinyldns.core.TestZoneData.{generateBindZone, generatePdnsZone}
 import vinyldns.core.domain.zone._
 import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
@@ -118,18 +118,45 @@ class MySqlGenerateZoneRepositoryIntegrationSpec
   "MySqlGenerateZoneRepository.listGenerateZones" should {
     "get a list of zones" in {
       saveZones(testZones).unsafeRunSync()
-      repo.listGenerateZones().unsafeRunSync().generatedZones.head shouldBe testZones.head
+      repo.listGenerateZones(superUserAuth).unsafeRunSync().generatedZones.head shouldBe testZones.head
     }
     "get a list of zones by name filter" in {
       saveZones(testZones).unsafeRunSync()
-      repo.listGenerateZones( zoneNameFilter=Some("1.")).unsafeRunSync().generatedZones.head shouldBe testZones.head
+      repo.listGenerateZones(superUserAuth, zoneNameFilter=Some("1.")).unsafeRunSync().generatedZones.head shouldBe testZones.head
     }
   }
   "MySqlGenerateZoneRepository.listGeneratedZonesByAdminGroupIds" should {
     "get a list of zones" in {
       saveZones(testZones).unsafeRunSync()
       // testZones has foo as owner group id so its listing generateBindZone which has okgroup id.
-      repo.listGeneratedZonesByAdminGroupIds(adminGroupIds=Set(okGroup.id)).unsafeRunSync().generatedZones.head shouldBe generateBindZone
+      repo.listGeneratedZonesByAdminGroupIds(superUserAuth, adminGroupIds=Set(okGroup.id)).unsafeRunSync().generatedZones.head shouldBe generateBindZone
+    }
+  }
+  "MySqlGenerateZoneRepository access control" should {
+    // generateBindZone and generatePdnsZone (saved in beforeEach) are both owned by okGroup.
+    "not return zones owned by a group the caller does not belong to" in {
+      val zoneNames =
+        repo.listGenerateZones(dummyAuth).unsafeRunSync().generatedZones.map(_.zoneName)
+      zoneNames should not contain generateBindZone.zoneName
+    }
+    "return zones owned by a group the caller belongs to" in {
+      val zoneNames =
+        repo.listGenerateZones(okAuth).unsafeRunSync().generatedZones.map(_.zoneName)
+      zoneNames should contain(generateBindZone.zoneName)
+    }
+    "return zones for a super user regardless of group membership" in {
+      val zoneNames =
+        repo.listGenerateZones(superUserAuth).unsafeRunSync().generatedZones.map(_.zoneName)
+      zoneNames should contain(generateBindZone.zoneName)
+    }
+    "not return another group's zones via the admin-group search path for a non-member" in {
+      val zoneNames =
+        repo
+          .listGeneratedZonesByAdminGroupIds(dummyAuth, adminGroupIds = Set(okGroup.id))
+          .unsafeRunSync()
+          .generatedZones
+          .map(_.zoneName)
+      zoneNames should not contain generateBindZone.zoneName
     }
   }
 }

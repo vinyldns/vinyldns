@@ -128,35 +128,30 @@ trait DnsJsonProtocol extends JsonValidation {
 
   case object ZoneGenerationInputSerializer extends ValidationSerializer[ZoneGenerationInput] {
     override def fromJson(js: JValue): ValidatedNel[String, ZoneGenerationInput] = {
+      // Validate providerParams: it is optional, but if present it must be a JSON object.
+      // A present-but-malformed value is rejected rather than silently collapsed to an empty map.
+      val providerParams: ValidatedNel[String, Map[String, JValue]] = (js \ "providerParams") match {
+        case JNothing | JNull => Map.empty[String, JValue].validNel
+        case JObject(fields) => fields.toMap.validNel
+        case _ => "providerParams must be a JSON object".invalidNel
+      }
+
       // Validate standard fields (not provider specific)
-      val std = (
+      // Server-owned fields (id, status, response) are deliberately not read from the request
+      // body so clients cannot set them; the server assigns them.
+      (
         (js \ "groupId").required[String]("Missing group id"),
         (js \ "email").required[String]("Missing email"),
         (js \ "provider").required[String]("Missing provider"),
         (js \ "zoneName").required[String]("Missing zone name"),
-        (js \ "status").default(GenerateZoneStatus, GenerateZoneStatus.Active),
-        (js \ "id").default[String](UUID.randomUUID().toString),
-        (js \ "response").optional[ZoneGenerationResponse]
-      )
-
-      // Extract providerParams from the nested "providerParams" field
-      // should providerParams be required?
-      val providerParams = (js \ "providerParams") match {
-        case JObject(fields) => fields.toMap  // Convert JObject to Map[String, JValue]
-        case _ => Map.empty[String, JValue]   // Default to empty map if missing/invalid
-      }
-
-      // Build the result (ignores any non-standard fields outside "providerParams")
-      std.mapN { (groupId, email, provider, zoneName, status, id, response) =>
+        providerParams
+      ).mapN { (groupId, email, provider, zoneName, params) =>
         ZoneGenerationInput(
           groupId = groupId,
           email = email,
           provider = provider,
           zoneName = zoneName,
-          status = status,
-          id = id,
-          response = response,
-          providerParams = providerParams
+          providerParams = params
         )
       }
     }

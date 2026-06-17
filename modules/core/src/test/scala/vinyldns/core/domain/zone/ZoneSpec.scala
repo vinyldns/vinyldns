@@ -94,14 +94,16 @@ class ZoneSpec extends AnyWordSpec with Matchers {
       result.response shouldEqual Some(bindZoneGenerationResponse)
       result.id shouldEqual "bindZoneId"
     }
-    "update a GenerateZone instance from ZoneGenerationInput" in {
+    "build a GenerateZone instance from ZoneGenerationInput with server-owned fields defaulted" in {
       val result = GenerateZone(inputBindZone)
 
       result.groupId shouldEqual okGroup.id
       result.provider shouldEqual "bind"
       result.zoneName shouldEqual okZone.name
       result.providerParams shouldEqual bindProviderParams
-      result.response shouldEqual Some(bindZoneGenerationResponse)
+      // Server-owned fields are not taken from the input
+      result.response shouldEqual None
+      result.status shouldEqual GenerateZoneStatus.Active
     }
   }
 }

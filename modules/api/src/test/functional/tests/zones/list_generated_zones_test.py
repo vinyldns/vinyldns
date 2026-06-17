@@ -16,7 +16,9 @@ def test_list_generated_zones_success(list_generated_zone_context, shared_zone_t
 
     retrieved = result["zones"]
 
-    assert_that(retrieved, has_length(7))
+    # Listing is access-scoped: the user only sees generated zones owned by groups they
+    # belong to, i.e. the 5 zones owned by list_generate_zones_group (not other groups').
+    assert_that(retrieved, has_length(5))
     assert_that(retrieved, has_item(has_entry("zoneName", list_generated_zone_context.search_generate_zone1["zoneName"])))
     assert_that(retrieved, has_item(has_entry("groupName", list_generated_zone_context.list_generate_zones_group["name"])))
 
@@ -51,7 +53,9 @@ def test_list_generated_zones_by_admin_group_name_with_wildcard(list_generated_z
     result = shared_zone_test_context.list_generated_zones_client.list_generated_zones(name_filter=f"*group{shared_zone_test_context.partition_id}", search_by_admin_group=True, status=200)
     retrieved = result["zones"]
 
-    assert_that(retrieved, has_length(8))
+    # The wildcard matches multiple admin groups, but listing is access-scoped so the user
+    # only sees zones owned by groups they belong to (their 5 zones).
+    assert_that(retrieved, has_length(5))
     assert_that(retrieved, has_item(has_entry("zoneName", list_generated_zone_context.search_generate_zone1["zoneName"])))
     assert_that(retrieved, has_item(has_entry("zoneName", list_generated_zone_context.search_generate_zone2["zoneName"])))
     assert_that(retrieved, has_item(has_entry("zoneName", list_generated_zone_context.search_generate_zone3["zoneName"])))
@@ -68,14 +72,6 @@ def test_list_generated_zones_max_items_100(shared_zone_test_context):
     """
     result = shared_zone_test_context.list_generated_zones_client.list_generated_zones(status=200)
     assert_that(result["maxItems"], is_(100))
-
-
-def test_list_generated_zones_ignore_access_default_false(shared_zone_test_context):
-    """
-    Test that the default ignore access value for a list zones request is false
-    """
-    result = shared_zone_test_context.list_zones_client.list_generated_zones(status=200)
-    assert_that(result["ignoreAccess"], is_(False))
 
 
 def test_list_generated_zones_invalid_max_items_fails(shared_zone_test_context):
@@ -101,10 +97,11 @@ def test_list_generated_zones_no_search_first_page(list_generated_zone_context, 
     zones = result["zones"]
 
     assert_that(zones, has_length(3))
-    assert_that(zones[1]["zoneName"], is_(list_generated_zone_context.search_generate_zone1["zoneName"]))
-    assert_that(zones[2]["zoneName"], is_(list_generated_zone_context.search_generate_zone2["zoneName"]))
+    assert_that(zones[0]["zoneName"], is_(list_generated_zone_context.search_generate_zone1["zoneName"]))
+    assert_that(zones[1]["zoneName"], is_(list_generated_zone_context.search_generate_zone2["zoneName"]))
+    assert_that(zones[2]["zoneName"], is_(list_generated_zone_context.search_generate_zone3["zoneName"]))
 
-    assert_that(result["nextId"], is_(list_generated_zone_context.search_generate_zone2["zoneName"]))
+    assert_that(result["nextId"], is_(list_generated_zone_context.search_generate_zone3["zoneName"]))
     assert_that(result["maxItems"], is_(3))
     assert_that(result, is_not(has_key("startFrom")))
 
@@ -143,7 +140,8 @@ def test_list_generated_zones_no_search_last_page(list_generated_zone_context, s
 
     zones = result["zones"]
 
-    assert_that(zones, has_length(3))
+    # Access-scoped: after searched-3 only the two unfiltered zones remain for this user.
+    assert_that(zones, has_length(2))
     assert_that(zones[0]["zoneName"], is_(list_generated_zone_context.non_search_generate_zone1["zoneName"]))
     assert_that(zones[1]["zoneName"], is_(list_generated_zone_context.non_search_generate_zone2["zoneName"]))
 
@@ -202,12 +200,12 @@ def test_list_generated_zones_with_search_last_page(list_generated_zone_context,
     assert_that(result["startFrom"], is_(list_generated_zone_context.search_generate_zone2["zoneName"]))
 
 
-def test_list_generated_zones_ignore_access_success(shared_zone_test_context):
+def test_list_generated_zones_admin_sees_all(shared_zone_test_context):
     """
-    Test that we can retrieve a list of zones regardless of zone access
+    Test that a super/support admin can retrieve all generated zones regardless of group membership.
+    (Non-admin callers are always access-scoped; see test_list_generated_zones_success.)
     """
-    result = shared_zone_test_context.list_generated_zones_client.list_generated_zones(ignore_access=True, status=200)
+    result = shared_zone_test_context.super_user_client.list_generated_zones(status=200)
     retrieved = result["zones"]
 
-    assert_that(result["ignoreAccess"], is_(True))
     assert_that(len(retrieved), greater_than(5))

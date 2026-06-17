@@ -177,9 +177,7 @@ object GenerateZone {
       email,
       provider,
       zoneName,
-      status,
-      providerParams,
-      response
+      providerParams = providerParams
     )
   }
 
@@ -256,16 +254,16 @@ case class ZoneGenerationResponse(
                                    changeType: GenerateZoneChangeType
                                  )
 
+// Client-supplied request to generate a zone. Server-owned fields (id, status, response)
+// are intentionally not part of this model so clients cannot set them; the server assigns
+// them when constructing the GenerateZone.
 case class ZoneGenerationInput(
     groupId: String,
     email: String,
     provider: String,
     zoneName: String,
-    status: GenerateZoneStatus = GenerateZoneStatus.Active,
-    providerParams: Map[String, JValue] = Map.empty,
-    response: Option[ZoneGenerationResponse] = None,
-    id: String = UUID.randomUUID().toString
-                              )
+    providerParams: Map[String, JValue] = Map.empty
+)
 
 final case class ZoneACL(rules: Set[ACLRule] = Set.empty) {
 
@@ -345,7 +343,7 @@ case class DnsProviderConfig(
     endpoints: Map[String, String],
     requestTemplates: Map[String, String],
     schemas: Map[String, String],
-    apiKey: String
+    apiKey: Encrypted
   )
 
 case class DnsProviderApiConnection(
@@ -435,7 +433,8 @@ object ConfiguredDnsConnections {
         val endpoints = configToMap(providerConfig.getConfig("endpoints"))
         val requestTemplates = configToMap(providerConfig.getConfig("request-templates"))
         val schemas = configToMap(providerConfig.getConfig("schemas"))
-        val apiKey = providerConfig.getString("api-key")
+        // Encrypt the provider API key at load time so it is never held in memory as plaintext.
+        val apiKey = Encryption(crypto, providerConfig.getString("api-key"))
 
         provider -> DnsProviderConfig(
           endpoints = endpoints,

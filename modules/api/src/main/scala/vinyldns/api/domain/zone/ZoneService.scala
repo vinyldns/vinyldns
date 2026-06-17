@@ -23,6 +23,7 @@ import vinyldns.api.Interfaces
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.Encryption
 import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
 import vinyldns.core.domain.zone.{ZoneCommandResult, _}
 import vinyldns.core.queue.MessageQueue
@@ -171,8 +172,16 @@ class ZoneService(
       _ <- canSeeGenerateZone(auth, generateZone).toResult
     } yield generateZone
 
+  // Bound external provider calls so a slow or hung provider cannot block the request thread
+  // indefinitely. Values are in milliseconds.
+  private val dnsProviderConnectTimeoutMs = 10000
+  private val dnsProviderReadTimeoutMs = 30000
+
   def createConnection(apiUrl: String): HttpURLConnection = {
-   new URL(apiUrl).openConnection().asInstanceOf[HttpURLConnection]
+    val connection = new URL(apiUrl).openConnection().asInstanceOf[HttpURLConnection]
+    connection.setConnectTimeout(dnsProviderConnectTimeoutMs)
+    connection.setReadTimeout(dnsProviderReadTimeoutMs)
+    connection
   }
 
   private def schemaValidationResult(
@@ -181,7 +190,17 @@ class ZoneService(
                                       params: Map[String, JValue]
                                     ): Result[Unit] = providerConfig.schemas.get(operation) match {
     case Some(schema) => JsonSchemaValidator.validate(schema, params).toResult
-    case None => result(())
+    case None =>
+      // Fail closed: without a schema we cannot validate the provider params, so refuse to
+      // forward unvalidated input to the provider. A missing schema is an operator
+      // misconfiguration, not a client error, so surface it as a server-side failure.
+      val failure: Either[Throwable, Unit] = Left(
+        new RuntimeException(
+          s"No request-validation schema is configured for operation '$operation'; " +
+            "refusing to process provider parameters without one."
+        )
+      )
+      failure.toResult
   }
 
   def handleGenerateZoneRequest(
@@ -209,7 +228,7 @@ class ZoneService(
       // Send request
       _ <- logger.info(s"Request: provider=${request.provider}, path=$endpoint, request=$requestJsonOpt").toResult
       dnsProviderConn <- createConnection(endpoint).toResult
-      dnsConnResponse <- createDnsZoneService(providerConfig.apiKey, "create-zone", requestJsonOpt, dnsProviderConn).toResult
+      dnsConnResponse <- createDnsZoneService(Encryption.decrypt(crypto, providerConfig.apiKey), "create-zone", requestJsonOpt, dnsProviderConn).toResult
 
       // Process response
       responseCode = dnsConnResponse.getResponseCode
@@ -226,7 +245,7 @@ class ZoneService(
         message = Some(responseJson),
         changeType = GenerateZoneChangeType.Create
       )
-      zoneToGenerate = GenerateZone(request.copy(response = Some(zoneGenerateResponse)))
+      zoneToGenerate = GenerateZone(request).copy(response = Some(zoneGenerateResponse))
       _ <- logger.info(s"zone generation response: Create: $zoneToGenerate").toResult
       _ <- generateZoneRepository.save(zoneToGenerate).toResult[GenerateZone]
 
@@ -257,7 +276,7 @@ class ZoneService(
       // Send request
       _ <- logger.info(s"Request: provider=${request.provider}, path=$endpoint, request=$requestJsonOpt").toResult
       dnsProviderConn <- createConnection(endpoint).toResult
-      dnsConnResponse <- createDnsZoneService(providerConfig.apiKey, "update-zone", requestJsonOpt, dnsProviderConn).toResult
+      dnsConnResponse <- createDnsZoneService(Encryption.decrypt(crypto, providerConfig.apiKey), "update-zone", requestJsonOpt, dnsProviderConn).toResult
 
       // Process response
       responseCode = dnsConnResponse.getResponseCode
@@ -312,7 +331,7 @@ class ZoneService(
       }
 
       dnsProviderConn <- createConnection(endpoint).toResult
-      dnsConnResponse <- createDnsZoneService(providerConfig.apiKey, "delete-zone", None, dnsProviderConn).toResult
+      dnsConnResponse <- createDnsZoneService(Encryption.decrypt(crypto, providerConfig.apiKey), "delete-zone", None, dnsProviderConn).toResult
 
       // Process response
       responseCode = dnsConnResponse.getResponseCode
@@ -329,7 +348,7 @@ class ZoneService(
         message = Some(responseJson),
         changeType = GenerateZoneChangeType.Delete
       )
-      zoneToDelete = GenerateZone(request.copy(response = Some(zoneGenerateResponse))).copy(id = generatedZone.id)
+      zoneToDelete = GenerateZone(request).copy(response = Some(zoneGenerateResponse), id = generatedZone.id)
       _ <- logger.info(s"zone generation response: Delete: $zoneToDelete").toResult
       _ <- generateZoneRepository.delete(zoneToDelete).toResult[GenerateZone]
 
@@ -497,16 +516,15 @@ class ZoneService(
                           nameFilter: Option[String] = None,
                           startFrom: Option[String] = None,
                           maxItems: Int = 100,
-                          searchByAdminGroup: Boolean = false,
-                          ignoreAccess: Boolean = false
+                          searchByAdminGroup: Boolean = false
                         ): Result[ListGeneratedZonesResponse] = {
     if(!searchByAdminGroup || nameFilter.isEmpty){
       for {
         listZonesResult <- generateZoneRepository.listGenerateZones(
+          authPrincipal,
           nameFilter,
           startFrom,
-          maxItems,
-          ignoreAccess
+          maxItems
         )
         generatedZones = listZonesResult.generatedZones
         groupIds = generatedZones.map(_.groupId).toSet
@@ -517,17 +535,16 @@ class ZoneService(
         listZonesResult.zonesFilter,
         listZonesResult.startFrom,
         listZonesResult.nextId,
-        listZonesResult.maxItems,
-        listZonesResult.ignoreAccess
+        listZonesResult.maxItems
       )}
     else {
       for {
         groupIds <- getGroupsIdsByName(nameFilter.get)
         listZonesResult <- generateZoneRepository.listGeneratedZonesByAdminGroupIds(
+          authPrincipal,
           startFrom,
           maxItems,
-          groupIds,
-          ignoreAccess
+          groupIds
         )
         generatedZones = listZonesResult.generatedZones
         groups <- groupRepository.getGroups(groupIds)
@@ -537,8 +554,7 @@ class ZoneService(
         nameFilter,
         listZonesResult.startFrom,
         listZonesResult.nextId,
-        listZonesResult.maxItems,
-        listZonesResult.ignoreAccess
+        listZonesResult.maxItems
       )
     }
   }.toResult

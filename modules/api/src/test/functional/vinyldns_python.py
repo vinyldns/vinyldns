@@ -596,7 +596,7 @@ class VinylDNSClient(object):
         return data
 
     def list_generated_zones(self, name_filter=None, start_from=None, max_items=None, search_by_admin_group=False,
-                   ignore_access=False, **kwargs):
+                   **kwargs):
         """
         Gets a list of zones that currently exist
         :return: a list of zones
@@ -615,9 +615,6 @@ class VinylDNSClient(object):
 
         if search_by_admin_group:
             query.append("searchByAdminGroup=" + str(search_by_admin_group))
-
-        if ignore_access:
-            query.append("ignoreAccess=" + str(ignore_access))
 
         if query:
             url = url + "?" + "&".join(query)

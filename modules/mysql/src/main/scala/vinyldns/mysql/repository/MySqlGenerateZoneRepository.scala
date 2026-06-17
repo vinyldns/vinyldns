@@ -17,8 +17,10 @@
 package vinyldns.mysql.repository
 
 import cats.effect.IO
+import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone.{GenerateZone, GenerateZoneRepository, ListGeneratedZonesResults}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
@@ -27,8 +29,13 @@ import vinyldns.proto.VinylDNSProto
 
 class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufConversions with Monitored {
 
+  private val logger = LoggerFactory.getLogger(classOf[MySqlGenerateZoneRepository])
 
   final val MAX_RETRIES = 10
+
+  // Cap the number of group accessors interpolated into the IN (...) clause so we don't build
+  // an unbounded parameterized query (mirrors MySqlZoneRepository.buildZoneSearchAccessorList).
+  final val MAX_ACCESSORS = 30
 
   /**
     * use INSERT INTO ON DUPLICATE KEY UPDATE for the generate zone, which will update the values if the zone already exists
@@ -56,6 +63,30 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
 
   private final val BASE_GENERATE_ZONE_SEARCH_SQL: SQLSyntax =
     sqls"SELECT gz.data FROM generate_zone gz"
+
+  /**
+    * Generated zones are only accessible to members of their admin group (there is no per-zone
+    * ACL table as there is for regular zones). Only super/support admins may see all zones; 
+    * everyone else is restricted to zones owned by a group they belong to, and a user who 
+    * belongs to no groups sees nothing.
+    */
+  private def accessFilter(authPrincipal: AuthPrincipal): Option[SQLSyntax] =
+    if (authPrincipal.isSystemAdmin) {
+      None
+    } else {
+      val memberGroupIds = authPrincipal.memberGroupIds
+      if (memberGroupIds.nonEmpty) {
+        if (memberGroupIds.length > MAX_ACCESSORS) {
+          logger.warn(
+            s"User ${authPrincipal.signedInUser.userName} with id ${authPrincipal.signedInUser.id} " +
+              s"is in more than $MAX_ACCESSORS groups, not all generated zones may be returned!"
+          )
+        }
+        Some(sqls"gz.admin_group_id IN (${memberGroupIds.take(MAX_ACCESSORS)})")
+      } else {
+        Some(sqls"gz.admin_group_id IN ('')")
+      }
+    }
 
    def save(generateZone: GenerateZone): IO[GenerateZone] = {
       monitor("repo.generateZone.save") {
@@ -123,15 +154,15 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
     }
 
   def listGenerateZones(
+                         authPrincipal: AuthPrincipal,
                          zoneNameFilter: Option[String] = None,
                          startFrom: Option[String] = None,
-                         maxItems: Int = 100,
-                         ignoreAccess: Boolean = false
+                         maxItems: Int = 100
                        ): IO[ListGeneratedZonesResults] =
     monitor("repo.ZoneJDBC.listGeneratedZones") {
       IO {
         DB.readOnly { implicit s =>
-          val filters = if (zoneNameFilter.isDefined && (zoneNameFilter.get.takeRight(1) == "." || zoneNameFilter.get.contains("*"))) {
+          val nameFilters = if (zoneNameFilter.isDefined && (zoneNameFilter.get.takeRight(1) == "." || zoneNameFilter.get.contains("*"))) {
             List(
               zoneNameFilter.map(flt => sqls"gz.name LIKE ${ensureTrailingDot(flt.replace('*', '%'))}"),
               startFrom.map(os => sqls"gz.name > $os")
@@ -142,6 +173,8 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
               startFrom.map(os => sqls"gz.name > $os")
             ).flatten
           }
+
+          val filters = nameFilters ++ accessFilter(authPrincipal).toList
 
           val baseQuery = BASE_GENERATE_ZONE_SEARCH_SQL
 
@@ -166,32 +199,33 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
             nextId = nextId,
             startFrom = startFrom,
             maxItems = maxItems,
-            zonesFilter = zoneNameFilter,
-            ignoreAccess = ignoreAccess
+            zonesFilter = zoneNameFilter
           )
         }
       }
     }
 
   def listGeneratedZonesByAdminGroupIds(
+                                         authPrincipal: AuthPrincipal,
                                          startFrom: Option[String] = None,
                                          maxItems: Int = 100,
-                                         adminGroupIds: Set[String],
-                                         ignoreAccess: Boolean = false
+                                         adminGroupIds: Set[String]
                                        ): IO[ListGeneratedZonesResults] =
     monitor("repo.ZoneJDBC.listZonesByAdminGroupIds") {
       IO {
         DB.readOnly { implicit s =>
           val groupIdList = adminGroupIds.toSeq
           val groupIdCondition = if (adminGroupIds.nonEmpty) {
-            sqls"admin_group_id IN ($groupIdList)"
+            sqls"gz.admin_group_id IN ($groupIdList)"
           } else {
-            sqls"admin_group_id IN ('')"
+            sqls"gz.admin_group_id IN ('')"
           }
 
           val startFromCondition = startFrom.map(os => sqls"gz.name > $os")
 
-          val conditions = List(Some(groupIdCondition), startFromCondition).flatten
+          val conditions =
+            List(Some(groupIdCondition), startFromCondition).flatten ++
+              accessFilter(authPrincipal).toList
 
           val baseQuery = BASE_GENERATE_ZONE_SEARCH_SQL.append(sqls" WHERE ")
           val withConditions = baseQuery.append(SQLSyntax.join(conditions, sqls" AND "))
@@ -213,8 +247,7 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
             nextId = nextId,
             startFrom = startFrom,
             maxItems = maxItems,
-            zonesFilter = None,
-            ignoreAccess = ignoreAccess
+            zonesFilter = None
           )
         }
       }

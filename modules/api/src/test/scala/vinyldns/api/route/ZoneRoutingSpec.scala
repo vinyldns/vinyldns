@@ -112,8 +112,7 @@ class ZoneRoutingSpec
     "test@test.com",
     "powerdns",
     okZone.name,
-    providerParams = powerDNSProviderParams,
-    response=Some(pdnsZoneGenerationResponse)
+    providerParams = powerDNSProviderParams
   )
 
   private val badAdminIdZoneGenerationInput = ZoneGenerationInput(
@@ -121,9 +120,7 @@ class ZoneRoutingSpec
     email = badAdminIdGenerateZone.email,
     provider = badAdminIdGenerateZone.provider,
     zoneName = badAdminIdGenerateZone.zoneName,
-    id = null,
-    providerParams = Map.empty,
-    response = None
+    providerParams = Map.empty
   )
 
   private val alreadyExistsZoneGenerationInput = ZoneGenerationInput(
@@ -131,9 +128,7 @@ class ZoneRoutingSpec
     email = alreadyExistsGenerateZone.email,
     provider = alreadyExistsGenerateZone.provider,
     zoneName = alreadyExistsGenerateZone.zoneName,
-    id = null,
-    providerParams = Map.empty,
-    response = None
+    providerParams = Map.empty
   )
 
   private val generateMarkTwainZoneAuthorized = GenerateZone(
@@ -498,12 +493,11 @@ class ZoneRoutingSpec
                    nameFilter: Option[String],
                    startFrom: Option[String],
                    maxItems: Int,
-                   searchByAdminGroup: Boolean,
-                   ignoreAccess: Boolean = false
+                   searchByAdminGroup: Boolean
                  ): Result[ListGeneratedZonesResponse] = {
 
-      val outcome = (authPrincipal, nameFilter, startFrom, maxItems, ignoreAccess) match {
-        case (_, None, Some("zone3."), 3, false) =>
+      val outcome = (authPrincipal, nameFilter, startFrom, maxItems) match {
+        case (_, None, Some("zone3."), 3) =>
           Right(
             ListGeneratedZonesResponse(
               zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
@@ -513,7 +507,7 @@ class ZoneRoutingSpec
               maxItems = 3
             )
           )
-        case (_, None, Some("zone4."), 4, false) =>
+        case (_, None, Some("zone4."), 4) =>
           Right(
             ListGeneratedZonesResponse(
               zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
@@ -524,7 +518,7 @@ class ZoneRoutingSpec
             )
           )
 
-        case (_, None, None, 3, false) =>
+        case (_, None, None, 3) =>
           Right(
             ListGeneratedZonesResponse(
               zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
@@ -535,7 +529,7 @@ class ZoneRoutingSpec
             )
           )
 
-        case (_, Some(filter), Some("zone4."), 4, false) =>
+        case (_, Some(filter), Some("zone4."), 4) =>
           Right(
             ListGeneratedZonesResponse(
               zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
@@ -546,19 +540,7 @@ class ZoneRoutingSpec
             )
           )
 
-        case (_, Some(filter), Some("zone4."), 4, true) =>
-          Right(
-            ListGeneratedZonesResponse(
-              zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
-              nameFilter = Some(filter),
-              startFrom = Some("zone4."),
-              nextId = None,
-              maxItems = 4,
-              ignoreAccess = true
-            )
-          )
-
-        case (_, None, None, 6, true) =>
+        case (_, None, None, 6) =>
           Right(
             ListGeneratedZonesResponse(
               zones = List(
@@ -572,12 +554,11 @@ class ZoneRoutingSpec
               nameFilter = None,
               startFrom = None,
               nextId = None,
-              maxItems = 6,
-              ignoreAccess = true,
+              maxItems = 6
             )
           )
 
-        case (_, None, None, _, _) =>
+        case (_, None, None, _) =>
           Right(
             ListGeneratedZonesResponse(
               zones = List(generateZoneSummaryInfoBind,generateZoneSummaryInfoPDNS,generateZoneSummaryInfoMarkTwain),
@@ -771,7 +752,7 @@ class ZoneRoutingSpec
         case badAdminIdGenerateZone.zoneName => Left(InvalidGroupError(s"$request"))
         case errorGenerateZone.zoneName => Left(new RuntimeException("fail"))
         case nonSuperUserSharedZoneGenerateZone.zoneName => Left(NotAuthorizedError("unauth"))
-        case _ => Right(GenerateZone(request.groupId, request.email, request.provider, request.zoneName, request.status, request.providerParams, request.response))
+        case _ => Right(GenerateZone(request.groupId, request.email, request.provider, request.zoneName, providerParams = request.providerParams))
       }
       outcome.toResult
     }
@@ -834,7 +815,7 @@ class ZoneRoutingSpec
   def zoneJson(zone: Zone): String = compact(render(Extraction.decompose(zone)))
 
   def generateZoneJson(name: String, email: String): String =
-    generateZoneJson(ZoneGenerationInput(name, email, null, null, status = null, id = null))
+    generateZoneJson(ZoneGenerationInput(name, email, null, null))
 
   def generateZoneJson(zone: ZoneGenerationInput): String = compact(render(Extraction.decompose(zone)))
 
@@ -1087,6 +1068,24 @@ class ZoneRoutingSpec
       }
     }
 
+    "ignore client-supplied server-owned fields (id, status)" in {
+      val tampered: JValue =
+        ("groupId" -> okGroup.id) ~~
+          ("email" -> "test@test.com") ~~
+          ("provider" -> "powerdns") ~~
+          ("zoneName" -> okZone.name) ~~
+          ("id" -> "attacker-supplied-id") ~~
+          ("status" -> "Deleted")
+
+      postGenerateZone(tampered) ~> zoneRoute ~> check {
+        status shouldBe Accepted
+        val result = responseAs[GenerateZone]
+        result.id should not be "attacker-supplied-id"
+        // client sent status "Deleted"; server must ignore it and default to Active
+        result.status.toString shouldBe "Active"
+      }
+    }
+
     "return a fully populated zone in the response" in {
       postGenerateZone(generatePdnsZoneAuthorizedInput) ~> zoneRoute ~> check {
         val result = responseAs[GenerateZone]
@@ -1125,6 +1124,21 @@ class ZoneRoutingSpec
           "Missing provider",
           "Missing zone name"
         )
+      }
+    }
+
+    "reject a request whose providerParams is not a JSON object" in {
+      val badParams: JValue =
+        ("groupId" -> okGroup.id) ~~
+          ("email" -> "test@test.com") ~~
+          ("provider" -> "powerdns") ~~
+          ("zoneName" -> okZone.name) ~~
+          ("providerParams" -> "not-an-object")
+
+      postGenerateZone(badParams) ~> Route.seal(zoneRoute) ~> check {
+        status shouldBe BadRequest
+        val errs = (responseAs[JValue] \ "errors").extractOpt[List[String]]
+        errs.get should contain("providerParams must be a JSON object")
       }
     }
   }
@@ -1512,7 +1526,6 @@ class ZoneRoutingSpec
         resp.nextId shouldBe None
         resp.maxItems shouldBe 4
         resp.startFrom shouldBe Some("zone4.")
-        resp.ignoreAccess shouldBe false
       }
     }
 
@@ -1525,7 +1538,6 @@ class ZoneRoutingSpec
         resp.nextId shouldBe Some("zone3.")
         resp.maxItems shouldBe 3
         resp.startFrom shouldBe None
-        resp.ignoreAccess shouldBe false
       }
     }
 
@@ -1539,7 +1551,6 @@ class ZoneRoutingSpec
         resp.maxItems shouldBe 4
         resp.startFrom shouldBe Some("zone4.")
         resp.nameFilter shouldBe Some("foo")
-        resp.ignoreAccess shouldBe false
       }
     }
 
@@ -1553,12 +1564,11 @@ class ZoneRoutingSpec
         resp.maxItems shouldBe 4
         resp.startFrom shouldBe Some("zone4.")
         resp.nameFilter shouldBe Some("ok")
-        resp.ignoreAccess shouldBe false
       }
     }
 
     "return all zones when list all is true" in {
-      Get(s"/zones/generate/info?maxItems=6&ignoreAccess=true") ~> zoneRoute ~> check {
+      Get(s"/zones/generate/info?maxItems=6") ~> zoneRoute ~> check {
         val resp = responseAs[ListGeneratedZonesResponse]
         val zones = resp.zones
         (zones.map(_.id) should contain)
@@ -1567,7 +1577,6 @@ class ZoneRoutingSpec
         resp.maxItems shouldBe 6
         resp.startFrom shouldBe None
         resp.nameFilter shouldBe None
-        resp.ignoreAccess shouldBe true
       }
     }
 
