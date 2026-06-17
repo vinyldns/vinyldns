@@ -86,6 +86,7 @@ class ZoneService(
       _ <- isValidZoneAcl(createZoneInput.acl).toResult
       _ <- membershipService.emailValidation(createZoneInput.email)
       _ <- connectionValidator.isValidBackendId(createZoneInput.backendId).toResult
+      _ <- noCustomZoneConnections(createZoneInput.connection, createZoneInput.transferConnection).toResult
       _ <- validateSharedZoneAuthorized(createZoneInput.shared, auth.signedInUser).toResult
       _ <- zoneDoesNotExist(createZoneInput.name)
       _ <- adminGroupExists(createZoneInput.adminGroupId)
@@ -120,6 +121,7 @@ class ZoneService(
       _ <- canChangeZone(auth, updateZoneInput.name, updateZoneInput.adminGroupId).toResult
       updatedZoneInput = if(updateZoneInput.recurrenceSchedule.isDefined) updateZoneInput.copy(scheduleRequestor = Some(auth.signedInUser.userName)) else updateZoneInput
       zoneWithUpdates = Zone(updatedZoneInput, existingZone)
+      _ <- noCustomZoneConnectionUpdates(zoneWithUpdates, existingZone).toResult
       _ <- validateZoneConnectionIfChanged(zoneWithUpdates, existingZone)
       updateZoneChange <- ZoneChangeGenerator
         .forUpdate(zoneWithUpdates, existingZone, auth, crypto)
