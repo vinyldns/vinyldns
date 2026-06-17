@@ -261,6 +261,7 @@ def test_create_zone_with_connection_failure(shared_zone_test_context):
     zone = {
         "name": zone_name,
         "email": "test@test.com",
+        "adminGroupId": shared_zone_test_context.ok_group["id"],
         "connection": {
             "name": zone_name,
             "keyName": zone_name,
@@ -364,6 +365,7 @@ def test_zone_bad_connection(shared_zone_test_context):
     zone = {
         "name": zone_name,
         "email": "test@test.com",
+        "adminGroupId": shared_zone_test_context.ok_group["id"],
         "connection": {
             "name": zone_name,
             "keyName": VinylDNSTestContext.dns_key_name,
@@ -385,6 +387,7 @@ def test_zone_bad_transfer_connection(shared_zone_test_context):
     zone = {
         "name": zone_name,
         "email": "test@test.com",
+        "adminGroupId": shared_zone_test_context.ok_group["id"],
         "connection": {
             "name": zone_name,
             "keyName": VinylDNSTestContext.dns_key_name,
