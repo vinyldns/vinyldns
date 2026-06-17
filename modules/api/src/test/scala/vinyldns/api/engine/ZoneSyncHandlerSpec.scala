@@ -274,7 +274,7 @@ class ZoneSyncHandlerSpec
     zoneChangeRepo,
     zoneRepo,
     mockBackendResolver,
-    10000,
+    IO(10000),
     (_, _, _) => mockVinylDNSLoader
   )
 

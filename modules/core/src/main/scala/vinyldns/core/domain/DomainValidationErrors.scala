@@ -241,7 +241,7 @@ final case class ExistingMultiRecordError(fqdn: String, record: RecordSet)
       .replaceAll("\n", " ")
 }
 
-final case class NewMultiRecordError(changeName: String, changeType: RecordType)
+final case class MultiRecordError(changeName: String, changeType: RecordType)
     extends DomainValidationError {
   def message: String =
     s"""Multi-record recordsets are not enabled for this instance of VinylDNS.

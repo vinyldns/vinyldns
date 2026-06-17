@@ -35,7 +35,7 @@ object DomainValidationErrorType extends Enumeration {
   InvalidNaptrRegexp, InvalidBatchRecordType, ZoneDiscoveryError, RecordAlreadyExists, RecordDoesNotExist,
   InvalidUpdateRequest, CnameIsNotUniqueError, UserIsNotAuthorized, UserIsNotAuthorizedError, RecordNameNotUniqueInBatch,
   RecordInReverseZoneError, HighValueDomainError, MissingOwnerGroupId, ExistingMultiRecordError,
-  NewMultiRecordError, CnameAtZoneApexError, RecordRequiresManualReview, UnsupportedOperation,
+  MultiRecordError, CnameAtZoneApexError, RecordRequiresManualReview, UnsupportedOperation,
   DeleteRecordDataDoesNotExist, InvalidIPv4CName, InvalidBatchRequest, NotApprovedNSError  = Value
 
   // $COVERAGE-OFF$
@@ -71,7 +71,7 @@ object DomainValidationErrorType extends Enumeration {
       case _: HighValueDomainError => HighValueDomainError
       case _: MissingOwnerGroupId => MissingOwnerGroupId
       case _: ExistingMultiRecordError => ExistingMultiRecordError
-      case _: NewMultiRecordError => NewMultiRecordError
+      case _: MultiRecordError => MultiRecordError
       case _: CnameAtZoneApexError => CnameAtZoneApexError
       case _: RecordRequiresManualReview => RecordRequiresManualReview
       case _: UnsupportedOperation => UnsupportedOperation

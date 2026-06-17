@@ -17,6 +17,7 @@
 package vinyldns.api.domain.access
 
 import vinyldns.api.Interfaces.ensuring
+import vinyldns.api.config.RuntimeVinylDNSConfig
 import vinyldns.api.domain.ReverseZoneHelpers
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -26,9 +27,11 @@ import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone}
 
 class AccessValidations(
-    globalAcls: GlobalAcls = GlobalAcls(List.empty),
-    sharedApprovedTypes: List[RecordType.Value] = Nil
+    val globalAcls: GlobalAcls = GlobalAcls(List.empty),
+    private val sharedApprovedTypesFn: () => List[RecordType.Value] = () => RuntimeVinylDNSConfig.sharedApprovedTypes
 ) extends AccessValidationsAlgebra {
+
+  private def sharedApprovedTypes: List[RecordType.Value] = sharedApprovedTypesFn()
 
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(

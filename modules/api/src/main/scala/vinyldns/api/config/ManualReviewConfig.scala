@@ -33,16 +33,16 @@ final case class ManualReviewConfig(
 object ManualReviewConfig {
   import ZoneRecordValidations.toCaseIgnoredRegexList
   implicit val configReader: ConfigReader[ManualReviewConfig] =
-    ConfigReader.forProduct2[ManualReviewConfig, Boolean, Config](
+    ConfigReader.forProduct2[ManualReviewConfig, Option[Boolean], Option[Config]](
       "manual-batch-review-enabled",
       "manual-review-domains"
     ) {
-      case (enabled, domainsConfig) =>
+      case (enabledOpt, domainsConfigOpt) =>
         ManualReviewConfig(
-          enabled,
-          toCaseIgnoredRegexList(domainsConfig.getStringList("domain-list").asScala.toList),
-          domainsConfig.getStringList("ip-list").asScala.toList.flatMap(IpAddress.fromString(_)),
-          domainsConfig.getStringList("zone-name-list").asScala.toSet
+          enabledOpt.getOrElse(true),
+          domainsConfigOpt.map(c => toCaseIgnoredRegexList(c.getStringList("domain-list").asScala.toList)).getOrElse(Nil),
+          domainsConfigOpt.map(c => c.getStringList("ip-list").asScala.toList.flatMap(IpAddress.fromString(_))).getOrElse(Nil),
+          domainsConfigOpt.map(c => c.getStringList("zone-name-list").asScala.toSet).getOrElse(Set.empty)
         )
     }
 }

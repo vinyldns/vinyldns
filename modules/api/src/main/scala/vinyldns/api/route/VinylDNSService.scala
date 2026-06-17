@@ -22,9 +22,10 @@ import cats.effect.IO
 import fs2.concurrent.SignallingRef
 import io.prometheus.client.CollectorRegistry
 import org.json4s.MappingException
-import vinyldns.api.config.{LimitsConfig, VinylDNSConfig}
+import vinyldns.api.config.RuntimeVinylDNSConfig
 import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeServiceAlgebra
+import vinyldns.api.domain.config.AppConfigServiceAlgebra
 import vinyldns.api.domain.membership.MembershipServiceAlgebra
 import vinyldns.api.domain.record.RecordSetServiceAlgebra
 import vinyldns.api.domain.zone.ZoneServiceAlgebra
@@ -56,16 +57,15 @@ object VinylDNSService {
 
 // $COVERAGE-OFF$
 class VinylDNSService(
-    val membershipService: MembershipServiceAlgebra,
-    val limits: LimitsConfig,
+                       val membershipService: MembershipServiceAlgebra,
     val processingDisabled: SignallingRef[IO, Boolean],
     val zoneService: ZoneServiceAlgebra,
+    val appConfigService: AppConfigServiceAlgebra,
     val healthService: HealthService,
     val recordSetService: RecordSetServiceAlgebra,
     val batchChangeService: BatchChangeServiceAlgebra,
     val collectorRegistry: CollectorRegistry,
-    authPrincipalProvider: AuthPrincipalProvider,
-    vinyldnsConfig: VinylDNSConfig
+    authPrincipalProvider: AuthPrincipalProvider
 ) extends PingRoute
     with HealthCheckRoute
     with BlueGreenRoute
@@ -80,25 +80,26 @@ class VinylDNSService(
     new ProductionVinylDNSAuthenticator(
       aws4Authenticator,
       authPrincipalProvider,
-      vinyldnsConfig.crypto
+      RuntimeVinylDNSConfig.current.crypto
     )
 
   val zoneRoute: Route =
-    new ZoneRoute(zoneService, limits, vinylDNSAuthenticator, vinyldnsConfig.crypto).getRoutes
+    new ZoneRoute(zoneService, vinylDNSAuthenticator, RuntimeVinylDNSConfig.current.crypto).getRoutes
   val recordSetRoute: Route =
-    new RecordSetRoute(recordSetService, limits, vinylDNSAuthenticator).getRoutes
+    new RecordSetRoute(recordSetService, vinylDNSAuthenticator).getRoutes
   val membershipRoute: Route =
-    new MembershipRoute(membershipService, limits, vinylDNSAuthenticator).getRoutes
+    new MembershipRoute(membershipService, vinylDNSAuthenticator).getRoutes
   val batchChangeRoute: Route =
     new BatchChangeRoute(
       batchChangeService,
-      limits,
       vinylDNSAuthenticator,
-      vinyldnsConfig.manualReviewConfig
+      RuntimeVinylDNSConfig.manualReviewConfig
     ).getRoutes
+  val appConfigRoute: Route =
+    new AppConfigRoute(appConfigService, vinylDNSAuthenticator).getRoutes
   val statusRoute: Route =
     new StatusRoute(
-      vinyldnsConfig.serverConfig,
+      RuntimeVinylDNSConfig.current.serverConfig,
       vinylDNSAuthenticator,
       processingDisabled
     ).getRoutes
@@ -110,7 +111,7 @@ class VinylDNSService(
     Uri.Path("/metrics/prometheus")
   )
   val unloggedRoutes: Route = healthCheckRoute ~ pingRoute ~ colorRoute(
-    vinyldnsConfig.serverConfig.color
+    RuntimeVinylDNSConfig.current.serverConfig.color
   ) ~ prometheusRoute
 
   val allRoutes: Route = unloggedRoutes ~
@@ -118,6 +119,7 @@ class VinylDNSService(
     zoneRoute ~
     recordSetRoute ~
     membershipRoute ~
+    appConfigRoute ~
     statusRoute
 
   val vinyldnsRoutes: Route = logRequestResult(requestLogger(unloggedUris))(allRoutes)

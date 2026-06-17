@@ -54,9 +54,9 @@ class MembershipRoutingSpec
   val testLimitConfig: LimitsConfig =
     LimitsConfig(100,100,1000,1500,100,100,100)
   val okAuthRoute: Route =
-    new MembershipRoute(membershipService,testLimitConfig, new TestVinylDNSAuthenticator(okAuth)).getRoutes
+    new MembershipRoute(membershipService, new TestVinylDNSAuthenticator(okAuth)).getRoutes
   val superUserRoute: Route =
-    new MembershipRoute(membershipService,testLimitConfig, new TestVinylDNSAuthenticator(superUserAuth)).getRoutes
+    new MembershipRoute(membershipService, new TestVinylDNSAuthenticator(superUserAuth)).getRoutes
   var membershipRoute: Route = _
 
   override protected def beforeEach(): Unit = {
@@ -261,8 +261,8 @@ class MembershipRoutingSpec
         status shouldBe StatusCodes.BadRequest
       }
     }
-    "return a 400 response when maxItems is more than 1500" in {
-      Get("/groups?maxItems=1501") ~> Route.seal(membershipRoute) ~> check {
+    "return a 400 response when maxItems is more than 3000" in {
+      Get("/groups?maxItems=3001") ~> Route.seal(membershipRoute) ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }

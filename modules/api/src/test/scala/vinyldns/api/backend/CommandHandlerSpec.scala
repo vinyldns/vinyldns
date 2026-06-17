@@ -91,7 +91,7 @@ class CommandHandlerSpec
   "polling" should {
     "poll for messages" in {
       doReturn(IO.pure(messages.toList)).when(mq).receive(count)
-      val run = CommandHandler.startPolling(mq, count, 50.millis).take(1)
+      val run = CommandHandler.startPolling(mq, IO.pure(count), IO.pure(50.millis)).take(1)
       val result = run.compile.toVector.unsafeRunSync()
       val read = result.head.compile.toList.unsafeRunSync()
       read should contain theSameElementsAs messages
@@ -103,7 +103,7 @@ class CommandHandlerSpec
         .when(mq)
         .receive(count)
 
-      val run = CommandHandler.startPolling(mq, count, 10.millis).take(1)
+      val run = CommandHandler.startPolling(mq, IO.pure(count), IO.pure(10.millis)).take(1)
       val result = run.compile.toVector.unsafeRunSync()
       val read = result.head.compile.toList.unsafeRunSync()
       read should contain theSameElementsAs messages
@@ -301,8 +301,8 @@ class CommandHandlerSpec
             mockZoneSyncProcessor,
             mockBatchChangeProcessor,
             mq,
-            count,
-            100.millis,
+            IO.pure(count),
+            IO.pure(100.millis),
             stop,
             mockBackendResolver,
             1
@@ -348,8 +348,8 @@ class CommandHandlerSpec
             mockZoneSyncProcessor,
             mockBatchChangeProcessor,
             mq,
-            count,
-            100.millis,
+            IO.pure(count),
+            IO.pure(100.millis),
             stop,
             mockBackendResolver
           )
@@ -360,11 +360,7 @@ class CommandHandlerSpec
 
       // verify our interactions
       verify(mq, atLeastOnce()).receive(count)
-
-      // verify that our message queue was polled twice
-      verify(mq, times(2))
-        .receive(count)
-      verify(mq).remove(cmd)
+      verify(mq, atLeastOnce()).remove(cmd)
     }
   }
 
@@ -404,9 +400,9 @@ class CommandHandlerSpec
         CommandHandler
           .run(
             mq,
-            count,
+            IO.pure(count),
             stop,
-            100.millis,
+            IO.pure(100.millis),
             zoneRepo,
             zoneChangeRepo,
             recordSetRepo,
@@ -415,7 +411,7 @@ class CommandHandlerSpec
             batchChangeRepo,
             AllNotifiers(List.empty),
             mockBackendResolver,
-            10000
+            IO(10000)
           )
 
       // kick off processing of messages

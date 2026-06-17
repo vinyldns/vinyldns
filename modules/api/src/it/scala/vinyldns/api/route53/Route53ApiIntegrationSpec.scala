@@ -115,7 +115,7 @@ class Route53ApiIntegrationSpec
         zoneChangeRepository,
         zoneRepository,
         backendResolver,
-        10000
+        IO(10000)
       )
       val zoneSync = ZoneChange(testZone, "system", ZoneChangeType.Create)
       syncHandler.apply(zoneSync).unsafeRunSync()
@@ -137,7 +137,7 @@ class Route53ApiIntegrationSpec
 
     "be valid in the ZoneConnectionValidator" in {
       // Check that the ZoneConnectionValidator can connect to the zone
-      val zcv = new ZoneConnectionValidator(backendResolver, List(new Regex(".*")), 10000)
+      val zcv = new ZoneConnectionValidator(backendResolver, List(new Regex(".*")), IO(10000))
       zcv.isValidBackendId(Some("r53")) shouldBe Right(())
       val result = zcv.validateZoneConnections(testZone).value.unsafeRunSync()
       result shouldBe Right(())
