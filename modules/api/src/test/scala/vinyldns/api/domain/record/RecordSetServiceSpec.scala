@@ -2229,6 +2229,32 @@ class RecordSetServiceSpec
         result shouldBe changesWithName
       }
 
+      "retrieve the recordset changes when zoneId is not provided" in {
+        val completeRecordSetChanges: List[RecordSetChange] = List(
+          pendingCreateAAAA.copy(status = RecordSetChangeStatus.Failed),
+          pendingCreateCNAME.copy(status = RecordSetChangeStatus.Failed)
+        )
+
+        doReturn(IO.pure(ListFailedRecordSetChangesResults(completeRecordSetChanges)))
+          .when(mockRecordChangeRepo)
+          .listFailedRecordSetChanges(None, 100, 0)
+
+        val result: ListFailedRecordSetChangesResponse =
+          underTest
+            .listFailedRecordSetChanges(authPrincipal = okAuth)
+            .value
+            .unsafeRunSync()
+            .toOption
+            .get
+
+        result shouldBe ListFailedRecordSetChangesResponse(
+          completeRecordSetChanges,
+          nextId = 0,
+          startFrom = 0,
+          maxItems = 100
+        )
+      }
+
       "return NotAuthorizedError when the caller cannot access the requested zone" in {
         val error =
           underTest

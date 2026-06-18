@@ -22,9 +22,11 @@ import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
+import vinyldns.core.TestMembershipData.{okGroup, okUser}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.record.RecordType._
-import vinyldns.core.domain.zone.Zone
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.zone.{Zone, ZoneACL}
 import vinyldns.mysql.TestMySqlInstance
 import vinyldns.mysql.repository.MySqlRecordSetRepository.PagingKey
 import vinyldns.mysql.TransactionProvider
@@ -41,6 +43,7 @@ class MySqlRecordSetRepositoryIntegrationSpec
   import vinyldns.core.TestRecordSetData._
   import vinyldns.core.TestZoneData._
   private val repo = TestMySqlInstance.recordSetRepository.asInstanceOf[MySqlRecordSetRepository]
+  private val zoneRepo = TestMySqlInstance.zoneRepository
 
   override protected def beforeEach(): Unit = clear()
 
@@ -49,6 +52,7 @@ class MySqlRecordSetRepositoryIntegrationSpec
   def clear(): Unit =
     DB.localTx { s =>
       s.executeUpdate("DELETE FROM recordset")
+      s.executeUpdate("DELETE FROM zone")
     }
 
   def generateInserts(zone: Zone, count: Int, word: String = "insert"): List[RecordSetChange] = {
@@ -83,6 +87,9 @@ class MySqlRecordSetRepositoryIntegrationSpec
 
   def recordSetWithFQDN(recordSet: RecordSet, zone: Zone): RecordSet =
     recordSet.copy(fqdn = Some(s"""${recordSet.name}.${zone.name}"""))
+
+  def saveZones(zones: Seq[Zone]): Unit =
+    zones.foreach(zone => zoneRepo.save(zone).unsafeRunSync())
 
   "apply" should {
     "properly revert changes that fail processing" in {
@@ -649,6 +656,42 @@ class MySqlRecordSetRepositoryIntegrationSpec
       found.recordSets should contain theSameElementsAs existing
         .map(r => recordSetWithFQDN(r, okZone))
         .reverse
+    }
+    "omit recordsets from groups if the user has more than 30 groups when doing a global search" in {
+      val groups = (1 to 40).map { num =>
+        okGroup.copy(name = "%02d".format(num), id = UUID.randomUUID().toString)
+      }
+
+      val zones = groups.map { group =>
+        okZone.copy(
+          name = s"${group.name}.",
+          id = UUID.randomUUID().toString,
+          adminGroupId = group.id,
+          acl = ZoneACL()
+        )
+      }
+
+      val changes = zones.map { zone =>
+        makeTestAddChange(
+          aaaa.copy(
+            zoneId = zone.id,
+            name = s"${zone.name.dropRight(1)}-record",
+            id = UUID.randomUUID().toString
+          ),
+          zone
+        )
+      }
+
+      saveZones(zones)
+      insert(changes.toList)
+
+      val auth = AuthPrincipal(okUser, groups.map(_.id))
+
+      val found = repo
+        .listRecordSets(None, None, None, Some("*"), None, None, NameSort.ASC, RecordTypeSort.ASC, Some(auth))
+        .unsafeRunSync()
+
+      found.recordSets.map(_.zoneId) should contain theSameElementsAs zones.take(29).map(_.id)
     }
     "return no recordsets when no zoneId or recordNameFilter are given" in {
       val found =
