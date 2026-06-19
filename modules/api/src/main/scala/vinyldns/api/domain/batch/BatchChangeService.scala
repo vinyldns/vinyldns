@@ -601,9 +601,13 @@ class BatchChangeService(
     val startDateTime = if(dateTimeStartRange.isDefined && dateTimeStartRange.get.isEmpty) None else dateTimeStartRange
     val endDateTime = if(dateTimeEndRange.isDefined && dateTimeEndRange.get.isEmpty) None else dateTimeEndRange
     for {
-      mId <- membershipService.listMyGroups(groupName, None, maxItems,auth,false,false).
-        map(_.groups.map(_.members.map(_.id).mkString("', '")).mkString).getOrElse("None").toBatchResult
-      uid = if (groupName.isDefined) Some(mId) else userId
+      uid <- if (groupName.isDefined)
+        membershipService.listMyGroups(groupName, None, maxItems, auth, false, false)
+          .map(r => Some(r.groups.filter(_.name == groupName.getOrElse("")).flatMap(_.members.map(_.id)).mkString("', '")))
+          .value
+          .toBatchResult
+      else
+        userId.toRightBatchResult
       listResults <- batchChangeRepo
         .getBatchChangeSummaries(uid, submitterUserName, startDateTime, endDateTime, startFrom, maxItems, batchStatus, approvalStatus)
         .toBatchResult
