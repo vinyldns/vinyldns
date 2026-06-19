@@ -174,6 +174,15 @@ final case class ListMyGroupsResponse(
     ignoreAccess: Boolean
 )
 
+final case class GroupCount(
+    totalCount: Int = 0,
+    myGroupCount: Int = 0,
+    adminGroupCount: Int = 0,
+    memberOnlyGroupCount: Int = 0,
+    noRoleGroupCount: Int = 0,
+    soleAdminGroupCount: Int = 0
+)
+
 final case class GroupNotFoundError(msg: String) extends Throwable(msg)
 
 final case class GroupAlreadyExistsError(msg: String) extends Throwable(msg)

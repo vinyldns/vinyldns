@@ -224,3 +224,71 @@ def test_list_zones_ignore_access_success_with_name_filter(shared_zone_test_cont
     assert_that(result["ignoreAccess"], is_(True))
     assert_that(retrieved, has_item(has_entry("name", shared_zone_test_context.shared_zone["name"])))
     assert_that(retrieved, has_item(has_entry("accessLevel", "Read")))
+
+def test_list_zones_access_filter_shared_only(shared_zone_test_context):
+    """
+    Test that only shared zones are returned when accessFilter=0
+    """
+    result = shared_zone_test_context.ok_vinyldns_client.list_zones(ignore_access=True, access_filter=0, status=200)
+    zones = result["zones"]
+
+    assert_that(len(zones), greater_than_or_equal_to(1))
+    for zone in zones:
+        assert_that(zone["shared"], is_(True))
+
+
+def test_list_zones_access_filter_private_only(shared_zone_test_context):
+    """
+    Test that only private zones are returned when accessFilter=1
+    """
+    result = shared_zone_test_context.ok_vinyldns_client.list_zones(ignore_access=True, access_filter=1, status=200)
+    zones = result["zones"]
+
+    assert_that(len(zones), greater_than_or_equal_to(1))
+    for zone in zones:
+        assert_that(zone["shared"], is_(False))
+
+
+def test_list_zones_response_has_no_total_count(shared_zone_test_context):
+    """
+    Test that the list zones response does not include totalCount (available via /zones/count instead)
+    """
+    result = shared_zone_test_context.list_zones_client.list_zones(status=200)
+    assert_that(result, is_not(has_key("totalCount")))
+
+
+def test_count_zones_success(shared_zone_test_context):
+    """
+    Test that the zone count endpoint returns all expected fields
+    """
+    result = shared_zone_test_context.ok_vinyldns_client.count_zones(status=200)
+
+    assert_that(result, has_key("totalCount"))
+    assert_that(result, has_key("myZonesCount"))
+    assert_that(result, has_key("sharedCount"))
+    assert_that(result, has_key("privateCount"))
+    assert_that(result, has_key("activeCount"))
+    assert_that(result, has_key("syncingCount"))
+    assert_that(result, has_key("abandonedCount"))
+    assert_that(result, has_key("ptrCount"))
+    assert_that(result, has_key("sharedPtrCount"))
+    assert_that(result, has_key("privatePtrCount"))
+    assert_that(result, has_key("abandonedPtrCount"))
+    assert_that(result, has_key("abandonedSharedCount"))
+    assert_that(result, has_key("myActiveCount"))
+    assert_that(result, has_key("mySyncingCount"))
+    assert_that(result, has_key("mySharedCount"))
+    assert_that(result, has_key("myPrivateCount"))
+    assert_that(result, has_key("myPtrCount"))
+    assert_that(result, has_key("myAbandonedCount"))
+    assert_that(result, has_key("myAbandonedPtrCount"))
+    assert_that(result, has_key("myAbandonedSharedCount"))
+    assert_that(result["totalCount"], greater_than_or_equal_to(result["myZonesCount"]))
+    assert_that(result["totalCount"], equal_to(result["sharedCount"] + result["privateCount"]))
+
+
+def test_count_zones_no_authorization(shared_zone_test_context):
+    """
+    Test that we cannot retrieve zone counts without authorization
+    """
+    shared_zone_test_context.ok_vinyldns_client.count_zones(sign_request=False, status=401)

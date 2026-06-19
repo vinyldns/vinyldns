@@ -43,7 +43,8 @@ trait ZoneRepository extends Repository {
        maxItems: Int = 100,
        adminGroupIds: Set[String],
        ignoreAccess: Boolean = false,
-       includeReverse: Boolean = true
+       includeReverse: Boolean = true,
+       accessFilter: Option[Int] = None
      ): IO[ListZonesResults]
 
   def listZones(
@@ -52,12 +53,25 @@ trait ZoneRepository extends Repository {
       startFrom: Option[String] = None,
       maxItems: Int = 100,
       ignoreAccess: Boolean = false,
-      includeReverse: Boolean = true
+      includeReverse: Boolean = true,
+      accessFilter: Option[Int] = None
   ): IO[ListZonesResults]
 
   def getZonesByAdminGroupId(adminGroupId: String): IO[List[Zone]]
 
   def getFirstOwnedZoneAclGroupId(groupId: String): IO[Option[String]]
+
+  def countZones(): IO[Int]
+
+  /* Returns (total, shared, ptr, sharedPtr, privatePtr, syncing) in 2 SQL round-trips.
+  */
+  def countAllGlobalZoneStats(): IO[(Int, Int, Int, Int, Int, Int)]
+
+  /** Returns (myTotal, myShared, myPtr, mySyncing) in 1 SQL round-trip.
+    * For super/support callers ZoneService will substitute the global stats instead.
+    */
+  def countAllUserZoneStats(authPrincipal: AuthPrincipal): IO[(Int, Int, Int, Int)]
+
 }
 
 object ZoneRepository {

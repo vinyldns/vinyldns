@@ -1082,5 +1082,137 @@ class MySqlZoneRepositoryIntegrationSpec
       // Only get zone with recurrence schedule
       repo.getAllZonesWithSyncSchedule.unsafeRunSync() shouldBe Set(updatedOkZone)
     }
+
+    "countZones returns the total number of zones" in {
+      val zones = Seq(
+        testZone("count-test-1."),
+        testZone("count-test-2."),
+        testZone("count-test-3.")
+      )
+      saveZones(zones).unsafeRunSync()
+      repo.countZones().unsafeRunSync() shouldBe 3
+    }
+
+    "countAllGlobalZoneStats returns correct totals" in {
+      val privateZone  = testZone("private-global.")
+      val sharedZone   = testZone("shared-global.").copy(shared = true)
+      val ptrZone      = testZone("100.in-addr.arpa.")
+      val sharedPtrZone = testZone("200.in-addr.arpa.").copy(shared = true)
+      val privatePtrZone = testZone("300.in-addr.arpa.")
+      val syncingZone  = testZone("syncing-global.").copy(status = ZoneStatus.Syncing)
+
+      saveZones(Seq(privateZone, sharedZone, ptrZone, sharedPtrZone, privatePtrZone, syncingZone)).unsafeRunSync()
+
+      val (total, shared, ptr, sharedPtr, privatePtr, syncing) =
+        repo.countAllGlobalZoneStats().unsafeRunSync()
+
+      total      shouldBe 6
+      shared     shouldBe 2
+      ptr        shouldBe 3
+      sharedPtr  shouldBe 1
+      privatePtr shouldBe 2
+      syncing    shouldBe 1
+    }
+
+    "countAllUserZoneStats returns correct per-user totals" in {
+      val userId = okUser.id
+      val userAcl = ZoneACL(rules = Set(ACLRule(accessLevel = AccessLevel.Read, userId = Some(userId))))
+
+      val myPrivate  = testZone("user-private.").copy(acl = userAcl)
+      val myShared   = testZone("user-shared.").copy(acl = userAcl, shared = true)
+      val myPtr      = testZone("400.in-addr.arpa.").copy(acl = userAcl)
+      val mySyncing  = testZone("user-syncing.").copy(acl = userAcl, status = ZoneStatus.Syncing)
+      val otherZone  = testZone("other-zone.")
+
+      saveZones(Seq(myPrivate, myShared, myPtr, mySyncing, otherZone)).unsafeRunSync()
+
+      val auth = AuthPrincipal(signedInUser = okUser, memberGroupIds = Seq.empty)
+      val (myTotal, mySharedCount, myPtrCount, mySyncingCount) =
+        repo.countAllUserZoneStats(auth).unsafeRunSync()
+
+      myTotal       shouldBe 4
+      mySharedCount shouldBe 1
+      myPtrCount    shouldBe 1
+      mySyncingCount shouldBe 1
+    }
+
+    "listZones applies accessFilter Some(0) with no name filter and includeReverse (WHERE branch)" in {
+      val sharedZone  = testZone("access-shared-1.").copy(shared = true)
+      val privateZone = testZone("access-private-1.")
+
+      saveZones(Seq(sharedZone, privateZone)).unsafeRunSync()
+
+      val result = repo.listZones(superUserAuth, accessFilter = Some(0)).unsafeRunSync()
+      result.zones should contain only sharedZone
+    }
+
+    "listZones applies accessFilter Some(1) with no name filter and includeReverse (WHERE branch)" in {
+      val sharedZone  = testZone("access-shared-2.").copy(shared = true)
+      val privateZone = testZone("access-private-2.")
+
+      saveZones(Seq(sharedZone, privateZone)).unsafeRunSync()
+
+      val result = repo.listZones(superUserAuth, accessFilter = Some(1)).unsafeRunSync()
+      result.zones should contain only privateZone
+    }
+
+    "listZones applies accessFilter Some(0) with name filter present (AND branch)" in {
+      val sharedZone  = testZone("and-shared.").copy(shared = true)
+      val privateZone = testZone("and-private.")
+
+      saveZones(Seq(sharedZone, privateZone)).unsafeRunSync()
+
+      val result = repo.listZones(superUserAuth, zoneNameFilter = Some("and*"), accessFilter = Some(0)).unsafeRunSync()
+      result.zones should contain only sharedZone
+    }
+
+    "listZones applies accessFilter Some(1) with name filter present (AND branch)" in {
+      val sharedZone  = testZone("andp-shared.").copy(shared = true)
+      val privateZone = testZone("andp-private.")
+
+      saveZones(Seq(sharedZone, privateZone)).unsafeRunSync()
+
+      val result = repo.listZones(superUserAuth, zoneNameFilter = Some("andp*"), accessFilter = Some(1)).unsafeRunSync()
+      result.zones should contain only privateZone
+    }
+
+    "listZones applies accessFilter Some(0) with includeReverse false (AND branch)" in {
+      val sharedForward  = testZone("rev-shared.").copy(shared = true)
+      val privateForward = testZone("rev-private.")
+      val sharedReverse  = testZone("10.in-addr.arpa.").copy(shared = true)
+
+      saveZones(Seq(sharedForward, privateForward, sharedReverse)).unsafeRunSync()
+
+      val result = repo.listZones(superUserAuth, includeReverse = false, accessFilter = Some(0)).unsafeRunSync()
+      result.zones should contain only sharedForward
+    }
+
+    "listZonesByAdminGroupIds applies accessFilter Some(0) for shared zones" in {
+      val groupId     = "accessFilterGroup"
+      val sharedZone  = testZone("bygroup-shared.", adminGroupId = groupId).copy(shared = true)
+      val privateZone = testZone("bygroup-private.", adminGroupId = groupId)
+
+      saveZones(Seq(sharedZone, privateZone)).unsafeRunSync()
+
+      val result = repo
+        .listZonesByAdminGroupIds(superUserAuth, None, 100, Set(groupId), ignoreAccess = true, accessFilter = Some(0))
+        .unsafeRunSync()
+
+      result.zones should contain only sharedZone
+    }
+
+    "listZonesByAdminGroupIds applies accessFilter Some(1) for private zones" in {
+      val groupId     = "accessFilterGroup2"
+      val sharedZone  = testZone("bygroup2-shared.", adminGroupId = groupId).copy(shared = true)
+      val privateZone = testZone("bygroup2-private.", adminGroupId = groupId)
+
+      saveZones(Seq(sharedZone, privateZone)).unsafeRunSync()
+
+      val result = repo
+        .listZonesByAdminGroupIds(superUserAuth, None, 100, Set(groupId), ignoreAccess = true, accessFilter = Some(1))
+        .unsafeRunSync()
+
+      result.zones should contain only privateZone
+    }
   }
 }

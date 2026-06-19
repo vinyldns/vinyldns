@@ -224,13 +224,14 @@ class VinylDNSClient(object):
 
         return data
 
-    def list_my_groups(self, group_name_filter=None, start_from=None, max_items=100, ignore_access=False, **kwargs):
+    def list_my_groups(self, group_name_filter=None, start_from=None, max_items=100, ignore_access=False, role_filter=None, **kwargs):
         """
         Retrieves my groups
         :param start_from: the start key of the page
         :param max_items: the page limit
         :param group_name_filter: only returns groups whose names contain filter string
         :param ignore_access: determines if groups should be retrieved based on requester's membership
+        :param role_filter: integer filter for role (e.g. 1=admin, 0=member)
         :return: the content of the response
         """
         args = []
@@ -242,8 +243,20 @@ class VinylDNSClient(object):
             args.append("maxItems={0}".format(max_items))
         if ignore_access is not False:
             args.append("ignoreAccess={0}".format(ignore_access))
+        if role_filter is not None:
+            args.append("roleFilter={0}".format(role_filter))
 
         url = urljoin(self.index_url, "/groups") + "?" + "&".join(args)
+        response, data = self.make_request(url, "GET", self.headers, **kwargs)
+
+        return data
+    
+    def count_groups(self, **kwargs):
+        """
+        Returns group count statistics for the current user
+        :return: the content of the response
+        """
+        url = urljoin(self.index_url, "/groups/count")
         response, data = self.make_request(url, "GET", self.headers, **kwargs)
 
         return data
@@ -484,7 +497,7 @@ class VinylDNSClient(object):
         return data
 
     def list_zones(self, name_filter=None, start_from=None, max_items=None, search_by_admin_group=False,
-                   ignore_access=False, **kwargs):
+                   ignore_access=False, access_filter=None, **kwargs):
         """
         Gets a list of zones that currently exist
         :return: a list of zones
@@ -507,9 +520,21 @@ class VinylDNSClient(object):
         if ignore_access:
             query.append("ignoreAccess=" + str(ignore_access))
 
+        if access_filter is not None:
+            query.append("accessFilter=" + str(access_filter))
+
         if query:
             url = url + "?" + "&".join(query)
 
+        response, data = self.make_request(url, "GET", self.headers, **kwargs)
+        return data
+    
+    def count_zones(self, **kwargs):
+        """
+        Returns zone count statistics for the current user
+        :return: the content of the response
+        """
+        url = urljoin(self.index_url, "/zones/count")
         response, data = self.make_request(url, "GET", self.headers, **kwargs)
         return data
 

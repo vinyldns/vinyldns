@@ -52,7 +52,14 @@ class MembershipRoute(
     case EmailValidationError(msg) => complete(StatusCodes.BadRequest, msg)
   }
 
-  val membershipRoute: Route = path("groups" / Segment) { groupId =>
+  val membershipRoute: Route = path("groups" / "count") {
+    (get & monitor("Endpoint.countGroups")) {
+      authenticateAndExecute(membershipService.countGroups(_)) { result =>
+        complete(StatusCodes.OK, result)
+      }
+    }
+  } ~
+    path("groups" / Segment) { groupId =>
     (get & monitor("Endpoint.getGroup")) {
       authenticateAndExecute(membershipService.getGroup(groupId, _)) { group =>
         complete(StatusCodes.OK, GroupInfo(group))
@@ -86,13 +93,15 @@ class MembershipRoute(
             "groupNameFilter".?,
             "ignoreAccess".as[Boolean].?(false),
             "abridged".as[Boolean].?(false),
+            "roleFilter".as[Int].?
           ) {
             (
                 startFrom: Option[String],
                 maxItems: Int,
                 groupNameFilter: Option[String],
                 ignoreAccess: Boolean,
-                abridged: Boolean
+                abridged: Boolean,
+                roleFilter: Option[Int]
             ) =>
               {
                 handleRejections(invalidQueryHandler) {
@@ -105,7 +114,7 @@ class MembershipRoute(
                   ) {
                     authenticateAndExecute(
                       membershipService
-                        .listMyGroups(groupNameFilter, startFrom, maxItems, _, ignoreAccess, abridged)
+                        .listMyGroups(groupNameFilter, startFrom, maxItems, _, ignoreAccess, abridged, roleFilter)
                     ) { groups =>
                       complete(StatusCodes.OK, groups)
                     }

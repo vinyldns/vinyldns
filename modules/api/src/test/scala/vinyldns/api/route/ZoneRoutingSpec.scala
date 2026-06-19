@@ -295,11 +295,12 @@ class ZoneRoutingSpec
         maxItems: Int,
         searchByAdminGroup: Boolean = false,
         ignoreAccess: Boolean = false,
-        includeReverse: Boolean = true
+        includeReverse: Boolean = true,
+        accessFilter: Option[Int] = None
     ): Result[ListZonesResponse] = {
 
-      val outcome = (authPrincipal, nameFilter, startFrom, maxItems, ignoreAccess, includeReverse) match {
-        case (_, None, Some("zone3."), 3, false, true) =>
+      val outcome = (authPrincipal, nameFilter, startFrom, maxItems, ignoreAccess, includeReverse, accessFilter) match {
+        case (_, None, Some("zone3."), 3, false, true, None) =>
           Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
@@ -310,7 +311,7 @@ class ZoneRoutingSpec
               ignoreAccess = false
             )
           )
-        case (_, None, Some("zone4."), 4, false, true) =>
+        case (_, None, Some("zone4."), 4, false, true, None) =>
           Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
@@ -322,7 +323,7 @@ class ZoneRoutingSpec
             )
           )
 
-        case (_, None, None, 3, false, true) =>
+        case (_, None, None, 3, false, true, None) =>
           Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
@@ -334,7 +335,7 @@ class ZoneRoutingSpec
             )
           )
 
-        case (_, None, None, 6, true, true) =>
+        case (_, None, None, 6, true, true, None) =>
           Right(
             ListZonesResponse(
               zones = List(
@@ -354,7 +355,7 @@ class ZoneRoutingSpec
             )
           )
 
-        case (_, None, None, 6, true, false) =>
+        case (_, None, None, 6, true, false, None) =>
           Right(
             ListZonesResponse(
               zones = List(
@@ -373,7 +374,7 @@ class ZoneRoutingSpec
             )
           )
 
-        case (_, Some(filter), Some("zone4."), 4, false, true) =>
+        case (_, Some(filter), Some("zone4."), 4, false, true, None) =>
           Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
@@ -385,7 +386,7 @@ class ZoneRoutingSpec
             )
           )
 
-        case (_, Some(filter), Some("zone4."), 4, true, false) =>
+        case (_, Some(filter), Some("zone4."), 4, true, false, None) =>
           Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo4, zoneSummaryInfo5),
@@ -398,7 +399,31 @@ class ZoneRoutingSpec
             )
           )
 
-        case (_, None, None, _, _, true) =>
+        case (_, None, None, 100, true, true, Some(1)) =>
+          Right(
+            ListZonesResponse(
+              zones = List(zoneSummaryInfo1, zoneSummaryInfo2),
+              nameFilter = None,
+              startFrom = None,
+              nextId = None,
+              maxItems = 100,
+              ignoreAccess = true
+            )
+          )
+
+        case (_, None, None, 100, true, true, Some(0)) =>
+          Right(
+            ListZonesResponse(
+              zones = List(zoneSummaryInfo3, zoneSummaryInfo4, zoneSummaryInfo5),
+              nameFilter = None,
+              startFrom = None,
+              nextId = None,
+              maxItems = 100,
+              ignoreAccess = true
+            )
+          )
+
+        case (_, None, None, _, _, true, None) =>
           Right(
             ListZonesResponse(
               zones = List(zoneSummaryInfo1, zoneSummaryInfo2, zoneSummaryInfo3),
@@ -420,7 +445,8 @@ class ZoneRoutingSpec
                           nameFilter: Option[String],
                           startFrom: Option[String],
                           maxItems: Int,
-                          ignoreAccess: Boolean = false
+                          ignoreAccess: Boolean = false,
+                          accessFilter: Option[Int] = None
                         ): Result[ListDeletedZoneChangesResponse] = {
 
       val outcome = (authPrincipal, nameFilter, startFrom, maxItems, ignoreAccess) match {
@@ -579,6 +605,9 @@ class ZoneRoutingSpec
     }
 
     def getBackendIds(): Result[List[String]] = List("backend-1", "backend-2").toResult
+
+    def countZones(auth: AuthPrincipal): Result[ZoneCount] =
+      Right(ZoneCount(totalCount = 6, myZonesCount = 3, sharedCount = 1, privateCount = 5, activeCount = 6, syncingCount = 0, abandonedCount = 1, ptrCount = 2, sharedPtrCount = 1, privatePtrCount = 1, abandonedPtrCount = 0, abandonedSharedCount = 0, myActiveCount = 3, mySyncingCount = 0, mySharedCount = 1, myPrivateCount = 2, myPtrCount = 1, myAbandonedCount = 1, myAbandonedPtrCount = 0, myAbandonedSharedCount = 0)).toResult
   }
 
   val zoneService: ZoneServiceAlgebra = TestZoneService
@@ -1173,6 +1202,22 @@ class ZoneRoutingSpec
         resp.includeReverse shouldBe false
       }
     }
+    
+    "return only shared zones when accessFilter=1" in {
+      Get(s"/zones?ignoreAccess=true&accessFilter=1") ~> zoneRoute ~> check {
+        val resp = responseAs[ListZonesResponse]
+        (resp.zones.map(_.id) should contain).only(zone1.id, zone2.id)
+        resp.ignoreAccess shouldBe true
+      }
+    }
+
+    "return only private zones when accessFilter=0" in {
+      Get(s"/zones?ignoreAccess=true&accessFilter=0") ~> zoneRoute ~> check {
+        val resp = responseAs[ListZonesResponse]
+        (resp.zones.map(_.id) should contain).only(zone3.id, zone4.id, zone5.id)
+        resp.ignoreAccess shouldBe true
+      }
+    }
 
     "return an error if the max items is out of range" in {
       Get(s"/zones?maxItems=700") ~> zoneRoute ~> check {
@@ -1180,6 +1225,35 @@ class ZoneRoutingSpec
         responseEntity.toString should include(
           "maxItems was 700, maxItems must be between 0 and 100"
         )
+      }
+    }
+  }
+
+  "GET zones count" should {
+    "return 200 with all zone count fields" in {
+      Get("/zones/count") ~> zoneRoute ~> check {
+        status shouldBe OK
+        val result = responseAs[ZoneCount]
+        result.totalCount shouldBe 6
+        result.myZonesCount shouldBe 3
+        result.sharedCount shouldBe 1
+        result.privateCount shouldBe 5
+        result.activeCount shouldBe 6
+        result.syncingCount shouldBe 0
+        result.abandonedCount shouldBe 1
+        result.ptrCount shouldBe 2
+        result.sharedPtrCount shouldBe 1
+        result.privatePtrCount shouldBe 1
+        result.abandonedPtrCount shouldBe 0
+        result.abandonedSharedCount shouldBe 0
+        result.myActiveCount shouldBe 3
+        result.mySyncingCount shouldBe 0
+        result.mySharedCount shouldBe 1
+        result.myPrivateCount shouldBe 2
+        result.myPtrCount shouldBe 1
+        result.myAbandonedCount shouldBe 1
+        result.myAbandonedPtrCount shouldBe 0
+        result.myAbandonedSharedCount shouldBe 0
       }
     }
   }

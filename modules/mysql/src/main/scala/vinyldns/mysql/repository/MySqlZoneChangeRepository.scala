@@ -49,18 +49,6 @@ class MySqlZoneChangeRepository
       |  FROM zone_change zc
        """.stripMargin
 
-  private final val BASE_ZONE_NAME_COUNT_SQL =
-    """
-      |SELECT COUNT(z.name)
-      |  FROM zone z
-       """.stripMargin
-
-  private final val BASE_ZONE_NAME_SEARCH_SQL =
-    """
-      |SELECT z.name
-      |  FROM zone z
-       """.stripMargin
-
   private final val LIST_ZONES_CHANGES =
     sql"""
       |SELECT zc.data
@@ -175,7 +163,8 @@ class MySqlZoneChangeRepository
                         zoneNameFilter: Option[String] = None,
                         startFrom: Option[String] = None,
                         maxItems: Int = 100,
-                        ignoreAccess: Boolean = false
+                        ignoreAccess: Boolean = false,
+                        accessFilter: Option[Int] = None
                       ): IO[ListDeletedZonesChangeResults] =
     monitor("repo.ZoneChange.listDeletedZoneInZoneChanges") {
       IO {
@@ -184,20 +173,11 @@ class MySqlZoneChangeRepository
             withAccessors(authPrincipal.signedInUser, authPrincipal.memberGroupIds, ignoreAccess)
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
+          sb.append("\n  LEFT JOIN zone z ON zc.zone_name = z.name")
+          sb.append(" WHERE z.name IS NULL")
+          sb.append(" AND zc.zone_status = 'Deleted'")
 
-          val zoneResults: Int =
-             SQL(BASE_ZONE_NAME_COUNT_SQL)
-               .map(_.int(1))
-               .single()
-               .apply()
-               .getOrElse(0)
-
-           sb.append(s" WHERE ")
-
-          if (zoneResults != 0) sb.append(s" zc.zone_name NOT IN ($BASE_ZONE_NAME_SEARCH_SQL) AND ")
-
-          sb.append(s" zc.zone_status = 'Deleted' ")
-
+          val extraBindParams = scala.collection.mutable.ListBuffer[Any]()
           val filters = if (zoneNameFilter.isDefined && zoneNameFilter.get.contains("*"))
               zoneNameFilter.map(flt => s"zc.zone_name LIKE '${flt.replace('*', '%')}'")
           else zoneNameFilter.map(flt => s"zc.zone_name LIKE '${flt.concat("%")}'")
@@ -207,32 +187,37 @@ class MySqlZoneChangeRepository
 
           sb.append(filters.mkString)
 
-          val resultOrdering = s"""|    GROUP BY zc.zone_name
-                                   |    ORDER BY zc.created_timestamp DESC
-                                 """.stripMargin
+          accessFilter.foreach { af =>
+            sb.append(s" AND INSTR(zc.data, X'4801') ${if (af == 0) "> 0" else "= 0"}")
+          }
 
-          sb.append(resultOrdering)
+          startFrom.foreach { cursorName =>
+            sb.append(" AND zc.zone_name >= ?")
+            extraBindParams += cursorName
+          }
+
+          sb.append(
+            s"""
+               |    GROUP BY zc.zone_name
+               |    ORDER BY zc.zone_name ASC
+               |    LIMIT ${maxItems + 1}
+             """.stripMargin)
 
           val query = sb.toString
+          val allBindParams = accessors ++ extraBindParams.toSeq
+
 
           val deletedZoneResults: List[ZoneChange] =
             SQL(query)
-              .bind(accessors: _*)
+              .bind(allBindParams: _*)
               .map(extractZoneChange(1))
                 .list()
                 .apply()
 
-          val deletedZonesWithStartFrom: List[ZoneChange] = startFrom match {
-            case Some(zoneId) => deletedZoneResults.dropWhile(_.zone.id != zoneId)
-            case None => deletedZoneResults
-          }
-
-          val deletedZonesWithMaxItems = deletedZonesWithStartFrom.take(maxItems + 1)
-
           val (newResults, nextId) =
-            if (deletedZonesWithMaxItems.size > maxItems)
-              (deletedZonesWithMaxItems.dropRight(1), deletedZonesWithMaxItems.lastOption.map(_.zone.id))
-            else (deletedZonesWithMaxItems, None)
+            if (deletedZoneResults.size > maxItems)
+              (deletedZoneResults.dropRight(1), deletedZoneResults.lastOption.map(_.zone.name))
+            else (deletedZoneResults, None)
 
           ListDeletedZonesChangeResults(
             zoneDeleted = newResults,
@@ -257,6 +242,56 @@ class MySqlZoneChangeRepository
           val nextId = if (failedZoneChanges.size < maxItems) 0 else startFrom + maxItems
 
           ListFailedZoneChangesResults(failedZoneChanges,nextId,startFrom,maxItems)
+        }
+      }
+    }
+
+  def countAllAbandonedStats(): IO[(Int, Int, Int)] =
+    monitor("repo.ZoneChange.countAllAbandonedStats") {
+      IO {
+        DB.readOnly { implicit s =>
+          SQL("""
+            |SELECT
+            |  COUNT(DISTINCT zc.zone_name),
+            |  COUNT(DISTINCT CASE WHEN zc.zone_name LIKE '%in-addr.arpa.' OR zc.zone_name LIKE '%ip6.arpa.' THEN zc.zone_name END),
+            |  COUNT(DISTINCT CASE WHEN INSTR(zc.data, X'4801') > 0 THEN zc.zone_name END)
+            |FROM zone_change zc
+            |LEFT JOIN zone z ON zc.zone_name = z.name
+            |WHERE zc.zone_status = 'Deleted'
+            |  AND z.name IS NULL
+          """.stripMargin)
+            .map(rs => (rs.int(1), rs.int(2), rs.int(3)))
+            .single()
+            .apply()
+            .getOrElse((0, 0, 0))
+        }
+      }
+    }
+
+  def countAllAbandonedStatsForUser(authPrincipal: AuthPrincipal): IO[(Int, Int, Int)] =
+    monitor("repo.ZoneChange.countAllAbandonedStatsForUser") {
+      IO {
+        DB.readOnly { implicit s =>
+          val user = authPrincipal.signedInUser
+          val accessors = buildZoneSearchAccessorList(user, authPrincipal.memberGroupIds)
+          val questionMarks = List.fill(accessors.size)("?").mkString(",")
+          SQL(
+            s"""
+              |SELECT
+              |  COUNT(DISTINCT zc.zone_name),
+              |  COUNT(DISTINCT CASE WHEN zc.zone_name LIKE '%in-addr.arpa.' OR zc.zone_name LIKE '%ip6.arpa.' THEN zc.zone_name END),
+              |  COUNT(DISTINCT CASE WHEN INSTR(zc.data, X'4801') > 0 THEN zc.zone_name END)
+              |FROM zone_change zc
+              |JOIN zone_access za ON zc.zone_id = za.zone_id AND za.accessor_id IN ($questionMarks)
+              |LEFT JOIN zone z ON zc.zone_name = z.name
+              |WHERE zc.zone_status = 'Deleted'
+              |  AND z.name IS NULL
+            """.stripMargin)
+            .bind(accessors: _*)
+            .map(rs => (rs.int(1), rs.int(2), rs.int(3)))
+            .single()
+            .apply()
+            .getOrElse((0, 0, 0))
         }
       }
     }

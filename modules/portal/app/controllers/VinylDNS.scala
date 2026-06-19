@@ -293,9 +293,27 @@ class VinylDNS @Inject() (
     })
   }
 
+  def getZoneCount(): Action[AnyContent] = userAction.async { implicit request =>
+    val vinyldnsRequest =
+      VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"zones/count")
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+  }
+
   def getValidEmailDomains(): Action[AnyContent] = userAction.async { implicit request =>
     val vinyldnsRequest =
       VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"groups/valid/domains")
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+  }
+
+  def getGroupCount(): Action[AnyContent] = userAction.async { implicit request =>
+    val vinyldnsRequest =
+      VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"groups/count")
     executeRequest(vinyldnsRequest, request.user).map(response => {
       Status(response.status)(response.body)
         .withHeaders(cacheHeaders: _*)

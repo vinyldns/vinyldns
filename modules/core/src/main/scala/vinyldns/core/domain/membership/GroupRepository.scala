@@ -39,4 +39,6 @@ trait GroupRepository extends Repository {
 
   def getAllGroups(): IO[Set[Group]]
 
+  def countGroups(): IO[Int]
+
 }

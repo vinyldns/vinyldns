@@ -92,7 +92,8 @@ trait EmptyZoneRepo extends ZoneRepository {
      maxItems: Int = 100,
      adminGroupIds: Set[String],
      ignoreAccess: Boolean = false,
-     includeReverse: Boolean = true
+     includeReverse: Boolean = true,
+     accessFilter: Option[Int] = None
    ): IO[ListZonesResults] = IO.pure(ListZonesResults())
 
   def listZones(
@@ -101,7 +102,8 @@ trait EmptyZoneRepo extends ZoneRepository {
                  startFrom: Option[String] = None,
                  maxItems: Int = 100,
                  ignoreAccess: Boolean = false,
-                 includeReverse: Boolean = true
+                 includeReverse: Boolean = true,
+                 accessFilter: Option[Int] = None
                ): IO[ListZonesResults] = IO.pure(ListZonesResults())
 
   def getZonesByAdminGroupId(adminGroupId: String): IO[List[Zone]] = IO.pure(List())
@@ -111,7 +113,14 @@ trait EmptyZoneRepo extends ZoneRepository {
   def getZonesByFilters(zoneNames: Set[String]): IO[Set[Zone]] = IO.pure(Set())
 
   def getFirstOwnedZoneAclGroupId(groupId: String): IO[Option[String]] = IO.pure(None)
+
+  def countAllGlobalZoneStats(): IO[(Int, Int, Int, Int, Int, Int)] = IO.pure((0, 0, 0, 0, 0, 0))
+
+  def countAllUserZoneStats(authPrincipal: AuthPrincipal): IO[(Int, Int, Int, Int)] = IO.pure((0, 0, 0, 0))
+  
+  def countZones(): IO[Int] = IO.pure(0)
 }
+
 
 trait EmptyGroupRepo extends GroupRepository {
 
@@ -130,6 +139,8 @@ trait EmptyGroupRepo extends GroupRepository {
   def getGroupsByName(groupName: String): IO[Set[Group]] = IO.pure(Set())
 
   def getAllGroups(): IO[Set[Group]] = IO.pure(Set())
+
+  def countGroups(): IO[Int] = IO.pure(0)
 }
 
 trait EmptyUserRepo extends UserRepository {
