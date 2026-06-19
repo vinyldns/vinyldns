@@ -201,6 +201,7 @@ object Boot extends App {
         )
       val batchChangeService = BatchChangeService(
         repositories,
+        membershipService,
         batchChangeValidations,
         batchChangeConverter,
         vinyldnsConfig.manualReviewConfig.enabled,

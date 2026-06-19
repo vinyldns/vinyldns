@@ -16,10 +16,12 @@
 
 package vinyldns.api.domain.batch
 
+import cats.data.EitherT
+import cats.implicits._
 import cats.data.Validated.Valid
 import cats.effect._
-import cats.implicits._
 import cats.scalatest.{EitherMatchers, ValidatedMatchers}
+
 import java.time.temporal.ChronoUnit
 import java.time.{Instant, LocalDateTime, ZoneId}
 import org.scalatestplus.mockito.MockitoSugar
@@ -31,13 +33,7 @@ import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeInterfaces.{BatchResult, _}
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain._
-import vinyldns.api.repository.{
-  EmptyGroupRepo,
-  EmptyRecordSetRepo,
-  EmptyUserRepo,
-  EmptyZoneRepo,
-  InMemoryBatchChangeRepository
-}
+import vinyldns.api.repository.{EmptyGroupRepo, EmptyRecordSetRepo, EmptyUserRepo, EmptyZoneRepo, InMemoryBatchChangeRepository}
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain._
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -51,6 +47,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.domain.access.AccessValidations
+import vinyldns.api.domain.membership.{GroupInfo, ListMyGroupsResponse, MembershipService}
 
 import java.time.format.DateTimeFormatter
 import scala.concurrent.ExecutionContext
@@ -215,9 +212,21 @@ class BatchChangeServiceSpec
     validationErrors = List.empty
   )
 
+  private val listOfOkGroupInfo: List[GroupInfo] = {List(okGroup).map(GroupInfo.apply)}
+
+  private val listMyGroupsResponse = ListMyGroupsResponse(
+    groups = listOfOkGroupInfo,
+    None,
+    None,
+    nextId = None,
+    maxItems = 100,
+    ignoreAccess = false
+  )
+
   private val batchChangeRepo = new InMemoryBatchChangeRepository
   private val mockNotifier = mock[Notifier]
   private val mockNotifiers = AllNotifiers(List(mockNotifier))
+  private val mockMembershipService = mock[MembershipService]
 
   object EmptyBatchConverter extends BatchChangeConverterAlgebra {
     def sendBatchForProcessing(
@@ -418,6 +427,7 @@ class BatchChangeServiceSpec
   private val underTest = new BatchChangeService(
     TestZoneRepo,
     TestRecordSetRepo,
+    mockMembershipService,
     TestGroupRepo,
     validations,
     batchChangeRepo,
@@ -434,6 +444,7 @@ class BatchChangeServiceSpec
   private val underTestManualEnabled = new BatchChangeService(
     TestZoneRepo,
     TestRecordSetRepo,
+    mockMembershipService,
     TestGroupRepo,
     validations,
     batchChangeRepo,
@@ -450,6 +461,7 @@ class BatchChangeServiceSpec
   private val underTestScheduledEnabled = new BatchChangeService(
     TestZoneRepo,
     TestRecordSetRepo,
+    mockMembershipService,
     TestGroupRepo,
     validations,
     batchChangeRepo,
@@ -476,6 +488,7 @@ class BatchChangeServiceSpec
       val underTest = new BatchChangeService(
         TestZoneRepo,
         TestRecordSetRepo,
+        mockMembershipService,
         TestGroupRepo,
         validations,
         batchChangeRepo,
@@ -508,6 +521,7 @@ class BatchChangeServiceSpec
       val underTest = new BatchChangeService(
         TestZoneRepo,
         TestRecordSetRepo,
+        mockMembershipService,
         TestGroupRepo,
         validations,
         batchChangeRepo,
@@ -1147,6 +1161,7 @@ class BatchChangeServiceSpec
       val underTest = new BatchChangeService(
         AlwaysExistsZoneRepo,
         TestRecordSetRepo,
+        mockMembershipService,
         TestGroupRepo,
         validations,
         batchChangeRepo,
@@ -1188,6 +1203,7 @@ class BatchChangeServiceSpec
       val underTest = new BatchChangeService(
         AlwaysExistsZoneRepo,
         TestRecordSetRepo,
+        mockMembershipService,
         TestGroupRepo,
         validations,
         batchChangeRepo,
@@ -1214,6 +1230,7 @@ class BatchChangeServiceSpec
       val underTest = new BatchChangeService(
         AlwaysExistsZoneRepo,
         TestRecordSetRepo,
+        mockMembershipService,
         TestGroupRepo,
         validations,
         batchChangeRepo,
@@ -2013,6 +2030,10 @@ class BatchChangeServiceSpec
         )
       batchChangeRepo.save(batchChange)
 
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponse)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
+
       val result = underTest.listBatchChangeSummaries(auth, maxItems = 100).value.unsafeRunSync().toOption.get
 
       result.maxItems shouldBe 100
@@ -2052,6 +2073,10 @@ class BatchChangeServiceSpec
       )
       batchChangeRepo.save(batchChangeTwo)
 
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponse)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
+
       val result = underTest.listBatchChangeSummaries(auth, maxItems = 100).value.unsafeRunSync().toOption.get
 
       result.maxItems shouldBe 100
@@ -2086,6 +2111,10 @@ class BatchChangeServiceSpec
       )
       batchChangeRepo.save(batchChangeTwo)
 
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponse)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
+
       val result = underTest.listBatchChangeSummaries(auth, maxItems = 1).value.unsafeRunSync().toOption.get
 
       result.maxItems shouldBe 1
@@ -2118,6 +2147,10 @@ class BatchChangeServiceSpec
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
       batchChangeRepo.save(batchChangeTwo)
+
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponse)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
 
       val result =
         underTest
@@ -2158,6 +2191,10 @@ class BatchChangeServiceSpec
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
       batchChangeRepo.save(batchChangeTwo)
+
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponse)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
 
       val result =
         underTest
@@ -2212,6 +2249,10 @@ class BatchChangeServiceSpec
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
       batchChangeRepo.save(batchChangeTwo)
+
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponse)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
 
       val result =
         underTest
@@ -2269,6 +2310,10 @@ class BatchChangeServiceSpec
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
       batchChangeRepo.save(batchChangeTwo)
+
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponse)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
 
       val result =
         underTest
@@ -2329,6 +2374,10 @@ class BatchChangeServiceSpec
       )
       batchChangeRepo.save(batchChangeTwo)
 
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponse)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
+
       val result =
         underTest
           .listBatchChangeSummaries(
@@ -2377,6 +2426,10 @@ class BatchChangeServiceSpec
       )
       batchChangeRepo.save(batchChangeTwo)
 
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponse)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
+
       val result =
         underTest.listBatchChangeSummaries(auth, startFrom = Some(1)).value.unsafeRunSync().toOption.get
 
@@ -2411,11 +2464,90 @@ class BatchChangeServiceSpec
       )
       batchChangeRepo.save(batchChangeUserTwo)
 
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponse)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
+
       val result =
         underTest.listBatchChangeSummaries(auth, maxItems = 100).value.unsafeRunSync().toOption.get.batchChanges
 
       result.length shouldBe 1
       result(0).createdTimestamp shouldBe batchChangeUserOne.createdTimestamp
+    }
+
+    "only return summaries associated with group who called" in {
+      val batchChangeUserOne =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
+      batchChangeRepo.save(batchChangeUserOne)
+
+      val batchChangeUserTwo = BatchChange(
+        notAuth.userId,
+        auth.signedInUser.userName,
+        None,
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
+        List(),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
+      batchChangeRepo.save(batchChangeUserTwo)
+
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponse)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
+
+      val result =
+        underTest.listBatchChangeSummaries(auth, None, Some(okGroup.name), maxItems = 100).value.unsafeRunSync().toOption.get.batchChanges
+
+      result.length shouldBe 1
+      result(0).createdTimestamp shouldBe batchChangeUserOne.createdTimestamp
+    }
+
+    "return empty summaries with group name not exists" in {
+      val batchChangeUserOne =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          List(),
+          approvalStatus = BatchChangeApprovalStatus.AutoApproved
+        )
+      batchChangeRepo.save(batchChangeUserOne)
+
+      val batchChangeUserTwo = BatchChange(
+        notAuth.userId,
+        auth.signedInUser.userName,
+        None,
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
+        List(),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
+      batchChangeRepo.save(batchChangeUserTwo)
+      val listOfXyzGroupInfo: List[GroupInfo] = {List(xyzGroup).map(GroupInfo.apply)}
+
+      val listMyGroupsResponses = ListMyGroupsResponse(
+        groups = listOfXyzGroupInfo,
+        None,
+        None,
+        nextId = None,
+        maxItems = 100,
+        ignoreAccess = false
+      )
+
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponses)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
+
+      val result =
+        underTest.listBatchChangeSummaries(auth, None, Some(xyzGroup.name), maxItems = 100).value.unsafeRunSync().toOption.get.batchChanges
+
+      result.length shouldBe 0
     }
 
     "only return summaries associated with user who called even if ignoreAccess is true if user is not super" in {
@@ -2440,6 +2572,10 @@ class BatchChangeServiceSpec
       )
       batchChangeRepo.save(batchChangeUserTwo)
 
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponse)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
+
       val result =
         underTest.listBatchChangeSummaries(auth, ignoreAccess = true).value.unsafeRunSync().toOption.get.batchChanges
 
@@ -2461,13 +2597,26 @@ class BatchChangeServiceSpec
 
       val batchChangeUserTwo = BatchChange(
         notAuth.userId,
-        auth.signedInUser.userName,
+        notAuth.signedInUser.userName,
         None,
         Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
         List(),
         approvalStatus = BatchChangeApprovalStatus.AutoApproved
       )
       batchChangeRepo.save(batchChangeUserTwo)
+
+      val listOfEmptyGroupInfo: List[GroupInfo] = List(emptyGroup).map(GroupInfo.apply)
+       val listMyGroupsResponse = ListMyGroupsResponse(
+        groups = listOfEmptyGroupInfo,
+        None,
+        None,
+        nextId = None,
+        maxItems = 100,
+        ignoreAccess = true)
+
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponse)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
 
       val result =
         underTest.listBatchChangeSummaries(superUserAuth, ignoreAccess = true).value.unsafeRunSync().toOption.get
@@ -2483,6 +2632,10 @@ class BatchChangeServiceSpec
     }
 
     "return an empty list of batchChangeSummaries if none exist" in {
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponse)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
+
       val result =
         underTest.listBatchChangeSummaries(auth, maxItems = 100).value.unsafeRunSync().toOption.get.batchChanges
 
@@ -2501,6 +2654,10 @@ class BatchChangeServiceSpec
           BatchChangeApprovalStatus.AutoApproved
         )
       batchChangeRepo.save(batchChange)
+
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponse)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
 
       val result = underTest.listBatchChangeSummaries(auth, maxItems = 100).value.unsafeRunSync().toOption.get
 
@@ -2526,6 +2683,10 @@ class BatchChangeServiceSpec
           BatchChangeApprovalStatus.AutoApproved
         )
       batchChangeRepo.save(batchChange)
+
+      doReturn(
+        EitherT.right[Throwable](IO.pure(listMyGroupsResponse)))
+        .when(mockMembershipService).listMyGroups(any[Option[String]], any[Option[String]], any[Int], any[AuthPrincipal], any[Boolean], any[Boolean])
 
       val result = underTest.listBatchChangeSummaries(auth, maxItems = 100).value.unsafeRunSync().toOption.get
 
