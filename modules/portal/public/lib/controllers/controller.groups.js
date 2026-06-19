@@ -210,8 +210,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
 $scope.refresh = function () {
     groupsPaging = pagingService.resetPaging(groupsPaging);
     allGroupsPaging = pagingService.resetPaging(allGroupsPaging);
-    const groupsSearchByUser = [];
-    userNameQuery = "";
+    let userNameQuery = "";
     if ($scope.isSearchByUser) {
         try {
             if ($scope.query === "%" || $scope.query === "*") {
@@ -232,8 +231,6 @@ $scope.refresh = function () {
             }
 
             function success(response) {
-                $log.debug('profileService::getZoneUserDataByName-success');
-
                 $scope.response = response.data;
                 const groupMap = $scope.response.groupMap || {};
                 const groupIds = Object.keys(groupMap);
@@ -255,11 +252,11 @@ $scope.refresh = function () {
                 .getUserDataById(userNameQuery)
                 .then(success)
                 .catch(function (error) {
-                    handleError(error, 'profileService::getZoneUserDataById-failure');
+                    handleError(error, 'profileService::getUserDataById-failure');
                 });
 
         } catch (error) {
-            $log.error(error.message);
+            $scope.alerts.push({ type: "danger", content: error.message });
         }
     } else {
         groupsService
