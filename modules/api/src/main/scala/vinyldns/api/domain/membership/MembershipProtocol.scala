@@ -23,6 +23,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.GroupChangeType.GroupChangeType
 import vinyldns.core.domain.membership.GroupStatus.GroupStatus
 import vinyldns.core.domain.membership.LockStatus.LockStatus
+import vinyldns.core.domain.membership.Theme.Theme
 import vinyldns.core.domain.membership._
 
 /* This is the new View model for Groups, do not surface the Group model directly any more */
@@ -87,7 +88,8 @@ case class UserInfo(
     lastName: Option[String] = None,
     email: Option[String] = None,
     created: Option[Instant] = None,
-    lockStatus: LockStatus
+    lockStatus: LockStatus,
+    theme: Theme
 )
 object UserInfo {
   def apply(user: User): UserInfo =
@@ -98,7 +100,8 @@ object UserInfo {
       lastName = user.lastName,
       email = user.email,
       created = Some(user.created),
-      lockStatus = user.lockStatus
+      lockStatus = user.lockStatus,
+      theme = user.theme
     )
 }
 
@@ -125,7 +128,8 @@ case class MemberInfo(
     email: Option[String] = None,
     created: Option[Instant] = None,
     isAdmin: Boolean = false,
-    lockStatus: LockStatus
+    lockStatus: LockStatus,
+    theme: Theme
 )
 
 object MemberInfo {
@@ -138,7 +142,8 @@ object MemberInfo {
       email = user.email,
       created = Some(user.created),
       isAdmin = group.adminUserIds.contains(user.id),
-      lockStatus = user.lockStatus
+      lockStatus = user.lockStatus,
+      theme = user.theme
     )
 }
 
