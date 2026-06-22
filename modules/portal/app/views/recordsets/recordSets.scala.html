@@ -30,7 +30,7 @@
 
             <div>
                 <div>
-                    <h5>
+                    <h5 style="margin-top: 30px;">
                         <a data-toggle="collapse" data-target="#collapseInstruction" aria-expanded="false" aria-controls="collapseInstruction">
                             <span class="badge">How to Search <span class="fa fa-chevron-down"></span></span>
                         </a>
@@ -81,13 +81,14 @@
                         <form class="input-group remove-bottom-margin" ng-submit="refreshRecords()">
                             <div class="input-group remove-bottom-margin">
                                         <span class="input-group-btn">
-                                            <button id="record-search-button" type="submit" class="btn btn-primary"><span class="fa fa-search"></span></button>
+                                            <button id="record-search-button" type="submit" class="btn btn-primary btn-search-border"><span class="fa fa-search"></span></button>
                                         </span>
                                 <input id="record-search-text" ng-model="query" type="text" class="form-control" placeholder="Record Name">
                             </div>
                         </form>
                         <div class="dropdown">
                             <a class="record-type-filter-heading force-cursor dropdown-toggle" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">Filters<i class="fa fa-chevron-down"></i></a>
+
                             <div class="dropdown-menu" aria-labelledby="dropdownMenu1">
                                 <div class="filter-margin">
                                     Record Types
