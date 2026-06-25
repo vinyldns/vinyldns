@@ -84,7 +84,17 @@ export function GroupDetailPage() {
       void queryClient.invalidateQueries({ queryKey: ['group', id] });
       void queryClient.invalidateQueries({ queryKey: ['group-members', id] });
     },
-    onError: () => addAlert('danger', 'Failed to remove member'),
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: string | { errors?: string[] } } };
+      const data = e?.response?.data;
+      let msg = 'Failed to remove member';
+      if (data && typeof data === 'object' && 'errors' in data && Array.isArray(data.errors)) {
+        msg = data.errors.join('\n');
+      } else if (typeof data === 'string' && data.trim()) {
+        msg = data.replace(/^"|"$/g, '');
+      }
+      addAlert('danger', msg);
+    },
   });
 
   const addMemberMutation = useMutation({
@@ -110,7 +120,17 @@ export function GroupDetailPage() {
       void queryClient.invalidateQueries({ queryKey: ['group', id] });
       void queryClient.invalidateQueries({ queryKey: ['group-members', id] });
     },
-    onError: () => addAlert('danger', 'Failed to add member — check the username and try again'),
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: string | { errors?: string[] } } };
+      const data = e?.response?.data;
+      let msg = 'Failed to add member';
+      if (data && typeof data === 'object' && 'errors' in data && Array.isArray(data.errors)) {
+        msg = data.errors.join('\n');
+      } else if (typeof data === 'string' && data.trim()) {
+        msg = data.replace(/^"|"$/g, '');
+      }
+      addAlert('danger', msg);
+    },
   });
 
   const toggleAdminMutation = useMutation({
