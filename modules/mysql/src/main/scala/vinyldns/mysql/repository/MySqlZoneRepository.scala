@@ -35,7 +35,6 @@ import scala.concurrent.duration._
 class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with Monitored {
 
   private final val logger = LoggerFactory.getLogger(classOf[MySqlZoneRepository])
-  private final val MAX_ACCESSORS = 30
   private final val INITIAL_RETRY_DELAY = 1.millis
   final val MAX_RETRIES = 10
   private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
@@ -455,7 +454,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     } else {
       // User is not super or support,
       // let's join across to the zone access table so we return only zones a user has access to
-      val accessors = buildZoneSearchAccessorList(user, groupIds)
+      val accessors = MySqlAccessors.buildZoneSearchAccessorList(user, groupIds, logger)
       val questionMarks = List.fill(accessors.size)("?").mkString(",")
       val withAccessorCheck = BASE_ZONE_SEARCH_SQL +
         s"""
@@ -464,20 +463,6 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     """.stripMargin
       (withAccessorCheck, accessors)
     }
-
-  /* Limit the accessors so that we don't have boundless parameterized queries */
-  private def buildZoneSearchAccessorList(user: User, groupIds: Seq[String]): Seq[String] = {
-    val allAccessors = user.id +: groupIds
-
-    if (allAccessors.length > MAX_ACCESSORS) {
-      logger.warn(
-        s"User ${user.userName} with id ${user.id} is in more than $MAX_ACCESSORS groups, no all zones maybe returned!"
-      )
-    }
-
-    // Take the top 30 accessors, but add "EVERYONE" to the list so that we include zones that have everyone access
-    allAccessors.take(MAX_ACCESSORS) :+ "EVERYONE"
-  }
 
   private def putZone(zone: Zone)(implicit session: DBSession): Zone = {
     PUT_ZONE

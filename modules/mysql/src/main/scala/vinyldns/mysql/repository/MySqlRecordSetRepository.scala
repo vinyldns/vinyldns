@@ -21,7 +21,6 @@ import cats.implicits._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -34,8 +33,6 @@ import scala.util.Try
 
 class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
   import MySqlRecordSetRepository._
-
-  private final val MAX_ACCESSORS = 30
 
   private val FIND_BY_ZONEID_NAME_TYPE =
     sql"""
@@ -299,20 +296,9 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     }
 
   private def buildAccessFilter(authPrincipal: AuthPrincipal): SQLSyntax = {
-    val accessors = buildZoneSearchAccessorList(authPrincipal.signedInUser, authPrincipal.memberGroupIds)
+    val accessors =
+      MySqlAccessors.buildZoneSearchAccessorList(authPrincipal.signedInUser, authPrincipal.memberGroupIds, logger)
     sqls"zone_id IN (SELECT za.zone_id FROM zone_access za WHERE za.accessor_id IN ($accessors))"
-  }
-
-  private def buildZoneSearchAccessorList(user: User, groupIds: Seq[String]): Seq[String] = {
-    val allAccessors = user.id +: groupIds
-
-    if (allAccessors.length > MAX_ACCESSORS) {
-      logger.warn(
-        s"User ${user.userName} with id ${user.id} is in more than $MAX_ACCESSORS groups, no all zones maybe returned!"
-      )
-    }
-
-    allAccessors.take(MAX_ACCESSORS) :+ "EVERYONE"
   }
 
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]] =

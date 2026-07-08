@@ -26,7 +26,7 @@ import vinyldns.core.TestMembershipData.{okGroup, okUser}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.zone.{Zone, ZoneACL}
+import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneACL}
 import vinyldns.mysql.TestMySqlInstance
 import vinyldns.mysql.repository.MySqlRecordSetRepository.PagingKey
 import vinyldns.mysql.TransactionProvider
@@ -692,6 +692,57 @@ class MySqlRecordSetRepositoryIntegrationSpec
         .unsafeRunSync()
 
       found.recordSets.map(_.zoneId) should contain theSameElementsAs zones.take(29).map(_.id)
+    }
+    "return recordsets from zones shared with everyone when doing a global search" in {
+      val allAccessZone = okZone.copy(
+        name = "all-access-recordsets.",
+        id = UUID.randomUUID().toString,
+        acl = ZoneACL(
+          rules = Set(
+            ACLRule(
+              accessLevel = AccessLevel.Read,
+              userId = None,
+              groupId = None
+            )
+          )
+        )
+      )
+      val noAccessZone = abcZone.copy(
+        name = "no-access-recordsets.",
+        id = UUID.randomUUID().toString,
+        adminGroupId = okGroup.id,
+        acl = ZoneACL()
+      )
+
+      val allAccessRecord = aaaa.copy(
+        zoneId = allAccessZone.id,
+        name = "all-access-record",
+        id = UUID.randomUUID().toString
+      )
+      val noAccessRecord = aaaa.copy(
+        zoneId = noAccessZone.id,
+        name = "no-access-record",
+        id = UUID.randomUUID().toString
+      )
+
+      saveZones(Seq(allAccessZone, noAccessZone))
+      insert(List(makeTestAddChange(allAccessRecord, allAccessZone), makeTestAddChange(noAccessRecord, noAccessZone)))
+
+      val found = repo
+        .listRecordSets(
+          None,
+          None,
+          None,
+          Some("*access-record*"),
+          None,
+          None,
+          NameSort.ASC,
+          RecordTypeSort.ASC,
+          Some(AuthPrincipal(okUser, Seq.empty))
+        )
+        .unsafeRunSync()
+
+      found.recordSets should contain theSameElementsAs List(recordSetWithFQDN(allAccessRecord, allAccessZone))
     }
     "return no recordsets when no zoneId or recordNameFilter are given" in {
       val found =

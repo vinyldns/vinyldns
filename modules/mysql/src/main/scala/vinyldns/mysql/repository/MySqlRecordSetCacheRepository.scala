@@ -20,7 +20,6 @@ import cats.implicits._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
@@ -37,8 +36,6 @@ class MySqlRecordSetCacheRepository
   extends RecordSetCacheRepository
     with Monitored
     with ProtobufConversions {
-
-  private final val MAX_ACCESSORS = 30
 
   private val INSERT_RECORDSETDATA =
     sql"INSERT INTO recordset_data(recordset_id, zone_id, fqdn, reverse_fqdn, type, record_data, ip) VALUES ({recordset_id}, {zone_id}, {fqdn}, {reverse_fqdn}, {type}, {record_data}, INET6_ATON({ip}))"
@@ -412,20 +409,9 @@ class MySqlRecordSetCacheRepository
     }
 
   private def buildAccessFilter(authPrincipal: AuthPrincipal): SQLSyntax = {
-    val accessors = buildZoneSearchAccessorList(authPrincipal.signedInUser, authPrincipal.memberGroupIds)
+    val accessors =
+      MySqlAccessors.buildZoneSearchAccessorList(authPrincipal.signedInUser, authPrincipal.memberGroupIds, logger)
     sqls"recordset.zone_id IN (SELECT za.zone_id FROM zone_access za WHERE za.accessor_id IN ($accessors))"
-  }
-
-  private def buildZoneSearchAccessorList(user: User, groupIds: Seq[String]): Seq[String] = {
-    val allAccessors = user.id +: groupIds
-
-    if (allAccessors.length > MAX_ACCESSORS) {
-      logger.warn(
-        s"User ${user.userName} with id ${user.id} is in more than $MAX_ACCESSORS groups, no all zones maybe returned!"
-      )
-    }
-
-    allAccessors.take(MAX_ACCESSORS) :+ "EVERYONE"
   }
 
 
