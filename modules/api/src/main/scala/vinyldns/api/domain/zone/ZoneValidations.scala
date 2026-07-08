@@ -47,6 +47,7 @@ class ZoneValidations(syncDelayMillis: Int) {
   ): Either[Throwable, Unit] =
     ensuring(customConnectionError)(connection.isEmpty && transferConnection.isEmpty)
 
+  // Allows removing a pre-existing connection, but rejects introducing or modifying one.
   def noCustomZoneConnectionUpdates(newZone: Zone, existingZone: Zone): Either[Throwable, Unit] =
     if (
       newZone.connection != existingZone.connection ||
