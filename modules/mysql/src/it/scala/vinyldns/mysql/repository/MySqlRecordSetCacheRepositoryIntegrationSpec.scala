@@ -524,8 +524,11 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
         id = UUID.randomUUID().toString
       )
 
+      val allAccessChange = makeTestAddChange(allAccessRecord, allAccessZone)
+      val noAccessChange = makeTestAddChange(noAccessRecord, noAccessZone)
+
       saveZones(Seq(allAccessZone, noAccessZone))
-      insert(List(makeTestAddChange(allAccessRecord, allAccessZone), makeTestAddChange(noAccessRecord, noAccessZone)))
+      insert(List(allAccessChange, noAccessChange))
 
       val found = recordSetCacheRepo
         .listRecordSetData(
@@ -540,7 +543,7 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
         )
         .unsafeRunSync()
 
-      found.recordSets should contain theSameElementsAs List(recordSetDataWithFQDN(allAccessRecord, allAccessZone))
+      found.recordSets should contain theSameElementsAs List(recordSetDataWithFQDN(allAccessChange.recordSet, allAccessZone))
     }
     "return no recordsets when no zoneId or recordNameFilter are given" in {
       val found =
