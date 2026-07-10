@@ -366,13 +366,16 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           val filterParams = scala.collection.mutable.ListBuffer[Any]()
           val filters = scala.collection.mutable.ListBuffer[String]()
 
-          // Wildcard semantics: '*' is the user-facing wildcard (mapped to SQL '%').
+          // '*' is the only user-facing wildcard; literal LIKE metacharacters are
+          // escaped and the pattern is bound, never interpolated into SQL.
           // A trailing '.' or a '*' yields a fully-qualified LIKE; otherwise prefix match.
           zoneNameFilter.foreach { flt =>
             val pattern =
-              if (flt.takeRight(1) == "." || flt.contains("*")) ensureTrailingDot(flt.replace('*', '%'))
-              else flt.concat("%")
-            filters += "z.name LIKE ?"
+              if (flt.takeRight(1) == "." || flt.contains("*")) ensureTrailingDot(LikePattern.escape(flt))
+              else LikePattern.escape(flt) + "%"
+            // '\\\\' in this plain string literal is two backslashes at runtime,
+            // which MySQL parses to the single backslash escape char.
+            filters += "z.name LIKE ? ESCAPE '\\\\'"
             filterParams += pattern
           }
           startFrom.foreach { os =>

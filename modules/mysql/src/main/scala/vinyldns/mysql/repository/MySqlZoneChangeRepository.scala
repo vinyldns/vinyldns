@@ -202,12 +202,13 @@ class MySqlZoneChangeRepository
 
           sb.append(" zc.zone_status = 'Deleted' ")
 
-          // Wildcard semantics: '*' is the user-facing wildcard (mapped to SQL '%'),
-          // otherwise prefix match. The pattern is bound, never interpolated into SQL.
+          // '*' is the only user-facing wildcard; literal LIKE metacharacters are
+          // escaped and the pattern is bound, never interpolated into SQL.
           zoneNameFilter.foreach { flt =>
-            val pattern = if (flt.contains("*")) flt.replace('*', '%') else flt.concat("%")
-            sb.append(" AND zc.zone_name LIKE ?")
-            filterParams += pattern
+            // '\\\\' in this plain string literal is two backslashes at runtime,
+            // which MySQL parses to the single backslash escape char.
+            sb.append(" AND zc.zone_name LIKE ? ESCAPE '\\\\'")
+            filterParams += LikePattern.prefix(flt)
           }
 
           val resultOrdering = s"""|    GROUP BY zc.zone_name

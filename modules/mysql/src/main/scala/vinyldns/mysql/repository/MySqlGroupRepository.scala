@@ -187,14 +187,12 @@ class MySqlGroupRepository extends GroupRepository with GroupProtobufConversions
     monitor("repo.Group.getGroupByName") {
       IO {
         logger.debug(s"Getting groups with name: $nameFilter")
-        // Wildcard semantics: '*' is the user-facing wildcard (mapped to SQL '%'),
-        // otherwise prefix match. The pattern is bound, never interpolated into SQL.
-        val pattern =
-          if (nameFilter.contains('*')) nameFilter.replace('*', '%')
-          else s"$nameFilter%"
+        // '*' is the only user-facing wildcard; literal LIKE metacharacters are
+        // escaped and the pattern is bound, never interpolated into SQL.
+        val pattern = LikePattern.prefix(nameFilter)
 
         DB.readOnly { implicit s =>
-          sql"SELECT data FROM `groups` WHERE name LIKE $pattern"
+          sql"SELECT data FROM `groups` WHERE name LIKE $pattern ESCAPE '\\'"
             .map(toGroup(1))
             .list()
             .apply()

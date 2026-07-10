@@ -130,6 +130,18 @@ class MySqlGroupRepositoryIntegrationSpec
       repo.getGroupsByName("*-group-*").unsafeRunSync() shouldBe groups.toSet
     }
 
+    "treats a literal '_' as a character, not a single-char wildcard" in {
+      // '_' would match the '-' in 'test-group-0' if treated as a SQL wildcard;
+      // escaped, it matches literally and no such group exists.
+      repo.getGroupsByName("test_group-0").unsafeRunSync() shouldBe Set()
+    }
+
+    "treats a literal '%' as a character, not a wildcard" in {
+      // '%' would match every 'test-group-*' if treated as a SQL wildcard;
+      // escaped, it matches literally and no such group exists.
+      repo.getGroupsByName("test-group-%").unsafeRunSync() shouldBe Set()
+    }
+
     "returns empty set when group does not exist" in {
       repo.getGroupsByName("no-existo").unsafeRunSync() shouldBe Set()
     }
