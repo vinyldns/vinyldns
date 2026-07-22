@@ -71,9 +71,7 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
     val pendingChanges = generateInserts(zone, count, word)
     val bigPendingChangeSet = ChangeSet(pendingChanges)
     executeWithinTransaction { db: DB =>
-      recordSetCacheRepo.save(db, bigPendingChangeSet)
-      recordSetRepo.apply(db, bigPendingChangeSet)
-
+      recordSetCacheRepo.save(db, bigPendingChangeSet).flatMap(_ => recordSetRepo.apply(db, bigPendingChangeSet))
     }.unsafeRunSync()
     pendingChanges
   }
@@ -81,9 +79,7 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
   def insert(changes: List[RecordSetChange]): Unit = {
     val bigPendingChangeSet = ChangeSet(changes)
     executeWithinTransaction { db: DB =>
-      recordSetCacheRepo.save(db, bigPendingChangeSet)
-      recordSetRepo.apply(db, bigPendingChangeSet)
-
+      recordSetCacheRepo.save(db, bigPendingChangeSet).flatMap(_ => recordSetRepo.apply(db, bigPendingChangeSet))
     }.unsafeRunSync()
     ()
   }
@@ -102,10 +98,10 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
           .copy(status = RecordSetChangeStatus.Failed)
       val deleteChange = makePendingTestDeleteChange(existing(1))
         .copy(status = RecordSetChangeStatus.Failed)
+      val revertChangeSet = ChangeSet(Seq(addChange, updateChange, deleteChange))
       executeWithinTransaction { db: DB =>
-        recordSetCacheRepo.save(db, ChangeSet(Seq(addChange, updateChange, deleteChange)))
-        recordSetRepo.apply(db, ChangeSet(Seq(addChange, updateChange, deleteChange)))
-      }
+        recordSetCacheRepo.save(db, revertChangeSet).flatMap(_ => recordSetRepo.apply(db, revertChangeSet))
+      }.unsafeRunSync()
       recordSetCacheRepo.getRecordSetData(rsOk.id).unsafeRunSync() shouldBe None
       recordSetCacheRepo.getRecordSetData(existing.head.id).unsafeRunSync() shouldBe Some(
         recordSetDataWithFQDN(existing.head, okZone)
@@ -164,18 +160,18 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
         recordSet = recordForFailed.copy(status = RecordSetStatus.Pending),
         status = RecordSetChangeStatus.Pending
       )
+      val existingPendingChangeSet = ChangeSet(existingPending)
       executeWithinTransaction { db: DB =>
-        recordSetCacheRepo.save(db, ChangeSet(existingPending))
-        recordSetRepo.apply(db, ChangeSet(existingPending))
+        recordSetCacheRepo.save(db, existingPendingChangeSet).flatMap(_ => recordSetRepo.apply(db, existingPendingChangeSet))
       }.attempt.unsafeRunSync()
       recordSetCacheRepo.getRecordSetData(failedChange.recordSet.id).unsafeRunSync() shouldBe
         Some(
           existingPending.recordSet
             .copy(fqdn = Some(s"""${failedChange.recordSet.name}.${okZone.name}"""))
         )
+      val createsChangeSet = ChangeSet(Seq(successfulChange, pendingChange, failedChange))
       executeWithinTransaction { db: DB =>
-        recordSetCacheRepo.save(db, ChangeSet(Seq(successfulChange, pendingChange, failedChange)))
-        recordSetRepo.apply(db, ChangeSet(Seq(successfulChange, pendingChange, failedChange)))
+        recordSetCacheRepo.save(db, createsChangeSet).flatMap(_ => recordSetRepo.apply(db, createsChangeSet))
       }.attempt.unsafeRunSync()
 
       // success and pending changes have records saved
@@ -199,10 +195,12 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
       val pendingChanges = generateInserts(okZone, 1000)
       val bigPendingChangeSet = ChangeSet(pendingChanges)
       val saveRecSets = executeWithinTransaction { db: DB =>
-        recordSetCacheRepo.save(db, bigPendingChangeSet)
-        recordSetCacheRepo.save(db, bigPendingChangeSet)
-        recordSetRepo.apply(db, bigPendingChangeSet)
-        recordSetRepo.apply(db, bigPendingChangeSet)
+        for {
+          _ <- recordSetCacheRepo.save(db, bigPendingChangeSet)
+          _ <- recordSetCacheRepo.save(db, bigPendingChangeSet)
+          _ <- recordSetRepo.apply(db, bigPendingChangeSet)
+          r <- recordSetRepo.apply(db, bigPendingChangeSet)
+        } yield r
       }
       saveRecSets.attempt.unsafeRunSync() shouldBe right
     }
@@ -211,13 +209,37 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
 
       val bigPendingChangeSet = ChangeSet(pendingChanges)
       executeWithinTransaction { db: DB =>
-        recordSetCacheRepo.save(db, bigPendingChangeSet)
-        recordSetRepo.apply(db, bigPendingChangeSet)
-
+        recordSetCacheRepo.save(db, bigPendingChangeSet).flatMap(_ => recordSetRepo.apply(db, bigPendingChangeSet))
       }.attempt.unsafeRunSync()
       // let's make sure we have all 1000 records
       val recordCount = recordSetCacheRepo.getRecordSetDataCount(okZone.id).unsafeRunSync()
       recordCount shouldBe 20
+    }
+    "batch inserts across multiple groups" in {
+      // exceed the 1000-row batch group size to exercise grouped batching
+      val pendingChanges = generateInserts(okZone, 2500)
+      val bigPendingChangeSet = ChangeSet(pendingChanges)
+      executeWithinTransaction { db: DB =>
+        recordSetCacheRepo.save(db, bigPendingChangeSet).flatMap(_ => recordSetRepo.apply(db, bigPendingChangeSet))
+      }.attempt.unsafeRunSync() shouldBe right
+      recordSetCacheRepo.getRecordSetDataCount(okZone.id).unsafeRunSync() shouldBe 2500
+    }
+    "batch insert record types that have no IP (null ip column)" in {
+      // CNAME/NS/TXT parse to a null ip; exercise null binding through batchByName
+      val changes = List(
+        cname.copy(zoneId = okZone.id, name = "cname-null-ip"),
+        ns.copy(zoneId = okZone.id, name = "ns-null-ip"),
+        txt.copy(zoneId = okZone.id, name = "txt-null-ip")
+      ).map(makeTestAddChange(_, okZone))
+      insert(changes)
+      // cname(1) + ns(2 NSData) + txt(1) = 4 recordset_data rows, all with a null ip
+      recordSetCacheRepo.getRecordSetDataCount(okZone.id).unsafeRunSync() shouldBe 4
+      val names = recordSetCacheRepo
+        .listRecordSetData(Some(okZone.id), None, None, None, None, None, NameSort.ASC)
+        .unsafeRunSync()
+        .recordSets
+        .map(_.name)
+      names should contain allElementsOf changes.map(_.recordSet.name)
     }
     "work for deletes, updates, and inserts" in {
       // create some record sets to be updated
@@ -240,9 +262,7 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
       // exercise the entire change set
       val cs = ChangeSet(deletes ++ updates ++ inserts)
       executeWithinTransaction { db: DB =>
-        recordSetCacheRepo.save(db, cs)
-        recordSetRepo.apply(db, cs)
-
+        recordSetCacheRepo.save(db, cs).flatMap(_ => recordSetRepo.apply(db, cs))
       }.attempt.unsafeRunSync()
       // make sure the deletes are gone
       recordSetCacheRepo.getRecordSetData(deletes(0).recordSet.id).unsafeRunSync() shouldBe None
@@ -259,6 +279,49 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
         Some(inserts(0).recordSet.name)
       recordSetCacheRepo.getRecordSetData(inserts(1).recordSet.id).unsafeRunSync().map(_.name) shouldBe
         Some(inserts(1).recordSet.name)
+    }
+    "apply a mixed create/update/delete changeset atomically with correct row counts" in {
+      // seed 6 single-data records (1 recordset_data row each)
+      val existing = insert(okZone, 6).map(_.recordSet).sortBy(_.name)
+
+      // delete the first two
+      val deletes = existing
+        .take(2)
+        .map(makePendingTestDeleteChange(_, okZone).copy(status = RecordSetChangeStatus.Complete))
+
+      // update the next two (rename, same id)
+      val updates = existing
+        .slice(2, 4)
+        .map(rs => makeCompleteTestUpdateChange(rs, rs.copy(name = "renamed-" + rs.name), okZone))
+
+      // leave existing(4) and existing(5) untouched, and create two brand new records
+      val creates = generateInserts(okZone, 2, "brand-new")
+
+      val cs = ChangeSet(deletes ++ updates ++ creates)
+      executeWithinTransaction { db: DB =>
+        recordSetCacheRepo.save(db, cs).flatMap(_ => recordSetRepo.apply(db, cs))
+      }.attempt.unsafeRunSync() shouldBe right
+
+      // deletes are gone
+      deletes.foreach { d =>
+        recordSetCacheRepo.getRecordSetData(d.recordSet.id).unsafeRunSync() shouldBe None
+      }
+      // updates reflect the new name (delete-then-insert leaves exactly one row each)
+      updates.foreach { u =>
+        recordSetCacheRepo.getRecordSetData(u.recordSet.id).unsafeRunSync().map(_.name) shouldBe
+          Some(u.recordSet.name)
+      }
+      // untouched seed records survive unchanged
+      existing.slice(4, 6).foreach { rs =>
+        recordSetCacheRepo.getRecordSetData(rs.id).unsafeRunSync().map(_.name) shouldBe Some(rs.name)
+      }
+      // creates are present
+      creates.map(_.recordSet).foreach { rs =>
+        recordSetCacheRepo.getRecordSetData(rs.id).unsafeRunSync().map(_.name) shouldBe Some(rs.name)
+      }
+      // 6 seeded - 2 deleted + 2 created = 6; count == 6 proves updates neither dropped
+      // rows nor left duplicates (would be 4 or 8 respectively)
+      recordSetCacheRepo.getRecordSetDataCount(okZone.id).unsafeRunSync() shouldBe 6
     }
   }
   "list record sets" should {
