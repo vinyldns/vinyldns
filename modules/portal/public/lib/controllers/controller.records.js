@@ -121,7 +121,7 @@ angular.module('controller.records', [])
       */
 
     function isNotRequestedGroupMemberResponse(record, profileId) {
-        if (record.recordSetGroupChange && record.recordSetGroupChange.requestedOwnerGroupId) {
+        if (record.recordSetGroupChange && isValidGroupId(record.recordSetGroupChange.requestedOwnerGroupId)) {
             return groupsService
                 .getGroupMemberList(record.recordSetGroupChange.requestedOwnerGroupId)
                 .then(response => {
@@ -142,6 +142,9 @@ angular.module('controller.records', [])
     }
 
     $scope.recordSetGroupOwnershipStatus = function recordSetGroupOwnershipStatus(groupId, profileId, record) {
+        if (!isValidGroupId(groupId)) {
+            return Promise.resolve();
+        }
         function success(response) {
            var ownershipTransferStatus;
            const status = record.recordSetGroupChange && record.recordSetGroupChange.ownershipTransferStatus 
@@ -182,8 +185,13 @@ angular.module('controller.records', [])
             });
     };
 
+    // Treats missing, null, and the string "null" as an absent group id
+    function isValidGroupId(groupId) {
+        return groupId != undefined && groupId != null && groupId != "null";
+    }
+
     function getGroup(groupId) {
-        if (groupId != undefined && groupId != "null"){
+        if (isValidGroupId(groupId)){
             $log.debug('groupsService::getGroup-success');
             function success(response) {
                  $scope.recordSetRequestedOwnershipName = response.data.name;
@@ -697,7 +705,7 @@ angular.module('controller.records', [])
                     newRecords.push(recordsService.toDisplayRecord(record, $scope.zoneInfo.name));
                 });
                 angular.forEach(newRecords, function(record) {
-                    if(record.ownerGroupId != undefined) {
+                    if(isValidGroupId(record.ownerGroupId)) {
                         $scope.recordSetGroupOwnershipStatus(record.ownerGroupId, $scope.profile.id, record);
                     }else {record.isCurrentRecordSetOwner= null;}
                 });
