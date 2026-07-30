@@ -142,30 +142,27 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
               s"zone.sync.changes; zoneName='${zone.name}'; " +
                 s"changeCount=${changesWithUserIds.size}; zoneChange='${zoneChange.id}'"
             )
-            val syncBatchSize = 1000
-            val changeBatches = changesWithUserIds.grouped(syncBatchSize).toList
+            val changeSet = ChangeSet(changesWithUserIds).copy(status = ChangeSetStatus.Applied)
 
-            logger.info(
-              s"zone.sync.batching; zoneName='${zone.name}'; " +
-                s"totalChanges=${changesWithUserIds.size}; batches=${changeBatches.size}; " +
-                s"batchSize=$syncBatchSize; zoneChange='${zoneChange.id}'"
-            )
+            executeWithinTransaction { db: DB =>
+              // we want to make sure we write to both the change repo and record set repo
+              // at the same time as this can take a while
+              val saveRecordChanges = time(s"zone.sync.saveChanges; zoneName='${zone.name}'")(
+                recordChangeRepository.save(db, changeSet)
+              )
+              val saveRecordSets = time(s"zone.sync.saveRecordSets; zoneName='${zone.name}'")(
+                recordSetRepository.apply(db, changeSet)
+              )
+              val saveRecordSetDatas = time(s"zone.sync.saveRecordSetDatas; zoneName='${zone.name}'")(
+                recordSetCacheRepository.save(db,changeSet)
+              )
 
-            changeBatches.zipWithIndex.foldLeft(IO.unit) { case (prevIO, (batch, idx)) =>
-              prevIO.flatMap { _ =>
-                val batchChangeSet = ChangeSet(batch).copy(status = ChangeSetStatus.Applied)
-                time(s"zone.sync.writeBatch; zoneName='${zone.name}'; batch=${idx + 1}/${changeBatches.size}") {
-                  executeWithinTransaction { db: DB =>
-                    for {
-                      _ <- recordChangeRepository.save(db, batchChangeSet)
-                      _ <- recordSetRepository.apply(db, batchChangeSet)
-                      _ <- recordSetCacheRepository.save(db, batchChangeSet)
-                    } yield ()
-                  }
-                }
-              }
-            }.map { _ =>
-              zoneChange.copy(
+              // join together the results of saving both the record changes as well as the record sets
+              for {
+                _ <- saveRecordChanges
+                _ <- saveRecordSets
+                _ <- saveRecordSetDatas
+              } yield zoneChange.copy(
                 zone.copy(status = ZoneStatus.Active, latestSync = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))),
                 status = ZoneChangeStatus.Synced
               )

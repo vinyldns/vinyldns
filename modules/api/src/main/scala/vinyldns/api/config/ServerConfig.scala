@@ -18,6 +18,7 @@ package vinyldns.api.config
 
 import com.typesafe.config.Config
 import pureconfig.ConfigReader
+import pureconfig.error.CannotConvert
 import vinyldns.api.domain.zone.ZoneRecordValidations
 
 import scala.util.matching.Regex
@@ -104,6 +105,16 @@ object ServerConfig {
         loadTestData,
         isZoneSyncScheduleAllowed,
         zoneSyncPageSize
+      )
+  }.emap { c =>
+    if (c.zoneSyncPageSize > 0) Right(c)
+    else
+      Left(
+        CannotConvert(
+          c.zoneSyncPageSize.toString,
+          "zone-sync-page-size",
+          "must be a positive integer"
+        )
       )
   }
 }
