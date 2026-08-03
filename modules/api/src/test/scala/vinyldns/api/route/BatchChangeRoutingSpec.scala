@@ -488,6 +488,63 @@ class BatchChangeRoutingSpec()
         case ("batchId", _) => EitherT(IO.pure(BatchChangeNotPendingReview("batchId").asLeft))
         case (_, _) => EitherT(IO.pure(BatchChangeNotFound("notFoundId").asLeft))
       }
+
+    def getBatchChangeCount(
+        auth: AuthPrincipal,
+        userName: Option[String] = None,
+        dateTimeStartRange: Option[String] = None,
+        dateTimeEndRange: Option[String] = None,
+        ignoreAccess: Boolean = false,
+        approvalStatus: Option[BatchChangeApprovalStatus] = None
+    ): EitherT[IO, BatchChangeErrorResponse, BatchChangeCount] =
+      (auth.userId, ignoreAccess, approvalStatus, userName, dateTimeStartRange, dateTimeEndRange) match {
+        case (okAuth.userId, false, None, None, None, None) =>
+          EitherT.rightT(
+            BatchChangeCount(
+              total = 4,
+              complete = 2,
+              failed = 0,
+              partialFailure = 0,
+              rejected = 0,
+              cancelled = 0,
+              pendingReview = 1,
+              scheduled = 0,
+              pendingProcessing = 1
+            )
+          )
+        case (okAuth.userId, false, Some(BatchChangeApprovalStatus.PendingReview), None, None, None) =>
+          EitherT.rightT(
+            BatchChangeCount(total = 1, pendingReview = 1)
+          )
+        case (
+            okAuth.userId,
+            false,
+            None,
+            Some(uname),
+            Some("2023-11-14 00:00:00"),
+            Some("2023-11-15 00:00:00")
+            ) if uname == okAuth.signedInUser.userName =>
+          EitherT.rightT(BatchChangeCount(total = 1, complete = 1))
+        case (superUserAuth.userId, true, None, None, None, None) =>
+          EitherT.rightT(
+            BatchChangeCount(
+              total = 7,
+              complete = 3,
+              failed = 1,
+              partialFailure = 1,
+              rejected = 1,
+              cancelled = 0,
+              pendingReview = 1,
+              scheduled = 0,
+              pendingProcessing = 0
+            )
+          )
+        case (superUserAuth.userId, true, Some(BatchChangeApprovalStatus.PendingReview), None, None, None) =>
+          EitherT.rightT(BatchChangeCount(total = 2, pendingReview = 2))
+        case (superUserAuth.userId, false, _, _, _, _) =>
+          EitherT.rightT(BatchChangeCount())
+        case _ => EitherT.rightT(BatchChangeCount())
+      }
   }
 
   "POST batch change" should {
@@ -793,6 +850,114 @@ class BatchChangeRoutingSpec()
         resp.nextId shouldBe None
         resp.ignoreAccess shouldBe true
         resp.approvalStatus.toString shouldBe Some(BatchChangeApprovalStatus.PendingReview).toString
+      }
+    }
+  }
+
+  "GET batch change count" should {
+    "return the count grouped by status for the authenticated user" in {
+      Get("/zones/batchrecordchanges/count") ~> batchChangeRoute ~> check {
+        status shouldBe OK
+
+        val resp = responseAs[BatchChangeCount]
+
+        resp.total shouldBe 4
+        resp.complete shouldBe 2
+        resp.failed shouldBe 0
+        resp.partialFailure shouldBe 0
+        resp.rejected shouldBe 0
+        resp.cancelled shouldBe 0
+        resp.pendingReview shouldBe 1
+        resp.scheduled shouldBe 0
+        resp.pendingProcessing shouldBe 1
+      }
+    }
+
+    "filter the count by approvalStatus query param" in {
+      Get("/zones/batchrecordchanges/count?approvalStatus=PendingReview") ~>
+        batchChangeRoute ~> check {
+        status shouldBe OK
+
+        val resp = responseAs[BatchChangeCount]
+
+        resp.total shouldBe 1
+        resp.pendingReview shouldBe 1
+        resp.complete shouldBe 0
+      }
+    }
+
+    "filter the count by userName and date range query params" in {
+      val url =
+        s"/zones/batchrecordchanges/count?userName=${okAuth.signedInUser.userName}" +
+          "&dateTimeRangeStart=2023-11-14%2000:00:00" +
+          "&dateTimeRangeEnd=2023-11-15%2000:00:00"
+
+      Get(url) ~> batchChangeRoute ~> check {
+        status shouldBe OK
+
+        val resp = responseAs[BatchChangeCount]
+
+        resp.total shouldBe 1
+        resp.complete shouldBe 1
+      }
+    }
+
+    "return the count across all users when ignoreAccess is true and requester is a super user" in {
+      Get("/zones/batchrecordchanges/count?ignoreAccess=true") ~>
+        superUserRoute ~> check {
+        status shouldBe OK
+
+        val resp = responseAs[BatchChangeCount]
+
+        resp.total shouldBe 7
+        resp.complete shouldBe 3
+        resp.failed shouldBe 1
+        resp.partialFailure shouldBe 1
+        resp.rejected shouldBe 1
+        resp.pendingReview shouldBe 1
+      }
+    }
+
+    "filter by approvalStatus when ignoreAccess is true and requester is a super user" in {
+      Get("/zones/batchrecordchanges/count?ignoreAccess=true&approvalStatus=PendingReview") ~>
+        superUserRoute ~> check {
+        status shouldBe OK
+
+        val resp = responseAs[BatchChangeCount]
+
+        resp.total shouldBe 2
+        resp.pendingReview shouldBe 2
+      }
+    }
+
+    "default ignoreAccess to false when omitted" in {
+      // super user with no ignoreAccess param should not get the cross-user totals
+      Get("/zones/batchrecordchanges/count") ~> superUserRoute ~> check {
+        status shouldBe OK
+
+        val resp = responseAs[BatchChangeCount]
+
+        resp.total shouldBe 0
+      }
+    }
+
+    "return 400 for an unrecognized approvalStatus value" in {
+      Get("/zones/batchrecordchanges/count?approvalStatus=NotAStatus") ~>
+        batchChangeRoute ~> check {
+        status shouldBe BadRequest
+        responseAs[String] should include("NotAStatus")
+      }
+    }
+
+    "return zero counts for an unrelated authenticated user" in {
+      Get("/zones/batchrecordchanges/count") ~> notAuthRoute ~> check {
+        status shouldBe OK
+
+        val resp = responseAs[BatchChangeCount]
+
+        resp.total shouldBe 0
+        resp.complete shouldBe 0
+        resp.pendingReview shouldBe 0
       }
     }
   }

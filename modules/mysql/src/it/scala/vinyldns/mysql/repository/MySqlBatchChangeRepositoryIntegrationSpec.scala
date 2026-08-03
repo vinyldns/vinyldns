@@ -1034,5 +1034,198 @@ class MySqlBatchChangeRepositoryIntegrationSpec
 
       saved.unsafeRunSync().get.status shouldBe BatchChangeStatus.Cancelled
     }
+
+    "return zero counts when there are no batch changes" in {
+      val count = repo.getBatchChangeCount(None).unsafeRunSync()
+
+      count.total shouldBe 0
+      count.complete shouldBe 0
+      count.failed shouldBe 0
+      count.partialFailure shouldBe 0
+      count.rejected shouldBe 0
+      count.cancelled shouldBe 0
+      count.pendingReview shouldBe 0
+      count.scheduled shouldBe 0
+      count.pendingProcessing shouldBe 0
+    }
+
+    "count batch changes grouped by status across all users when no userId is given" in {
+      // change_two and change_six share an id (both copied from completeBatchChange),
+      // so build fresh Complete batch changes with unique ids instead
+      def completeChange: BatchChange =
+        randomBatchChangeWithList(
+          randomBatchChange().changes.map(_.complete("recordChangeId", "recordSetId"))
+        )
+      val cancelledBatchChange =
+        randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.Cancelled)
+      val f =
+        for {
+          _ <- repo.save(change_one) // PendingReview
+          _ <- repo.save(completeChange) // Complete
+          _ <- repo.save(completeChange) // Complete
+          _ <- repo.save(change_three) // Failed
+          _ <- repo.save(change_four) // PartialFailure
+          _ <- repo.save(change_five) // Rejected
+          _ <- repo.save(otherUserBatchChange) // PendingProcessing
+          _ <- repo.save(cancelledBatchChange) // Cancelled
+          retrieved <- repo.getBatchChangeCount(None)
+        } yield retrieved
+
+      val count = f.unsafeRunSync()
+
+      count.total shouldBe 8
+      count.complete shouldBe 2
+      count.failed shouldBe 1
+      count.partialFailure shouldBe 1
+      count.rejected shouldBe 1
+      count.cancelled shouldBe 1
+      count.pendingReview shouldBe 1
+      count.pendingProcessing shouldBe 1
+      count.scheduled shouldBe 0
+    }
+
+    "scope the count to a single user when a userId is given" in {
+      def completeChange: BatchChange =
+        randomBatchChangeWithList(
+          randomBatchChange().changes.map(_.complete("recordChangeId", "recordSetId"))
+        )
+      val f =
+        for {
+          _ <- repo.save(change_one) // PendingReview (okAuth)
+          _ <- repo.save(completeChange) // Complete (okAuth)
+          _ <- repo.save(completeChange) // Complete (okAuth)
+          _ <- repo.save(change_three) // Failed (okAuth)
+          _ <- repo.save(change_four) // PartialFailure (okAuth)
+          _ <- repo.save(change_five) // Rejected (okAuth)
+          _ <- repo.save(otherUserBatchChange) // PendingProcessing (Other)
+          retrieved <- repo.getBatchChangeCount(Some(pendingBatchChange.userId))
+        } yield retrieved
+
+      val count = f.unsafeRunSync()
+
+      // otherUserBatchChange belongs to "Other" so it is excluded
+      count.total shouldBe 6
+      count.complete shouldBe 2
+      count.failed shouldBe 1
+      count.partialFailure shouldBe 1
+      count.rejected shouldBe 1
+      count.pendingReview shouldBe 1
+      count.pendingProcessing shouldBe 0
+    }
+
+    "count batch changes filtered by user name" in {
+      val f =
+        for {
+          _ <- repo.save(change_one)
+          _ <- repo.save(change_two)
+          _ <- repo.save(otherUserBatchChange)
+          retrieved <- repo.getBatchChangeCount(None, userName = Some(pendingBatchChange.userName))
+        } yield retrieved
+
+      val count = f.unsafeRunSync()
+
+      count.total shouldBe 2
+      count.complete shouldBe 1
+      count.pendingReview shouldBe 1
+    }
+
+    "count batch changes filtered by approval status" in {
+      val f =
+        for {
+          _ <- repo.save(change_one) // PendingReview approval
+          _ <- repo.save(change_two) // AutoApproved
+          _ <- repo.save(change_five) // ManuallyRejected
+          retrieved <- repo.getBatchChangeCount(
+            None,
+            approvalStatus = Some(BatchChangeApprovalStatus.PendingReview)
+          )
+        } yield retrieved
+
+      val count = f.unsafeRunSync()
+
+      count.total shouldBe 1
+      count.pendingReview shouldBe 1
+      count.complete shouldBe 0
+    }
+
+    "count batch changes filtered by an inclusive date range" in {
+      val now = Instant.now.truncatedTo(ChronoUnit.MILLIS)
+      val savedChange = randomBatchChangeWithList(
+        randomBatchChange().changes.map(_.complete("recordChangeId", "recordSetId"))
+      ).copy(createdTimestamp = now)
+
+      // Use fixed, very wide/narrow windows so the assertion exercises the range filter
+      // logic without being sensitive to the JVM/DB timezone used to persist created_time.
+      val f =
+        for {
+          _ <- repo.save(savedChange)
+          included <- repo.getBatchChangeCount(
+            None,
+            dateTimeStartRange = Some("2000-01-01 00:00:00"),
+            dateTimeEndRange = Some("2999-12-31 23:59:59")
+          )
+          excluded <- repo.getBatchChangeCount(
+            None,
+            dateTimeStartRange = Some("2000-01-01 00:00:00"),
+            dateTimeEndRange = Some("2000-12-31 23:59:59")
+          )
+        } yield (included, excluded)
+
+      val (included, excluded) = f.unsafeRunSync()
+
+      included.total shouldBe 1
+      included.complete shouldBe 1
+      excluded.total shouldBe 0
+    }
+
+    "count batch changes with a start-only date bound" in {
+      val old = randomBatchChangeWithList(
+        randomBatchChange().changes.map(_.complete("recordChangeId", "recordSetId"))
+      ).copy(createdTimestamp = Instant.parse("2000-06-01T00:00:00Z"))
+      val recent = randomBatchChangeWithList(
+        randomBatchChange().changes.map(_.complete("recordChangeId", "recordSetId"))
+      ).copy(createdTimestamp = Instant.now.truncatedTo(ChronoUnit.MILLIS))
+
+      val f =
+        for {
+          _ <- repo.save(old)
+          _ <- repo.save(recent)
+          result <- repo.getBatchChangeCount(None, dateTimeStartRange = Some("2020-01-01 00:00:00"))
+        } yield result
+
+      val count = f.unsafeRunSync()
+      count.total shouldBe 1
+      count.complete shouldBe 1
+    }
+
+    "count batch changes with an end-only date bound" in {
+      val old = randomBatchChangeWithList(
+        randomBatchChange().changes.map(_.complete("recordChangeId", "recordSetId"))
+      ).copy(createdTimestamp = Instant.parse("2000-06-01T00:00:00Z"))
+      val recent = randomBatchChangeWithList(
+        randomBatchChange().changes.map(_.complete("recordChangeId", "recordSetId"))
+      ).copy(createdTimestamp = Instant.now.truncatedTo(ChronoUnit.MILLIS))
+
+      val f =
+        for {
+          _ <- repo.save(old)
+          _ <- repo.save(recent)
+          result <- repo.getBatchChangeCount(None, dateTimeEndRange = Some("2010-12-31 23:59:59"))
+        } yield result
+
+      val count = f.unsafeRunSync()
+      count.total shouldBe 1
+      count.complete shouldBe 1
+    }
+
+    "return zero counts when the user has no matching batch changes" in {
+      val f =
+        for {
+          _ <- repo.save(change_one)
+          retrieved <- repo.getBatchChangeCount(Some("doesnotexist"))
+        } yield retrieved
+
+      f.unsafeRunSync().total shouldBe 0
+    }
   }
 }

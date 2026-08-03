@@ -255,6 +255,71 @@ class MySqlBatchChangeRepository
       }
     }
 
+  private def buildWhereConditions(
+      userId: Option[String],
+      userName: Option[String],
+      dateTimeStartRange: Option[String],
+      dateTimeEndRange: Option[String],
+      approvalStatus: Option[BatchChangeApprovalStatus],
+      tablePrefix: String = ""
+  ): (List[String], List[(Symbol, Any)]) = {
+    val p = if (tablePrefix.nonEmpty) s"$tablePrefix." else ""
+    val items = List(
+      userId.map(u => (s"${p}user_id = {userId}", 'userId -> (u: Any))),
+      userName.map(n => (s"${p}user_name = {userName}", 'userName -> (n: Any))),
+      approvalStatus.map(a => (s"${p}approval_status = {approvalStatus}", 'approvalStatus -> (fromApprovalStatus(a): Any))),
+      dateTimeStartRange.map(s => (s"${p}created_time >= {dateTimeStartRange}", 'dateTimeStartRange -> (s: Any))),
+      dateTimeEndRange.map(e => (s"${p}created_time <= {dateTimeEndRange}", 'dateTimeEndRange -> (e: Any)))
+    ).flatten
+    (items.map(_._1), items.map(_._2))
+  }
+
+  def getBatchChangeCount(
+      userId: Option[String],
+      userName: Option[String] = None,
+      dateTimeStartRange: Option[String] = None,
+      dateTimeEndRange: Option[String] = None,
+      approvalStatus: Option[BatchChangeApprovalStatus] = None
+  ): IO[BatchChangeCount] =
+    monitor("repo.BatchChangeJDBC.getBatchChangeCount") {
+      IO {
+        DB.readOnly { implicit s =>
+          val (condStrings, condParams) = buildWhereConditions(userId, userName, dateTimeStartRange, dateTimeEndRange, approvalStatus)
+          val whereClause = if (condStrings.nonEmpty) " WHERE " + condStrings.mkString(" AND ") else ""
+
+          val countQuery = s"SELECT batch_status, COUNT(*) AS cnt FROM batch_change$whereClause GROUP BY batch_status"
+
+          val counts = SQL(countQuery)
+            .bindByName(condParams: _*)
+            .map { res => res.string("batch_status") -> res.int("cnt") }
+            .list()
+            .apply()
+            .toMap
+
+          val complete          = counts.getOrElse("Complete", 0)
+          val failed            = counts.getOrElse("Failed", 0)
+          val partialFailure    = counts.getOrElse("PartialFailure", 0)
+          val rejected          = counts.getOrElse("Rejected", 0)
+          val cancelled         = counts.getOrElse("Cancelled", 0)
+          val pendingReview     = counts.getOrElse("PendingReview", 0)
+          val scheduled         = counts.getOrElse("Scheduled", 0)
+          val pendingProcessing = counts.getOrElse("PendingProcessing", 0)
+          BatchChangeCount(
+            total             = complete + failed + partialFailure + rejected +
+                                cancelled + pendingReview + scheduled + pendingProcessing,
+            complete          = complete,
+            failed            = failed,
+            partialFailure    = partialFailure,
+            rejected          = rejected,
+            cancelled         = cancelled,
+            pendingReview     = pendingReview,
+            scheduled         = scheduled,
+            pendingProcessing = pendingProcessing
+          )
+        }
+      }
+    }
+
   def getBatchChangeSummaries(
       userId: Option[String],
       userName: Option[String] = None,
@@ -272,25 +337,20 @@ class MySqlBatchChangeRepository
           val sb = new StringBuilder
           sb.append(GET_BATCH_CHANGE_SUMMARY_BASE)
 
-          val uid = userId.map(u => s"bc.user_id = '$u'")
-          val as = approvalStatus.map(a => s"bc.approval_status = '${fromApprovalStatus(a)}'")
-          val bs = batchStatus.map(b => s"bc.batch_status = '${fromBatchStatus(b)}'")
-          val uname = userName.map(uname => s"bc.user_name = '$uname'")
-          val dtRange = if(dateTimeStartRange.isDefined && dateTimeEndRange.isDefined) {
-            Some(s"(bc.created_time >= '${dateTimeStartRange.get}' AND bc.created_time <= '${dateTimeEndRange.get}')")
-          } else {
-            None
-          }
-          val opts = uid ++ as ++ bs ++ uname ++ dtRange
+          val (baseConds, baseParams) = buildWhereConditions(userId, userName, dateTimeStartRange, dateTimeEndRange, approvalStatus, tablePrefix = "bc")
+          val bsCond  = batchStatus.map(_ => s"bc.batch_status = {batchStatus}")
+          val bsParam = batchStatus.map(b => 'batchStatus -> (fromBatchStatus(b): Any))
+          val allConds  = baseConds ++ bsCond.toList
+          val allParams = baseParams ++ bsParam.toList
 
-          if (opts.nonEmpty) sb.append("WHERE ").append(opts.mkString(" AND "))
+          if (allConds.nonEmpty) sb.append("WHERE ").append(allConds.mkString(" AND "))
 
           sb.append(GET_BATCH_CHANGE_SUMMARY_END)
           val query = sb.toString()
 
           val queryResult =
             SQL(query)
-              .bindByName('startFrom -> startValue, 'maxItems -> (maxItems + 1))
+              .bindByName((allParams ++ List('startFrom -> (startValue: Any), 'maxItems -> ((maxItems + 1): Any))): _*)
               .map { res =>
                 val pending = res.int("pending_count")
                 val failed = res.int("fail_count")

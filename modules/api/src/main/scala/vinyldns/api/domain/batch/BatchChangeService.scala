@@ -580,6 +580,27 @@ class BatchChangeService(
       summary.copy(reviewerName = userName)
     }
 
+  private case class BatchChangeFilterCriteria(
+      userId: Option[String],
+      submitterUserName: Option[String],
+      startDateTime: Option[String],
+      endDateTime: Option[String]
+  )
+
+  private def buildFilterCriteria(
+      auth: AuthPrincipal,
+      ignoreAccess: Boolean,
+      userName: Option[String],
+      dateTimeStartRange: Option[String],
+      dateTimeEndRange: Option[String]
+  ): BatchChangeFilterCriteria =
+    BatchChangeFilterCriteria(
+      userId = if (ignoreAccess && auth.isSystemAdmin) None else Some(auth.userId),
+      submitterUserName = userName.filter(_.nonEmpty),
+      startDateTime = dateTimeStartRange.filter(_.nonEmpty),
+      endDateTime = dateTimeEndRange.filter(_.nonEmpty)
+    )
+
   def listBatchChangeSummaries(
       auth: AuthPrincipal,
       userName: Option[String] = None,
@@ -591,13 +612,10 @@ class BatchChangeService(
       batchStatus: Option[BatchChangeStatus] = None,
       approvalStatus: Option[BatchChangeApprovalStatus] = None
   ): BatchResult[BatchChangeSummaryList] = {
-    val userId = if (ignoreAccess && auth.isSystemAdmin) None else Some(auth.userId)
-    val submitterUserName = if(userName.isDefined && userName.get.isEmpty) None else userName
-    val startDateTime = if(dateTimeStartRange.isDefined && dateTimeStartRange.get.isEmpty) None else dateTimeStartRange
-    val endDateTime = if(dateTimeEndRange.isDefined && dateTimeEndRange.get.isEmpty) None else dateTimeEndRange
+    val criteria = buildFilterCriteria(auth, ignoreAccess, userName, dateTimeStartRange, dateTimeEndRange)
     for {
       listResults <- batchChangeRepo
-        .getBatchChangeSummaries(userId, submitterUserName, startDateTime, endDateTime, startFrom, maxItems, batchStatus, approvalStatus)
+        .getBatchChangeSummaries(criteria.userId, criteria.submitterUserName, criteria.startDateTime, criteria.endDateTime, startFrom, maxItems, batchStatus, approvalStatus)
         .toBatchResult
       rsOwnerGroupIds = listResults.batchChanges.flatMap(_.ownerGroupId).toSet
       rsOwnerGroups <- groupRepository.getGroups(rsOwnerGroupIds).toBatchResult
@@ -620,6 +638,20 @@ class BatchChangeService(
         dateTimeEndRange = dateTimeEndRange
       )
     } yield listWithGroupNames
+  }
+
+  def getBatchChangeCount(
+      auth: AuthPrincipal,
+      userName: Option[String] = None,
+      dateTimeStartRange: Option[String] = None,
+      dateTimeEndRange: Option[String] = None,
+      ignoreAccess: Boolean = false,
+      approvalStatus: Option[BatchChangeApprovalStatus] = None
+  ): BatchResult[BatchChangeCount] = {
+    val criteria = buildFilterCriteria(auth, ignoreAccess, userName, dateTimeStartRange, dateTimeEndRange)
+    batchChangeRepo
+      .getBatchChangeCount(criteria.userId, criteria.submitterUserName, criteria.startDateTime, criteria.endDateTime, approvalStatus)
+      .toBatchResult
   }
 
   def rejectBatchChange(

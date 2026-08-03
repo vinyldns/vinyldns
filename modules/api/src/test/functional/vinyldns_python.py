@@ -690,6 +690,31 @@ class VinylDNSClient(object):
         response, data = self.make_request(url, "GET", self.headers, **kwargs)
         return data
 
+    def get_batch_change_count(self, user_name=None, date_time_range_start=None, date_time_range_end=None,
+                               ignore_access=False, approval_status=None, **kwargs):
+        """
+        Gets the count of a user's batch changes grouped by status
+        :return: the content of the response
+        """
+        args = []
+        if user_name is not None:
+            args.append("userName={0}".format(user_name))
+        if date_time_range_start is not None:
+            args.append("dateTimeRangeStart={0}".format(date_time_range_start))
+        if date_time_range_end is not None:
+            args.append("dateTimeRangeEnd={0}".format(date_time_range_end))
+        if ignore_access:
+            args.append("ignoreAccess={0}".format(ignore_access))
+        if approval_status is not None:
+            args.append("approvalStatus={0}".format(approval_status))
+
+        url = urljoin(self.index_url, "/zones/batchrecordchanges/count")
+        if args:
+            url = url + "?" + "&".join(args)
+
+        response, data = self.make_request(url, "GET", self.headers, **kwargs)
+        return data
+
     def add_zone_acl_rule_with_wait(self, zone_id, acl_rule, sign_request=True, **kwargs):
         """
         Puts an acl rule on the zone and waits for success

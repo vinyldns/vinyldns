@@ -180,4 +180,70 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
     batches.clear()
     singleChangesMap.clear()
   }
+
+  def getBatchChangeCount(
+      userId: Option[String],
+      userName: Option[String] = None,
+      dateTimeStartRange: Option[String] = None,
+      dateTimeEndRange: Option[String] = None,
+      approvalStatus: Option[BatchChangeApprovalStatus] = None
+  ): IO[BatchChangeCount] = {
+    val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    val startInstant = dateTimeStartRange.map(dt =>
+      LocalDateTime.parse(dt, formatter).atZone(ZoneId.of("UTC")).toInstant
+    )
+    val endInstant = dateTimeEndRange.map(dt =>
+      LocalDateTime.parse(dt, formatter).atZone(ZoneId.of("UTC")).toInstant
+    )
+
+    val filtered = batches.values.toList
+      .filter(b => userId.forall(_ == b.userId))
+      .filter(b => userName.forall(_ == b.userName))
+      .filter(b => startInstant.forall(_.isBefore(b.createdTimestamp)))
+      .filter(b => endInstant.forall(_.isAfter(b.createdTimestamp)))
+      .filter(b => approvalStatus.forall(_ == b.approvalStatus))
+
+    val statuses: List[BatchChangeStatus] = filtered.map { sc =>
+      val changes = sc.changes.flatMap(singleChangesMap.get)
+      BatchChange(
+        sc.userId,
+        sc.userName,
+        sc.comments,
+        sc.createdTimestamp,
+        changes,
+        sc.ownerGroupId,
+        sc.approvalStatus,
+        sc.reviewerId,
+        sc.reviewComment,
+        sc.reviewTimestamp,
+        sc.id
+      ).status
+    }
+
+    def cnt(s: BatchChangeStatus): Int = statuses.count(_ == s)
+
+    val complete          = cnt(BatchChangeStatus.Complete)
+    val failed            = cnt(BatchChangeStatus.Failed)
+    val partialFailure    = cnt(BatchChangeStatus.PartialFailure)
+    val rejected          = cnt(BatchChangeStatus.Rejected)
+    val cancelled         = cnt(BatchChangeStatus.Cancelled)
+    val pendingReview     = cnt(BatchChangeStatus.PendingReview)
+    val scheduled         = cnt(BatchChangeStatus.Scheduled)
+    val pendingProcessing = cnt(BatchChangeStatus.PendingProcessing)
+
+    IO.pure(
+      BatchChangeCount(
+        total = complete + failed + partialFailure + rejected +
+          cancelled + pendingReview + scheduled + pendingProcessing,
+        complete = complete,
+        failed = failed,
+        partialFailure = partialFailure,
+        rejected = rejected,
+        cancelled = cancelled,
+        pendingReview = pendingReview,
+        scheduled = scheduled,
+        pendingProcessing = pendingProcessing
+      )
+    )
+  }
 }
