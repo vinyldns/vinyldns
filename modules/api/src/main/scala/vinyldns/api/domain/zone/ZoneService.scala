@@ -225,6 +225,11 @@ class ZoneService(
       _ <- adminGroupExists(request.groupId)
       _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
       _ <- generateZoneDoesNotExist(request.zoneName)
+      // Cross-table check (D6): a generated zone must not collide with an existing
+      // VinylDNS-managed zone. The reverse check in connectToZone is intentionally omitted:
+      // the supported two-step flow generates a zone and then connects to it by the same name,
+      // so an existing generate_zone record must not block connecting to that zone.
+      _ <- zoneDoesNotExist(request.zoneName)
 
       // Send request
       _ <- logger.info(s"Request: provider=${request.provider}, path=$endpoint, request=$requestJsonOpt").toResult

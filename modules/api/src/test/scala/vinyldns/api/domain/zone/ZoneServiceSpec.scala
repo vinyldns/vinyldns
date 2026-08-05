@@ -286,6 +286,7 @@ class ZoneServiceSpec
 
     "return an valid response for valid request" in {
       doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
       doReturn(IO.pure(generatePdnsZone))
         .when(mockGenerateZoneRepository)
         .save(any[GenerateZone])
@@ -296,6 +297,15 @@ class ZoneServiceSpec
       result.zoneName shouldBe generatePdnsZoneAuthorized.zoneName
       result.providerParams shouldBe generatePdnsZoneAuthorized.providerParams
       result.provider shouldBe generatePdnsZoneAuthorized.provider
+    }
+
+    "reject generating a zone that collides with an existing VinylDNS-managed zone" in {
+      doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZoneByName(anyString)
+
+      val result =
+        underTest.handleGenerateZoneRequest(generatePdnsZoneAuthorized, okAuth).value.unsafeRunSync().swap.toOption.get
+      result shouldBe a[ZoneAlreadyExistsError]
     }
 
     "return an error response for invalid request" in {
