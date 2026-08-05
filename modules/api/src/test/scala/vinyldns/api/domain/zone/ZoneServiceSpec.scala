@@ -24,7 +24,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import cats.implicits._
 import vinyldns.api.Interfaces._
 import cats.effect._
-import org.json4s.{JArray, JString}
+import org.json4s.JString
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import vinyldns.api.config.ValidEmailConfig
 import vinyldns.api.domain.access.AccessValidations
@@ -279,7 +279,8 @@ class ZoneServiceSpec
           "kind"-> JString("Native")
         )), okAuth).value.unsafeRunSync().toOption.get
       result.zoneName shouldBe updatePdnsZoneAuthorized.zoneName
-      result.providerParams shouldBe Map("nameservers" -> JArray(List(JString("ns1.parent.com."))), "kind" -> JString("Native"))
+      // PUT semantics: request providerParams replace the stored set (nameservers dropped).
+      result.providerParams shouldBe Map("kind" -> JString("Native"))
       result.provider shouldBe updatePdnsZoneAuthorized.provider
       result.groupId shouldBe okGroup.id
     }

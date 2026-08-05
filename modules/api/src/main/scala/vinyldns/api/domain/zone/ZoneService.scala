@@ -298,7 +298,9 @@ class ZoneService(
       zoneToUpdate = existingGeneratedZone.copy(
         email = request.email,
         groupId = request.groupId,
-        providerParams = existingGeneratedZone.providerParams ++ request.providerParams,
+        // PUT semantics: the request's providerParams fully replace the stored set so params
+        // can be removed. (Previously merged with ++, which made removal impossible.)
+        providerParams = request.providerParams,
         response = Some(zoneGenerateResponse),
         updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
       )
