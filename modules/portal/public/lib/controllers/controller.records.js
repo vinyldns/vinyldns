@@ -198,6 +198,15 @@ angular.module('controller.records', [])
         else {$scope.recordSetRequestedOwnershipName = "None";}
     };
 
+    function normalizeOwnershipStatus(record) {
+        if (!record.recordSetGroupChange && record.ownerGroupId) {
+            record.recordSetGroupChange = {
+                requestedOwnerGroupId: angular.copy(record.ownerGroupId),
+                ownershipTransferStatus: "AutoApproved"
+            };
+        }
+    }
+
     $scope.deleteRecord = function(record) {
         $scope.currentRecord = angular.copy(record);
         $scope.recordModal = {
@@ -236,11 +245,7 @@ angular.module('controller.records', [])
 
     $scope.editRecord = function(record) {
         $scope.currentRecord = angular.copy(record);
-        if ($scope.currentRecord.recordSetGroupChange == undefined){
-            $scope.currentRecord.recordSetGroupChange = {}
-            $scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId = angular.copy(record.ownerGroupId);
-            $scope.currentRecord.recordSetGroupChange.ownershipTransferStatus = angular.copy("AutoApproved");
-        }
+        normalizeOwnershipStatus($scope.currentRecord);
         getGroup($scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId);
         $scope.recordModal = {
             previous: angular.copy(record),
@@ -393,6 +398,7 @@ angular.module('controller.records', [])
     $scope.submitUpdateRecord = function () {
         var record = angular.copy($scope.currentRecord);
         record['onlyFour'] = true;
+        delete record.recordSetGroupChange;
         if ($scope.addRecordForm.$valid) {
             updateRecordSet(record);
             $scope.addRecordForm.$setPristine();
@@ -697,6 +703,7 @@ angular.module('controller.records', [])
                     newRecords.push(recordsService.toDisplayRecord(record, $scope.zoneInfo.name));
                 });
                 angular.forEach(newRecords, function(record) {
+                    normalizeOwnershipStatus(record);
                     if(record.ownerGroupId != undefined) {
                         $scope.recordSetGroupOwnershipStatus(record.ownerGroupId, $scope.profile.id, record);
                     }else {record.isCurrentRecordSetOwner= null;}
