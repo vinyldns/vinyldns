@@ -26,6 +26,7 @@ import vinyldns.core.domain.membership.{LockStatus, User, UserChange, UserChange
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate._
 import vinyldns.core.domain.{Encrypted, Fqdn, record, zone}
 import vinyldns.proto.VinylDNSProto
 
@@ -198,7 +199,7 @@ trait ProtobufConversions {
       .map { case (k, v) => k -> parseParamValue(v) } // convert the JSON string into a json4s JValue
       .toMap
 
-    zone.GenerateZone(
+    zone.generate.GenerateZone(
       groupId = zn.getGroupId,
       email = zn.getEmail,
       provider = zn.getProvider,

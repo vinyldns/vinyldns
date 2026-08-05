@@ -26,6 +26,7 @@ import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.Encryption
 import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
 import vinyldns.core.domain.zone.{ZoneCommandResult, _}
+import vinyldns.core.domain.zone.generate._
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.backend.BackendResolver

@@ -19,6 +19,7 @@ package vinyldns.core.domain.zone
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import vinyldns.core.TestZoneData._
+import vinyldns.core.domain.zone.generate.{GenerateZone, GenerateZoneStatus}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.TestMembershipData.okGroup

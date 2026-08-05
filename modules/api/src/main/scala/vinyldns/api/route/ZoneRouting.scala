@@ -25,6 +25,7 @@ import vinyldns.api.domain.membership.EmailValidationError
 import vinyldns.api.domain.zone._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate._
 
 import scala.concurrent.duration._
 

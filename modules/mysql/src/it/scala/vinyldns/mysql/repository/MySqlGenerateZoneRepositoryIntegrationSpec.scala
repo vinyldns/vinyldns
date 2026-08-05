@@ -23,7 +23,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
 import vinyldns.core.TestMembershipData.{dummyAuth, okAuth, okGroup, superUserAuth}
 import vinyldns.core.TestZoneData.{generateBindZone, generatePdnsZone}
-import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate._
 import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
 
 import java.util.UUID

@@ -17,6 +17,7 @@
 package vinyldns.core
 
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate._
 import TestMembershipData._
 import org.json4s.{JArray, JInt, JString, JValue}
 import vinyldns.core.domain.Encrypted

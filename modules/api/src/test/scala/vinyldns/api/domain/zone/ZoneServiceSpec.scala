@@ -34,6 +34,7 @@ import vinyldns.api.repository.TestDataLoader
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate._
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._

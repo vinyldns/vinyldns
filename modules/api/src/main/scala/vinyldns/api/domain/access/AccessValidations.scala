@@ -23,7 +23,8 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.{RecordData, RecordType}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
-import vinyldns.core.domain.zone.{ACLRule, AccessLevel, GenerateZone, Zone}
+import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone}
+import vinyldns.core.domain.zone.generate.GenerateZone
 
 class AccessValidations(
     globalAcls: GlobalAcls = GlobalAcls(List.empty),

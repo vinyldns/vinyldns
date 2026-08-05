@@ -39,6 +39,7 @@ import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate._
 
 class ZoneRoutingSpec
     extends AnyWordSpec

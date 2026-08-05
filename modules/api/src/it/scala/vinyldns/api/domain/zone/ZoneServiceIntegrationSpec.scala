@@ -46,6 +46,7 @@ import vinyldns.core.domain.backend.BackendResolver
 import vinyldns.core.domain.membership.{GroupRepository, UserRepository}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate._
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global

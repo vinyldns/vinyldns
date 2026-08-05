@@ -24,7 +24,8 @@ import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.membership.{GroupChangeRepository, GroupRepository, MembershipRepository, UserRepository}
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetCacheRepository, RecordSetRepository}
-import vinyldns.core.domain.zone.{GenerateZoneRepository, ZoneChangeRepository, ZoneRepository}
+import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
+import vinyldns.core.domain.zone.generate.GenerateZoneRepository
 import vinyldns.core.repository.{DataStore, DataStoreConfig, RepositoriesConfig}
 import vinyldns.core.task.TaskRepository
 

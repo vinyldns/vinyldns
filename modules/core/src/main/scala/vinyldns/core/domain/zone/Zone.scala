@@ -26,28 +26,14 @@ import pureconfig.{ConfigReader, ConfigSource}
 import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import vinyldns.core.crypto.CryptoAlgebra
-import vinyldns.core.domain.zone.GenerateZoneStatus.GenerateZoneStatus
 import vinyldns.core.domain.{Encrypted, Encryption}
 
 import scala.collection.JavaConverters._
-import org.json4s._
-import org.json4s.JsonAST.JValue
-import vinyldns.core.domain.zone.GenerateZoneChangeType.GenerateZoneChangeType
 
 
 object ZoneStatus extends Enumeration {
   type ZoneStatus = Value
   val Active, Deleted, Syncing = Value
-}
-
-object GenerateZoneStatus extends Enumeration {
-  type GenerateZoneStatus = Value
-  val Active, Deleted, Syncing = Value
-}
-
-object GenerateZoneChangeType extends Enumeration {
-  type GenerateZoneChangeType = Value
-  val Create, Update, Delete = Value
 }
 
 import vinyldns.core.domain.zone.ZoneStatus._
@@ -140,48 +126,6 @@ object Zone {
     )
   }
 }
-final case class GenerateZone(
-                               groupId: String,
-                               email: String,
-                               provider: String,
-                               zoneName: String,
-                               status:  GenerateZoneStatus = GenerateZoneStatus.Active,
-                               providerParams: Map[String, JValue] = Map.empty,
-                               response: Option[ZoneGenerationResponse] = None,
-                               id: String = UUID.randomUUID().toString,
-                               created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
-                               updated: Option[Instant] = None
-                     ){
-    override def toString: String = {
-      val sb = new StringBuilder
-      sb.append("GenerateZone: [")
-      sb.append("id=\"").append(id).append("\"; ")
-      sb.append("groupId=\"").append(groupId).append("\"; ")
-      sb.append("email=\"").append(email).append("\"; ")
-      sb.append("provider=\"").append(provider).append("\"; ")
-      sb.append("zoneName=\"").append(zoneName).append("\"; ")
-      sb.append("status=\"").append(status).append("\"; ")
-      sb.append("created=\"").append(created).append("\"; ")
-      updated.map(sb.append("updated=\"").append(_).append("\"; "))
-      sb.append("]")
-      sb.toString
-    }
-}
-
-object GenerateZone {
-  def apply(zoneGenerationInput: ZoneGenerationInput): GenerateZone = {
-    import zoneGenerationInput._
-
-    GenerateZone(
-      groupId,
-      email,
-      provider,
-      zoneName,
-      providerParams = providerParams
-    )
-  }
-}
-
 final case class ConnectZoneInput(
     name: String,
     email: String,
@@ -207,24 +151,6 @@ final case class UpdateZoneInput(
     recurrenceSchedule: Option[String] = None,
     scheduleRequestor: Option[String] = None,
     backendId: Option[String] = None
-)
-
-case class ZoneGenerationResponse(
-                                   responseCode: Option[Int],
-                                   status: Option[String],
-                                   message: Option[JValue],
-                                   changeType: GenerateZoneChangeType
-                                 )
-
-// Client-supplied request to generate a zone. Server-owned fields (id, status, response)
-// are intentionally not part of this model so clients cannot set them; the server assigns
-// them when constructing the GenerateZone.
-case class ZoneGenerationInput(
-    groupId: String,
-    email: String,
-    provider: String,
-    zoneName: String,
-    providerParams: Map[String, JValue] = Map.empty
 )
 
 final case class ZoneACL(rules: Set[ACLRule] = Set.empty) {

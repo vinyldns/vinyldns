@@ -22,9 +22,10 @@ import vinyldns.core.domain.record.RecordSetChangeType.RecordSetChangeType
 import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.{OwnershipTransfer, RecordData, RecordSet, RecordSetChange}
-import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, GenerateZone, GenerateZoneStatus, Zone, ZoneACL, ZoneChange, ZoneConnection, ZoneGenerationResponse}
+import vinyldns.core.domain.zone.{ACLRuleInfo, AccessLevel, Zone, ZoneACL, ZoneChange, ZoneConnection}
+import vinyldns.core.domain.zone.generate.{GenerateZone, GenerateZoneStatus, ZoneGenerationResponse}
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
-import vinyldns.core.domain.zone.GenerateZoneStatus.GenerateZoneStatus
+import vinyldns.core.domain.zone.generate.GenerateZoneStatus.GenerateZoneStatus
 import vinyldns.core.domain.zone.ZoneStatus.ZoneStatus
 
 import java.time.temporal.ChronoUnit

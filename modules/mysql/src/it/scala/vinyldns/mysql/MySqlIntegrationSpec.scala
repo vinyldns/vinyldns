@@ -19,7 +19,8 @@ package vinyldns.mysql
 import com.typesafe.config.{Config, ConfigFactory}
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.membership._
-import vinyldns.core.domain.zone.{GenerateZoneRepository, ZoneChangeRepository, ZoneRepository}
+import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
+import vinyldns.core.domain.zone.generate.GenerateZoneRepository
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetCacheRepository, RecordSetRepository}
 import vinyldns.core.repository.{DataStore, DataStoreConfig, LoadedDataStore, RepositoryName}

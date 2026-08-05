@@ -19,6 +19,7 @@ package vinyldns.api.domain.zone
 import vinyldns.api.Interfaces.Result
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate._
 
 trait ZoneServiceAlgebra {
 
