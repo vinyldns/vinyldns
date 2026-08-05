@@ -175,6 +175,13 @@ object Boot extends App {
         recordAccessValidations,
         backendResolver,
         vinyldnsConfig.crypto,
+        membershipService
+      )
+      val generateZoneService = GenerateZoneService(
+        repositories,
+        zoneValidations,
+        recordAccessValidations,
+        vinyldnsConfig.crypto,
         membershipService,
         vinyldnsConfig.configuredDnsConnections.dnsProviderApiConnection
       )
@@ -218,6 +225,7 @@ object Boot extends App {
         limits,
         processingSignal,
         zoneService,
+        generateZoneService,
         healthService,
         recordSetService,
         batchChangeService,
