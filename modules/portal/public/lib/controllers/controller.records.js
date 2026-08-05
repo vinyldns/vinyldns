@@ -357,7 +357,11 @@ angular.module('controller.records', [])
             sharedZone: $scope.zoneInfo.shared,
             sharedDisplayEnabled: $scope.sharedDisplayEnabled
         };
-        getGroup($scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId)
+        var ownerGroupId = $scope.currentRecord.recordSetGroupChange &&
+            $scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId;
+        if (ownerGroupId) {
+            getGroup(ownerGroupId);
+        }
         $log.debug('RecordsController::viewRecordInfo', record);
         $("#record_modal").modal("show");
     };
