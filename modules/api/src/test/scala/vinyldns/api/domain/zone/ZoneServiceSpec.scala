@@ -141,6 +141,27 @@ class ZoneServiceSpec
     mockGenerateZoneRepository
   )
 
+  // Builds a ZoneService backed by a specific provider connection, with createConnection stubbed
+  // so tests never open real sockets.
+  private def zoneServiceWith(conn: DnsProviderApiConnection): ZoneService =
+    new ZoneService(
+      mockZoneRepo,
+      mockGroupRepo,
+      mockUserRepo,
+      mockZoneChangeRepo,
+      TestConnectionValidator,
+      mockMessageQueue,
+      new ZoneValidations(1000),
+      new AccessValidations(),
+      mockBackendResolver,
+      NoOpCrypto.instance,
+      mockMembershipService,
+      conn,
+      mockGenerateZoneRepository
+    ) {
+      override def createConnection(endpoint: String): HttpURLConnection = mockConnection
+    }
+
   override protected def beforeEach(): Unit = {
     reset(mockGroupRepo, mockZoneRepo, mockUserRepo)
     doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
@@ -224,6 +245,43 @@ class ZoneServiceSpec
       val result =
         underTest.handleGenerateZoneRequest(generateBindZoneAuthorized, okAuth).value.unsafeRunSync().swap.toOption.get
       result shouldBe InvalidRequest(s"Unsupported DNS provider: ${generateBindZoneAuthorized.provider}")
+    }
+
+    "fail cleanly when the provider has no endpoint configured for the operation" in {
+      val pdnsConfig = mockPowerDNSProviderApiConnection.providers("powerdns")
+      val noEndpointConnection = mockPowerDNSProviderApiConnection.copy(
+        providers = Map("powerdns" -> pdnsConfig.copy(endpoints = Map.empty))
+      )
+      val result =
+        zoneServiceWith(noEndpointConnection)
+          .handleGenerateZoneRequest(generatePdnsZoneAuthorized, okAuth)
+          .value
+          .unsafeRunSync()
+          .swap
+          .toOption
+          .get
+      result.getMessage should include("No endpoint is configured for operation 'create-zone'")
+    }
+
+    "reject an endpoint template with unresolved placeholders instead of calling the provider" in {
+      val pdnsConfig = mockPowerDNSProviderApiConnection.providers("powerdns")
+      val badEndpointConnection = mockPowerDNSProviderApiConnection.copy(
+        providers = Map(
+          "powerdns" -> pdnsConfig.copy(
+            endpoints = Map("create-zone" -> "http://localhost:19005/zones/{{missingKey}}")
+          )
+        )
+      )
+      val result =
+        zoneServiceWith(badEndpointConnection)
+          .handleGenerateZoneRequest(generatePdnsZoneAuthorized, okAuth)
+          .value
+          .unsafeRunSync()
+          .swap
+          .toOption
+          .get
+      result.getMessage should include("unresolved placeholders")
+      result.getMessage should include("{{missingKey}}")
     }
 
     "return an valid response for valid request" in {

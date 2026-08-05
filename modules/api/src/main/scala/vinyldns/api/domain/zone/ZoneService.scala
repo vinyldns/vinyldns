@@ -217,7 +217,8 @@ class ZoneService(
       _ <- logger.info(s"Request providerParams: ${request.providerParams}").toResult
 
       // Build request and endpoint
-      endpoint = buildGenerateZoneEndpoint(providerConfig.endpoints("create-zone"), request)
+      endpointTemplate <- requireEndpoint(providerConfig, "create-zone").toResult
+      endpoint <- buildGenerateZoneEndpoint(endpointTemplate, request).toResult
       requestJsonOpt = buildGenerateZoneRequestJson(providerConfig.requestTemplates.get("create-zone"), request)
 
       // Authorization and existence checks
@@ -271,7 +272,8 @@ class ZoneService(
       _ <- logger.info(s"Request providerParams: ${request.providerParams}").toResult
 
       // Build request and endpoint
-      endpoint = buildGenerateZoneEndpoint(providerConfig.endpoints("update-zone"), request)
+      endpointTemplate <- requireEndpoint(providerConfig, "update-zone").toResult
+      endpoint <- buildGenerateZoneEndpoint(endpointTemplate, request).toResult
       requestJsonOpt = buildGenerateZoneRequestJson(providerConfig.requestTemplates.get("update-zone"), request)
 
       // Send request
@@ -325,13 +327,13 @@ class ZoneService(
         providerParams = generatedZone.providerParams
       )
 
-      deleteEndpointUrl = providerConfig.endpoints("delete-zone")
-      endpoint = if (generatedZone.provider == "bind") {
+      deleteEndpointUrl <- requireEndpoint(providerConfig, "delete-zone").toResult
+      endpoint <- (if (generatedZone.provider == "bind") {
         val encodedZoneName = java.net.URLEncoder.encode(generatedZone.zoneName, "UTF-8")
-        s"$deleteEndpointUrl?zoneName=$encodedZoneName"
+        Right(s"$deleteEndpointUrl?zoneName=$encodedZoneName"): Either[Throwable, String]
       } else {
         buildGenerateZoneEndpoint(deleteEndpointUrl, request)
-      }
+      }).toResult
 
       dnsProviderConn <- createConnection(endpoint).toResult
       dnsConnResponse <- createDnsZoneService(Encryption.decrypt(crypto, providerConfig.apiKey), "delete-zone", None, dnsProviderConn).toResult
@@ -375,10 +377,27 @@ class ZoneService(
     }
   }
 
+  // Fail closed on a missing endpoint, mirroring schemaValidationResult: a bare
+  // providerConfig.endpoints(op) throws a raw NoSuchElementException on operator misconfig,
+  // which undermines the fail-closed contract. Surface it as a clean server-side failure.
+  private def requireEndpoint(
+                               providerConfig: DnsProviderConfig,
+                               operation: String
+                             ): Either[Throwable, String] =
+    providerConfig.endpoints.get(operation) match {
+      case Some(url) => Right(url)
+      case None =>
+        Left(
+          new RuntimeException(
+            s"No endpoint is configured for operation '$operation'; refusing to process the request."
+          )
+        )
+    }
+
   private def buildGenerateZoneEndpoint(
                                          endpointTemplate: String,
                                          zoneGenerationInput: ZoneGenerationInput
-                                       ): String = {
+                                       ): Either[Throwable, String] = {
     val baseParams = Map(
       "zoneName" -> zoneGenerationInput.zoneName,
       "provider" -> zoneGenerationInput.provider,
@@ -395,7 +414,19 @@ class ZoneService(
       case (k, v) => k -> compact(render(v)) // for arrays/objects
     }
 
-    TemplateEngine.substituteEndpoint(endpointTemplate, baseParams ++ providerParams)
+    val endpoint = TemplateEngine.substituteEndpoint(endpointTemplate, baseParams ++ providerParams)
+
+    // Never send an endpoint URL with unresolved {{key}} placeholders to the provider. Unlike the
+    // JSON body (where unfilled placeholders are pruned as optional params), a leftover in the URL
+    // means the operator's endpoint template references a param we cannot supply — reject it.
+    val unresolved = "\\{\\{[^}]*\\}\\}".r.findAllIn(endpoint).toList
+    if (unresolved.nonEmpty)
+      Left(
+        new RuntimeException(
+          s"Endpoint URL has unresolved placeholders after substitution: ${unresolved.mkString(", ")}"
+        )
+      )
+    else Right(endpoint)
   }
 
   object TemplateEngine {
