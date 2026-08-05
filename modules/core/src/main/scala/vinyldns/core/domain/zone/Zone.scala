@@ -180,34 +180,7 @@ object GenerateZone {
       providerParams = providerParams
     )
   }
-
-  def apply(updateGenerateZoneInput: UpdateGenerateZoneInput, currentGenerateZone: GenerateZone): GenerateZone = {
-    import updateGenerateZoneInput._
-
-    currentGenerateZone.copy(
-      groupId,
-      email,
-      provider,
-      zoneName ,
-      status,
-      providerParams,
-      response
-    )
-  }
 }
-
-case class RRSet(
-                  comments: List[String],
-                  name: String,
-                  records: List[Record],
-                  ttl: Int,
-                  `type`: String
-                )
-
-case class Record(
-    content: String,
-    disabled: Boolean
-)
 
 final case class ConnectZoneInput(
     name: String,
@@ -235,17 +208,6 @@ final case class UpdateZoneInput(
     scheduleRequestor: Option[String] = None,
     backendId: Option[String] = None
 )
-
-final case class UpdateGenerateZoneInput(
-                                  groupId: String,
-                                  email: String,
-                                  provider: String,
-                                  zoneName: String,
-                                  status: GenerateZoneStatus = GenerateZoneStatus.Active,
-                                  providerParams: Map[String, JValue] = Map.empty,
-                                  response: Option[ZoneGenerationResponse] = None,
-                                  id: String = UUID.randomUUID().toString
-                                )
 
 case class ZoneGenerationResponse(
                                    responseCode: Option[Int],

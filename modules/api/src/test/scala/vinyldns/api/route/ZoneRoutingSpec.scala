@@ -767,13 +767,11 @@ class ZoneRoutingSpec
         case notAuthorized.email => Left(NotAuthorizedError(s"$updateZoneInput"))
         case badAdminId.email => Left(InvalidGroupError(s"$updateZoneInput"))
         case ok.email | connectionOk.email =>
-          Right(
-            updateBindZone
-          )
+          Right(generateBindZone)
         case error.email => Left(new RuntimeException("fail"))
         case zone1.email => Left(ZoneUnavailableError(s"$updateZoneInput"))
       }
-      outcome.map(c => c.asInstanceOf[GenerateZone]).toResult
+      outcome.toResult
     }
 
     def handleDeleteGeneratedZoneRequest(zoneId: String, auth: AuthPrincipal): Result[GenerateZone] = {

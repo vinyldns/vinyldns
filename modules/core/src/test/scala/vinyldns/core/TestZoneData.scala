@@ -291,16 +291,6 @@ val updateZoneAuthorized = UpdateZoneInput(
     id = "pDnsZoneId"
   )
 
-  val updateBindZone: UpdateGenerateZoneInput = UpdateGenerateZoneInput(
-    okGroup.id,
-    "test@test.com",
-    "bind",
-    okZone.name,
-    providerParams = bindProviderParams,
-    response=Some(bindZoneGenerationResponse),
-    id = "bindZoneId"
-  )
-
   val inputBindZone: ZoneGenerationInput = ZoneGenerationInput(
     okGroup.id,
     "test@test.com",

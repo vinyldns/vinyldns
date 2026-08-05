@@ -84,16 +84,6 @@ class ZoneSpec extends AnyWordSpec with Matchers {
       result should include("created=\"" + generateBindZone.created + "\"")
     }
 
-    "update a GenerateZone instance from UpdateGenerateZoneInput" in {
-      val result = GenerateZone(updateBindZone, generateBindZone)
-
-      result.groupId shouldEqual okGroup.id
-      result.provider shouldEqual "bind"
-      result.zoneName shouldEqual okZone.name
-      result.providerParams shouldEqual bindProviderParams
-      result.response shouldEqual Some(bindZoneGenerationResponse)
-      result.id shouldEqual "bindZoneId"
-    }
     "build a GenerateZone instance from ZoneGenerationInput with server-owned fields defaulted" in {
       val result = GenerateZone(inputBindZone)
 
