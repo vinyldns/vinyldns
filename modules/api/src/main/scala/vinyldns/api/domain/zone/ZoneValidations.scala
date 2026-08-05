@@ -23,7 +23,8 @@ import java.time.temporal.ChronoUnit
 import vinyldns.api.Interfaces.ensuring
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record.RecordType
-import vinyldns.core.domain.zone.{ACLRule, Zone, ZoneACL, DnsProviderConfig}
+import vinyldns.core.domain.zone.{ACLRule, Zone, ZoneACL}
+import vinyldns.core.domain.zone.generate.DnsProviderConfig
 
 import scala.util.{Failure, Success, Try}
 

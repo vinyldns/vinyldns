@@ -18,7 +18,7 @@ package vinyldns.core.domain.zone
 
 import java.util.UUID
 import cats.effect.IO
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.Config
 
 import java.time.temporal.ChronoUnit
 import java.time.Instant
@@ -27,6 +27,7 @@ import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.{Encrypted, Encryption}
+import vinyldns.core.domain.zone.generate.DnsProviderApiConnection
 
 import scala.collection.JavaConverters._
 
@@ -227,20 +228,6 @@ final case class LegacyDnsBackend(
   )
 }
 
-case class DnsProviderConfig(
-    endpoints: Map[String, String],
-    requestTemplates: Map[String, String],
-    schemas: Map[String, String],
-    apiKey: Encrypted
-  )
-
-case class DnsProviderApiConnection(
-    providers: Map[String, DnsProviderConfig],
-    nameServers: List[String],
-    allowedProviders: List[String]
-  )
-
-
 final case class ConfiguredDnsConnections(
     defaultZoneConnection: ZoneConnection,
     defaultTransferConnection: ZoneConnection,
@@ -289,54 +276,8 @@ object ConfiguredDnsConnections {
         } else List.empty
       }
 
-  val dnsProviderApiConfig = {
-    if (config.hasPath("vinyldns.backend.backend-providers")) {
-      val providersConfig = config
-        .getConfigList("vinyldns.backend.backend-providers")
-        .asScala
-        .find(_.hasPath("settings.dns-provider-api.providers"))
-        .map(_.getConfig("settings.dns-provider-api.providers"))
-        .getOrElse(ConfigFactory.empty())
+      val dnsProviderApiConfig = DnsProviderApiConnection.load(config, crypto)
 
-      val allowedProviders: List[String] = providersConfig.root().keySet().asScala.toList
-
-      val nameServers = config
-        .getConfigList("vinyldns.backend.backend-providers")
-        .asScala
-        .find(_.hasPath("settings.dns-provider-api.name-servers"))
-        .map(_.getStringList("settings.dns-provider-api.name-servers").asScala.toList)
-        .getOrElse(List.empty[String])
-
-      val providerConfigs: Map[String, DnsProviderConfig] = providersConfig.root().keySet().asScala.map { provider =>
-        val providerConfig = providersConfig.getConfig(provider)
-
-        // Helper to turn a Config section into a Map[String, String]
-        def configToMap(config: com.typesafe.config.Config): Map[String, String] =
-          config.entrySet().asScala.map { entry =>
-            val key = entry.getKey
-            val value = config.getString(key)
-            key -> value
-          }.toMap
-
-        val endpoints = configToMap(providerConfig.getConfig("endpoints"))
-        val requestTemplates = configToMap(providerConfig.getConfig("request-templates"))
-        val schemas = configToMap(providerConfig.getConfig("schemas"))
-        // Encrypt the provider API key at load time so it is never held in memory as plaintext.
-        val apiKey = Encryption(crypto, providerConfig.getString("api-key"))
-
-        provider -> DnsProviderConfig(
-          endpoints = endpoints,
-          requestTemplates = requestTemplates,
-          schemas = schemas,
-          apiKey = apiKey
-        )
-      }.toMap
-
-      DnsProviderApiConnection(providerConfigs, nameServers, allowedProviders)
-    } else {
-      DnsProviderApiConnection(Map.empty, List.empty[String], List.empty[String])
-    }
-  }
-  ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends, dnsProviderApiConfig)
+      ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends, dnsProviderApiConfig)
 }
 }
