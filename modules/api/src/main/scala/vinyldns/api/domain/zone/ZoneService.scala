@@ -257,6 +257,7 @@ class ZoneService(
                                ): Result[GenerateZone] =
     for {
       existingGeneratedZone <- getGenerateZoneByName(request.zoneName, auth)
+      _ <- validateProviderUnchanged(request.provider, existingGeneratedZone.provider).toResult
       _ <- membershipService.emailValidation(request.email)
       _ <- canChangeZone(auth, existingGeneratedZone.zoneName, existingGeneratedZone.groupId).toResult
       _ <- adminGroupExists(request.groupId)

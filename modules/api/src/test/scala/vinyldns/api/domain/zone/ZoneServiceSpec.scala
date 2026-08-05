@@ -303,7 +303,7 @@ class ZoneServiceSpec
         "property 'retry' is not defined in the schema and the schema does not allow additional properties; $: " +
         "property 'negative_cache_ttl' is not defined in the schema and the schema does not allow additional properties")
     }
-    "return an error response for provider not supported" in {
+    "reject changing the provider of an existing generated zone" in {
       doReturn(IO.pure(Some(generatePdnsZone))).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
       doReturn(IO.pure(generatePdnsZone))
         .when(mockGenerateZoneRepository)
@@ -311,7 +311,10 @@ class ZoneServiceSpec
 
       val result =
         underTest.handleUpdateGeneratedZoneRequest(updatePdnsZoneAuthorized.copy(provider = "bind"), okAuth).value.unsafeRunSync().swap.toOption.get
-      result shouldBe InvalidRequest(s"Unsupported DNS provider: ${generateBindZoneAuthorized.provider}")
+      result shouldBe InvalidRequest(
+        s"Cannot change the DNS provider of an existing generated zone " +
+          s"(current: '${generatePdnsZone.provider}', requested: 'bind')."
+      )
     }
   }
 
