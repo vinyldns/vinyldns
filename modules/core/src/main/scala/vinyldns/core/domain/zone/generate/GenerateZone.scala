@@ -20,13 +20,9 @@ import java.util.UUID
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.json4s.JsonAST.JValue
-import vinyldns.core.domain.zone.generate.GenerateZoneStatus.GenerateZoneStatus
+import vinyldns.core.domain.zone.ZoneStatus
+import vinyldns.core.domain.zone.ZoneStatus.ZoneStatus
 import vinyldns.core.domain.zone.generate.GenerateZoneChangeType.GenerateZoneChangeType
-
-object GenerateZoneStatus extends Enumeration {
-  type GenerateZoneStatus = Value
-  val Active, Deleted, Syncing = Value
-}
 
 object GenerateZoneChangeType extends Enumeration {
   type GenerateZoneChangeType = Value
@@ -38,7 +34,7 @@ final case class GenerateZone(
                                email: String,
                                provider: String,
                                zoneName: String,
-                               status:  GenerateZoneStatus = GenerateZoneStatus.Active,
+                               status:  ZoneStatus = ZoneStatus.Active,
                                providerParams: Map[String, JValue] = Map.empty,
                                response: Option[ZoneGenerationResponse] = None,
                                id: String = UUID.randomUUID().toString,

@@ -19,7 +19,7 @@ package vinyldns.core.domain.zone
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import vinyldns.core.TestZoneData._
-import vinyldns.core.domain.zone.generate.{GenerateZone, GenerateZoneStatus}
+import vinyldns.core.domain.zone.generate.GenerateZone
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.TestMembershipData.okGroup
@@ -94,7 +94,7 @@ class ZoneSpec extends AnyWordSpec with Matchers {
       result.providerParams shouldEqual bindProviderParams
       // Server-owned fields are not taken from the input
       result.response shouldEqual None
-      result.status shouldEqual GenerateZoneStatus.Active
+      result.status shouldEqual ZoneStatus.Active
     }
   }
 }

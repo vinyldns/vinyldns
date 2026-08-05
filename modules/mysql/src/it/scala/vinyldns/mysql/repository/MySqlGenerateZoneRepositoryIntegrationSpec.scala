@@ -23,6 +23,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
 import vinyldns.core.TestMembershipData.{dummyAuth, okAuth, okGroup, superUserAuth}
 import vinyldns.core.TestZoneData.{generateBindZone, generatePdnsZone}
+import vinyldns.core.domain.zone.ZoneStatus
 import vinyldns.core.domain.zone.generate._
 import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
 
@@ -91,7 +92,7 @@ class MySqlGenerateZoneRepositoryIntegrationSpec
       saveZoneData(repo, toBeDeleted).unsafeRunSync() shouldBe toBeDeleted
       repo.getGenerateZoneById(toBeDeleted.id).unsafeRunSync() shouldBe Some(toBeDeleted)
 
-      val deleted = toBeDeleted.copy(status = GenerateZoneStatus.Deleted)
+      val deleted = toBeDeleted.copy(status = ZoneStatus.Deleted)
       repo.delete(deleted).unsafeRunSync() shouldBe deleted
       repo.getGenerateZoneById(deleted.id).unsafeRunSync() shouldBe None
     }

@@ -191,8 +191,8 @@ trait ProtobufConversions {
     // status conversion, is this necessary?
     val pbStatus = zn.getStatus
     val status =
-      if (pbStatus.startsWith("Pending")) GenerateZoneStatus.Active
-      else GenerateZoneStatus.withName(pbStatus)
+      if (pbStatus.startsWith("Pending")) ZoneStatus.Active
+      else ZoneStatus.withName(pbStatus)
 
     // convert the providerParams map from protobuf Map[String, String] to scala Map[String, JValue]
     val providerParams: Map[String, JValue] = zn.getProviderParamsMap.asScala
