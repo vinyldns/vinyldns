@@ -24,7 +24,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.{CreateZoneInput, UpdateZoneInput, ZoneConnection}
+import vinyldns.core.domain.zone.{ConnectZoneInput, UpdateZoneInput, ZoneConnection}
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.Messages._
@@ -36,7 +36,7 @@ class VinylDNSJsonProtocolSpec
     with ValidatedValues
     with VinylDNSTestHelpers {
 
-  private val completeCreateZoneInput = CreateZoneInput(
+  private val completeConnectZoneInput = ConnectZoneInput(
     "testZone.",
     "test@test.com",
     connection = Some(
@@ -93,44 +93,44 @@ class VinylDNSJsonProtocolSpec
       ("key" -> "transferConnectionKey") ~~
       ("primaryServer" -> "10.1.1.2")
 
-  "CreateZoneInputSerializer" should {
+  "ConnectZoneInputSerializer" should {
     "parse a create zone input with no connections" in {
-      val createZoneInput: JValue =
+      val ConnectZoneInput: JValue =
         ("name" -> "testZone.") ~~
           ("email" -> "test@test.com") ~~
           ("adminGroupId" -> "admin-group-id")
 
-      val expected = completeCreateZoneInput.copy(connection = None, transferConnection = None)
-      val actual = createZoneInput.extract[CreateZoneInput]
+      val expected = completeConnectZoneInput.copy(connection = None, transferConnection = None)
+      val actual = ConnectZoneInput.extract[ConnectZoneInput]
       actual shouldBe expected
     }
 
     "parse a create zone input with a connection and no transfer connection" in {
-      val createZoneInput: JValue =
+      val ConnectZoneInput: JValue =
         ("name" -> "testZone.") ~~
           ("email" -> "test@test.com") ~~
           ("connection" -> primaryConnection) ~~
           ("adminGroupId" -> "admin-group-id")
 
-      val expected = completeCreateZoneInput.copy(transferConnection = None)
-      val actual = createZoneInput.extract[CreateZoneInput]
+      val expected = completeConnectZoneInput.copy(transferConnection = None)
+      val actual = ConnectZoneInput.extract[ConnectZoneInput]
       actual shouldBe expected
     }
 
     "parse a create zone input with a transfer connection" in {
-      val createZoneInput: JValue =
+      val ConnectZoneInput: JValue =
         ("name" -> "testZone ") ~~
           ("email" -> "test@test.com") ~~
           ("connection" -> primaryConnection) ~~
           ("transferConnection" -> transferConnection) ~~
           ("adminGroupId" -> "admin-group-id")
 
-      val actual = createZoneInput.extract[CreateZoneInput]
-      actual shouldBe completeCreateZoneInput
+      val actual = ConnectZoneInput.extract[ConnectZoneInput]
+      actual shouldBe completeConnectZoneInput
     }
 
     "parse a shared create zone input" in {
-      val createZoneInput: JValue =
+      val ConnectZoneInput: JValue =
         ("name" -> "testZone.") ~~
           ("email" -> "test@test.com") ~~
           ("connection" -> primaryConnection) ~~
@@ -138,59 +138,59 @@ class VinylDNSJsonProtocolSpec
           ("shared" -> true) ~~
           ("adminGroupId" -> "admin-group-id")
 
-      val expected = completeCreateZoneInput.copy(shared = true)
-      val actual = createZoneInput.extract[CreateZoneInput]
+      val expected = completeConnectZoneInput.copy(shared = true)
+      val actual = ConnectZoneInput.extract[ConnectZoneInput]
       actual shouldBe expected
       actual.shared shouldBe true
     }
 
     "parse a create zone input with a backendId" in {
-      val createZoneInput: JValue =
+      val ConnectZoneInput: JValue =
         ("name" -> "testZone.") ~~
           ("email" -> "test@test.com") ~~
           ("adminGroupId" -> "admin-group-id") ~~
           ("backendId" -> "test-backend-id")
 
-      val expected = completeCreateZoneInput.copy(
+      val expected = completeConnectZoneInput.copy(
         connection = None,
         transferConnection = None,
         backendId = Some("test-backend-id")
       )
-      val actual = createZoneInput.extract[CreateZoneInput]
+      val actual = ConnectZoneInput.extract[ConnectZoneInput]
       actual shouldBe expected
     }
 
     "throw an error if zone name is missing" in {
-      val createZoneInput: JValue =
+      val ConnectZoneInput: JValue =
         ("email" -> "test@test.com") ~~
           ("adminGroupId" -> "admin-group-id")
 
-      assertThrows[MappingException](createZoneInput.extract[CreateZoneInput])
+      assertThrows[MappingException](ConnectZoneInput.extract[ConnectZoneInput])
     }
 
     "throw an error if zone email is missing" in {
-      val createZoneInput: JValue =
+      val ConnectZoneInput: JValue =
         ("name" -> "testZone.") ~~
           ("adminGroupId" -> "admin-group-id")
 
-      assertThrows[MappingException](createZoneInput.extract[CreateZoneInput])
+      assertThrows[MappingException](ConnectZoneInput.extract[ConnectZoneInput])
     }
 
     "throw an error if adminGroupId is missing" in {
-      val createZoneInput: JValue =
+      val ConnectZoneInput: JValue =
         ("name" -> "testZone.") ~~
           ("email" -> "test@test.com")
 
-      assertThrows[MappingException](createZoneInput.extract[CreateZoneInput])
+      assertThrows[MappingException](ConnectZoneInput.extract[ConnectZoneInput])
     }
 
     "throw an error if there is a type mismatch during deserialization" in {
-      val createZoneInput: JValue =
+      val ConnectZoneInput: JValue =
         ("name" -> "testZone.") ~~
           ("email" -> "test@test.com") ~~
           ("adminGroupId" -> true)
 
-      assertThrows[MappingException](createZoneInput.extract[CreateZoneInput])
+      assertThrows[MappingException](ConnectZoneInput.extract[ConnectZoneInput])
     }
   }
 
@@ -688,7 +688,7 @@ class VinylDNSJsonProtocolSpec
           ("ttl" -> 1000) ~~
           ("status" -> "Pending") ~~
           ("records" -> List("cname" -> "cname.data ")) ~~
-          ("recordSetGroupChange" -> Some("ownerShipTransferStatus" -> "AutoApproved"))
+          ("recordSetGroupChange" -> Some("ownershipTransferStatus" -> "AutoApproved"))
 
 
       val expected = RecordSet(
@@ -699,13 +699,13 @@ class VinylDNSJsonProtocolSpec
         RecordSetStatus.Pending,
         LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(CNAMEData(Fqdn("cname.data."))),
-        recordSetGroupChange = Some(OwnerShipTransfer(ownerShipTransferStatus = OwnerShipTransferStatus.AutoApproved))
+        recordSetGroupChange = Some(OwnershipTransfer(ownershipTransferStatus = OwnershipTransferStatus.AutoApproved))
 
       )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
-      anonymize(actual).recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.AutoApproved
+      anonymize(actual).recordSetGroupChange.get.ownershipTransferStatus shouldBe OwnershipTransferStatus.AutoApproved
     }
 
     "manually-approve a owner ship transfer request" in {
@@ -717,7 +717,7 @@ class VinylDNSJsonProtocolSpec
           ("status" -> "Pending") ~~
           ("records" -> List("cname" -> "cname.data ")) ~~
           ("ownerGroupId" -> "updated-admin-group-id") ~~
-          ("recordSetGroupChange" -> Some(("ownerShipTransferStatus" -> "ManuallyApproved")~~
+          ("recordSetGroupChange" -> Some(("ownershipTransferStatus" -> "ManuallyApproved")~~
             ("requestedOwnerGroupId" -> "updated-admin-group-id")))
 
 
@@ -730,13 +730,13 @@ class VinylDNSJsonProtocolSpec
         LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(CNAMEData(Fqdn("cname.data."))),
         ownerGroupId = Some("updated-admin-group-id"),
-        recordSetGroupChange = Some(OwnerShipTransfer(ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyApproved,requestedOwnerGroupId = Some("updated-admin-group-id")))
+        recordSetGroupChange = Some(OwnershipTransfer(ownershipTransferStatus = OwnershipTransferStatus.ManuallyApproved,requestedOwnerGroupId = Some("updated-admin-group-id")))
 
       )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
-      anonymize(actual).recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.ManuallyApproved
+      anonymize(actual).recordSetGroupChange.get.ownershipTransferStatus shouldBe OwnershipTransferStatus.ManuallyApproved
       anonymize(actual).recordSetGroupChange.get.requestedOwnerGroupId shouldBe Some("updated-admin-group-id")
       anonymize(actual).ownerGroupId shouldBe Some("updated-admin-group-id")
     }
@@ -750,7 +750,7 @@ class VinylDNSJsonProtocolSpec
           ("status" -> "Pending") ~~
           ("records" -> List("cname" -> "cname.data ")) ~~
           ("ownerGroupId" -> "updated-ok-group-id") ~~
-          ("recordSetGroupChange" -> Some(("ownerShipTransferStatus" -> "Requested")~~
+          ("recordSetGroupChange" -> Some(("ownershipTransferStatus" -> "Requested")~~
             ("requestedOwnerGroupId" -> "updated-admin-group-id")))
 
 
@@ -763,15 +763,15 @@ class VinylDNSJsonProtocolSpec
         LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(CNAMEData(Fqdn("cname.data."))),
         ownerGroupId = Some("updated-ok-group-id"),
-        recordSetGroupChange = Some(OwnerShipTransfer(
-          ownerShipTransferStatus = OwnerShipTransferStatus.Requested,
+        recordSetGroupChange = Some(OwnershipTransfer(
+          ownershipTransferStatus = OwnershipTransferStatus.Requested,
           requestedOwnerGroupId = Some("updated-admin-group-id")))
 
       )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
-      anonymize(actual).recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.Requested
+      anonymize(actual).recordSetGroupChange.get.ownershipTransferStatus shouldBe OwnershipTransferStatus.Requested
       anonymize(actual).recordSetGroupChange.get.requestedOwnerGroupId shouldBe Some("updated-admin-group-id")
       anonymize(actual).ownerGroupId shouldBe Some("updated-ok-group-id")
     }
@@ -785,7 +785,7 @@ class VinylDNSJsonProtocolSpec
           ("status" -> "Pending") ~~
           ("records" -> List("cname" -> "cname.data ")) ~~
           ("ownerGroupId" -> "updated-ok-group-id") ~~
-          ("recordSetGroupChange" -> Some(("ownerShipTransferStatus" -> "PendingReview")~~
+          ("recordSetGroupChange" -> Some(("ownershipTransferStatus" -> "PendingReview")~~
             ("requestedOwnerGroupId" -> "updated-admin-group-id")))
 
 
@@ -798,15 +798,15 @@ class VinylDNSJsonProtocolSpec
         LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(CNAMEData(Fqdn("cname.data."))),
         ownerGroupId = Some("updated-ok-group-id"),
-        recordSetGroupChange = Some(OwnerShipTransfer(
-          ownerShipTransferStatus = OwnerShipTransferStatus.PendingReview,
+        recordSetGroupChange = Some(OwnershipTransfer(
+          ownershipTransferStatus = OwnershipTransferStatus.PendingReview,
           requestedOwnerGroupId = Some("updated-admin-group-id")))
 
       )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
-      anonymize(actual).recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.PendingReview
+      anonymize(actual).recordSetGroupChange.get.ownershipTransferStatus shouldBe OwnershipTransferStatus.PendingReview
       anonymize(actual).recordSetGroupChange.get.requestedOwnerGroupId shouldBe Some("updated-admin-group-id")
       anonymize(actual).ownerGroupId shouldBe Some("updated-ok-group-id")
     }
@@ -820,7 +820,7 @@ class VinylDNSJsonProtocolSpec
           ("status" -> "Pending") ~~
           ("records" -> List("cname" -> "cname.data ")) ~~
           ("ownerGroupId" -> "updated-ok-group-id") ~~
-          ("recordSetGroupChange" -> Some(("ownerShipTransferStatus" -> "Cancelled")~~
+          ("recordSetGroupChange" -> Some(("ownershipTransferStatus" -> "Cancelled")~~
             ("requestedOwnerGroupId" -> "updated-admin-group-id")))
 
 
@@ -833,15 +833,15 @@ class VinylDNSJsonProtocolSpec
         LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(CNAMEData(Fqdn("cname.data."))),
         ownerGroupId = Some("updated-ok-group-id"),
-        recordSetGroupChange = Some(OwnerShipTransfer(
-          ownerShipTransferStatus = OwnerShipTransferStatus.Cancelled,
+        recordSetGroupChange = Some(OwnershipTransfer(
+          ownershipTransferStatus = OwnershipTransferStatus.Cancelled,
           requestedOwnerGroupId = Some("updated-admin-group-id")))
 
       )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
-      anonymize(actual).recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.Cancelled
+      anonymize(actual).recordSetGroupChange.get.ownershipTransferStatus shouldBe OwnershipTransferStatus.Cancelled
       anonymize(actual).recordSetGroupChange.get.requestedOwnerGroupId shouldBe Some("updated-admin-group-id")
       anonymize(actual).ownerGroupId shouldBe Some("updated-ok-group-id")
     }
@@ -855,7 +855,7 @@ class VinylDNSJsonProtocolSpec
           ("status" -> "Pending") ~~
           ("records" -> List("cname" -> "cname.data ")) ~~
           ("ownerGroupId" -> "updated-ok-group-id") ~~
-          ("recordSetGroupChange" -> Some(("ownerShipTransferStatus" -> "ManuallyRejected")~~
+          ("recordSetGroupChange" -> Some(("ownershipTransferStatus" -> "ManuallyRejected")~~
             ("requestedOwnerGroupId" -> "updated-admin-group-id")))
 
 
@@ -868,15 +868,15 @@ class VinylDNSJsonProtocolSpec
         LocalDateTime.of(2010, Month.JANUARY, 1, 0, 0).toInstant(ZoneOffset.UTC),
         records = List(CNAMEData(Fqdn("cname.data."))),
         ownerGroupId = Some("updated-ok-group-id"),
-        recordSetGroupChange = Some(OwnerShipTransfer(
-          ownerShipTransferStatus = OwnerShipTransferStatus.ManuallyRejected,
+        recordSetGroupChange = Some(OwnershipTransfer(
+          ownershipTransferStatus = OwnershipTransferStatus.ManuallyRejected,
           requestedOwnerGroupId = Some("updated-admin-group-id")))
 
       )
 
       val actual = recordSetJValue.extract[RecordSet]
       anonymize(actual) shouldBe anonymize(expected)
-      anonymize(actual).recordSetGroupChange.get.ownerShipTransferStatus shouldBe OwnerShipTransferStatus.ManuallyRejected
+      anonymize(actual).recordSetGroupChange.get.ownershipTransferStatus shouldBe OwnershipTransferStatus.ManuallyRejected
       anonymize(actual).recordSetGroupChange.get.requestedOwnerGroupId shouldBe Some("updated-admin-group-id")
       anonymize(actual).ownerGroupId shouldBe Some("updated-ok-group-id")
     }

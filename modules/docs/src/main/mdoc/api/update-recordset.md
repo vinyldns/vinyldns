@@ -24,9 +24,12 @@ type          | string        | yes         | the type of recordset |
 ttl           | integer       | yes         | the TTL in seconds |
 records       | array of record data | yes  | record data for recordset, see [RecordSet Model](recordset-model.html) |
 ownerGroupId  | string        | sometimes*          | Record ownership assignment, applicable if the recordset is in a [shared zone](zone-model.html#shared-zones) |
+recordSetGroupChange | [OwnershipTransfer](ownership-transfer-model.html) | sometimes†   | Record ownership transfer, requesting ownership to be transferred from one group to another. See [Ownership Transfer Model](ownership-transfer-model.html#ownership-transfer-example)
 
-*Note: If a recordset has an ownerGroupId you must include that value in the update request, otherwise the update will remove the ownerGroupId value
- 
+* If a RecordSet has an ownerGroupId you must include that value in the update request, otherwise the update will remove the ownerGroupId value.
+
+† If you want to change RecordSet ownership using an Ownership Transfer Request, or if the RecordSet has an active Ownership Transfer Request in the PendingReview state, you must include a [recordSetGroupChange](recordset-model.html) value in the update request, otherwise the update will remove the recordSetGroupChange value.
+
 #### EXAMPLE HTTP REQUEST
 ```json
 {
@@ -40,7 +43,8 @@ ownerGroupId  | string        | sometimes*          | Record ownership assignmen
     }
   ],
   "zoneId": "2467dc05-68eb-4498-a9d5-78d24bb0893c",
-  "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe"
+  "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe",
+  "recordSetGroupChange" : "None"
 }
 ```
 
@@ -125,7 +129,8 @@ singleBatchChangeIds |  array of SingleBatchChange ID objects  | If the recordse
     ],
     "id": "dd9c1120-0594-4e61-982e-8ddcbc8b2d21",
     "account": "9b22b686-54bc-47fb-a8f8-cdc48e6d04ae",
-    "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe"
+    "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe",
+    "recordSetGroupChange" : "None"
   },
   "id": "df69bc45-2942-4fb7-813c-4dd21cfad7fa",
   "singleBatchChangeIds": []

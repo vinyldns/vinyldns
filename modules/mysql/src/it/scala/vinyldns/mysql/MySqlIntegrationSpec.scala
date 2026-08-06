@@ -19,13 +19,9 @@ package vinyldns.mysql
 import com.typesafe.config.{Config, ConfigFactory}
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.membership._
-import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
+import vinyldns.core.domain.zone.{GenerateZoneRepository, ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.crypto.NoOpCrypto
-import vinyldns.core.domain.record.{
-  RecordChangeRepository,
-  RecordSetCacheRepository,
-  RecordSetRepository
-}
+import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetCacheRepository, RecordSetRepository}
 import vinyldns.core.repository.{DataStore, DataStoreConfig, LoadedDataStore, RepositoryName}
 import vinyldns.core.task.TaskRepository
 import pureconfig._
@@ -68,6 +64,8 @@ trait MySqlIntegrationSpec {
     instance.get[UserChangeRepository](RepositoryName.userChange).get
   lazy val taskRepository: TaskRepository =
     instance.get[TaskRepository](RepositoryName.task).get
+  lazy val generateZoneRepository: GenerateZoneRepository =
+    instance.get[GenerateZoneRepository](RepositoryName.generateZone).get
 }
 
 object TestMySqlInstance extends MySqlIntegrationSpec {

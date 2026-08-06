@@ -20,7 +20,7 @@ import cats.effect.IO
 import vinyldns.core.domain.batch.BatchChangeRepository
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetCacheRepository, RecordSetRepository}
-import vinyldns.core.domain.zone.{ZoneRepository, ZoneChangeRepository}
+import vinyldns.core.domain.zone.{GenerateZoneRepository, ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.RepositoryName.RepositoryName
 import vinyldns.core.health.HealthCheck.HealthCheck
 import vinyldns.core.task.TaskRepository
@@ -46,7 +46,8 @@ object DataStore {
       zoneRepository: Option[ZoneRepository] = None,
       batchChangeRepository: Option[BatchChangeRepository] = None,
       userChangeRepository: Option[UserChangeRepository] = None,
-      taskRepository: Option[TaskRepository] = None
+      taskRepository: Option[TaskRepository] = None,
+      generateZoneRepository: Option[GenerateZoneRepository] = None,
   ): DataStore =
     new DataStore(
       userRepository,
@@ -60,7 +61,8 @@ object DataStore {
       zoneRepository,
       batchChangeRepository,
       userChangeRepository,
-      taskRepository
+      taskRepository,
+      generateZoneRepository
     )
 }
 
@@ -76,7 +78,8 @@ class DataStore(
     zoneRepository: Option[ZoneRepository] = None,
     batchChangeRepository: Option[BatchChangeRepository] = None,
     userChangeRepository: Option[UserChangeRepository] = None,
-    taskRepository: Option[TaskRepository] = None
+    taskRepository: Option[TaskRepository] = None,
+    generateZoneRepository: Option[GenerateZoneRepository] = None
 ) {
 
   lazy val dataStoreMap: Map[RepositoryName, Repository] =
@@ -92,7 +95,8 @@ class DataStore(
       zoneRepository.map(RepositoryName.zone -> _),
       batchChangeRepository.map(RepositoryName.batchChange -> _),
       userChangeRepository.map(RepositoryName.userChange -> _),
-      taskRepository.map(RepositoryName.task -> _)
+      taskRepository.map(RepositoryName.task -> _),
+      generateZoneRepository.map(RepositoryName.generateZone -> _)
     ).flatten.toMap
 
   def keys: Set[RepositoryName] = dataStoreMap.keySet

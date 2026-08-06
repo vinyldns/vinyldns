@@ -22,19 +22,11 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.domain.batch.BatchChangeRepository
-import vinyldns.core.domain.membership.{
-  GroupChangeRepository,
-  GroupRepository,
-  MembershipRepository,
-  UserRepository
-}
-import vinyldns.core.domain.record.{
-  RecordChangeRepository,
-  RecordSetCacheRepository,
-  RecordSetRepository
-}
-import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
+import vinyldns.core.domain.membership.{GroupChangeRepository, GroupRepository, MembershipRepository, UserRepository}
+import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetCacheRepository, RecordSetRepository}
+import vinyldns.core.domain.zone.{GenerateZoneRepository, ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.{DataStore, DataStoreConfig, RepositoriesConfig}
+import vinyldns.core.task.TaskRepository
 
 class ApiDataAccessorProviderSpec
     extends AnyWordSpec
@@ -59,7 +51,8 @@ class ApiDataAccessorProviderSpec
       enabled,
       enabled,
       enabled,
-      None
+      None,
+      enabled
     )
 
     val user = mock[UserRepository]
@@ -73,6 +66,8 @@ class ApiDataAccessorProviderSpec
     val zoneChange = mock[ZoneChangeRepository]
     val zone = mock[ZoneRepository]
     val batchChange = mock[BatchChangeRepository]
+    val task = mock[TaskRepository]
+    val generateZone = mock[GenerateZoneRepository]
 
     "create an accessor if all repos can be pulled from the right datastore" in {
       val enabledConfig =
@@ -89,7 +84,9 @@ class ApiDataAccessorProviderSpec
         Some(zoneChange),
         Some(zone),
         Some(batchChange),
-        None
+        None,
+        Some(task),
+        Some(generateZone),
       ) // API doesn't use Task repository
 
       ApiDataAccessorProvider.create(List((enabledConfig, enabledDataStore))) should be(valid)

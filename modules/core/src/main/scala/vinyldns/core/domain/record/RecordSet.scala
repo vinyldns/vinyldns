@@ -16,10 +16,9 @@
 
 package vinyldns.core.domain.record
 
-import vinyldns.core.domain.record.OwnerShipTransferStatus.OwnerShipTransferStatus
+import vinyldns.core.domain.record.OwnershipTransferStatus.OwnershipTransferStatus
 
 import java.util.UUID
-
 import java.time.Instant
 
 object RecordType extends Enumeration {
@@ -35,9 +34,13 @@ object RecordSetStatus extends Enumeration {
   val Active, Inactive, Pending, PendingUpdate, PendingDelete = Value
 }
 
-object OwnerShipTransferStatus extends Enumeration {
-  type OwnerShipTransferStatus = Value
-  val AutoApproved, Cancelled, ManuallyApproved, ManuallyRejected, Requested, PendingReview, None  = Value
+object OwnershipTransferStatus extends Enumeration {
+  type OwnershipTransferStatus = Value
+  val AutoApproved, Cancelled, ManuallyApproved, ManuallyRejected, Requested, PendingReview, None = Value
+
+  def isStatus(status: String): Boolean =
+    OwnershipTransferStatus.values.find(value => value.toString == status.replace("\"","")).isDefined
+
 }
 
 import RecordSetStatus._
@@ -55,7 +58,7 @@ case class RecordSet(
     id: String = UUID.randomUUID().toString,
     account: String = "system",
     ownerGroupId: Option[String] = None,
-    recordSetGroupChange: Option[OwnerShipTransfer] = None,
+    recordSetGroupChange: Option[OwnershipTransfer] = None,
     fqdn: Option[String] = None
 ) {
 
@@ -85,15 +88,14 @@ case class RecordSet(
     sb.toString
   }
 }
-case class OwnerShipTransfer(
-                              ownerShipTransferStatus: OwnerShipTransferStatus,
+case class OwnershipTransfer(
+                              ownershipTransferStatus: OwnershipTransferStatus,
                               requestedOwnerGroupId: Option[String] = None
                             ){
-
   override def toString: String = {
     val sb = new StringBuilder
-    sb.append("OwnerShipTransfer: [")
-    sb.append("ownerShipTransferStatus=\"").append(ownerShipTransferStatus.toString).append("\"; ")
+    sb.append("OwnershipTransfer: [")
+    sb.append("ownershipTransferStatus=\"").append(ownershipTransferStatus.toString).append("\"; ")
     sb.append("requestedOwnerGroupId=\"").append(requestedOwnerGroupId.toString).append("\"")
     sb.append("]")
     sb.toString

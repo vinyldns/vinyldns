@@ -25,3 +25,11 @@ case class ListZonesResults(
     zonesFilter: Option[String] = None,
     includeReverse: Boolean = true
 )
+
+case class ListGeneratedZonesResults(
+                                      generatedZones: List[GenerateZone] = List[GenerateZone](),
+                                      nextId: Option[String] = None,
+                                      startFrom: Option[String] = None,
+                                      maxItems: Int = 100,
+                                      zonesFilter: Option[String] = None
+                                    )

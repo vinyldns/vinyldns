@@ -12,7 +12,7 @@ ARG SKIP_API_BUILD="false"
 RUN if [ -f artifacts/vinyldns-api.jar ]; then cp artifacts/vinyldns-api.jar /opt/vinyldns; fi && \
     if [ ! -f /opt/vinyldns/vinyldns-api.jar ] && [ "$SKIP_API_BUILD" == "false" ]; then \
       env SBT_OPTS="-Xmx2G -Xms512M -Xss2M -XX:MaxMetaspaceSize=2G" \
-      sbt -Dbuild.scalafmtOnCompile=false -Dbuild.lintOnCompile=fase ";project api;coverageOff;assembly" \
+      sbt -Dbuild.scalafmtOnCompile=false -Dbuild.lintOnCompile=false ";project api;coverageOff;assembly" \
       && cp artifacts/vinyldns-api.jar /opt/vinyldns/; \
     fi
 
@@ -21,6 +21,13 @@ FROM vinyldns/build:base-test-integration-${VINYLDNS_BASE_VERSION}
 SHELL ["/bin/bash","-c"]
 ARG DOCKERFILE_PATH
 COPY --from=base-build /opt/vinyldns /opt/vinyldns
+COPY utils/manage_vinyldns_zones_bind_api.py utils/
+
+# Start create zones api
+RUN pip install --no-cache-dir fastapi uvicorn "pydantic[email]" --ignore-installed --force-reinstall --no-warn-script-location
+
+RUN sed -i '/if \[\[ \$START_BIND -eq 1 \]\]; then/a\
+         \  echo -n "Starting create zones API.." & python3 utils/manage_vinyldns_zones_bind_api.py &' /initialize.sh
 
 # Copy the project contents
 COPY . /build/
