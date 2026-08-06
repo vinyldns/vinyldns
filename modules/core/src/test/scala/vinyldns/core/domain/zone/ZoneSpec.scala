@@ -19,6 +19,7 @@ package vinyldns.core.domain.zone
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import vinyldns.core.TestZoneData._
+import vinyldns.core.domain.zone.generate.GenerateZone
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.TestMembershipData.okGroup
@@ -84,16 +85,6 @@ class ZoneSpec extends AnyWordSpec with Matchers {
       result should include("created=\"" + generateBindZone.created + "\"")
     }
 
-    "update a GenerateZone instance from UpdateGenerateZoneInput" in {
-      val result = GenerateZone(updateBindZone, generateBindZone)
-
-      result.groupId shouldEqual okGroup.id
-      result.provider shouldEqual "bind"
-      result.zoneName shouldEqual okZone.name
-      result.providerParams shouldEqual bindProviderParams
-      result.response shouldEqual Some(bindZoneGenerationResponse)
-      result.id shouldEqual "bindZoneId"
-    }
     "build a GenerateZone instance from ZoneGenerationInput with server-owned fields defaulted" in {
       val result = GenerateZone(inputBindZone)
 
@@ -103,7 +94,7 @@ class ZoneSpec extends AnyWordSpec with Matchers {
       result.providerParams shouldEqual bindProviderParams
       // Server-owned fields are not taken from the input
       result.response shouldEqual None
-      result.status shouldEqual GenerateZoneStatus.Active
+      result.status shouldEqual ZoneStatus.Active
     }
   }
 }

@@ -26,6 +26,7 @@ import vinyldns.core.domain.membership.{LockStatus, User, UserChange, UserChange
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate._
 import vinyldns.core.domain.{Encrypted, Fqdn, record, zone}
 import vinyldns.proto.VinylDNSProto
 
@@ -190,15 +191,15 @@ trait ProtobufConversions {
     // status conversion, is this necessary?
     val pbStatus = zn.getStatus
     val status =
-      if (pbStatus.startsWith("Pending")) GenerateZoneStatus.Active
-      else GenerateZoneStatus.withName(pbStatus)
+      if (pbStatus.startsWith("Pending")) ZoneStatus.Active
+      else ZoneStatus.withName(pbStatus)
 
     // convert the providerParams map from protobuf Map[String, String] to scala Map[String, JValue]
     val providerParams: Map[String, JValue] = zn.getProviderParamsMap.asScala
       .map { case (k, v) => k -> parseParamValue(v) } // convert the JSON string into a json4s JValue
       .toMap
 
-    zone.GenerateZone(
+    zone.generate.GenerateZone(
       groupId = zn.getGroupId,
       email = zn.getEmail,
       provider = zn.getProvider,

@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.zone.{GenerateZone, GenerateZoneRepository, ListGeneratedZonesResults}
+import vinyldns.core.domain.zone.generate.{GenerateZone, GenerateZoneRepository, ListGeneratedZonesResults}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto

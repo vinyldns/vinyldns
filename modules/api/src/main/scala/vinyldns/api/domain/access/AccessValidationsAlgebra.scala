@@ -21,7 +21,8 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordData
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
-import vinyldns.core.domain.zone.{GenerateZone, Zone}
+import vinyldns.core.domain.zone.{Zone}
+import vinyldns.core.domain.zone.generate.GenerateZone
 
 trait AccessValidationsAlgebra {
 

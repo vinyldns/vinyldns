@@ -30,6 +30,7 @@ import vinyldns.core.domain.DomainHelpers.removeWhitespace
 import vinyldns.core.domain.{EncryptFromJson, Encrypted, Fqdn}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate._
 import vinyldns.core.Messages._
 import vinyldns.core.domain.record.OwnershipTransferStatus
 import vinyldns.core.domain.record.OwnershipTransferStatus.OwnershipTransferStatus
@@ -51,7 +52,6 @@ trait DnsJsonProtocol extends JsonValidation {
     RecordSetInfoSerializer,
     RecordSetChangeSerializer,
     JsonEnumV(ZoneStatus),
-    JsonEnumV(GenerateZoneStatus),
     JsonEnumV(OwnershipTransferStatus),
     JsonEnumV(ZoneChangeStatus),
     JsonEnumV(RecordSetStatus),
