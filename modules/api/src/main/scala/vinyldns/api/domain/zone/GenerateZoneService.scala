@@ -261,12 +261,7 @@ class GenerateZoneService(
       )
 
       deleteEndpointUrl <- requireEndpoint(providerConfig, "delete-zone").toResult
-      endpoint <- (if (generatedZone.provider == "bind") {
-        val encodedZoneName = java.net.URLEncoder.encode(generatedZone.zoneName, "UTF-8")
-        Right(s"$deleteEndpointUrl?zoneName=$encodedZoneName"): Either[Throwable, String]
-      } else {
-        buildGenerateZoneEndpoint(deleteEndpointUrl, request)
-      }).toResult
+      endpoint <- buildGenerateZoneEndpoint(deleteEndpointUrl, request).toResult
 
       dnsProviderConn <- createConnection(endpoint).toResult
       dnsConnResponse <- createDnsZoneService(Encryption.decrypt(crypto, providerConfig.apiKey), "delete-zone", None, dnsProviderConn).toResult
@@ -286,7 +281,9 @@ class GenerateZoneService(
         message = Some(responseJson),
         changeType = GenerateZoneChangeType.Delete
       )
-      zoneToDelete = GenerateZone(request).copy(response = Some(zoneGenerateResponse), id = generatedZone.id)
+      // Preserve the stored zone's server-owned fields (created/updated, id, etc.) and only
+      // attach the delete response, rather than rebuilding from the request.
+      zoneToDelete = generatedZone.copy(response = Some(zoneGenerateResponse))
       _ <- logger.info(s"zone generation response: Delete: $zoneToDelete").toResult
       _ <- generateZoneRepository.delete(zoneToDelete).toResult[GenerateZone]
 
