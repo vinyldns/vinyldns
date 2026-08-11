@@ -122,7 +122,7 @@ angular.module('service.zones', [])
         }
 
         this.getCreateZoneTemplate = function(provider) {
-            var url = "config/createZoneTemplate/" + provider;
+            var url = "/config/createZoneTemplate/" + provider;
             return $http.get(url);
         }
 

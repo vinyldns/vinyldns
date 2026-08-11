@@ -128,7 +128,7 @@
 
                 <!-- Multi-Select -->
                 <modal-element ng-if="field.type === 'Multi-Select'" label="{{ field.label }}"
-                               invalid-when="addZoneCreationForm.$submitted && (createZone.providerParams[field.field] || []).length === 0"
+                               invalid-when="addZoneCreationForm.$submitted && isDynamicZoneFieldRequired(field.field) && (createZone.providerParams[field.field] || []).length === 0"
                 >
                     <input type="hidden"
                            name="providerParams_{{ field.field }}"
