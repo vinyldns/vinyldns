@@ -15,7 +15,7 @@
  */
 
 angular.module('controllers.module', ['controller.records', 'controller.groups', 'controller.membership',
-    'controller.zones', 'controller.manageZones']);
+    'controller.zones', 'controller.generateZones', 'controller.manageZones']);
 
 
 // Keeps buttons from staying depressed

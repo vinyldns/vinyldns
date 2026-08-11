@@ -35,7 +35,7 @@
 
             <div class="panel-body tab-content">
 
-                <div class="tab-pane active" id="createdZones">
+                <div class="tab-pane active" id="createdZones" ng-controller="GenerateZonesController">
                     <div class="row">
                         <div class="col-md-12">
 
@@ -153,6 +153,8 @@
                             <!-- END SIMPLE DATATABLE -->
                         </div>
                     </div>
+                    <zonecreation></zonecreation>
+                    <zonecreatedview></zonecreatedview>
                 </div>
                 <div class="tab-pane" id="myZones">
                     <div class="row">
@@ -604,8 +606,6 @@
 </div>
 <!-- END PAGE CONTENT -->
 <zoneconnection></zoneconnection>
-<zonecreation></zonecreation>
-<zonecreatedview></zonecreatedview>
 }
 
 

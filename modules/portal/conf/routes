@@ -18,7 +18,7 @@ GET           /dnschanges/new                    @controllers.FrontendController
 GET           /dnschanges/:id                    @controllers.FrontendController.viewBatchChange(id: String)
 GET           /recordsets                        @controllers.FrontendController.viewRecordSets
 GET           /config/allowedDNSProviders        @controllers.FrontendController.getAllowedDNSProviders
-GET           /config/createZoneTemplate/:provider   controllers.FrontendController.getCreateZoneTemplate(provider: String)
+GET           /config/createZoneTemplate/:provider   @controllers.FrontendController.getCreateZoneTemplate(provider: String)
 
 
 ### Routes to process requests, get data ###
@@ -43,6 +43,7 @@ POST          /api/zones/:id/sync                @controllers.VinylDNS.syncZone(
 
 GET           /api/zones/generate/nameservers    @controllers.VinylDNS.getNameservers
 POST          /api/zones/generate                @controllers.VinylDNS.generateZone
+PUT           /api/zones/generate                @controllers.VinylDNS.updateGeneratedZone
 DELETE        /api/zones/generate/:id            @controllers.VinylDNS.deleteGeneratedZone(id: String)
 GET           /api/zones/generate/info           @controllers.VinylDNS.getGeneratedZones
 

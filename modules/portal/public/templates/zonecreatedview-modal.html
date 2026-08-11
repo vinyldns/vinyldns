@@ -63,15 +63,26 @@
         </modal-body>
 
         <modal-footer>
-            <button type="button" class="btn btn-default" data-dismiss="modal">
+            <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="confirmingDelete = false">
                 Close
             </button>
+            <!-- Initial delete button -->
             <button id="delete-zone-button"
                     class="btn btn-danger pull-right"
-                    ng-if="isDelete"
+                    ng-if="isDelete && !confirmingDelete"
                     ng-click="deleteCreatedZone()">
                 Delete
             </button>
+            <!-- Confirmation step -->
+            <span ng-if="isDelete && confirmingDelete">
+                <span class="pull-right" style="line-height: 34px; margin-right: 8px;">Are you sure?</span>
+                <button class="btn btn-default pull-right" ng-click="cancelDeleteCreatedZone()">
+                    Cancel
+                </button>
+                <button class="btn btn-danger pull-right" style="margin-right: 4px;" ng-click="confirmDeleteCreatedZone()">
+                    Confirm Delete
+                </button>
+            </span>
         </modal-footer>
     </modal>
 </form>

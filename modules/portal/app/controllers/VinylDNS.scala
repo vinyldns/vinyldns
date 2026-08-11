@@ -324,6 +324,19 @@ class VinylDNS @Inject() (
     // $COVERAGE-ON$
   }
 
+  def updateGeneratedZone(): Action[AnyContent] = userAction.async { implicit request =>
+    // $COVERAGE-OFF$
+    val json = request.body.asJson
+    val payload = json.map(Json.stringify)
+    val vinyldnsRequest =
+      new VinylDNSRequest("PUT", s"$vinyldnsServiceBackend", "zones/generate", payload)
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+    // $COVERAGE-ON$
+  }
+
   def deleteGeneratedZone(id: String): Action[AnyContent] = userAction.async { implicit request =>
     // $COVERAGE-OFF$
     val vinyldnsRequest = new VinylDNSRequest("DELETE", s"$vinyldnsServiceBackend", s"zones/generate/$id")
