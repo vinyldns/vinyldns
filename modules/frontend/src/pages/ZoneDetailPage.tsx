@@ -35,7 +35,7 @@ import { useZoneRecords } from '../hooks/useRecords';
 import { usePaging } from '../hooks/usePaging';
 import { formatDateTime } from '../utils/dateUtils';
 import type { Zone, AclRule } from '../types/zone';
-import type { RecordSet } from '../types/record';
+import type { RecordSet, RecordSetGroupChange } from '../types/record';
 
 type DetailTab = 'records' | 'recordChanges' | 'zoneChanges' | 'zone';
 
@@ -592,12 +592,36 @@ export function ZoneDetailPage() {
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleCreateRecord = (data: Partial<RecordSet>) => {
-    createRecord(data, { onSuccess: () => setShowRecordForm(false) });
+    const payload: Partial<RecordSet> = data.ownerGroupId
+      ? {
+          ...data,
+          recordSetGroupChange: data.recordSetGroupChange ?? {
+            ownershipTransferStatus: 'AutoApproved',
+          },
+        }
+      : data;
+    createRecord(payload, { onSuccess: () => setShowRecordForm(false) });
   };
 
   const handleUpdateRecord = (data: Partial<RecordSet>) => {
     if (!editRecord) return;
-    updateRecord({ recordSetId: editRecord.id, record: data }, { onSuccess: () => setEditRecord(null) });
+    const recordSetGroupChange: RecordSetGroupChange | undefined =
+      editRecord.recordSetGroupChange ??
+      (editRecord.ownerGroupId
+        ? { requestedOwnerGroupId: editRecord.ownerGroupId, ownershipTransferStatus: 'AutoApproved' }
+        : undefined);
+    updateRecord(
+      {
+        recordSetId: editRecord.id,
+        record: {
+          id: editRecord.id,
+          zoneId: editRecord.zoneId,
+          ...data,
+          ...(recordSetGroupChange && { recordSetGroupChange }),
+        },
+      },
+      { onSuccess: () => setEditRecord(null) },
+    );
   };
 
   const handleDeleteConfirm = () => {
@@ -878,35 +902,39 @@ export function ZoneDetailPage() {
                               <td className="vds-table-secondary vds-table-nowrap small">{c.userName ?? c.userId}</td>
                               <td className="vds-table-secondary vds-table-nowrap small">{formatDateTime(c.created)}</td>
                               <td className="small">
-                                {c.changeType === 'Create' && (
-                                  <button
-                                    className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                    onClick={() => setViewingRecordSet({ label: 'Created Record Set', rs: c.recordSet })}>
-                                    <i className="bi bi-eye" />View created recordset
-                                  </button>
-                                )}
-                                {c.changeType === 'Update' && (
+                                {/* systemMessage always shown (e.g. "Change applied via zone sync") */}
+                                {c.systemMessage && <div className="vds-table-secondary mb-1">{c.systemMessage}</div>}
+                                {c.status !== 'Failed' && (
                                   <div className="d-flex flex-column gap-1">
-                                    <button
-                                      className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                      onClick={() => setViewingRecordSet({ label: 'New Record Set', rs: c.recordSet })}>
-                                      <i className="bi bi-eye" />View new recordset
-                                    </button>
-                                    {c.updates?.recordSet && (
+                                    {c.changeType === 'Create' && (
                                       <button
                                         className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                        onClick={() => setViewingRecordSet({ label: 'Old Record Set', rs: c.updates!.recordSet! })}>
-                                        <i className="bi bi-clock-history" />View old recordset
+                                        onClick={() => setViewingRecordSet({ label: 'Created Record Set', rs: c.recordSet })}>
+                                        <i className="bi bi-eye" />View created recordset
+                                      </button>
+                                    )}
+                                    {c.changeType === 'Update' && (<>
+                                      <button
+                                        className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                        onClick={() => setViewingRecordSet({ label: 'New Record Set', rs: c.recordSet })}>
+                                        <i className="bi bi-eye" />View new recordset
+                                      </button>
+                                      {c.updates && (
+                                        <button
+                                          className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                          onClick={() => setViewingRecordSet({ label: 'Old Record Set', rs: c.updates! })}>
+                                          <i className="bi bi-clock-history" />View old recordset
+                                        </button>
+                                      )}
+                                    </>)}
+                                    {c.changeType === 'Delete' && (
+                                      <button
+                                        className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                        onClick={() => setViewingRecordSet({ label: 'Deleted Record Set', rs: c.recordSet })}>
+                                        <i className="bi bi-clock-history" />View deleted recordset
                                       </button>
                                     )}
                                   </div>
-                                )}
-                                {c.changeType === 'Delete' && (
-                                  <button
-                                    className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                    onClick={() => setViewingRecordSet({ label: 'Deleted Record Set', rs: c.recordSet })}>
-                                    <i className="bi bi-clock-history" />View deleted recordset
-                                  </button>
                                 )}
                               </td>
                             </tr>
@@ -1425,9 +1453,9 @@ export function ZoneDetailPage() {
                                 onClick={() => setViewingRecordSet({ label: 'New Record Set', rs: c.recordSet })}>
                                 <i className="bi bi-eye" />View new recordset
                               </button>
-                              {c.updates?.recordSet && (
+                              {c.updates && (
                                 <button className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                  onClick={() => setViewingRecordSet({ label: 'Old Record Set', rs: c.updates!.recordSet! })}>
+                                  onClick={() => setViewingRecordSet({ label: 'Old Record Set', rs: c.updates! })}>
                                   <i className="bi bi-clock-history" />View old recordset
                                 </button>
                               )}
@@ -2717,6 +2745,43 @@ export function ZoneDetailPage() {
                 </div>
                 {/* Record data */}
                 <div className="px-4 py-3">
+                  {(viewingRecordSet.rs.ownerGroupId ||
+                    (viewingRecordSet.rs.recordSetGroupChange?.requestedOwnerGroupId &&
+                      viewingRecordSet.rs.recordSetGroupChange.requestedOwnerGroupId !== 'null') ||
+                    (viewingRecordSet.rs.recordSetGroupChange?.ownershipTransferStatus)) && (
+                    <div className="mb-3 pb-3" style={{ borderBottom: '1px solid #e3eaf4' }}>
+                      <div className="fw-semibold mb-2" style={{ fontSize: '0.85rem', color: '#3a5c8c' }}>
+                        <i className="bi bi-people-fill me-1" />Ownership
+                      </div>
+                      <div className="d-flex flex-wrap gap-3">
+                        {viewingRecordSet.rs.ownerGroupId && (
+                          <div>
+                            <div className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Record Owner Group</div>
+                            <div className="fw-semibold small">
+                              {viewingRecordSet.rs.ownerGroupName ?? viewingRecordSet.rs.ownerGroupId}
+                            </div>
+                          </div>
+                        )}
+                        {viewingRecordSet.rs.recordSetGroupChange?.requestedOwnerGroupId &&
+                          viewingRecordSet.rs.recordSetGroupChange.requestedOwnerGroupId !== 'null' && (
+                          <div>
+                            <div className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Ownership Transfer Group</div>
+                            <div className="fw-semibold small">
+                              {viewingRecordSet.rs.recordSetGroupChange.requestedOwnerGroupId}
+                            </div>
+                          </div>
+                        )}
+                        {viewingRecordSet.rs.recordSetGroupChange?.ownershipTransferStatus && (
+                          <div>
+                            <div className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Ownership Transfer Status</div>
+                            <div className="fw-semibold small">
+                              {viewingRecordSet.rs.recordSetGroupChange.ownershipTransferStatus}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   <div className="fw-semibold mb-2" style={{ fontSize: '0.85rem', color: '#3a5c8c' }}>
                     <i className="bi bi-list-ul me-1" />Record Data ({viewingRecordSet.rs.records.length})
                   </div>

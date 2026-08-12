@@ -827,9 +827,7 @@ export function RecordHistoryModal({
               {/* ── View recordset actions (Angular parity) ── */}
               {(() => {
                 const cType = String(selectedInfo.changeType ?? "");
-                // old record set: API returns it directly as `updates`, not `updates.recordSet`
-                const oldRs =
-                  selectedInfo.updates?.recordSet ?? selectedInfo.updates;
+                const oldRs = selectedInfo.updates as any;
                 const newRs = selectedInfo.recordSet;
 
                 // Inline record detail renderer

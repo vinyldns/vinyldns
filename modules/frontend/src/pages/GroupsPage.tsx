@@ -278,14 +278,23 @@ export function GroupsPage() {
     );
   };
 
-  const handleUpdate = (data: {
+  const handleUpdate = async (data: {
     name: string;
     email: string;
     description?: string;
   }) => {
     if (!editGroup) return;
+    let members = editGroup.members;
+    let admins = editGroup.admins;
+    try {
+      const res = await groupsService.getGroup(editGroup.id);
+      members = res.data.members;
+      admins = res.data.admins;
+    } catch {
+      // fall back to whatever the abridged list returned
+    }
     updateGroup(
-      { id: editGroup.id, group: { ...editGroup, ...data } },
+      { id: editGroup.id, group: { ...editGroup, ...data, members, admins } },
       {
         onSuccess: () => setEditGroup(null),
       },

@@ -196,6 +196,40 @@ export function RecordForm({ zoneId, zoneName, initialData, onSubmit, onCancel, 
             )}
           </div>
         )}
+
+        {/* Ownership Transfer fields — read-only, shown in edit mode when present */}
+        {mode === 'edit' && isSharedZone && initialData?.recordSetGroupChange?.requestedOwnerGroupId &&
+          initialData.recordSetGroupChange.requestedOwnerGroupId !== 'null' && (
+          <div className="col-md-4">
+            <label className="form-label fw-semibold small">
+              <i className="bi bi-arrow-left-right me-1 text-primary" />Ownership Transfer Group
+            </label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              readOnly
+              value={
+                allGroups.find(g => g.id === initialData.recordSetGroupChange!.requestedOwnerGroupId)?.name
+                ?? initialData.ownerGroupName
+                ?? initialData.recordSetGroupChange.requestedOwnerGroupId
+              }
+            />
+          </div>
+        )}
+
+        {mode === 'edit' && isSharedZone && initialData?.recordSetGroupChange?.ownershipTransferStatus && (
+          <div className="col-md-4">
+            <label className="form-label fw-semibold small">
+              <i className="bi bi-info-circle me-1 text-primary" />Ownership Transfer Status
+            </label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              readOnly
+              value={initialData.recordSetGroupChange.ownershipTransferStatus}
+            />
+          </div>
+        )}
       </div>
 
       {/* ── Record data rows ── */}

@@ -197,6 +197,19 @@ export function useRecords() {
   };
 }
 
+function normalizeOwnershipStatus(record: RecordSet): RecordSet {
+  if (!record.recordSetGroupChange && record.ownerGroupId) {
+    return {
+      ...record,
+      recordSetGroupChange: {
+        requestedOwnerGroupId: record.ownerGroupId,
+        ownershipTransferStatus: 'AutoApproved',
+      },
+    };
+  }
+  return record;
+}
+
 /** Hook for records within a single zone */
 export function useZoneRecords(zoneId: string) {
   const [nameFilter, setNameFilter] = useState('');
@@ -271,7 +284,7 @@ export function useZoneRecords(zoneId: string) {
   }, [prevPageUpdate, getPrevStartFrom]);
 
   return {
-    records: data?.recordSets ?? [],
+    records: (data?.recordSets ?? []).map(normalizeOwnershipStatus),
     isLoading,
     search,
     refetch,

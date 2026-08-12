@@ -151,7 +151,7 @@ const OWNERSHIP_STATUS_META: Record<string, { cls: string; icon: string; label: 
 };
 
 function OwnershipStatusBadge({ status }: { status?: string }) {
-  if (!status || status === 'None' || status === 'AutoApproved') {
+  if (!status || status === 'None') {
     return <span className="vds-ownership-badge vds-ownership-badge--none">—</span>;
   }
   const meta = OWNERSHIP_STATUS_META[status];
@@ -394,7 +394,10 @@ export function RecordsTable({
                     <td><OwnerGroupCell record={rec} /></td>
                     <td>
                       <OwnershipStatusBadge
-                        status={rec.recordSetGroupChange?.ownershipTransferStatus}
+                        status={
+                          rec.recordSetGroupChange?.ownershipTransferStatus ??
+                          (rec.ownerGroupId ? 'AutoApproved' : undefined)
+                        }
                       />
                     </td>
                   </>
