@@ -616,14 +616,25 @@ def clear_zoneid_rsid_tuple_list(to_delete, client):
             raise
 
 
-def get_group_json(group_name, email="test@test.com", description="this is a description", members=[{"id": "ok"}],
-                   admins=[{"id": "ok"}]):
+def get_group_json(
+        group_name,
+        email="test@test.com",
+        description="this is a description",
+        members=[{"id": "ok"}],
+        admins=[{"id": "ok"}],
+        membershipAccessStatus= {
+            "pendingReviewMember": [],
+            "rejectedMember": [],
+            "approvedMember": []
+        }
+):
     return {
         "name": group_name,
         "email": email,
         "description": description,
         "members": members,
-        "admins": admins
+        "admins": admins,
+        "membershipAccessStatus": membershipAccessStatus
     }
 
 

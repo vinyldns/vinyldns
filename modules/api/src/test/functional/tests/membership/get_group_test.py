@@ -13,7 +13,12 @@ def test_get_group_success(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         saved_group = client.create_group(new_group, status=200)
 
@@ -51,7 +56,12 @@ def test_get_deleted_group(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         saved_group = client.create_group(new_group, status=200)
 
@@ -75,7 +85,12 @@ def test_get_group_unauthed(shared_zone_test_context):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         saved_group = client.create_group(new_group, status=200)
 

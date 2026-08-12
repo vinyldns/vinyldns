@@ -182,6 +182,22 @@ message Group {
   repeated string memberIds = 6;
   repeated string adminUserIds = 7;
   optional string description = 8;
+  optional MembershipAccessStatus memberAccessStatus = 9;
+}
+
+message MembershipAccessStatus {
+  repeated MembershipAccess pendingReviewMember = 1;
+  repeated MembershipAccess rejectedMember = 2;
+  repeated MembershipAccess approvedMember = 3;
+}
+
+
+message MembershipAccess {
+  required string userId = 1;
+  required int64 created = 2;
+  optional string submittedBy = 3;
+  optional string description = 4;
+  required string status = 5;
 }
 
 message GroupChange {

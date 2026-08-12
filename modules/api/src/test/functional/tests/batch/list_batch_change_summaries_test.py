@@ -120,7 +120,12 @@ def test_list_batch_change_summaries_with_deleted_record_owner_group_passes(shar
         "email": "test@test.com",
         "description": "for testing that list summaries still works when record owner group is deleted",
         "members": [{"id": "sharedZoneUser"}],
-        "admins": [{"id": "sharedZoneUser"}]
+        "admins": [{"id": "sharedZoneUser"}],
+        "membershipAccessStatus": {
+            "pendingReviewMember": [],
+            "rejectedMember": [],
+            "approvedMember": []
+        }
     }
 
     record_to_delete = []

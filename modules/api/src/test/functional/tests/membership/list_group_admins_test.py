@@ -12,7 +12,12 @@ def test_list_group_admins_success(shared_zone_test_context):
             "name": "test-list-group-admins-success",
             "email": "test@test.com",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}, {"id": "dummy"}]
+            "admins": [{"id": "ok"}, {"id": "dummy"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         saved_group = client.create_group(new_group, status=200)
 
@@ -60,7 +65,12 @@ def test_list_group_admins_unauthed(shared_zone_test_context):
             "name": "test-list-group-admins-unauthed",
             "email": "test@test.com",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         saved_group = client.create_group(new_group, status=200)
 

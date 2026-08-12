@@ -135,6 +135,11 @@ def test_get_group_changes_paging(group_activity_context, shared_zone_test_conte
     assert_that(page_three["startFrom"], is_(page_two["nextId"]))
     assert_that(page_three, is_not(has_key("nextId")))
 
+    created_group["membershipAccessStatus"] = {
+        "pendingReviewMember": [],
+        "rejectedMember": [],
+        "approvedMember": []
+    }
     assert_that(page_three["changes"][0]["newGroup"], is_(created_group))
 
 
@@ -150,7 +155,12 @@ def test_get_group_changes_unauthorized(shared_zone_test_context):
             "name": "test-list-group-admins-unauthed-2",
             "email": "test@test.com",
             "members": [{"id": "ok"}],
-            "admins": [{"id": "ok"}]
+            "admins": [{"id": "ok"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         saved_group = client.create_group(new_group, status=200)
 

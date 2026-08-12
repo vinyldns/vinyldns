@@ -28,10 +28,11 @@ import vinyldns.core.domain.zone.ZoneRepository
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.Messages._
+import vinyldns.core.notifier.{AllNotifiers, Notification}
 import vinyldns.mysql.TransactionProvider
 
 object MembershipService {
-  def apply(dataAccessor: ApiDataAccessor,emailConfig:ValidEmailConfig): MembershipService =
+  def apply(dataAccessor: ApiDataAccessor,emailConfig:ValidEmailConfig,notifiers: AllNotifiers): MembershipService =
     new MembershipService(
       dataAccessor.groupRepository,
       dataAccessor.userRepository,
@@ -39,7 +40,8 @@ object MembershipService {
       dataAccessor.zoneRepository,
       dataAccessor.groupChangeRepository,
       dataAccessor.recordSetRepository,
-      emailConfig
+      emailConfig,
+      notifiers
     )
 }
 
@@ -50,8 +52,9 @@ class MembershipService(
     zoneRepo: ZoneRepository,
     groupChangeRepo: GroupChangeRepository,
     recordSetRepo: RecordSetRepository,
-    validDomains: ValidEmailConfig
-) extends MembershipServiceAlgebra with TransactionProvider {
+    validDomains: ValidEmailConfig,
+    notifiers: AllNotifiers
+                       ) extends MembershipServiceAlgebra with TransactionProvider {
 
   import MembershipValidations._
 
@@ -81,11 +84,12 @@ class MembershipService(
       description: Option[String],
       memberIds: Set[String],
       adminUserIds: Set[String],
+      membershipStatus: Option[MembershipAccessStatus],
       authPrincipal: AuthPrincipal
   ): Result[Group] =
     for {
       existingGroup <- getExistingGroup(groupId)
-      newGroup = existingGroup.withUpdates(name, email, description, memberIds, adminUserIds)
+      newGroup = existingGroup.withUpdates(name, email, description, memberIds, adminUserIds, membershipStatus)
       _ <- groupValidation(newGroup)
       _ <- emailValidation(newGroup.email)
       _ <- canEditGroup(existingGroup, authPrincipal).toResult
@@ -109,6 +113,47 @@ class MembershipService(
       _ <- isNotInZoneAclRule(existingGroup)
       deletedGroup <- deleteGroupData(GroupChange.forDelete(existingGroup, authPrincipal), existingGroup).toResult[Group]
     } yield deletedGroup
+
+  def requestGroupMember(
+                          userId: String,
+                          description: Option[String],
+                          status: String,
+                          groupId: String,
+                          authPrincipal: AuthPrincipal
+                        ): Result[Group] =
+    for{
+      existingGroup <- getExistingGroup(groupId)
+      user <- getUser(userId, authPrincipal)
+      _ <- if (existingGroup.memberIds.contains(userId) || existingGroup.adminUserIds.contains(userId))
+        GroupAlreadyExistsError(s"User $userId is already a member of the group").asLeft.toResult
+      else if (existingGroup.membershipAccessStatus.exists(mas =>
+        mas.pendingReviewMember.nonEmpty &&
+          mas.pendingReviewMember.exists(m => m.userId == userId)
+          && (status != "Approved" && status != "Rejected")))
+        GroupAlreadyExistsError(s"User $userId already has a pending membership request").asLeft.toResult
+      else ().asRight.toResult
+      newGroup <- status match {
+        case "Request" =>
+          IO(existingGroup.pendingReviewMember(user, description, authPrincipal)).toResult
+        case "Approved" =>
+          for {
+            _ <- canEditGroup(existingGroup, authPrincipal).toResult
+          } yield existingGroup.approvedMember(user, description, authPrincipal)
+        case "Rejected" =>
+          for {
+            _ <- canEditGroup(existingGroup, authPrincipal).toResult
+          } yield existingGroup.rejectedMember(user, description, authPrincipal)
+        case _ =>
+          InvalidGroupRequestError("Invalid membership transfer status").asLeft.toResult
+      }
+      addedAdmins = newGroup.adminUserIds.diff(existingGroup.adminUserIds)
+      addedNonAdmins = newGroup.memberIds.diff(existingGroup.memberIds).diff(addedAdmins) ++
+        existingGroup.adminUserIds.diff(newGroup.adminUserIds).intersect(newGroup.memberIds)
+      removedMembers = existingGroup.memberIds.diff(newGroup.memberIds)
+      groupChange = GroupChange.forUpdate(newGroup, existingGroup, authPrincipal)
+      _ <- updateGroupData(groupChange, newGroup, existingGroup, addedAdmins, addedNonAdmins, removedMembers).toResult[Unit]
+      _ <- notifiers.notify(Notification(groupChange)).toResult[Unit]
+    } yield newGroup
 
   def createGroupData(
    groupChangeData: GroupChange,

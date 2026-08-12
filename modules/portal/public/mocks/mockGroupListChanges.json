@@ -12,7 +12,12 @@
         "created": "2016-05-24T18:51:03Z",
         "status": "ACTIVE",
         "members": [ { "id": "ok"} ],
-        "admins": [ { "id": "ok"} ]
+        "admins": [ { "id": "ok"} ],
+        "membershipAccessStatus": {
+          "pendingReviewMember": [],
+          "rejectedMember": [],
+          "approvedMember": []
+        }
       },
       "oldVersion": {
         "id": "abc123",
@@ -21,7 +26,12 @@
         "created": "2016-05-24T18:51:03Z",
         "status": "ACTIVE",
         "members": [ { "id": "ok"} ],
-        "admins": [ { "id": "ok"} ]
+        "admins": [ { "id": "ok"} ],
+        "membershipAccessStatus": {
+          "pendingReviewMember": [],
+          "rejectedMember": [],
+          "approvedMember": []
+        }
       },
       "startFrom": 1,
       "nextId": 5,
