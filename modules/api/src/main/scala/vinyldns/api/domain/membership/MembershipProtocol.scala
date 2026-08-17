@@ -103,9 +103,9 @@ object UserInfo {
 }
 
 case class UserResponseInfo(
-    id: String,
-    userName: Option[String] = None,
-    groupMap: Map[String, String] = Map.empty
+      id: String,
+      userName: Option[String] = None,
+      groupMap: Map[String, String] = Map.empty
 )
 
 object UserResponseInfo {
