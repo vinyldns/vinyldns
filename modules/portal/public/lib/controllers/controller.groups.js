@@ -162,7 +162,6 @@ angular.module('controller.groups', []).controller('GroupsController', function 
     $.ui.autocomplete.prototype._renderItem = function(ul, item) {
         var label = $("<div>").text(String(item.label)).html();
         var term = String(this.term || "");
-
         if (term) {
             var escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -171,7 +170,6 @@ angular.module('controller.groups', []).controller('GroupsController', function 
                 "<b>$&</b>"
             );
         }
-
         return $("<li></li>")
             .data("ui-autocomplete-item", item.value)
             .append($("<div></div>").html(label))
