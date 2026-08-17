@@ -231,19 +231,51 @@ describe('Controller: GroupsController', function () {
             [expectedMaxItems, expectedStartFrom, expectedIgnoreAccess, expectedQuery]);
     });
 
-    it('renders group autocomplete labels as text while preserving highlights', function () {
-        document.body.innerHTML = '<input id="group-search-text" />';
+    it('initializes group autocomplete', function () {
+        document.body.innerHTML = '<input id="my-group-search-text" />';
 
         var scope = this.rootScope.$new();
         this.controllerFactory('GroupsController', {'$scope': scope});
 
-        var instance = $('#group-search-text').autocomplete('instance');
+        var instance = $('#my-group-search-text').autocomplete('instance');
+
+        expect(instance).toBeDefined();
+        expect(instance.options.minLength).toBe(1);
+
+        document.body.innerHTML = '';
+    });
+
+    it('initializes all-group autocomplete', function () {
+        document.body.innerHTML = '<input id="all-group-search-text" />';
+
+        var scope = this.rootScope.$new();
+        this.controllerFactory('GroupsController', {'$scope': scope});
+
+        var instance = $('#all-group-search-text').autocomplete('instance');
+
+        expect(instance).toBeDefined();
+        expect(instance.options.minLength).toBe(1);
+
+        document.body.innerHTML = '';
+    });
+
+    it('renders group autocomplete labels as text while preserving highlights', function () {
+        document.body.innerHTML = '<input id="my-group-search-text" />';
+
+        var scope = this.rootScope.$new();
+        this.controllerFactory('GroupsController', {'$scope': scope});
+
+        var instance = $('#my-group-search-text').autocomplete('instance');
+
+        expect(instance).toBeDefined();
+
         var rendered = instance._renderItem($('<ul></ul>'), {
             label: '<img src=x onerror=alert(1)>Team',
             value: '<img src=x onerror=alert(1)>Team'
         });
 
         instance.term = 'Team';
+
         rendered = instance._renderItem($('<ul></ul>'), {
             label: '<img src=x onerror=alert(1)>Team',
             value: '<img src=x onerror=alert(1)>Team'
