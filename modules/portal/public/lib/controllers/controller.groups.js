@@ -160,11 +160,22 @@ angular.module('controller.groups', []).controller('GroupsController', function 
 
     // Autocomplete text-highlight
     $.ui.autocomplete.prototype._renderItem = function(ul, item) {
-            let txt = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
-            return $("<li></li>")
-                  .data("ui-autocomplete-item", item.value)
-                  .append("<div>" + txt + "</div>")
-                  .appendTo(ul);
+        var label = $("<div>").text(String(item.label)).html();
+        var term = String(this.term || "");
+
+        if (term) {
+            var escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+            label = label.replace(
+                new RegExp(escapedTerm, "gi"),
+                "<b>$&</b>"
+            );
+        }
+
+        return $("<li></li>")
+            .data("ui-autocomplete-item", item.value)
+            .append($("<div></div>").html(label))
+            .appendTo(ul);
     };
 
     $scope.createGroup = function (name, email, description) {
