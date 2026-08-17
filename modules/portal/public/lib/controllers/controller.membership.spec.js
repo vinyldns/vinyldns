@@ -501,6 +501,12 @@ describe('Controller: MembershipController', function () {
         expect(this.scope.groupChanges).toEqual(response.data.changes);
     });
 
+    it('formats change messages as plain text with preserved line breaks', function () {
+        expect(this.scope.changeMessage('Sentence one. Sentence two.<script>alert(1)</script>')).toBe(
+            'Sentence one.\nSentence two.<script>alert(1)</script>'
+        );
+    });
+
     it('nextPage should call getGroupChanges with the correct parameters', function () {
 
         var response = {
