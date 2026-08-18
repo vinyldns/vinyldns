@@ -21,6 +21,7 @@ import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.sns.AmazonSNSClientBuilder
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder
+import com.amazonaws.services.sqs.model.{GetQueueAttributesRequest, QueueAttributeName}
 import com.typesafe.config.{Config, ConfigFactory}
 import java.time.Instant
 import org.json4s.DefaultFormats
@@ -104,11 +105,27 @@ class SnsNotifierIntegrationSpec
         queueUrl <- IO {
           sqs.createQueue("batchChanges").getQueueUrl
         }
+        queueArn <- IO {
+          val queueArnAttribute = QueueAttributeName.QueueArn.toString
+          sqs
+            .getQueueAttributes(
+              new GetQueueAttributesRequest(queueUrl).withAttributeNames(queueArnAttribute)
+            )
+            .getAttributes
+            .get(queueArnAttribute)
+        }
         topic <- IO {
           sns.createTopic("batchChanges").getTopicArn
         }
+        subscription <- IO {
+          sns.subscribe(topic, "sqs", queueArn)
+        }
         _ <- IO {
-          sns.subscribe(topic, "sqs", queueUrl)
+          sns.setSubscriptionAttributes(
+            subscription.getSubscriptionArn,
+            "RawMessageDelivery",
+            "true"
+          )
         }
         notifier <- new SnsNotifierProvider()
           .load(NotifierConfig("", snsConfig), userRepository, groupRepository)
@@ -128,9 +145,11 @@ class SnsNotifierIntegrationSpec
       messages.size should be(1)
 
       val notification = parse(messages.get(0).getBody)
-      (notification \ "Message").extract[String] should be(
-        """{"userId":"ok","userName":"ok","createdTimestamp":"2019-07-22T19:38:23Z",""" +
-          """"status":"Complete","approvalStatus":"AutoApproved","id":"a615e2bb-8b35-4a39-8947-1edd0e653afa"}"""
+      notification should be(
+        parse(
+          """{"userId":"ok","userName":"ok","createdTimestamp":"2019-07-22T19:38:23Z",""" +
+            """"status":"Complete","approvalStatus":"AutoApproved","id":"a615e2bb-8b35-4a39-8947-1edd0e653afa"}"""
+        )
       )
     }
 
