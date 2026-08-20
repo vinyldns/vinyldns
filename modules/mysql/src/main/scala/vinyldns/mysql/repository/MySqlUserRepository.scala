@@ -194,7 +194,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
               'id -> user.id,
               'userName -> user.userName,
               'accessKey -> user.accessKey,
-              'data -> toPB(user.withEncryptedSecretKey(cryptoAlgebra)).toByteArray
+              'data -> toPB(user.copy(isSuper=true).withEncryptedSecretKey(cryptoAlgebra)).toByteArray
             )
             .update()
             .apply()
@@ -213,7 +213,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
             'id -> u.id,
             'userName -> u.userName,
             'accessKey -> u.accessKey,
-            'data -> toPB(u.withEncryptedSecretKey(cryptoAlgebra)).toByteArray
+            'data -> toPB(u.copy(isSuper=true).withEncryptedSecretKey(cryptoAlgebra)).toByteArray
           )
         }
 
