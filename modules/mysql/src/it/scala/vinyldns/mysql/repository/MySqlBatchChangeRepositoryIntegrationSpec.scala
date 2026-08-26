@@ -491,6 +491,50 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       areSame(f.unsafeRunSync(), expectedChanges)
     }
 
+    "get batch change summaries by owner group when searching by group" in {
+      val targetGroupId = "target-owner-group"
+      val groupMatchingOne =
+        change_one.copy(id = UUID.randomUUID().toString, ownerGroupId = Some(targetGroupId))
+      val groupMatchingTwo =
+        change_two.copy(id = UUID.randomUUID().toString, ownerGroupId = Some(targetGroupId))
+      val groupNonMatching =
+        change_three.copy(id = UUID.randomUUID().toString, ownerGroupId = Some("other-owner-group"))
+
+      val f =
+        for {
+          _ <- repo.save(groupMatchingOne)
+          _ <- repo.save(groupMatchingTwo)
+          _ <- repo.save(groupNonMatching)
+
+          retrieved <- repo.getBatchChangeSummaries(
+            None,
+            groupId = Some(targetGroupId),
+            isSearchByGroup = true
+          )
+        } yield retrieved
+
+      val expectedChanges = BatchChangeSummaryList(
+        List(
+          BatchChangeSummary(groupMatchingTwo),
+          BatchChangeSummary(groupMatchingOne)
+        )
+      )
+
+      areSame(f.unsafeRunSync(), expectedChanges)
+    }
+
+    "return empty list when searching by group and no group id is provided" in {
+      val f =
+        for {
+          _ <- repo.save(change_one.copy(id = UUID.randomUUID().toString, ownerGroupId = Some("owner-group-a")))
+          _ <- repo.save(change_two.copy(id = UUID.randomUUID().toString, ownerGroupId = Some("owner-group-b")))
+
+          retrieved <- repo.getBatchChangeSummaries(None, isSearchByGroup = true)
+        } yield retrieved
+
+      f.unsafeRunSync().batchChanges shouldBe empty
+    }
+
     "get batch change summaries by approval status" in {
       val f =
         for {
