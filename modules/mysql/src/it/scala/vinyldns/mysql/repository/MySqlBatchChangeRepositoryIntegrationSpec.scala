@@ -20,7 +20,8 @@ import java.util.UUID
 
 import cats.effect._
 import java.time.temporal.ChronoUnit
-import java.time.Instant
+import java.time.{Instant, LocalDateTime, ZoneId}
+import java.time.format.DateTimeFormatter
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -487,6 +488,40 @@ class MySqlBatchChangeRepositoryIntegrationSpec
           BatchChangeSummary(change_one)
         )
       )
+
+      areSame(f.unsafeRunSync(), expectedChanges)
+    }
+
+    "get batch change summaries by date time range" in {
+      val inRangeChange = change_one.copy(
+        id = UUID.randomUUID().toString,
+        createdTimestamp = Instant.now.truncatedTo(ChronoUnit.SECONDS)
+      )
+      val outOfRangeChange = change_two.copy(
+        id = UUID.randomUUID().toString,
+        createdTimestamp = inRangeChange.createdTimestamp.plusSeconds(30)
+      )
+
+      val zoneId = ZoneId.of("UTC")
+      val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+      val startDateTimeRange =
+        LocalDateTime.ofInstant(inRangeChange.createdTimestamp.minusSeconds(5), zoneId).format(formatter)
+      val endDateTimeRange =
+        LocalDateTime.ofInstant(inRangeChange.createdTimestamp.plusSeconds(5), zoneId).format(formatter)
+
+      val f =
+        for {
+          _ <- repo.save(inRangeChange)
+          _ <- repo.save(outOfRangeChange)
+
+          retrieved <- repo.getBatchChangeSummaries(
+            None,
+            dateTimeStartRange = Some(startDateTimeRange),
+            dateTimeEndRange = Some(endDateTimeRange)
+          )
+        } yield retrieved
+
+      val expectedChanges = BatchChangeSummaryList(List(BatchChangeSummary(inRangeChange)))
 
       areSame(f.unsafeRunSync(), expectedChanges)
     }
