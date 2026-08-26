@@ -116,19 +116,65 @@
                         <table class="table">
                             <thead>
                             <tr>
-                                <th>Change Type</th>
-                                <th>Input Name</th>
-                                <th>Recordset Name</th>
-                                <th>Zone Name</th>
-                                <th>Record Type</th>
+                                <th ng-click="sortBy('changeType')" class="sortable-header">
+                                    <span>Change </span><span class="sort-with-icon">Type <i class="fa"
+                                    ng-class="{
+                                        'fa-sort': sortColumn != 'changeType',
+                                        'fa-sort-asc': sortColumn == 'changeType' && !reverseSort,
+                                        'fa-sort-desc': sortColumn == 'changeType' && reverseSort
+                                    }"></i></span>
+                                </th>
+                                <th ng-click="sortBy('inputName')" class="sortable-header">
+                                    <span>Input </span><span class="sort-with-icon">Name <i class="fa"
+                                    ng-class="{
+                                        'fa-sort': sortColumn != 'inputName',
+                                        'fa-sort-asc': sortColumn == 'inputName' && !reverseSort,
+                                        'fa-sort-desc': sortColumn == 'inputName' && reverseSort
+                                    }"></i></span>
+                                </th>
+
+                                <th ng-click="sortBy('recordName')" class="sortable-header">
+                                    <span>Recordset </span><span class="sort-with-icon">Name <i class="fa"
+                                    ng-class="{
+                                        'fa-sort': sortColumn != 'recordName',
+                                        'fa-sort-asc': sortColumn == 'recordName' && !reverseSort,
+                                        'fa-sort-desc': sortColumn == 'recordName' && reverseSort
+                                    }"></i></span>
+                                </th>
+
+                                <th ng-click="sortBy('zoneName')" class="sortable-header">
+                                    Zone Name
+                                    <i class="fa"
+                                    ng-class="{
+                                        'fa-sort': sortColumn != 'zoneName',
+                                        'fa-sort-asc': sortColumn == 'zoneName' && !reverseSort,
+                                        'fa-sort-desc': sortColumn == 'zoneName' && reverseSort
+                                    }"></i>
+                                </th>
+
+                                <th ng-click="sortBy('type')" class="sortable-header">
+                                    <span>Record </span><span class="sort-with-icon">Type <i class="fa"
+                                    ng-class="{
+                                        'fa-sort': sortColumn != 'type',
+                                        'fa-sort-asc': sortColumn == 'type' && !reverseSort,
+                                        'fa-sort-desc': sortColumn == 'type' && reverseSort
+                                    }"></i></span>
+                                </th>
                                 <th class="col-md-2">Record Data</th>
                                 <th>TTL</th>
-                                <th>Status</th>
+                                <th ng-click="sortBy('status')" class="sortable-header">
+                                    <span class="sort-with-icon">Status <i class="fa"
+                                    ng-class="{
+                                        'fa-sort': sortColumn != 'status',
+                                        'fa-sort-asc': sortColumn == 'status' && !reverseSort,
+                                        'fa-sort-desc': sortColumn == 'status' && reverseSort
+                                    }"></i></span>
+                                </th>
                                 <th class="col-md-2">Additional Info</th>
                             </tr>
                             </thead>
                             <tbody>
-                            <tr ng-repeat="change in batch.changes|filter:query" ng-class="{changeError: change.outstandingErrors}">
+                            <tr ng-repeat="change in batch.changes|filter:query|orderBy:sortColumn:reverseSort" ng-class="{changeError: change.outstandingErrors}">
                                 <td ng-bind="change.changeType"></td>
                                 <td class="wrap-long-text">{{change.inputName}}</td>
                                 <td class="wrap-long-text">{{change.recordName}}</td>

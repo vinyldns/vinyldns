@@ -654,3 +654,16 @@ input[type="file"] {
     background-color: #f0f0f0;
     border-radius: 4px;
 }
+
+.sortable-header {
+    cursor: pointer;
+}
+
+.sortable-header .fa {
+    margin-left: 4px;
+    font-size: 11px;
+}
+
+.sort-with-icon {
+    white-space: nowrap;
+}

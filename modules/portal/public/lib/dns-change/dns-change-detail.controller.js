@@ -25,6 +25,8 @@
             $scope.reviewComment;
             $scope.reviewConfirmationMsg;
             $scope.reviewType;
+            $scope.sortColumn = null;
+            $scope.reverseSort = false;
 
             // Initialize Bootstrap tooltips
             $(document).ready(function() {
@@ -37,6 +39,15 @@
                 // Trigger success alert using utilityService
                 var alert = utilityService.success('Successfully copied Batch ID to clipboard');
                 $scope.alerts.push(alert);
+            };
+
+            $scope.sortBy = function(column) {
+                if ($scope.sortColumn === column) {
+                    $scope.reverseSort = !$scope.reverseSort;
+                } else {
+                    $scope.sortColumn = column;
+                    $scope.reverseSort = false;
+                }
             };
 
             $scope.getBatchChange = function(batchChangeId) {
