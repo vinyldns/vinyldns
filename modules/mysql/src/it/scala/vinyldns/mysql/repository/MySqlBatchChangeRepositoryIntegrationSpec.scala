@@ -315,6 +315,7 @@ class MySqlBatchChangeRepositoryIntegrationSpec
     "save/get a batch change with BatchChangeApprovalStatus.Cancelled" in {
       val testBatch =
         randomBatchChange().copy(approvalStatus = BatchChangeApprovalStatus.Cancelled)
+      
       val f =
         for {
           _ <- repo.save(testBatch)
