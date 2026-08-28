@@ -331,6 +331,12 @@ class VinylDNS @Inject() (
           vinyldnsServiceBackend
         )
     ).as("text/csv")
+      .withHeaders(
+        cacheHeaders: _*
+      )
+      .withHeaders(
+        "Content-Disposition" -> "attachment; filename=\"credentials.csv\""
+      )
   }
 
   def serveCredsFile(fileName: String): Action[AnyContent] = frontendAction.async {
