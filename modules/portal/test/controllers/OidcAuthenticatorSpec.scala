@@ -59,14 +59,15 @@ class OidcAuthenticatorSpec extends Specification with Mockito {
 
   val goodToken: String =
     s"""{"username":"un",
-       |"firstname":"First",
-       |"lastname":"Last",
-       |"email":"test@test.com",
-       |"tid":"test-tenant-id",
-       |"aud":"test-client-id",
-       |"exp": $futureTime,
-       |"iat": $pastTime,
-       |"nbf": $pastTime}""".stripMargin
+      |"firstname":"First",
+      |"lastname":"Last",
+      |"email":"test@test.com",
+      |"tid":"test-tenant-id",
+      |"aud":"test-client-id",
+      |"nonce":"test-nonce",
+      |"exp": $futureTime,
+      |"iat": $pastTime,
+      |"nbf": $pastTime}""".stripMargin
 
   val jwtClaims: JWTClaimsSet = JWTClaimsSet.parse(goodToken)
 
@@ -92,7 +93,10 @@ class OidcAuthenticatorSpec extends Specification with Mockito {
   "OidcAuthenticator" should {
     "Initial code call" should {
       "properly generate the code call" in {
-        val codeCall = testOidcAuthenticator.getCodeCall("/abcd")
+        val state = "test-state"
+        val nonce = "test-nonce"
+
+        val codeCall = testOidcAuthenticator.getCodeCall("/abcd", state, nonce)
         val query = codeCall.queryString().get
 
         codeCall.toString must startWith("http://test.authorization.url")
@@ -100,33 +104,56 @@ class OidcAuthenticatorSpec extends Specification with Mockito {
         query must contain("response_type=code")
         query must contain("redirect_uri=http://localhost:9001/callback")
         query must contain("scope=openid+profile+email")
-        query must contain("nonce")
+        query must contain("state=test-state")
+        query must contain("nonce=test-nonce")
       }
       "properly handle code call response" in {
-        val request = FakeRequest("GET", "/callback?code=asdasdasdasd")
+        val request = FakeRequest("GET", "/callback?code=asdasdasdasd&state=test-state")
 
-        val out = testOidcAuthenticator.getCodeFromAuthResponse(request)
+        val out = testOidcAuthenticator.getCodeFromAuthResponse(request, "test-state")
         out must beRight(new AuthorizationCode("asdasdasdasd"))
       }
-      "fail if no code in code call response" in {
-        val request = FakeRequest("GET", "/callback?boo=asdasdasdasd")
+      "fail if state does not match" in {
+        val request =
+          FakeRequest("GET", "/callback?code=asdasdasdasd&state=wrong-state")
 
-        val out = testOidcAuthenticator.getCodeFromAuthResponse(request)
+        val out =
+          testOidcAuthenticator.getCodeFromAuthResponse(request, "test-state")
+
+        out must beLeft(
+          ErrorResponse(400, "Invalid OIDC state")
+        )
+      }
+      "fail if state is missing" in {
+        val request =
+          FakeRequest("GET", "/callback?code=asdasdasdasd")
+
+        val out =
+          testOidcAuthenticator.getCodeFromAuthResponse(request, "test-state")
+
+        out must beLeft(
+          ErrorResponse(400, "Invalid OIDC state")
+        )
+      }
+      "fail if no code in code call response" in {
+        val request = FakeRequest("GET", "/callback?boo=asdasdasdasd&state=test-state")
+
+        val out = testOidcAuthenticator.getCodeFromAuthResponse(request, "test-state")
         out must beLeft(ErrorResponse(500, "No code value in getCodeFromAuthResponse"))
       }
       "fail if there is some other parse error in the code response" in {
-        val request = FakeRequest("GET", "/callback?code=")
+        val request = FakeRequest("GET", "/callback?code=&state=test-state")
 
-        val out = testOidcAuthenticator.getCodeFromAuthResponse(request)
+        val out = testOidcAuthenticator.getCodeFromAuthResponse(request, "test-state")
         out must beLeft.like {
           case e: ErrorResponse => e.code == 500
         }
       }
       "fail if some other error in code call response" in {
         val request =
-          FakeRequest("GET", "/callback?error=invalid_request&error_description=something-bad")
+          FakeRequest("GET", "/callback?error=invalid_request&error_description=something-bad&state=test-state")
 
-        val out = testOidcAuthenticator.getCodeFromAuthResponse(request)
+        val out = testOidcAuthenticator.getCodeFromAuthResponse(request, "test-state")
         out must beLeft(ErrorResponse(302, "Sign in error: something-bad"))
       }
     }
@@ -229,6 +256,49 @@ class OidcAuthenticatorSpec extends Specification with Mockito {
 
         testOidcAuthenticator.getValidUsernameFromToken(tokenInfo) must beNone
       }
+      "fail if nonce is invalid" in {
+        val tokenInfo =
+          s"""{"username":"un",
+            |"tid":"test-tenant-id",
+            |"aud":"test-client-id",
+            |"firstname":"First",
+            |"lastname":"Last",
+            |"exp": $futureTime,
+            |"iat": $pastTime,
+            |"nbf": $pastTime,
+            |"nonce":"wrong-nonce",
+            |"email":"test@test.com"}""".stripMargin
+
+        testOidcAuthenticator.isValidIdToken(
+          JWTClaimsSet.parse(tokenInfo),
+          Some("test-nonce")
+        ) must beFalse
+      }
+
+      "fail if nonce is missing" in {
+        val tokenInfo =
+          s"""{"username":"un",
+            |"tid":"test-tenant-id",
+            |"aud":"test-client-id",
+            |"firstname":"First",
+            |"lastname":"Last",
+            |"exp": $futureTime,
+            |"iat": $pastTime,
+            |"nbf": $pastTime,
+            |"email":"test@test.com"}""".stripMargin
+
+        testOidcAuthenticator.isValidIdToken(
+          JWTClaimsSet.parse(tokenInfo),
+          Some("test-nonce")
+        ) must beFalse
+      }
+
+      "succeed if nonce matches" in {
+        testOidcAuthenticator.isValidIdToken(
+          jwtClaims,
+          Some("test-nonce")
+        ) must beTrue
+      }
     }
     "handleCallbackResponse" should {
       val unsignedTestKey = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9." +
@@ -247,7 +317,31 @@ class OidcAuthenticatorSpec extends Specification with Mockito {
           """
         testResponse.setContent(body)
 
-        testOidcAuthenticator.handleCallbackResponse(testResponse) must beRight(jwtClaims)
+        testOidcAuthenticator.handleCallbackResponse(
+          testResponse,
+          Some("test-nonce")
+        ) must beRight(jwtClaims)
+      }
+      "fail with invalid nonce" in {
+        val testResponse = new HTTPResponse(200)
+        testResponse.setHeader("Content-Type", "application/json", "charset=utf-8")
+
+        val body =
+          s"""{
+              "access_token": "$unsignedTestKey",
+              "token_type": "Bearer",
+              "id_token": "$unsignedTestKey"
+              }
+          """
+
+        testResponse.setContent(body)
+
+        testOidcAuthenticator.handleCallbackResponse(
+          testResponse,
+          Some("wrong-nonce")
+        ) must beLeft(
+          ErrorResponse(500, "Invalid ID token response received from from OIDC provider")
+        )
       }
       "respond with errors if given" in {
         val testResponse = new HTTPResponse(400)

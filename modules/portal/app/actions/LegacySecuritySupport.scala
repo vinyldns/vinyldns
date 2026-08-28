@@ -30,7 +30,6 @@ class LegacySecuritySupport @Inject() (
 ) extends AbstractController(components)
     with SecuritySupport {
   private val logger = LoggerFactory.getLogger(classOf[LegacySecuritySupport])
-
   def frontendAction: FrontendActionBuilder =
     new LegacyFrontendAction(
       userAccountAccessor.get,
@@ -48,7 +47,16 @@ class LegacySecuritySupport @Inject() (
           case Some(_) => Redirect(request.getQueryString("target").getOrElse("/index"))
           case None =>
             logger.info(s"No ${VinylDNS.ID_TOKEN} in session; Initializing oidc login")
-            Redirect(oidcAuthenticator.getCodeCall(request.uri).toString, 302)
+            val state = oidcAuthenticator.generateState()
+            val nonce = oidcAuthenticator.generateNonce()
+
+            Redirect(
+              oidcAuthenticator.getCodeCall(request.uri, state, nonce).toString,
+              302
+            ).withSession(
+              "oidc_state" -> state,
+              "oidc_nonce" -> nonce
+            )
         }
       } else {
         request.session.get("username") match {
