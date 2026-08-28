@@ -457,6 +457,19 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
         }
       }
 
+        "escape LDAP filter characters in the username when authenticating" in {
+          val mocks = createMocks
+          val username = "*)(mail=foo*"
+          val response = mocks.byDomainAuthenticator.authenticate(testDomain1, username, "bar")
+
+          response must beRight
+
+          val usernameFilterCapture = new ArgumentCapture[String]
+          there.was(one(mocks.context).search(anyString, usernameFilterCapture, any[SearchControls]))
+
+          usernameFilterCapture.value mustEqual "(sAMAccountName=\\2a\\29\\28mail=foo\\2a)"
+        }
+
       "and result.hasMore is false" in {
         val mocks = createMocks
         mocks.searchResults.hasMore.returns(false)
@@ -530,6 +543,22 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
           there.was(one(mocks.attributes).get("sn"))
         }
       }
+
+      "escape LDAP filter characters in the username when looking up a user" in {
+        val mocks = createMocks
+        val serviceAccount = ServiceAccount("second", "serviceuser", "servicepass")
+        val username = "*)(mail=foo*"
+
+        val response = mocks.byDomainAuthenticator.lookup(testDomain1, username, serviceAccount)
+
+        response must beRight
+
+        val usernameFilterCapture = new ArgumentCapture[String]
+        there.was(one(mocks.context).search(anyString, usernameFilterCapture, any[SearchControls]))
+
+        usernameFilterCapture.value mustEqual "(sAMAccountName=\\2a\\29\\28mail=foo\\2a)"
+      }
+
       "return a Failure if the user does not exist" in {
         val mocks = createMocks
         val serviceAccount = ServiceAccount("first", "foo", "bar")
