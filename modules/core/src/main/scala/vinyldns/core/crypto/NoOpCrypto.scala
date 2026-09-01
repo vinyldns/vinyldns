@@ -17,16 +17,24 @@
 package vinyldns.core.crypto
 
 import com.typesafe.config.{Config, ConfigFactory}
+import org.slf4j.LoggerFactory
 
 /**
-  * Provides a no op implementation of Crypto.  Does not actually do any encryption.
+  * Provides a no-op implementation of Crypto that performs no encryption.
   *
-  * Note: This is not recommended for use in production!
+  * WARNING: This implementation stores all secret values as plaintext.
+  * It must NOT be used in production environments.
   *
-  * @param config - [[com.typesafe.config.Config]] that holds the no-op configuration.  This is required in order
-  *               to dynamically load this Crypto implementation.  However, it is not used.
+  * @param config - [[com.typesafe.config.Config]] required for dynamic class loading; not used internally.
   */
 class NoOpCrypto(val config: Config) extends CryptoAlgebra {
+
+  private val logger = LoggerFactory.getLogger(classOf[NoOpCrypto])
+  logger.warn(
+    "NoOpCrypto is active: secret values will be stored as plaintext. " +
+      "This configuration is not safe for production use."
+  )
+
   def this() {
     this(ConfigFactory.load())
   }

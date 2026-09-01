@@ -35,8 +35,12 @@ class JavaCrypto(cryptoConfig: Config) extends CryptoAlgebra {
   private val zeroByte = 0.toByte
   private val zeroChar = 0.toChar
 
-  // Assumes that secret is stored as 64-char hex string (32 bytes)
+  // Secret must be a 64-char hex string representing a 256-bit (32-byte) AES key.
   private val secret = DatatypeConverter.parseHexBinary(cryptoConfig.getString("secret"))
+  require(
+    secret.length == 32,
+    s"JavaCrypto requires a 256-bit key (64 hex chars); got ${secret.length * 8}-bit key"
+  )
   private val ivLength = 16 // Java AES has a fixed block size of 16 bytes, regardless of key size
 
   private val encryptedPrefix = "ENC:" // Prefix used to indicate encrypted strings
@@ -55,8 +59,8 @@ class JavaCrypto(cryptoConfig: Config) extends CryptoAlgebra {
       // Return already encrypted string
       value
     } else {
-      // Encode
-      val inBytes = StandardCharsets.UTF_8.encode(value)
+      // Encode exactly the UTF-8 bytes for this string (no ByteBuffer backing-array over-allocation).
+      val inBytes = value.getBytes(StandardCharsets.UTF_8)
 
       // Generate a new initialization vector (IV)
       val iv = new Array[Byte](ivLength)
@@ -66,14 +70,14 @@ class JavaCrypto(cryptoConfig: Config) extends CryptoAlgebra {
       val secretKeySpec = new SecretKeySpec(secret, "AES")
 
       // Perform encryption
-      val encryptedBytes = cipher(secretKeySpec, iv, encryptMode = true).doFinal(inBytes.array)
+      val encryptedBytes = cipher(secretKeySpec, iv, encryptMode = true).doFinal(inBytes)
 
       // Convert cipher text string and pre-pend IV
       try {
         encryptedPrefix + (ByteVector(iv) ++ ByteVector(encryptedBytes)).toBase64
       } finally {
         // Clean up memory
-        nullByteArray(inBytes.array)
+        nullByteArray(inBytes)
         nullByteArray(iv)
         nullByteArray(encryptedBytes)
       }
@@ -109,8 +113,9 @@ class JavaCrypto(cryptoConfig: Config) extends CryptoAlgebra {
           .doFinal(cipherText.toArray)
 
       try {
-        // Need to trim string since decrypted padded data can result in longer lengths despite same data
-        new String(plainTextBytes, "UTF-8").trim
+        // trim() removes trailing null bytes that may remain from ciphertext produced by older versions
+        // of this class (which over-allocated the plaintext byte array via ByteBuffer.array()).
+        new String(plainTextBytes, StandardCharsets.UTF_8).trim
       } finally {
         // Clean up memory
         nullCharArray(actualString.toCharArray)
