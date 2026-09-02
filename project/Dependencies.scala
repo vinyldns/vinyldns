@@ -56,6 +56,8 @@ object Dependencies {
     "com.sun.mail"              %  "javax.mail"                     % "1.6.2",
     "javax.mail"                %  "javax.mail-api"                 % "1.6.2",
     "com.amazonaws"             %  "aws-java-sdk-sns"               % awsV withSources(),
+    "com.networknt"             % "json-schema-validator"           % "1.5.2",
+    "com.fasterxml.jackson.module" %% "jackson-module-scala"        % "2.18.0",
     "co.elastic.logging"        %  "log4j2-ecs-layout"              % "1.7.0",
     "com.cronutils"             %  "cron-utils"                     % "9.1.6"
   )
@@ -77,6 +79,8 @@ object Dependencies {
     "javax.activation"          %  "activation"                     % "1.1.1",
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
+    "org.json4s"                %% "json4s-ext"                     % "3.6.1",
+    "org.json4s"                %% "json4s-jackson"                 % "3.5.3",
     "co.elastic.logging"        %  "log4j2-ecs-layout"              % "1.7.0",
     "com.github.seancfoley"     %  "ipaddress"                      % "5.3.4"
   )

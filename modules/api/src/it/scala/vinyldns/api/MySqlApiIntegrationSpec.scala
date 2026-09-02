@@ -32,6 +32,11 @@ trait MySqlApiIntegrationSpec extends MySqlIntegrationSpec {
       s.executeUpdate("DELETE FROM zone")
     }
 
+  def clearGenerateZoneRepo(): Unit =
+    DB.localTx { s =>
+      s.executeUpdate("DELETE FROM generate_zone")
+    }
+
   def clearGroupRepo(): Unit =
     DB.localTx { s =>
       s.executeUpdate("DELETE FROM `groups`")

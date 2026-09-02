@@ -29,7 +29,6 @@ import vinyldns.api.config.ValidEmailConfig
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.membership.{EmailValidationError, MembershipService}
 import vinyldns.core.domain.record.RecordSetRepository
-//import vinyldns.api.domain.membership.{EmailValidationError, MembershipService}
 import vinyldns.api.repository.TestDataLoader
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
@@ -40,6 +39,7 @@ import vinyldns.core.TestZoneData._
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.backend.BackendResolver
+
 
 class ZoneServiceSpec
     extends AnyWordSpec
@@ -65,7 +65,8 @@ class ZoneServiceSpec
   private val mockGroupChangeRepo = mock[GroupChangeRepository]
   private val mockRecordSetRepo = mock[RecordSetRepository]
   private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com", "*dummy.com"),2)
-  private val mockValidEmailConfigNew = ValidEmailConfig(valid_domains = List(),2)
+  private val mockValidEmailConfigEmpty = ValidEmailConfig(valid_domains = List(),2)
+
   private val mockMembershipService = new MembershipService(mockGroupRepo,
     mockUserRepo,
     mockMembershipRepo,
@@ -120,22 +121,7 @@ class ZoneServiceSpec
       mockZoneRepo,
       mockGroupChangeRepo,
       mockRecordSetRepo,
-      mockValidEmailConfigNew)
-  )
-
-  private val createZoneAuthorized = CreateZoneInput(
-    "ok.zone.recordsets.",
-    "test@test.com",
-    connection = testConnection,
-    adminGroupId = okGroup.id
-  )
-
-  private val updateZoneAuthorized = UpdateZoneInput(
-    okZone.id,
-    "ok.zone.recordsets.",
-    "test@test.com",
-    connection = testConnection,
-    adminGroupId = okGroup.id
+      mockValidEmailConfigEmpty)
   )
 
   override protected def beforeEach(): Unit = {
@@ -144,7 +130,8 @@ class ZoneServiceSpec
     doReturn(IO.unit).when(mockMessageQueue).send(any[ZoneChange])
   }
 
-  "Creating Zones" should {
+
+  "Connecting Zones" should {
     "return an appropriate zone change response" in {
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
 
@@ -253,6 +240,7 @@ class ZoneServiceSpec
       val error = underTest.connectToZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
       error shouldBe an[InvalidRequest]
     }
+
     "return the result if the zone created includes an valid email" in {
       doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
 

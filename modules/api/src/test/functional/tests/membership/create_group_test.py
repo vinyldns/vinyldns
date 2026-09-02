@@ -41,7 +41,7 @@ def test_create_group_success_wildcard(shared_zone_test_context):
 
     try:
         new_group = {
-            "name": "test-create-group-success_wildcard{shared_zone_test_context.partition_id}",
+            "name": f"test-create-group-success-wildcard{shared_zone_test_context.partition_id}",
             "email": "test@ok.dummy.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],
@@ -72,7 +72,7 @@ def test_create_group_success_number_of_dots(shared_zone_test_context):
 
     try:
         new_group = {
-            "name": "test-create-group-success_wildcard{shared_zone_test_context.partition_id}",
+            "name": f"test-create-group-success-number-of-dots{shared_zone_test_context.partition_id}",
             "email": "test@ok.dummy.com",
             "description": "this is a description",
             "members": [{"id": "ok"}],

@@ -19,6 +19,7 @@ package vinyldns.core.domain.zone
 import java.util.UUID
 import cats.effect.IO
 import com.typesafe.config.Config
+
 import java.time.temporal.ChronoUnit
 import java.time.Instant
 import pureconfig.{ConfigReader, ConfigSource}
@@ -26,7 +27,10 @@ import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.{Encrypted, Encryption}
+import vinyldns.core.domain.zone.generate.DnsProviderApiConnection
+
 import scala.collection.JavaConverters._
+
 
 object ZoneStatus extends Enumeration {
   type ZoneStatus = Value
@@ -88,8 +92,8 @@ final case class Zone(
 }
 
 object Zone {
-  def apply(createZoneInput: CreateZoneInput, isTest: Boolean): Zone = {
-    import createZoneInput._
+  def apply(connectZoneInput: ConnectZoneInput, isTest: Boolean): Zone = {
+    import connectZoneInput._
 
     Zone(
       name,
@@ -123,8 +127,7 @@ object Zone {
     )
   }
 }
-
-final case class CreateZoneInput(
+final case class ConnectZoneInput(
     name: String,
     email: String,
     connection: Option[ZoneConnection] = None,
@@ -228,7 +231,8 @@ final case class LegacyDnsBackend(
 final case class ConfiguredDnsConnections(
     defaultZoneConnection: ZoneConnection,
     defaultTransferConnection: ZoneConnection,
-    dnsBackends: List[LegacyDnsBackend]
+    dnsBackends: List[LegacyDnsBackend],
+    dnsProviderApiConnection : DnsProviderApiConnection
 )
 object ConfiguredDnsConnections {
   def load(config: Config, cryptoConfig: Config): IO[ConfiguredDnsConnections] =
@@ -272,6 +276,8 @@ object ConfiguredDnsConnections {
         } else List.empty
       }
 
-      ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends)
-    }
+      val dnsProviderApiConfig = DnsProviderApiConnection.load(config, crypto)
+
+      ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends, dnsProviderApiConfig)
+}
 }

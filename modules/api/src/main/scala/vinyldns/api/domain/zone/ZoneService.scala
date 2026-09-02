@@ -24,7 +24,7 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
-import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.{ZoneCommandResult, _}
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.backend.BackendResolver
@@ -44,7 +44,7 @@ object ZoneService {
       backendResolver: BackendResolver,
       crypto: CryptoAlgebra,
       membershipService:MembershipService
-  ): ZoneService =
+           ): ZoneService =
     new ZoneService(
       dataAccessor.zoneRepository,
       dataAccessor.groupRepository,
@@ -71,29 +71,29 @@ class ZoneService(
     accessValidation: AccessValidationsAlgebra,
     backendResolver: BackendResolver,
     crypto: CryptoAlgebra,
-    membershipService:MembershipService
-) extends ZoneServiceAlgebra {
+    membershipService: MembershipService
+                 ) extends ZoneServiceAlgebra {
 
   import accessValidation._
   import zoneValidations._
   import Interfaces._
 
   def connectToZone(
-      createZoneInput: CreateZoneInput,
+      connectZoneInput: ConnectZoneInput,
       auth: AuthPrincipal
   ): Result[ZoneCommandResult] =
     for {
-      _ <- isValidZoneAcl(createZoneInput.acl).toResult
-      _ <- membershipService.emailValidation(createZoneInput.email)
-      _ <- connectionValidator.isValidBackendId(createZoneInput.backendId).toResult
-      _ <- validateSharedZoneAuthorized(createZoneInput.shared, auth.signedInUser).toResult
-      _ <- zoneDoesNotExist(createZoneInput.name)
-      _ <- adminGroupExists(createZoneInput.adminGroupId)
-      _ <- if(createZoneInput.recurrenceSchedule.isDefined) canScheduleZoneSync(auth).toResult else IO.unit.toResult
-      isCronStringValid = if(createZoneInput.recurrenceSchedule.isDefined) isValidCronString(createZoneInput.recurrenceSchedule.get) else true
+      _ <- isValidZoneAcl(connectZoneInput.acl).toResult
+      _ <- membershipService.emailValidation(connectZoneInput.email)
+      _ <- connectionValidator.isValidBackendId(connectZoneInput.backendId).toResult
+      _ <- validateSharedZoneAuthorized(connectZoneInput.shared, auth.signedInUser).toResult
+      _ <- zoneDoesNotExist(connectZoneInput.name)
+      _ <- adminGroupExists(connectZoneInput.adminGroupId)
+      _ <- if(connectZoneInput.recurrenceSchedule.isDefined) canScheduleZoneSync(auth).toResult else IO.unit.toResult
+      isCronStringValid = if(connectZoneInput.recurrenceSchedule.isDefined) isValidCronString(connectZoneInput.recurrenceSchedule.get) else true
       _ <- validateCronString(isCronStringValid).toResult
-      _ <- canChangeZone(auth, createZoneInput.name, createZoneInput.adminGroupId).toResult
-      createdZoneInput = if(createZoneInput.recurrenceSchedule.isDefined) createZoneInput.copy(scheduleRequestor = Some(auth.signedInUser.userName)) else createZoneInput
+      _ <- canChangeZone(auth, connectZoneInput.name, connectZoneInput.adminGroupId).toResult
+      createdZoneInput = if(connectZoneInput.recurrenceSchedule.isDefined) connectZoneInput.copy(scheduleRequestor = Some(auth.signedInUser.userName)) else connectZoneInput
       zoneToCreate = Zone(createdZoneInput, auth.isTestUser)
       _ <- connectionValidator.validateZoneConnections(zoneToCreate)
       createZoneChange <- ZoneChangeGenerator.forAdd(zoneToCreate, auth).toResult
@@ -116,8 +116,11 @@ class ZoneService(
       isCronStringValid = if(updateZoneInput.recurrenceSchedule.isDefined) isValidCronString(updateZoneInput.recurrenceSchedule.get) else true
       _ <- validateCronString(isCronStringValid).toResult
       _ <- adminGroupExists(updateZoneInput.adminGroupId)
-      // if admin group changes, this confirms user has access to new group
-      _ <- canChangeZone(auth, updateZoneInput.name, updateZoneInput.adminGroupId).toResult
+      // canChangeZone authorizes purely on admin group membership, so only re-check when the
+      // admin group actually changes (confirms the user has access to the new group).
+      _ <- if (updateZoneInput.adminGroupId != existingZone.adminGroupId)
+        canChangeZone(auth, updateZoneInput.name, updateZoneInput.adminGroupId).toResult
+      else IO.unit.toResult
       updatedZoneInput = if(updateZoneInput.recurrenceSchedule.isDefined) updateZoneInput.copy(scheduleRequestor = Some(auth.signedInUser.userName)) else updateZoneInput
       zoneWithUpdates = Zone(updatedZoneInput, existingZone)
       _ <- validateZoneConnectionIfChanged(zoneWithUpdates, existingZone)
