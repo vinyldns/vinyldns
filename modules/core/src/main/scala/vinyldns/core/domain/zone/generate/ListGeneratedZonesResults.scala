@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package vinyldns.core.domain.zone
+package vinyldns.core.domain.zone.generate
 
-case class ListZonesResults(
-    zones: List[Zone] = List[Zone](),
-    nextId: Option[String] = None,
-    startFrom: Option[String] = None,
-    maxItems: Int = 100,
-    ignoreAccess: Boolean = false,
-    zonesFilter: Option[String] = None,
-    includeReverse: Boolean = true
-)
+case class ListGeneratedZonesResults(
+                                      generatedZones: List[GenerateZone] = List[GenerateZone](),
+                                      nextId: Option[String] = None,
+                                      startFrom: Option[String] = None,
+                                      maxItems: Int = 100,
+                                      zonesFilter: Option[String] = None
+                                    )

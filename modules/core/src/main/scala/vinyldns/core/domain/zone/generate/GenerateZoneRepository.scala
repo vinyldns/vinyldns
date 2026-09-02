@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package vinyldns.core.domain.zone
+package vinyldns.core.domain.zone.generate
 
 import cats.effect._
 import vinyldns.core.domain.auth.AuthPrincipal

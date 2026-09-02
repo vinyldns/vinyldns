@@ -39,6 +39,7 @@ import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate._
 
 class ZoneRoutingSpec
     extends AnyWordSpec
@@ -247,9 +248,9 @@ class ZoneRoutingSpec
     LimitsConfig(100,100,1000,1500,100,100,100)
 
   val zoneRoute: Route =
-    new ZoneRoute(TestZoneService,testLimitConfig, new TestVinylDNSAuthenticator(okAuth), crypto).getRoutes
+    new ZoneRoute(TestZoneService, TestZoneService, testLimitConfig, new TestVinylDNSAuthenticator(okAuth), crypto).getRoutes
 
-  object TestZoneService extends ZoneServiceAlgebra {
+  object TestZoneService extends ZoneServiceAlgebra with GenerateZoneServiceAlgebra {
     def connectToZone(
                        ConnectZoneInput: ConnectZoneInput,
                        auth: AuthPrincipal
@@ -767,13 +768,11 @@ class ZoneRoutingSpec
         case notAuthorized.email => Left(NotAuthorizedError(s"$updateZoneInput"))
         case badAdminId.email => Left(InvalidGroupError(s"$updateZoneInput"))
         case ok.email | connectionOk.email =>
-          Right(
-            updateBindZone
-          )
+          Right(generateBindZone)
         case error.email => Left(new RuntimeException("fail"))
         case zone1.email => Left(ZoneUnavailableError(s"$updateZoneInput"))
       }
-      outcome.map(c => c.asInstanceOf[GenerateZone]).toResult
+      outcome.toResult
     }
 
     def handleDeleteGeneratedZoneRequest(zoneId: String, auth: AuthPrincipal): Result[GenerateZone] = {

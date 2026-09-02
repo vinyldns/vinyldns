@@ -35,7 +35,7 @@ class ListGeneratedZonesTestContext(object):
                 "groupId": self.list_generate_zones_group["id"],
                 "email": "test@test.com",
                 "provider": "powerdns",
-                "zoneName": f"list-zones-test-searched-1{partition_id}.",
+                "zoneName": f"list-generated-zones-test-searched-1{partition_id}.",
                 "providerParams": {
                     "kind": "Native",
                     "nameservers": [
@@ -50,7 +50,7 @@ class ListGeneratedZonesTestContext(object):
                 "groupId": self.list_generate_zones_group["id"],
                 "email": "test@test.com",
                 "provider": "powerdns",
-                "zoneName": f"list-zones-test-searched-2{partition_id}.",
+                "zoneName": f"list-generated-zones-test-searched-2{partition_id}.",
                 "providerParams": {
                     "kind": "Native",
                     "nameservers": [
@@ -65,7 +65,7 @@ class ListGeneratedZonesTestContext(object):
                 "groupId": self.list_generate_zones_group["id"],
                 "email": "test@test.com",
                 "provider": "powerdns",
-                "zoneName": f"list-zones-test-searched-3{partition_id}.",
+                "zoneName": f"list-generated-zones-test-searched-3{partition_id}.",
                 "providerParams": {
                     "kind": "Native",
                     "nameservers": [
@@ -80,7 +80,7 @@ class ListGeneratedZonesTestContext(object):
                 "groupId": self.list_generate_zones_group["id"],
                 "email": "test@test.com",
                 "provider": "powerdns",
-                "zoneName": f"list-zones-test-unfiltered-1{partition_id}.",
+                "zoneName": f"list-generated-zones-test-unfiltered-1{partition_id}.",
                 "providerParams": {
                     "kind": "Native",
                     "nameservers": [
@@ -95,7 +95,7 @@ class ListGeneratedZonesTestContext(object):
                 "groupId": self.list_generate_zones_group["id"],
                 "email": "test@test.com",
                 "provider": "powerdns",
-                "zoneName": f"list-zones-test-unfiltered-2{partition_id}.",
+                "zoneName": f"list-generated-zones-test-unfiltered-2{partition_id}.",
                 "providerParams": {
                     "kind": "Native",
                     "nameservers": [

@@ -46,6 +46,7 @@ import vinyldns.core.domain.backend.BackendResolver
 import vinyldns.core.domain.membership.{GroupRepository, UserRepository}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate._
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -107,6 +108,7 @@ class ZoneServiceIntegrationSpec
 
   private val mockGenerateZoneRepository: GenerateZoneRepository = generateZoneRepository
   private var testZoneService: ZoneServiceAlgebra = _
+  private var testGenerateZoneService: GenerateZoneServiceAlgebra = _
 
   private val badAuth = AuthPrincipal(okUser, Seq())
 
@@ -202,9 +204,17 @@ class ZoneServiceIntegrationSpec
       new AccessValidations(),
       mockBackendResolver,
       NoOpCrypto.instance,
+      mockMembershipService
+    )
+    testGenerateZoneService = new GenerateZoneService(
+      zoneRepo,
+      mock[GroupRepository],
+      mockGenerateZoneRepository,
+      new ZoneValidations(1000),
+      new AccessValidations(),
+      NoOpCrypto.instance,
       mockMembershipService,
-      mockDnsProviderApiConnection,
-      mockGenerateZoneRepository
+      mockDnsProviderApiConnection
     )
   }
 
@@ -249,7 +259,7 @@ class ZoneServiceIntegrationSpec
   "Generate Zone" should {
     "return a zone with appropriate response" in {
       val result =
-        testZoneService
+        testGenerateZoneService
           .getGenerateZoneByName(okZone.name, okAuth)
           .value
           .unsafeRunSync()
@@ -258,7 +268,7 @@ class ZoneServiceIntegrationSpec
 
     "return a ZoneNotFoundError for zone does not exists" in {
       val result =
-        testZoneService
+        testGenerateZoneService
           .getGenerateZoneByName(abcZone.name, abcAuth)
           .value
           .unsafeRunSync()
@@ -267,7 +277,7 @@ class ZoneServiceIntegrationSpec
 
     "return a name servers with appropriate response" in {
       val result =
-        testZoneService
+        testGenerateZoneService
           .dnsNameServers()
           .value
           .unsafeRunSync()
@@ -277,7 +287,7 @@ class ZoneServiceIntegrationSpec
     }
     "return a allowed providers with appropriate response" in {
       val result =
-        testZoneService
+        testGenerateZoneService
           .allowedDNSProviders()
           .value
           .unsafeRunSync()

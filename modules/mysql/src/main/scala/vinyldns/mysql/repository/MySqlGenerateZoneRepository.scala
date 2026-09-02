@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.zone.{GenerateZone, GenerateZoneRepository, ListGeneratedZonesResults}
+import vinyldns.core.domain.zone.generate.{GenerateZone, GenerateZoneRepository, ListGeneratedZonesResults}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
@@ -182,7 +182,9 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
             baseQuery.append(sqls" WHERE ").append(SQLSyntax.join(filters, sqls" AND "))
           } else baseQuery
 
-          val fullQuery = withWhere.append(sqls" GROUP BY gz.name LIMIT ${maxItems + 1}")
+          // ORDER BY name so cursor pagination (gz.name > startFrom + nextId) is stable across
+          // pages instead of depending on MySQL's incidental row order.
+          val fullQuery = withWhere.append(sqls" GROUP BY gz.name ORDER BY gz.name ASC LIMIT ${maxItems + 1}")
 
           val results: List[GenerateZone] = sql"$fullQuery"
             .map(extractGenerateZone(1))
@@ -229,7 +231,9 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
 
           val baseQuery = BASE_GENERATE_ZONE_SEARCH_SQL.append(sqls" WHERE ")
           val withConditions = baseQuery.append(SQLSyntax.join(conditions, sqls" AND "))
-          val fullQuery = withConditions.append(sqls" GROUP BY gz.name LIMIT ${maxItems + 1}")
+          // ORDER BY name so cursor pagination (gz.name > startFrom + nextId) is stable across
+          // pages instead of depending on MySQL's incidental row order.
+          val fullQuery = withConditions.append(sqls" GROUP BY gz.name ORDER BY gz.name ASC LIMIT ${maxItems + 1}")
 
           val results: List[GenerateZone] = sql"$fullQuery"
             .map(extractGenerateZone(1))

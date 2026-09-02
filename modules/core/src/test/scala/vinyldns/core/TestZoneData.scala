@@ -17,6 +17,7 @@
 package vinyldns.core
 
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate._
 import TestMembershipData._
 import org.json4s.{JArray, JInt, JString, JValue}
 import vinyldns.core.domain.Encrypted
@@ -289,16 +290,6 @@ val updateZoneAuthorized = UpdateZoneInput(
     providerParams = powerDNSProviderParams,
     response=Some(pdnsZoneGenerationResponse),
     id = "pDnsZoneId"
-  )
-
-  val updateBindZone: UpdateGenerateZoneInput = UpdateGenerateZoneInput(
-    okGroup.id,
-    "test@test.com",
-    "bind",
-    okZone.name,
-    providerParams = bindProviderParams,
-    response=Some(bindZoneGenerationResponse),
-    id = "bindZoneId"
   )
 
   val inputBindZone: ZoneGenerationInput = ZoneGenerationInput(

@@ -24,6 +24,7 @@ import vinyldns.core.domain.membership.UserChange.{CreateUser, UpdateUser}
 import vinyldns.core.domain.membership.{LockStatus, User, UserChangeType}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate._
 import vinyldns.proto.VinylDNSProto
 import org.json4s._
 import org.json4s.JsonDSL._
