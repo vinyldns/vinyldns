@@ -217,6 +217,11 @@ object BatchTransformations {
 
       val existingRecords = existingRecordSet.toList.flatMap(_.records).toSet
 
+      val hasDeleteRequests = changes.exists {
+        case _: DeleteRRSetChangeForValidation => true
+        case _ => false
+      }
+
       // Collect delete DNS entries. This formulates all of the proposed delete entries, including
       // existing DNS entries in the event of DeleteRecordSet
       val deleteChangeSet = changes
@@ -226,7 +231,7 @@ object BatchTransformations {
               _,
               DeleteRRSetChangeInput(_, _, _, Some(recordData))
               ) =>
-            Set(recordData)
+            Set(recordData).intersect(existingRecords)
           case _: DeleteRRSetChangeForValidation =>
             existingRecords
         }
@@ -257,11 +262,7 @@ object BatchTransformations {
             LogicalChangeType.OutOfSync
           }
         case (false, false) =>
-          if(changes.exists {
-            case _: DeleteRRSetChangeForValidation => true
-            case _ => false
-            }
-          ){
+          if (hasDeleteRequests && existingRecords.isEmpty) {
             LogicalChangeType.OutOfSync
           } else {
             LogicalChangeType.NotEditedInBatch
