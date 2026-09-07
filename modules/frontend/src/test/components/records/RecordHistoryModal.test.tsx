@@ -83,10 +83,10 @@ describe("<RecordHistoryModal /> integration", () => {
     (
       recordsService.listRecordSetChangeHistory as ReturnType<typeof vi.fn>
     ).mockReturnValue(new Promise(() => {})); // never resolves
-    renderWithProviders(
+    const { container } = renderWithProviders(
       <RecordHistoryModal record={record()} onClose={vi.fn()} />,
     );
-    expect(screen.getByText(/Loading change history/i)).toBeInTheDocument();
+    expect(container.querySelector(".vds-loader-backdrop")).toBeInTheDocument();
   });
 
   it("renders the empty state when the server returns zero changes", async () => {
