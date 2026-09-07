@@ -21,6 +21,10 @@ import { usePaging } from "./usePaging";
 import { useAlerts } from "../contexts/AlertContext";
 import type { RecordSet } from "../types/record";
 
+// Stable empty-array reference so consumers that use `records` as an effect/memo
+// dependency don't re-run on every render while the query is disabled/loading.
+const EMPTY_RECORDS: RecordSet[] = [];
+
 function getErrorMessage(error: {
   response?: {
     data?: string | { errors?: string[] };
@@ -187,7 +191,7 @@ export function useRecords() {
   );
 
   return {
-    records: data?.recordSets ?? [],
+    records: data?.recordSets ?? EMPTY_RECORDS,
     isLoading,
     isFetching,
     nameFilter,

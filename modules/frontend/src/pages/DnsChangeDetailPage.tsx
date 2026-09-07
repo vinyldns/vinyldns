@@ -712,6 +712,12 @@ export function DnsChangeDetailPage() {
             {formatDateTime(change.createdTimestamp)}
           </div>
         </div>
+        <div className="vds-info-bar__item">
+          <div className="vds-info-bar__label">Status</div>
+          <div className="vds-info-bar__value">
+            {batchStatusLabel(change.status)}
+          </div>
+        </div>
         {!isOwner && (
           <div className="vds-info-bar__item">
             <div className="vds-info-bar__label">Submitter</div>
