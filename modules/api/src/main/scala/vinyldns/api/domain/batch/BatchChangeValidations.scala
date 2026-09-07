@@ -357,7 +357,11 @@ class BatchChangeValidations(
     }
 
     val addInBatch = groupedChanges.getProposedAdds(change.recordKey)
-    val isSameRecordUpdateInBatch = recordData.nonEmpty && addInBatch.contains(RecordData.fromString(recordData, change.inputChange.typ).get)
+    val requestedDeletes = groupedChanges.getRequestedDeleteRecordData(change.recordKey)
+    val isSameRecordUpdateInBatch =
+      recordData.nonEmpty &&
+        requestedDeletes.contains(RecordData.fromString(recordData, change.inputChange.typ).get) &&
+        addInBatch.contains(RecordData.fromString(recordData, change.inputChange.typ).get)
 
     // Perform the system message update based on the condition
     val updatedChange = if (groupedChanges.getExistingRecordSet(change.recordKey).isEmpty && !isSameRecordUpdateInBatch) {
@@ -430,7 +434,11 @@ class BatchChangeValidations(
     }
 
     val addInBatch = groupedChanges.getProposedAdds(change.recordKey)
-    val isSameRecordUpdateInBatch = recordData.nonEmpty && addInBatch.contains(RecordData.fromString(recordData, change.inputChange.typ).get)
+    val requestedDeletes = groupedChanges.getRequestedDeleteRecordData(change.recordKey)
+    val isSameRecordUpdateInBatch =
+      recordData.nonEmpty &&
+        requestedDeletes.contains(RecordData.fromString(recordData, change.inputChange.typ).get) &&
+        addInBatch.contains(RecordData.fromString(recordData, change.inputChange.typ).get)
 
     // Perform the system message update based on the condition
     val updatedChange = if (groupedChanges.getExistingRecordSet(change.recordKey).isEmpty && !isSameRecordUpdateInBatch) {
@@ -482,11 +490,10 @@ class BatchChangeValidations(
       case AddChangeForValidation(_, _, inputChange, _, _) => inputChange.record.toString
     }
 
-    val deletes = groupedChanges.getProposedDeletes(change.recordKey)
-    val isDeleteExists = deletes.nonEmpty
-    val isSameRecordUpdateInBatch = if(recordData.nonEmpty){
-      if(deletes.contains(RecordData.fromString(recordData, change.inputChange.typ).get)) true else false
-    } else false
+    val requestedDeletes = groupedChanges.getRequestedDeleteRecordData(change.recordKey)
+    val isDeleteExists = groupedChanges.hasDeleteRequests(change.recordKey)
+    val isSameRecordUpdateInBatch =
+      recordData.nonEmpty && requestedDeletes.contains(RecordData.fromString(recordData, change.inputChange.typ).get)
 
     val commonValidations: SingleValidation[Unit] = {
       groupedChanges.getExistingRecordSet(change.recordKey) match {
