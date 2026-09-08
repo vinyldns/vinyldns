@@ -205,6 +205,8 @@ val checkJsHeaders =
   TaskKey[Unit]("checkJsHeaders", "Runs script to check for APL 2.0 license headers")
 val createJsHeaders =
   TaskKey[Unit]("createJsHeaders", "Runs script to prepend APL 2.0 license headers to files")
+val npmTest =
+  TaskKey[Unit]("npmTest", "Runs the React frontend test suite (vitest) via npm")
 
 lazy val portalSettings = Seq(
   libraryDependencies ++= portalDependencies,
@@ -283,6 +285,15 @@ lazy val frontendSettings = Seq(
     import scala.sys.process._
     "./modules/frontend/deploy-to-frontend.sh" !
   },
+  // Runs `npm run test:coverage` (vitest) for the React app, wired into sbt's test task
+  npmTest := {
+    import scala.sys.process._
+      val installRet = Process("npm install -f --no-audit --no-fund", baseDirectory.value).!
+      if (installRet != 0) sys.error("Frontend npm install failed")
+      val ret = Process("npm run test:coverage", baseDirectory.value).!
+      if (ret != 0) sys.error("Frontend npm tests failed")
+    },
+  test in Test := (test in Test).dependsOn(npmTest).value,
   mappings in Universal ++= {
     val publicDir = baseDirectory.value / "public"
     if (publicDir.exists)
