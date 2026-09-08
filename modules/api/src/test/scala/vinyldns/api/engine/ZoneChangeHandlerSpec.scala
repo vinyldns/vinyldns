@@ -82,7 +82,7 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     executeWithinTransaction { db: DB =>
       doReturn(IO.pure(()))
         .when(mockRecordSetRepo)
-        .deleteRecordSetsInZone(db,deleteChange.zone.id, deleteChange.zone.name)
+        .deleteRecordSetsInZone(db, deleteChange.zone.id, deleteChange.zone.name)
       doReturn(IO.pure(()))
         .when(mockRecordSetDataRepo)
         .deleteRecordSetDataInZone(db, deleteChange.zone.id, deleteChange.zone.name)}
@@ -171,7 +171,7 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     )
     val updateChange = change.copy(zone = modifiedZone)
 
-    doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(change.zone.id)
+    doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(updateChange.zone.id)
     doReturn(IO.pure(Right(dbZone))).when(mockZoneRepo).save(any[Zone])
     doReturn(IO.pure(updateChange)).when(mockChangeRepo).save(any[ZoneChange])
 
