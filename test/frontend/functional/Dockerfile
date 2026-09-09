@@ -10,7 +10,10 @@ RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - && \
 WORKDIR /functional_test
 COPY modules/frontend /functional_test
 COPY $DOCKERFILE_PATH/run.sh /functional_test
-# vite.config.ts resolves ../../version.sbt relative to modules/frontend
-COPY version.sbt /version.sbt
-ENTRYPOINT ["./run.sh"]
 
+RUN cp /build/node_modules.tar.xz /functional_test && \
+    cd /functional_test &&  \
+    tar Jxf node_modules.tar.xz && \
+    rm -rf node_modules.tar.xz
+
+ENTRYPOINT ["./run.sh"]
