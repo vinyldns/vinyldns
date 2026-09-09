@@ -12,6 +12,5 @@ COPY modules/frontend /functional_test
 COPY $DOCKERFILE_PATH/run.sh /functional_test
 # vite.config.ts resolves ../../version.sbt relative to modules/frontend
 COPY version.sbt /version.sbt
-
 ENTRYPOINT ["./run.sh"]
 
