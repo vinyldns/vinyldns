@@ -3,12 +3,18 @@ SHELL ["/bin/bash","-c"]
 ARG DOCKERFILE_PATH="test/portal/functional"
 
 # Ensure Node 22 and latest npm for portal build compatibility
+# MUST remove old packages first, clear caches, then install fresh
 ARG NODE_MAJOR=22
 RUN apt-get update && \
+    apt-get purge -y nodejs npm && \
+    apt-get autoremove -y && \
     curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - && \
     apt-get install -y nodejs && \
     npm install -g npm@latest && \
+    rm -rf /root/.npm && \
+    npm cache clean --force && \
     node --version && npm --version && \
+    npm -v && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /functional_test
