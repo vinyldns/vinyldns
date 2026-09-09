@@ -131,20 +131,19 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     changeCaptor.getValue.status shouldBe ZoneChangeStatus.Failed
     changeCaptor.getValue.systemMessage.get should include("not found in repository")
   }
-  "use the DB zone id and name for Delete scoping, not message-supplied values" in new Fixture {
-    // Zone scoping for deletion uses authoritative zone configuration
+  "save the zone change's own zone (with Deleted status) so the zone is actually removed" in new Fixture {
     val dbZone = change.zone
-    val modifiedZone = change.zone.copy(name = "modified.zone.")
-    val deleteChange = change.copy(changeType = ZoneChangeType.Delete, zone = modifiedZone)
+    val deletedZone = change.zone.copy(status = ZoneStatus.Deleted)
+    val deleteChange = change.copy(changeType = ZoneChangeType.Delete, zone = deletedZone)
 
     doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(change.zone.id)
-    doReturn(IO.pure(Right(dbZone))).when(mockZoneRepo).save(dbZone)
+    doReturn(IO.pure(Right(deletedZone))).when(mockZoneRepo).save(deletedZone)
     doReturn(IO.pure(deleteChange)).when(mockChangeRepo).save(any[ZoneChange])
 
     test(deleteChange).unsafeRunSync()
 
-    // zone save must use the DB zone (not the attacker-supplied name)
-    verify(mockZoneRepo).save(dbZone)
+    // zone save must persist the Deleted status so the repository actually removes the zone
+    verify(mockZoneRepo).save(deletedZone)
     val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
     verify(mockChangeRepo).save(changeCaptor.capture())
     changeCaptor.getValue.status shouldBe ZoneChangeStatus.Synced
@@ -162,7 +161,7 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     // zone save must NOT be called when zone does not exist
     verify(mockZoneRepo, never()).save(any[Zone])
   }
-  "preserve DB zone adminGroupId, acl, and shared for Update; discard message-supplied values" in new Fixture {
+  "apply the requested adminGroupId, acl, and shared changes for Update" in new Fixture {
     val dbZone = change.zone
     val modifiedZone = change.zone.copy(
       adminGroupId = "modified-group",
@@ -172,7 +171,7 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     val updateChange = change.copy(zone = modifiedZone)
 
     doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(updateChange.zone.id)
-    doReturn(IO.pure(Right(dbZone))).when(mockZoneRepo).save(any[Zone])
+    doReturn(IO.pure(Right(modifiedZone))).when(mockZoneRepo).save(any[Zone])
     doReturn(IO.pure(updateChange)).when(mockChangeRepo).save(any[ZoneChange])
 
     test(updateChange).unsafeRunSync()
@@ -180,11 +179,9 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     val zoneCaptor = ArgumentCaptor.forClass(classOf[Zone])
     verify(mockZoneRepo).save(zoneCaptor.capture())
     val saved = zoneCaptor.getValue
-    // Authoritative zone properties must be preserved from database
-    saved.adminGroupId shouldBe dbZone.adminGroupId
-    saved.acl shouldBe dbZone.acl
-    saved.shared shouldBe dbZone.shared
-    saved.adminGroupId should not be "modified-group"
-    saved.shared shouldBe false
+    // The validated, requested zone properties must be persisted, not the stale DB values
+    saved.adminGroupId shouldBe "modified-group"
+    saved.acl shouldBe modifiedZone.acl
+    saved.shared shouldBe true
   }
 }

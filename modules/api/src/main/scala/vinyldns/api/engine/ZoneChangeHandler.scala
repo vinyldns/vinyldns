@@ -44,28 +44,26 @@ object ZoneChangeHandler {
               systemMessage = Some(s"Zone ${zoneChange.zone.id} not found in repository")
             )
           )
-        case Some(dbZone) if zoneChange.changeType == ZoneChangeType.Delete =>
-          // Use authoritative zone configuration for deletion scope
-          zoneRepository.save(dbZone).flatMap { _ =>
+        case Some(_) if zoneChange.changeType == ZoneChangeType.Delete =>
+          // zoneChange.zone already carries status = Deleted (set by ZoneChangeGenerator.forDelete),
+          // so saving it is what actually triggers the cascading delete in the repository.
+          zoneRepository.save(zoneChange.zone).flatMap { _ =>
             executeWithinTransaction { db: DB =>
               for {
                 _ <- recordSetRepository
-                  .deleteRecordSetsInZone(db, dbZone.id, dbZone.name)
+                  .deleteRecordSetsInZone(db, zoneChange.zone.id, zoneChange.zone.name)
                 _ <- recordSetCacheRepository
-                  .deleteRecordSetDataInZone(db, dbZone.id, dbZone.name)
+                  .deleteRecordSetDataInZone(db, zoneChange.zone.id, zoneChange.zone.name)
               } yield ()
             }.attempt.flatMap { _ =>
               zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
             }
           }
-        case Some(dbZone) =>
-          // Preserve authoritative zone properties for ACL and ownership integrity
-          val trustedZone = zoneChange.zone.copy(
-            adminGroupId = dbZone.adminGroupId,
-            acl = dbZone.acl,
-            shared = dbZone.shared
-          )
-          zoneRepository.save(trustedZone).flatMap {
+        case Some(_) =>
+          // zoneChange.zone already reflects the validated, requested update (see
+          // ZoneService.updateZone / Zone.apply(UpdateZoneInput, Zone)) - persist it as-is so that
+          // ACL, adminGroupId, and shared changes actually take effect.
+          zoneRepository.save(zoneChange.zone).flatMap {
             case Left(duplicateZoneError) =>
               zoneChangeRepository.save(
                 zoneChange.copy(
@@ -75,7 +73,7 @@ object ZoneChangeHandler {
               )
             case Right(_) =>
               logger.info(s"Saving zone change with id: '${zoneChange.id}', zone name: '${zoneChange.zone.name}'")
-              zoneChangeRepository.save(zoneChange.copy(zone = trustedZone, status = ZoneChangeStatus.Synced))
+              zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
           }
       }
 }
