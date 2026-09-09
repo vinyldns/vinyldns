@@ -27,3 +27,4 @@ RUN cp /build/node_modules.tar.xz /functional_test && \
     rm -rf node_modules.tar.xz
 
 ENTRYPOINT ["./run.sh"]
+
