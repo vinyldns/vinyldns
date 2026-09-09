@@ -1,13 +1,16 @@
 FROM vinyldns/build:base-build-portal as base-build
-ARG VINYLDNS_VERSION
-COPY . /build
-WORKDIR /build
 
 # Install Node 22 LTS for frontend tests (required for vitest/rollup compatibility)
 # base-build-portal image has old Node, too old for Vite/Vitest
 ARG NODE_MAJOR=22
-RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - && \
-    apt-get install -y nodejs
+RUN apt-get update && \
+    curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+ARG VINYLDNS_VERSION
+COPY . /build
+WORKDIR /build
 
 RUN mkdir -p /opt/vinyldns/conf && \
     if [ -f artifacts/vinyldns-portal.zip ]; then \
