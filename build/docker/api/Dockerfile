@@ -3,6 +3,12 @@ FROM vinyldns/build:base-build as base-build
 COPY . /build/
 WORKDIR /build
 
+# Install Node 22 LTS for frontend tests (required for vitest/rollup compatibility)
+# base-build image has old Node, too old for Vite/Vitest
+ARG NODE_MAJOR=22
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - && \
+    apt-get install -y nodejs
+
 ##  Run the build if we don't already have a vinyldns-api.jar
 RUN mkdir -p /opt/vinyldns/conf && \
     if [ -f artifacts/vinyldns-api.jar ]; then cp artifacts/vinyldns-api.jar /opt/vinyldns/; fi && \
