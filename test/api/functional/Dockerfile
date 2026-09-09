@@ -1,5 +1,16 @@
 # Build VinylDNS API if the JAR doesn't already exist
 FROM vinyldns/build:base-build as base-build
+
+# Install Node 22 LTS for frontend tests (required for vitest/rollup compatibility)
+# base-build image has old Node/npm, too old for Vite/Vitest
+ARG NODE_MAJOR=22
+RUN apt-get update && \
+    curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g npm@latest && \
+    node --version && npm --version && \
+    rm -rf /var/lib/apt/lists/*
+
 ARG DOCKERFILE_PATH="test/api/functional"
 COPY "${DOCKERFILE_PATH}/application.conf" /opt/vinyldns/conf/
 COPY . /build/
