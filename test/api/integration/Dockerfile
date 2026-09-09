@@ -31,4 +31,7 @@ COPY quickstart/bind9/etc/named.conf.* /etc/bind/
 COPY quickstart/bind9/zones/ /var/bind/
 RUN named-checkconf
 
+# Create log file before startup to avoid tail race.
+RUN touch /opt/vinyldns/vinyldns.log
+
 ENV RUN_SERVICES="all"
