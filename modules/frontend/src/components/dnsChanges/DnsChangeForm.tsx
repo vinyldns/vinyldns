@@ -95,7 +95,7 @@ const BATCH_CHANGE_LIMIT = 1000;
 
 /**
  * IPv4 address validation pattern. Matches only dotted-decimal notation with
- * each octet in the 0–255 range, matching the AngularJS `ipv4` directive.
+ * each octet in the 0–255 range.
  */
 const RE_IPV4 =
   /^(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)$/;
@@ -103,7 +103,6 @@ const RE_IPV4 =
 /**
  * IPv6 address validation pattern covering all standard address forms including
  * compressed (::), mixed IPv4/IPv6, and link-local addresses with zone IDs.
- * Matches the AngularJS `ipv6` directive.
  */
 const RE_IPV6 =
   /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]+|::(ffff(:0{1,4})?:)?((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1?[0-9])?[0-9])\.){3}(25[0-5]|(2[0-4]|1?[0-9])?[0-9]))$/;
@@ -111,7 +110,7 @@ const RE_IPV6 =
 /**
  * FQDN validation pattern. Allows an optional leading wildcard label (`*.`)
  * and requires each label to be 1–63 alphanumeric/hyphen characters. An
- * optional trailing dot is permitted. Matches the AngularJS `fqdn` directive.
+ * optional trailing dot is permitted.
  */
 const RE_FQDN =
   /^(\*\.)?([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+([a-zA-Z]{2,}\.?)$/;
@@ -281,16 +280,7 @@ export function findDuplicateGroups(
 
 /**
  * Type-aware record data fields for a single change row inside the batch form.
- *
- * Pulls `register` from the parent `FormProvider` context so it doesn't need
- * to be threaded through props. The `isAdd` flag drives required-field
- * validation — delete rows don't require record data. `isDark` propagates
- * the app-level theme into inline styles that can't use CSS variables.
- *
- * @param index      - Position of this row in the `changes` field array.
- * @param recordType - Currently selected DNS type for this row.
- * @param isAdd      - True for Add changes; false for DeleteRecordSet.
- * @param isDark     - Whether the dark VDS theme is currently active.
+ * Compact inline variant used inside the table — no labels, minimal padding.
  */
 function RecordDataFields({
   index,
@@ -303,319 +293,273 @@ function RecordDataFields({
   isAdd: boolean;
   isDark: boolean;
 }) {
-  const { register } = useFormContext<DnsChangeFormData>();
+  const {
+    register,
+    formState: { errors },
+  } = useFormContext<DnsChangeFormData>();
   const req = isAdd;
+
+  const recordError = (
+    field: keyof NonNullable<DnsChangeFormData["changes"][number]["record"]>,
+  ) =>
+    errors?.changes?.[index]?.record?.[field]?.message ||
+    (errors?.changes?.[index]?.record as Record<string, unknown> | undefined)?.[
+      field
+    ];
 
   const inputStyle: React.CSSProperties = {
     background: isDark ? "#1a2640" : "#fff",
     color: isDark ? "#cdd9ed" : "#212529",
     borderColor: isDark ? "rgba(127,168,216,0.2)" : "#dde3ec",
     boxShadow: "none",
-    borderRadius: "0.45rem",
+    borderRadius: "0.35rem",
+    minWidth: 0,
   };
-
-  const helpText = !isAdd && (
-    <div className="form-text text-muted fst-italic">
-      Record data is optional for delete.
-    </div>
-  );
 
   switch (recordType) {
     case "A":
     case "A+PTR":
       return (
-        <div>
-          <input
-            className="form-control form-control-sm"
-            placeholder="e.g. 1.1.1.1"
-            style={inputStyle}
-            {...register(`changes.${index}.record.address`, {
-              required: req,
-              validate: (v) =>
-                !req ||
-                !v ||
-                RE_IPV4.test(String(v)) ||
-                "Must be a valid IPv4 address",
-            })}
-          />
-          {helpText}
-        </div>
+        <input
+          className="form-control form-control-sm"
+          placeholder="e.g. 1.1.1.1"
+          autoComplete="off"
+          style={inputStyle}
+          {...register(`changes.${index}.record.address`, {
+            required: req ? "Record data is required" : false,
+            validate: (v) =>
+              !req || !v || RE_IPV4.test(String(v)) || "Invalid IPv4",
+          })}
+        />
       );
     case "AAAA":
     case "AAAA+PTR":
       return (
-        <div>
-          <input
-            className="form-control form-control-sm"
-            placeholder="e.g. fd69:27cc:fe91::60"
-            style={inputStyle}
-            {...register(`changes.${index}.record.address`, {
-              required: req,
-              validate: (v) =>
-                !req ||
-                !v ||
-                RE_IPV6.test(String(v)) ||
-                "Must be a valid IPv6 address",
-            })}
-          />
-          {helpText}
-        </div>
+        <input
+          className="form-control form-control-sm"
+          placeholder="fd69:27cc::60"
+          autoComplete="off"
+          style={inputStyle}
+          {...register(`changes.${index}.record.address`, {
+            required: req ? "Record data is required" : false,
+            validate: (v) =>
+              !req || !v || RE_IPV6.test(String(v)) || "Invalid IPv6",
+          })}
+        />
       );
     case "CNAME":
       return (
-        <div>
-          <input
-            className="form-control form-control-sm"
-            placeholder="e.g. target.example.com."
-            disabled={!isAdd}
-            style={{
-              ...inputStyle,
-              background: !isAdd
-                ? isDark
-                  ? "#0f1825"
-                  : "#e9ecef"
-                : inputStyle.background,
-            }}
-            {...register(`changes.${index}.record.cname`, {
-              required: req,
-              validate: (v) =>
-                !req || !v || RE_FQDN.test(String(v)) || "Must be a valid FQDN",
-            })}
-          />
-        </div>
+        <input
+          className="form-control form-control-sm"
+          placeholder="target.example.com."
+          autoComplete="off"
+          disabled={!isAdd}
+          style={{
+            ...inputStyle,
+            background: !isAdd
+              ? isDark
+                ? "#0f1825"
+                : "#e9ecef"
+              : inputStyle.background,
+          }}
+          {...register(`changes.${index}.record.cname`, {
+            required: req ? "Record data is required" : false,
+            validate: (v) =>
+              !req || !v || RE_FQDN.test(String(v)) || "Invalid FQDN",
+          })}
+        />
       );
     case "PTR":
       return (
-        <div>
-          <input
-            className="form-control form-control-sm"
-            placeholder="e.g. test.example.com."
-            style={inputStyle}
-            {...register(`changes.${index}.record.ptrdname`, {
-              required: req,
-              validate: (v) =>
-                !req || !v || RE_FQDN.test(String(v)) || "Must be a valid FQDN",
-            })}
-          />
-          {helpText}
-        </div>
+        <input
+          className="form-control form-control-sm"
+          placeholder="test.example.com."
+          autoComplete="off"
+          style={inputStyle}
+          {...register(`changes.${index}.record.ptrdname`, {
+            required: req ? "Record data is required" : false,
+            validate: (v) =>
+              !req || !v || RE_FQDN.test(String(v)) || "Invalid FQDN",
+          })}
+        />
       );
     case "TXT":
       return (
-        <div>
-          <textarea
-            className="form-control form-control-sm"
-            rows={2}
-            placeholder="e.g. attr=val"
-            style={inputStyle}
-            {...register(`changes.${index}.record.text`, { required: req })}
-          />
-          {helpText}
-        </div>
+        <input
+          className="form-control form-control-sm"
+          placeholder="attr=val"
+          autoComplete="off"
+          style={inputStyle}
+          {...register(`changes.${index}.record.text`, {
+            required: req ? "Record data is required" : false,
+          })}
+        />
       );
     case "MX":
       return (
-        <div className="d-flex gap-2 flex-wrap">
-          <div style={{ minWidth: 110 }}>
-            <label className="form-label small mb-1">Preference</label>
-            <input
-              type="number"
-              className="form-control form-control-sm"
-              placeholder="e.g. 1"
-              min={0}
-              max={65535}
-              style={inputStyle}
-              {...register(`changes.${index}.record.preference`, {
-                required: req,
-                valueAsNumber: true,
-                min: 0,
-                max: 65535,
-              })}
-            />
-          </div>
-          <div style={{ minWidth: 200 }}>
-            <label className="form-label small mb-1">Exchange</label>
-            <input
-              className="form-control form-control-sm"
-              placeholder="e.g. mail.example.com."
-              style={inputStyle}
-              {...register(`changes.${index}.record.exchange`, {
-                required: req,
-                validate: (v) =>
-                  !req ||
-                  !v ||
-                  RE_FQDN.test(String(v)) ||
-                  "Must be a valid FQDN",
-              })}
-            />
-          </div>
-          {helpText && <div className="w-100 mb-0">{helpText}</div>}
+        <div className="d-flex gap-1">
+          <input
+            type="number"
+            className="form-control form-control-sm"
+            placeholder="Pref"
+            min={0}
+            max={65535}
+            style={{ ...inputStyle, width: 70 }}
+            {...register(`changes.${index}.record.preference`, {
+              required: req ? "Record data is required" : false,
+              valueAsNumber: true,
+              min: 0,
+              max: 65535,
+            })}
+          />
+          <input
+            className="form-control form-control-sm"
+            placeholder="mail.example.com."
+            style={inputStyle}
+            {...register(`changes.${index}.record.exchange`, {
+              required: req ? "Record data is required" : false,
+              validate: (v) =>
+                !req || !v || RE_FQDN.test(String(v)) || "Invalid FQDN",
+            })}
+          />
         </div>
       );
     case "NS":
       return (
-        <div>
-          <input
-            className="form-control form-control-sm"
-            placeholder="e.g. ns1.example.com."
-            style={inputStyle}
-            {...register(`changes.${index}.record.nsdname`, {
-              required: req,
-              validate: (v) =>
-                !req || !v || RE_FQDN.test(String(v)) || "Must be a valid FQDN",
-            })}
-          />
-          {helpText}
-        </div>
+        <input
+          className="form-control form-control-sm"
+          placeholder="ns1.example.com."
+          autoComplete="off"
+          style={inputStyle}
+          {...register(`changes.${index}.record.nsdname`, {
+            required: req ? "Record data is required" : false,
+            validate: (v) =>
+              !req || !v || RE_FQDN.test(String(v)) || "Invalid FQDN",
+          })}
+        />
       );
     case "SRV":
       return (
-        <div className="d-flex gap-2 flex-wrap">
-          <div style={{ minWidth: 85 }}>
-            <label className="form-label small mb-1">Priority</label>
-            <input
-              type="number"
-              className="form-control form-control-sm"
-              placeholder="0"
-              min={0}
-              max={65535}
-              style={inputStyle}
-              {...register(`changes.${index}.record.priority`, {
-                required: req,
-                valueAsNumber: true,
-              })}
-            />
-          </div>
-          <div style={{ minWidth: 85 }}>
-            <label className="form-label small mb-1">Weight</label>
-            <input
-              type="number"
-              className="form-control form-control-sm"
-              placeholder="0"
-              min={0}
-              max={65535}
-              style={inputStyle}
-              {...register(`changes.${index}.record.weight`, {
-                required: req,
-                valueAsNumber: true,
-              })}
-            />
-          </div>
-          <div style={{ minWidth: 85 }}>
-            <label className="form-label small mb-1">Port</label>
-            <input
-              type="number"
-              className="form-control form-control-sm"
-              placeholder="8080"
-              min={0}
-              max={65535}
-              style={inputStyle}
-              {...register(`changes.${index}.record.port`, {
-                required: req,
-                valueAsNumber: true,
-              })}
-            />
-          </div>
-          <div style={{ minWidth: 180 }}>
-            <label className="form-label small mb-1">Target</label>
-            <input
-              className="form-control form-control-sm"
-              placeholder="e.g. target.example.com."
-              style={inputStyle}
-              {...register(`changes.${index}.record.target`, {
-                required: req,
-                validate: (v) =>
-                  !req ||
-                  !v ||
-                  RE_FQDN.test(String(v)) ||
-                  v === "." ||
-                  "Must be a valid FQDN",
-              })}
-            />
-          </div>
-          {helpText && <div className="w-100 mb-0">{helpText}</div>}
+        <div className="d-flex gap-1">
+          <input
+            type="number"
+            className="form-control form-control-sm"
+            placeholder="Pri"
+            min={0}
+            max={65535}
+            style={{ ...inputStyle, width: 60 }}
+            {...register(`changes.${index}.record.priority`, {
+              required: req ? "Record data is required" : false,
+              valueAsNumber: true,
+            })}
+          />
+          <input
+            type="number"
+            className="form-control form-control-sm"
+            placeholder="Wt"
+            min={0}
+            max={65535}
+            style={{ ...inputStyle, width: 60 }}
+            {...register(`changes.${index}.record.weight`, {
+              required: req ? "Record data is required" : false,
+              valueAsNumber: true,
+            })}
+          />
+          <input
+            type="number"
+            className="form-control form-control-sm"
+            placeholder="Port"
+            min={0}
+            max={65535}
+            style={{ ...inputStyle, width: 70 }}
+            {...register(`changes.${index}.record.port`, {
+              required: req ? "Record data is required" : false,
+              valueAsNumber: true,
+            })}
+          />
+          <input
+            className="form-control form-control-sm"
+            placeholder="target.example.com."
+            autoComplete="off"
+            style={inputStyle}
+            {...register(`changes.${index}.record.target`, {
+              required: req ? "Record data is required" : false,
+              validate: (v) =>
+                !req ||
+                !v ||
+                RE_FQDN.test(String(v)) ||
+                v === "." ||
+                "Invalid FQDN",
+            })}
+          />
         </div>
       );
     case "NAPTR":
       return (
-        <div className="d-flex gap-2 flex-wrap">
-          <div style={{ minWidth: 85 }}>
-            <label className="form-label small mb-1">Order</label>
-            <input
-              type="number"
-              className="form-control form-control-sm"
-              placeholder="1"
-              min={0}
-              max={65535}
-              style={inputStyle}
-              {...register(`changes.${index}.record.order`, {
-                required: req,
-                valueAsNumber: true,
-              })}
-            />
-          </div>
-          <div style={{ minWidth: 85 }}>
-            <label className="form-label small mb-1">Preference</label>
-            <input
-              type="number"
-              className="form-control form-control-sm"
-              placeholder="1"
-              min={0}
-              max={65535}
-              style={inputStyle}
-              {...register(`changes.${index}.record.preference`, {
-                required: req,
-                valueAsNumber: true,
-              })}
-            />
-          </div>
-          <div style={{ minWidth: 80 }}>
-            <label className="form-label small mb-1">Flags</label>
-            <select
-              className="form-select form-select-sm"
-              style={inputStyle}
-              {...register(`changes.${index}.record.flags`, { required: req })}
-            >
-              <option value="">--</option>
-              {NAPTR_FLAGS.map((f) => (
-                <option key={f} value={f}>
-                  {f}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div style={{ minWidth: 130 }}>
-            <label className="form-label small mb-1">Service</label>
-            <input
-              className="form-control form-control-sm"
-              placeholder="e.g. SIP+D2U"
-              style={inputStyle}
-              {...register(`changes.${index}.record.service`, {
-                required: req,
-              })}
-            />
-          </div>
-          <div style={{ minWidth: 130 }}>
-            <label className="form-label small mb-1">Regexp</label>
-            <input
-              className="form-control form-control-sm"
-              placeholder="optional"
-              style={inputStyle}
-              {...register(`changes.${index}.record.regexp`)}
-            />
-          </div>
-          <div style={{ minWidth: 130 }}>
-            <label className="form-label small mb-1">Replacement</label>
-            <input
-              className="form-control form-control-sm"
-              placeholder="e.g. ."
-              style={inputStyle}
-              {...register(`changes.${index}.record.replacement`, {
-                required: req,
-              })}
-            />
-          </div>
-          {helpText && <div className="w-100 mb-0">{helpText}</div>}
+        <div className="d-flex gap-1 flex-wrap">
+          <input
+            type="number"
+            className="form-control form-control-sm"
+            placeholder="Ord"
+            min={0}
+            max={65535}
+            style={{ ...inputStyle, width: 60 }}
+            {...register(`changes.${index}.record.order`, {
+              required: req ? "Record data is required" : false,
+              valueAsNumber: true,
+            })}
+          />
+          <input
+            type="number"
+            className="form-control form-control-sm"
+            placeholder="Pref"
+            min={0}
+            max={65535}
+            style={{ ...inputStyle, width: 60 }}
+            {...register(`changes.${index}.record.preference`, {
+              required: req ? "Record data is required" : false,
+              valueAsNumber: true,
+            })}
+          />
+          <select
+            className="form-select form-select-sm"
+            style={{ ...inputStyle, width: 70 }}
+            {...register(`changes.${index}.record.flags`, {
+              required: req ? "Record data is required" : false,
+            })}
+          >
+            <option value="">--</option>
+            {NAPTR_FLAGS.map((f) => (
+              <option key={f} value={f}>
+                {f}
+              </option>
+            ))}
+          </select>
+          <input
+            className="form-control form-control-sm"
+            placeholder="SIP+D2U"
+            autoComplete="off"
+            style={{ ...inputStyle, width: 90 }}
+            {...register(`changes.${index}.record.service`, {
+              required: req ? "Record data is required" : false,
+            })}
+          />
+          <input
+            className="form-control form-control-sm"
+            placeholder="Regexp"
+            autoComplete="off"
+            style={{ ...inputStyle, width: 80 }}
+            {...register(`changes.${index}.record.regexp`)}
+          />
+          <input
+            className="form-control form-control-sm"
+            placeholder="Replacement"
+            autoComplete="off"
+            style={inputStyle}
+            {...register(`changes.${index}.record.replacement`, {
+              required: req ? "Record data is required" : false,
+            })}
+          />
         </div>
       );
     default:
@@ -638,25 +582,19 @@ const RECORD_TYPES = [
 ] as const;
 
 /**
- * A single DNS change row within the batch form.
- *
- * Subscribes to its own `changeType` and `type` via `useWatch` so it can
- * conditionally show/hide record data fields without re-rendering the whole
- * form. Row background and border color shift to red when the API returns
- * server-side validation errors for that specific row, giving users a clear
- * visual cue on which entries need attention.
- *
- * The type selector resets `record` to an empty object on change so stale
- * field values from the previous type don't bleed into the new payload.
+ * A single DNS change row rendered as a compact table row.
+ * All fields sit inline on one line so many rows are visible simultaneously.
  */
 function ChangeRow({
   index,
   remove,
   serverErrors,
+  disabled,
 }: {
   index: number;
   remove: (i: number) => void;
   serverErrors?: string[];
+  disabled?: boolean;
 }) {
   const {
     register,
@@ -669,8 +607,6 @@ function ChangeRow({
   const [isDark, setIsDark] = useState<boolean>(
     () => document.documentElement.getAttribute("data-vds-theme") === "dark",
   );
-  // Observe `data-vds-theme` attribute changes on <html> so inline styles
-  // stay in sync with the app-level theme toggle without a full re-render.
   useEffect(() => {
     const observer = new MutationObserver(() => {
       setIsDark(
@@ -688,317 +624,241 @@ function ChangeRow({
   const isPtr = recordType === "PTR";
   const hasErrors = serverErrors && serverErrors.length > 0;
 
-  // Destructure onChange so the custom handler can clear `record` before
-  // delegating to the default react-hook-form onChange for the select.
   const { onChange: onTypeChange, ...restTypeRegister } = register(
     `changes.${index}.type`,
   );
 
+  const cellStyle: React.CSSProperties = {
+    padding: "0.3rem 0.4rem",
+    verticalAlign: "top",
+    background: hasErrors ? (isDark ? "#1e0a0a" : "#fff8f8") : "transparent",
+  };
+
+  const inputStyle: React.CSSProperties = {
+    background: isDark ? "#1a2640" : "#fff",
+    color: isDark ? "#cdd9ed" : "#212529",
+    borderColor: isDark ? "rgba(127,168,216,0.2)" : "#dde3ec",
+    boxShadow: "none",
+    borderRadius: "0.35rem",
+    fontSize: "0.82rem",
+  };
+
   return (
-    <div
-      data-change-row="true"
-      style={{
-        background: hasErrors
-          ? isDark
-            ? "#1e0a0a"
-            : "#fff5f5"
-          : isDark
-            ? "#1e293b"
-            : "#fff",
-        border: `1px solid ${
-          hasErrors
-            ? isDark
-              ? "#7f1d1d"
-              : "#f1aeb5"
-            : isDark
-              ? "#4a6789"
-              : "#94a3b8"
-        }`,
-        borderRadius: "0.5rem",
-        marginBottom: "0.75rem",
-        overflow: "hidden",
-      }}
-    >
-      <div
+    <tr data-change-row="true">
+      {/* # */}
+      <td
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0.45rem 0.85rem",
-          background: hasErrors
-            ? isDark
-              ? "#2a0a0a"
-              : "#fde5e7"
-            : isDark
-              ? "#1a2942"
-              : "#cbd5e1",
-          borderBottom: `1px solid ${
-            hasErrors
-              ? isDark
-                ? "#7f1d1d"
-                : "#f1aeb5"
-              : isDark
-                ? "#4a6789"
-                : "#94a3b8"
-          }`,
+          ...cellStyle,
+          width: 36,
+          textAlign: "center",
+          color: isDark ? "#64748b" : "#94a3b8",
+          fontSize: "0.75rem",
+          fontWeight: 600,
         }}
       >
-        <span
-          style={{
-            fontSize: "0.82rem",
-            fontWeight: 600,
-            color: hasErrors ? "#991b1b" : isDark ? "#cbd5e1" : "#0d1b3e",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.4rem",
-          }}
-        >
+        {hasErrors ? (
           <i
-            className={`bi ${hasErrors ? "bi-exclamation-circle-fill" : "bi-hash"}`}
-            style={{ fontSize: "0.85rem" }}
+            className="bi bi-exclamation-circle-fill"
+            style={{ color: "#dc2626" }}
+            title={serverErrors!.join("\n")}
           />
-          Change {index + 1}
-        </span>
-        <button
-          type="button"
-          onClick={() => remove(index)}
-          title="Remove row"
-          style={{
-            background: "transparent",
-            border: "none",
-            color: "#9aacbe",
-            cursor: "pointer",
-            padding: "0 4px",
-            fontSize: "0.85rem",
-            lineHeight: 1,
-            transition: "color 0.15s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#dc3545")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#9aacbe")}
+        ) : (
+          index + 1
+        )}
+      </td>
+
+      {/* Change Type */}
+      <td style={{ ...cellStyle, width: 130 }}>
+        <select
+          className="form-select form-select-sm"
+          style={inputStyle}
+          {...register(`changes.${index}.changeType`)}
         >
-          <i className="bi bi-x-circle-fill" />
-        </button>
-      </div>
+          <option value="Add">Add</option>
+          <option value="DeleteRecordSet">Delete</option>
+        </select>
+      </td>
 
-      <div style={{ padding: "0.85rem" }}>
-        <div className="row g-3">
-          <div className="col-12 col-sm-6 col-md-3">
-            <label
-              className="form-label"
-              style={{
-                fontSize: "0.78rem",
-                fontWeight: 600,
-                color: isDark ? "#cbd5e1" : "#1f2a44",
-                marginBottom: "0.3rem",
-              }}
-            >
-              Change Type
-            </label>
-            <select
-              className="form-select form-select-sm"
-              style={{
-                background: isDark ? "#1a2640" : "#fff",
-                color: isDark ? "#cdd9ed" : "#212529",
-                borderColor: isDark ? "rgba(127,168,216,0.2)" : "#dde3ec",
-                boxShadow: "none",
-                borderRadius: "0.45rem",
-              }}
-              {...register(`changes.${index}.changeType`)}
-            >
-              <option value="Add">Add</option>
-              <option value="DeleteRecordSet">Delete Record Set</option>
-            </select>
-          </div>
+      {/* Record Type */}
+      <td style={{ ...cellStyle, width: 110 }}>
+        <select
+          className="form-select form-select-sm"
+          style={inputStyle}
+          {...restTypeRegister}
+          onChange={(e) => {
+            setValue(`changes.${index}.record`, {});
+            void onTypeChange(e);
+          }}
+        >
+          {RECORD_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+      </td>
 
-          <div className="col-12 col-sm-6 col-md-3">
-            <label
-              className="form-label"
-              style={{
-                fontSize: "0.78rem",
-                fontWeight: 600,
-                color: isDark ? "#cbd5e1" : "#1f2a44",
-                marginBottom: "0.3rem",
-              }}
-            >
-              Record Type
-            </label>
-            <select
-              className="form-select form-select-sm"
-              style={{
-                background: isDark ? "#1a2640" : "#fff",
-                color: isDark ? "#cdd9ed" : "#212529",
-                borderColor: isDark ? "rgba(127,168,216,0.2)" : "#dde3ec",
-                boxShadow: "none",
-                borderRadius: "0.45rem",
-              }}
-              {...restTypeRegister}
-              onChange={(e) => {
-                setValue(`changes.${index}.record`, {});
-                void onTypeChange(e);
-              }}
-            >
-              {RECORD_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="col-12 col-sm-8 col-md-4">
-            <label
-              className="form-label"
-              style={{
-                fontSize: "0.78rem",
-                fontWeight: 600,
-                color: isDark ? "#cbd5e1" : "#1f2a44",
-                marginBottom: "0.3rem",
-              }}
-            >
-              {isPtr ? "Input Name (IP Address)" : "Input Name (FQDN)"}
-            </label>
-            <input
-              className="form-control form-control-sm"
-              placeholder={
-                isPtr ? "e.g. 192.0.2.193" : "e.g. host.example.com."
-              }
-              style={{
-                background: isDark ? "#1a2640" : "#fff",
-                color: isDark ? "#cdd9ed" : "#212529",
-                borderColor: isDark ? "rgba(127,168,216,0.2)" : "#dde3ec",
-                boxShadow: "none",
-                borderRadius: "0.45rem",
-              }}
-              {...register(`changes.${index}.inputName`, {
-                required: true,
-                validate: (v) => {
-                  if (!v) return true; // required handles the empty case
-                  if (isPtr) {
-                    return (
-                      RE_IPV4.test(v) ||
-                      RE_IPV6.test(v) ||
-                      "Must be a valid IPv4 or IPv6 address"
-                    );
-                  }
-                  return (
-                    RE_FQDN.test(v) ||
-                    "Must be a valid FQDN (e.g. host.example.com.)"
-                  );
-                },
-              })}
-            />
-            {errors?.changes?.[index]?.inputName && (
-              <div
-                style={{ fontSize: "0.75rem", color: "#b02a37", marginTop: 2 }}
-              >
-                <i className="bi bi-exclamation-circle me-1" />
-                {errors.changes[index].inputName.message ||
-                  "Input name is required!"}
-              </div>
-            )}
-          </div>
-
-          <div className="col-12 col-sm-4 col-md-2">
-            <label
-              className="form-label"
-              style={{
-                fontSize: "0.78rem",
-                fontWeight: 600,
-                color: isDark ? "#cbd5e1" : "#1f2a44",
-                marginBottom: "0.3rem",
-              }}
-            >
-              TTL{" "}
-              {!isAdd && (
-                <span
-                  style={{
-                    fontWeight: 400,
-                    color: "#9aacbe",
-                    fontSize: "0.72rem",
-                  }}
-                >
-                  (N/A)
-                </span>
-              )}
-            </label>
-            <input
-              type="number"
-              className="form-control form-control-sm"
-              placeholder="300"
-              disabled={!isAdd}
-              min={30}
-              max={2147483647}
-              style={{
-                background: !isAdd
-                  ? isDark
-                    ? "#0f1825"
-                    : "#f8fafc"
-                  : isDark
-                    ? "#1a2640"
-                    : "#fff",
-                color: isDark ? "#cdd9ed" : "#212529",
-                borderColor: isDark ? "rgba(127,168,216,0.2)" : "#dde3ec",
-                boxShadow: "none",
-                borderRadius: "0.45rem",
-              }}
-              {...register(`changes.${index}.ttl`, { valueAsNumber: true })}
-            />
-          </div>
-        </div>
-
-        <div className="mt-3">
-          <label
-            className="form-label"
+      {/* Input Name */}
+      <td style={{ ...cellStyle, minWidth: 200 }}>
+        <div
+          style={{ display: "flex", flexDirection: "column", height: "100%" }}
+        >
+          <input
+            className="form-control form-control-sm"
+            placeholder={isPtr ? "192.0.2.193" : "host.example.com."}
+            autoComplete="off"
+            aria-invalid={
+              errors?.changes?.[index]?.inputName ? "true" : undefined
+            }
             style={{
-              fontSize: "0.78rem",
-              fontWeight: 600,
-              color: isDark ? "#cbd5e1" : "#1f2a44",
-              marginBottom: "0.3rem",
+              ...inputStyle,
+              borderColor: inputStyle.borderColor,
             }}
-          >
-            Record Data
-            {!isAdd && (
-              <span
-                style={{
-                  fontWeight: 400,
-                  color: "#9aacbe",
-                  fontSize: "0.72rem",
-                  marginLeft: 4,
-                }}
-              >
-                (optional for delete)
-              </span>
-            )}
-          </label>
+            {...register(`changes.${index}.inputName`, {
+              required: "Input Name is required",
+              validate: (v) => {
+                if (!v) return true;
+                if (isPtr)
+                  return RE_IPV4.test(v) || RE_IPV6.test(v) || "Invalid IP";
+                return RE_FQDN.test(v) || "Invalid FQDN";
+              },
+            })}
+          />
+          {errors?.changes?.[index]?.inputName && (
+            <div
+              style={{
+                fontSize: "0.72rem",
+                color: "#dc3545",
+                marginTop: "3px",
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              <i className="bi bi-exclamation-circle-fill" />
+              {errors.changes[index]?.inputName?.message ||
+                "Input Name is required"}
+            </div>
+          )}
+        </div>
+      </td>
+
+      {/* TTL */}
+      <td style={{ ...cellStyle, width: 80 }}>
+        <input
+          type="number"
+          className="form-control form-control-sm"
+          placeholder=""
+          autoComplete="off"
+          disabled={!isAdd}
+          min={30}
+          max={2147483647}
+          style={{
+            ...inputStyle,
+            background: !isAdd
+              ? isDark
+                ? "#0f1825"
+                : "#f1f5f9"
+              : inputStyle.background,
+          }}
+          {...register(`changes.${index}.ttl`, { valueAsNumber: true })}
+        />
+      </td>
+
+      {/* Record Data */}
+      <td style={{ ...cellStyle }}>
+        <div
+          style={{ display: "flex", flexDirection: "column", height: "100%" }}
+        >
           <RecordDataFields
             index={index}
             recordType={recordType}
             isAdd={isAdd}
             isDark={isDark}
           />
-        </div>
-
-        {hasErrors && (
-          <div className="mt-2">
-            {serverErrors!.map((e, i) => (
+          {(() => {
+            const recordErrors = errors?.changes?.[index]?.record as
+              Record<string, { message?: string } | undefined> | undefined;
+            const recordErrorMessage = Object.values(recordErrors ?? {}).find(
+              (value) =>
+                value && typeof value === "object" && "message" in value,
+            )?.message;
+            return recordErrorMessage ? (
               <div
-                key={i}
                 style={{
-                  fontSize: "0.78rem",
-                  color: "#b02a37",
+                  fontSize: "0.72rem",
+                  color: "#dc3545",
+                  marginTop: "3px",
                   display: "flex",
                   alignItems: "center",
                   gap: 4,
                 }}
               >
                 <i className="bi bi-exclamation-circle-fill" />
-                {e}
+                {recordErrorMessage}
+              </div>
+            ) : null;
+          })()}
+        </div>
+      </td>
+
+      {serverErrors && serverErrors.length > 0 && (
+        <td
+          style={{ ...cellStyle, background: isDark ? "#1f0d0d" : "#fff5f5" }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {serverErrors.map((message) => (
+              <div
+                key={message}
+                style={{
+                  fontSize: "0.72rem",
+                  color: "#dc3545",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                <i className="bi bi-exclamation-circle-fill" />
+                {message}
               </div>
             ))}
           </div>
-        )}
-      </div>
-    </div>
+        </td>
+      )}
+
+      {/* Remove */}
+      <td style={{ ...cellStyle, width: 90, textAlign: "center" }}>
+        <button
+          type="button"
+          onClick={() => remove(index)}
+          disabled={disabled}
+          title={disabled ? "Editing is locked during review" : "Remove row"}
+          aria-label="Delete row"
+          className="btn btn-sm d-inline-flex align-items-center gap-1"
+          style={{
+            border: `1px solid ${disabled ? (isDark ? "#475569" : "#cbd5e1") : isDark ? "#7f1d1d" : "#f1aeb5"}`,
+            background: disabled
+              ? isDark
+                ? "#1e293b"
+                : "#f8fafc"
+              : isDark
+                ? "rgba(127,29,29,0.25)"
+                : "#fff5f5",
+            color: disabled ? (isDark ? "#94a3b8" : "#64748b") : "#dc3545",
+            borderRadius: "0.35rem",
+            padding: "0.2rem 0.55rem",
+            fontSize: "0.75rem",
+            fontWeight: 600,
+            cursor: disabled ? "not-allowed" : "pointer",
+            opacity: disabled ? 0.8 : 1,
+            boxShadow: "none",
+          }}
+        >
+          <i className="bi bi-trash3" />
+          Delete
+        </button>
+      </td>
+    </tr>
   );
 }
 
@@ -1081,6 +941,45 @@ function ScheduledTimeField({
 }
 
 /**
+ * Check if a change item has meaningful data that would be lost on discard.
+ * Returns true if either inputName has a value OR the corresponding record field
+ * for the row's type has a value.
+ */
+export function hasMeaningfulDiscardData(changes: ChangeFormItem[]): boolean {
+  // If 2+ rows: immediately true (assume meaningful data)
+  if (changes.length >= 2) return true;
+
+  // Single row: check if inputName OR record fields have values
+  if (changes.length === 1) {
+    const c = changes[0];
+    if (c.inputName && c.inputName.trim()) return true;
+
+    const record = c.record ?? {};
+    const hasRecordData =
+      (record.address && String(record.address).trim()) ||
+      (record.cname && String(record.cname).trim()) ||
+      (record.ptrdname && String(record.ptrdname).trim()) ||
+      (record.text && String(record.text).trim()) ||
+      (record.preference !== undefined && record.preference !== null) ||
+      (record.exchange && String(record.exchange).trim()) ||
+      (record.nsdname && String(record.nsdname).trim()) ||
+      (record.priority !== undefined && record.priority !== null) ||
+      (record.weight !== undefined && record.weight !== null) ||
+      (record.port !== undefined && record.port !== null) ||
+      (record.target && String(record.target).trim()) ||
+      (record.order !== undefined && record.order !== null) ||
+      (record.flags && String(record.flags).trim()) ||
+      (record.service && String(record.service).trim()) ||
+      (record.regexp && String(record.regexp).trim()) ||
+      (record.replacement && String(record.replacement).trim());
+
+    return !!hasRecordData;
+  }
+
+  return false;
+}
+
+/**
  * @param onSubmit        - Receives the fully normalized `CreateDnsChangeRequest`
  *                          and the `allowManualReview` flag on form submit.
  * @param onCancel        - Called when the user dismisses without submitting.
@@ -1094,6 +993,8 @@ interface DnsChangeFormProps {
   isSubmitting: boolean;
   /** Per-row server errors returned by a 400 API response */
   serverRowErrors?: string[][];
+  /** Callback to notify parent when unsaved data is detected */
+  onUnsavedChange?: (hasUnsaved: boolean) => void;
 }
 
 /**
@@ -1628,6 +1529,7 @@ export function DnsChangeForm({
   onCancel,
   isSubmitting,
   serverRowErrors,
+  onUnsavedChange,
 }: DnsChangeFormProps) {
   const [allowManualReview, setAllowManualReview] = useState(false);
   const [rowErrors, setRowErrors] = useState<string[][]>([]);
@@ -1635,30 +1537,25 @@ export function DnsChangeForm({
     type: "success" | "danger";
     message: string;
   } | null>(null);
-  // When set, holds the staged submit payload waiting for user confirmation.
-  // The form switches to a confirmation view instead of immediately calling
-  // the API — matching the AngularJS two-step pendingSubmit → pendingConfirm flow.
   const [pendingSubmitData, setPendingSubmitData] = useState<{
     data: CreateDnsChangeRequest;
     allowManualReview: boolean;
+    rowCount: number;
   } | null>(null);
-  // When set, the duplicate-review modal is shown. `changes` is the full
-  // parsed CSV row list and `groups` enumerates the duplicate clusters (each
-  // with ≥ 2 indices into `changes`). `keep` tracks which indices the user
-  // wants to keep — defaults to "first row of each group" on open.
   const [dupReview, setDupReview] = useState<{
     changes: ChangeFormItem[];
     groups: { signature: string; indices: number[] }[];
     keep: Set<number>;
   } | null>(null);
+  // Cancel confirmation modal
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [isOwnerGroupMenuOpen, setIsOwnerGroupMenuOpen] = useState(false);
   const csvFileRef = useRef<HTMLInputElement>(null);
-  // Tracks the previous row count so the auto-focus effect only fires when
-  // a new row is appended, not on initial render or row removal.
   const prevFieldsLengthRef = useRef(0);
+  const shouldWarnRef = useRef(false);
   const [isDark, setIsDark] = useState<boolean>(
     () => document.documentElement.getAttribute("data-vds-theme") === "dark",
   );
-  // Observe theme attribute so inline styles stay in sync with the app theme.
   useEffect(() => {
     const observer = new MutationObserver(() => {
       setIsDark(
@@ -1673,9 +1570,8 @@ export function DnsChangeForm({
   }, []);
 
   // Fetch the user's groups to populate the owner group ID selector.
-  // ignoreAccess=true mirrors the AngularJS groupsService.getGroups() call
-  // which returns all groups the user can see, not just their own.
-  const { data: groupsData } = useQuery({
+  // ignoreAccess=true
+  const { data: groupsData, isLoading: isGroupsLoading } = useQuery({
     queryKey: ["groups-for-dns-form"],
     queryFn: async () => {
       const res = await groupsService.getGroups(true);
@@ -1708,21 +1604,61 @@ export function DnsChangeForm({
           changeType: "Add",
           inputName: "",
           type: "A+PTR",
-          ttl: undefined,
+          ttl: 300,
           record: {},
         },
       ],
     },
   });
 
-  const { register, control, handleSubmit, watch } = methods;
+  const { register, control, handleSubmit, watch, formState } = methods;
   const { fields, append, remove, replace } = useFieldArray({
     control,
     name: "changes",
   });
 
+  // Watch changes to detect unsaved data
+  const allChanges = useWatch({
+    control,
+    name: "changes",
+  });
+
+  // Create a dependency value from stringified key fields to enable proper change detection
+  // for nested form objects
+  const changesDependency = JSON.stringify(
+    allChanges.map((c) => ({
+      inputName: c.inputName,
+      type: c.type,
+      record: c.record,
+    })),
+  );
+
+  // Detect unsaved changes and notify parent
+  useEffect(() => {
+    if (onUnsavedChange) {
+      const hasUnsaved = hasMeaningfulDiscardData(allChanges);
+      onUnsavedChange(hasUnsaved);
+    }
+  }, [changesDependency, onUnsavedChange, allChanges]);
+
+  // Browser refresh warning for unsaved data
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasMeaningfulDiscardData(allChanges)) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [allChanges]);
+
   // Auto-focus the Change Type select of the newly added row whenever a row
-  // is appended. This mirrors the AngularJS addSingleChange() focus behavior.
+  // is appended.
   useEffect(() => {
     if (fields.length > prevFieldsLengthRef.current) {
       const rows = document.querySelectorAll<HTMLElement>(
@@ -1794,8 +1730,12 @@ export function DnsChangeForm({
     // valueAsNumber on blank number inputs, or left over when the user switches
     // record types (e.g. MX → A leaves preference: NaN on the row).
     const finalChanges = expandedChanges.map((entry) => {
+      // TTL only applies to Add changes; DeleteRecordSet rows carry the default
+      // value in the (disabled) input but must not send it to the API.
       const cleanTtl =
-        entry.ttl !== undefined && !Number.isNaN(entry.ttl)
+        entry.changeType !== "DeleteRecordSet" &&
+        entry.ttl !== undefined &&
+        !Number.isNaN(entry.ttl)
           ? entry.ttl
           : undefined;
 
@@ -1834,8 +1774,7 @@ export function DnsChangeForm({
 
     // Stage the payload for user confirmation rather than submitting immediately.
     // The confirmation panel will display the change count and let the user
-    // back out before the API call is made. This mirrors the AngularJS two-step
-    // pendingSubmit → pendingConfirm flow.
+    // back out before the API call is made. 
     setPendingSubmitData({
       data: {
         comments: data.comments || undefined,
@@ -1847,6 +1786,8 @@ export function DnsChangeForm({
         changes: finalChanges,
       },
       allowManualReview,
+      // Count the user-facing rows, not the expanded A+PTR/AAAA+PTR pairs.
+      rowCount: data.changes.length,
     });
   };
 
@@ -1954,79 +1895,41 @@ export function DnsChangeForm({
       <form onSubmit={handleSubmit(handleFormSubmit, onInvalid)} noValidate>
         {/* ── Section: Metadata ─────────────────────────────────── */}
         <div
-          className="vds-tab-panel-content rounded-3 mb-3"
+          className="rounded-3 mb-3"
           style={{
-            border: `1px solid ${isDark ? "#4a6789" : "#64748b"}`,
+            border: `1px solid ${isDark ? "#2d4163" : "#e2e8f0"}`,
             overflow: "hidden",
+            background: isDark ? "#131c2e" : "#ffffff",
             boxShadow: isDark
-              ? "0 2px 6px rgba(0,0,0,0.35)"
-              : "0 2px 6px rgba(15,23,42,0.10)",
+              ? "0 1px 3px rgba(0,0,0,0.3)"
+              : "0 1px 3px rgba(15,23,42,0.06)",
           }}
         >
           <div
             className="px-3 py-2 d-flex align-items-center gap-2"
             style={{
-              background: "linear-gradient(90deg, #1e5fa8, #0d1b3e)",
-              color: "#ffffff",
-              borderBottom: `1px solid ${isDark ? "#3a5377" : "#0d1b3e"}`,
+              background: isDark ? "#1a2536" : "#f8fafc",
+              color: isDark ? "#cbd5e1" : "#1f2a44",
+              borderBottom: `1px solid ${isDark ? "#2d3d52" : "#e2e8f0"}`,
             }}
           >
             <i
               className="bi bi-info-circle-fill"
-              style={{ fontSize: "0.95rem", color: "#ffffff" }}
+              style={{ fontSize: "0.95rem", color: "#1e5fa8" }}
             />
             <span
               className="fw-semibold"
-              style={{ color: "#ffffff", fontSize: "0.9rem" }}
+              style={{
+                color: isDark ? "#e2e8f0" : "#1f2a44",
+                fontSize: "0.9rem",
+              }}
             >
               Batch Details
             </span>
           </div>
-          <div className="p-3">
-            {/* <div
-              className="col-12 col-sm-5 col-md-2 d-flex align-items-end mt-md-0"
-              style={{ paddingBottom: "0.15rem" }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  background: "#fff",
-                  border: "1px solid #dde3ec",
-                  borderRadius: "0.45rem",
-                  padding: "0.45rem 0.75rem",
-                  cursor: "pointer",
-                  userSelect: "none",
-                  width: "100%",
-                }}
-                onClick={() => setAllowManualReview((v) => !v)}
-              >
-                <input
-                  type="checkbox"
-                  id="allowManualReview"
-                  className="form-check-input mt-0"
-                  checked={allowManualReview}
-                  onChange={(e) => setAllowManualReview(e.target.checked)}
-                  style={{ cursor: "pointer", flexShrink: 0 }}
-                />
-                <label
-                  htmlFor="allowManualReview"
-                  style={{
-                    fontSize: "0.78rem",
-                    fontWeight: 600,
-                    color: "#4a5568",
-                    cursor: "pointer",
-                    marginBottom: 0,
-                  }}
-                >
-                  Manual Review
-                </label>
-              </div>
-            </div> */}
-
-            <div className="row g-3 align-items-start">
-              <div className="col-12 col-md-6">
+          <div className="px-3 py-2">
+            <div className="row g-2 align-items-start">
+              <div className="col-12 col-md-4">
                 <label
                   className="form-label"
                   style={{
@@ -2073,32 +1976,66 @@ export function DnsChangeForm({
                     (optional)
                   </span>
                 </label>
-                {groups.length > 0 ? (
-                  <select
-                    className={`form-select form-select-sm${ownerGroupError ? " is-invalid" : ""}`}
+                {isGroupsLoading ? (
+                  <div
+                    className="form-control form-control-sm"
                     style={{
                       background: isDark ? "#1a2640" : "#fff",
                       color: isDark ? "#cdd9ed" : "#212529",
-                      borderColor: ownerGroupError
-                        ? "#dc3545"
-                        : isDark
-                          ? "rgba(127,168,216,0.2)"
-                          : "#dde3ec",
+                      borderColor: isDark ? "rgba(127,168,216,0.2)" : "#dde3ec",
                       boxShadow: "none",
                       borderRadius: "0.45rem",
+                      opacity: 0.8,
                     }}
-                    {...register("ownerGroupId")}
                   >
-                    <option value="">— No owner group —</option>
-                    {groups
-                      .slice()
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((g) => (
-                        <option key={g.id} value={g.id}>
-                          {g.name}
-                        </option>
-                      ))}
-                  </select>
+                    Loading groups…
+                  </div>
+                ) : groups.length > 0 ? (
+                  <div style={{ position: "relative" }}>
+                    <select
+                      className={`form-select form-select-sm${ownerGroupError ? " is-invalid" : ""}`}
+                      style={{
+                        background: isDark ? "#1a2640" : "#fff",
+                        color: isDark ? "#cdd9ed" : "#212529",
+                        borderColor: ownerGroupError
+                          ? "#dc3545"
+                          : isDark
+                            ? "rgba(127,168,216,0.2)"
+                            : "#dde3ec",
+                        boxShadow: "none",
+                        borderRadius: "0.45rem",
+                        appearance: "none",
+                        WebkitAppearance: "none",
+                        MozAppearance: "none",
+                        paddingRight: "2rem",
+                      }}
+                      {...register("ownerGroupId")}
+                      onFocus={() => setIsOwnerGroupMenuOpen(true)}
+                      onBlur={() => setIsOwnerGroupMenuOpen(false)}
+                    >
+                      <option value="">— No owner group —</option>
+                      {groups
+                        .slice()
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map((g) => (
+                          <option key={g.id} value={g.id}>
+                            {g.name}
+                          </option>
+                        ))}
+                    </select>
+                    <i
+                      className={`bi ${isOwnerGroupMenuOpen ? "bi-chevron-up" : "bi-chevron-down"}`}
+                      style={{
+                        position: "absolute",
+                        right: 10,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        pointerEvents: "none",
+                        fontSize: "0.72rem",
+                        color: isDark ? "#cbd5e1" : "#64748b",
+                      }}
+                    />
+                  </div>
                 ) : (
                   <input
                     className={`form-control form-control-sm${ownerGroupError ? " is-invalid" : ""}`}
@@ -2151,167 +2088,112 @@ export function DnsChangeForm({
                 watch={watch}
                 isDark={isDark}
               />
-              {/* <div
-              className="col-12 col-sm-5 col-md-2 d-flex align-items-end mt-md-0"
-              style={{ paddingBottom: "0.15rem" }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  background: "#fff",
-                  border: "1px solid #dde3ec",
-                  borderRadius: "0.45rem",
-                  padding: "0.45rem 0.75rem",
-                  cursor: "pointer",
-                  userSelect: "none",
-                  width: "100%",
-                }}
-                onClick={() => setAllowManualReview((v) => !v)}
-              >
-                <input
-                  type="checkbox"
-                  id="allowManualReview"
-                  className="form-check-input mt-0"
-                  checked={allowManualReview}
-                  onChange={(e) => setAllowManualReview(e.target.checked)}
-                  style={{ cursor: "pointer", flexShrink: 0 }}
-                />
-                <label
-                  htmlFor="allowManualReview"
-                  style={{
-                    fontSize: "0.78rem",
-                    fontWeight: 600,
-                    color: "#4a5568",
-                    cursor: "pointer",
-                    marginBottom: 0,
-                  }}
-                >
-                  Manual Review
-                </label>
-              </div>
-            </div> */}
             </div>
           </div>
         </div>
 
         {/* ── Section: Changes ──────────────────────────────────── */}
         <div
-          className="vds-tab-panel-content rounded-3 mb-3"
+          className="rounded-3 mb-3"
           style={{
-            border: `1px solid ${isDark ? "#4a6789" : "#64748b"}`,
+            border: `1px solid ${isDark ? "#2d4163" : "#e2e8f0"}`,
             overflow: "hidden",
+            background: isDark ? "#131c2e" : "#ffffff",
             boxShadow: isDark
-              ? "0 2px 6px rgba(0,0,0,0.35)"
-              : "0 2px 6px rgba(15,23,42,0.10)",
+              ? "0 3px 6px rgba(0,0,0,0.3)"
+              : "0 3px 6px rgba(15,23,42,0.06)",
           }}
         >
           <div
             className="px-3 py-2 d-flex align-items-center justify-content-between flex-wrap gap-2"
             style={{
-              background: "linear-gradient(90deg, #1e5fa8, #0d1b3e)",
-              color: "#ffffff",
-              borderBottom: `1px solid ${isDark ? "#3a5377" : "#0d1b3e"}`,
+              background: isDark ? "#1a2536" : "#f8fafc",
+              color: isDark ? "#cbd5e1" : "#1f2a44",
+              borderBottom: `1px solid ${isDark ? "#2d3d52" : "#e2e8f0"}`,
             }}
           >
             <div className="d-flex align-items-center gap-2">
               <i
                 className="bi bi-list-check"
-                style={{ fontSize: "0.95rem", color: "#ffffff" }}
+                style={{ fontSize: "0.95rem", color: "#1e5fa8" }}
               />
               <span
                 className="fw-semibold"
-                style={{ color: "#ffffff", fontSize: "0.9rem" }}
+                style={{
+                  color: isDark ? "#e2e8f0" : "#1f2a44",
+                  fontSize: "0.9rem",
+                }}
               >
                 DNS Changes
               </span>
               {fields.length > 0 && (
                 <span
                   style={{
-                    background: "rgba(255,255,255,0.18)",
-                    color: "#ffffff",
+                    background: isDark
+                      ? "rgba(30,95,168,0.25)"
+                      : "rgba(30,95,168,0.1)",
+                    color: isDark ? "#93c5fd" : "#1e5fa8",
                     fontSize: "0.72rem",
                     fontWeight: 700,
                     borderRadius: "999px",
                     padding: "2px 9px",
-                    border: "1px solid rgba(255,255,255,0.25)",
+                    border: `1px solid ${isDark ? "rgba(30,95,168,0.4)" : "rgba(30,95,168,0.2)"}`,
                   }}
                 >
                   {fields.length}
                 </span>
               )}
             </div>
-            <div className="d-flex align-items-center gap-2">
+            <div className="d-flex align-items-start gap-2">
               <button
                 type="button"
-                className="btn btn-sm"
-                disabled={fields.length >= BATCH_CHANGE_LIMIT}
+                className="vds-ubtn vds-ubtn--secondary"
+                disabled={
+                  fields.length >= BATCH_CHANGE_LIMIT ||
+                  Boolean(pendingSubmitData)
+                }
                 onClick={() =>
                   append({
                     changeType: "Add",
                     inputName: "",
                     type: "A+PTR",
-                    ttl: undefined,
+                    ttl: 300,
                     record: {},
                   })
                 }
-                style={{
-                  background:
-                    fields.length >= BATCH_CHANGE_LIMIT
-                      ? "#c8d4e0"
-                      : "linear-gradient(90deg, #1e5fa8, #0d1b3e)",
-                  border: "none",
-                  color: "#fff",
-                  borderRadius: "0.45rem",
-                  padding: "0.35rem 0.85rem",
-                  fontSize: "0.82rem",
-                  fontWeight: 600,
-                  boxShadow:
-                    fields.length >= BATCH_CHANGE_LIMIT
-                      ? "none"
-                      : "0 2px 8px rgba(30,95,168,.25)",
-                  transition: "box-shadow 0.2s",
-                  cursor:
-                    fields.length >= BATCH_CHANGE_LIMIT
-                      ? "not-allowed"
-                      : "pointer",
-                }}
-                onMouseEnter={(e) => {
-                  if (fields.length < BATCH_CHANGE_LIMIT)
-                    e.currentTarget.style.boxShadow =
-                      "0 3px 12px rgba(30,95,168,.35)";
-                }}
-                onMouseLeave={(e) => {
-                  if (fields.length < BATCH_CHANGE_LIMIT)
-                    e.currentTarget.style.boxShadow =
-                      "0 2px 8px rgba(30,95,168,.25)";
-                }}
               >
-                <i className="bi bi-plus-lg me-1" />
+                <i className="bi bi-plus-lg" />
                 Add Change
               </button>
 
-              <label
-                htmlFor="batchChangeCsv"
-                className="btn btn-sm mb-0"
-                style={{
-                  background: isDark ? "#1e293b" : "#fff",
-                  border: `1px solid ${isDark ? "#2d4163" : "#d4dae3"}`,
-                  color: isDark ? "#94a3b8" : "#4a5568",
-                  borderRadius: "0.45rem",
-                  padding: "0.33rem 0.8rem",
-                  fontSize: "0.82rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                }}
-              >
-                <i className="bi bi-upload me-1" />
-                Import CSV
-              </label>
+              <div className="d-flex flex-column align-items-center gap-1">
+                <label
+                  htmlFor="batchChangeCsv"
+                  className="vds-ubtn vds-ubtn--secondary mb-0"
+                  style={{
+                    cursor: pendingSubmitData ? "not-allowed" : "pointer",
+                    opacity: pendingSubmitData ? 0.55 : 1,
+                    pointerEvents: pendingSubmitData ? "none" : "auto",
+                  }}
+                >
+                  <i className="bi bi-upload" />
+                  Import CSV
+                </label>
+                <a
+                  href="https://www.vinyldns.io/portal/dns-changes#dns-change-csv-import"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    fontSize: "0.72rem",
+                    color: isDark ? "#7fb8f0" : "#1e5fa8",
+                    textDecoration: "none",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <i className="bi bi-box-arrow-up-right me-1" />
+                  Sample CSV format
+                </a>
+              </div>
               <input
                 ref={csvFileRef}
                 type="file"
@@ -2323,11 +2205,11 @@ export function DnsChangeForm({
             </div>
           </div>
 
-          <div className="p-3">
+          <div className="p-2">
             {csvAlert && (
               <div
                 className={`alert alert-${csvAlert.type} d-flex align-items-center gap-2 py-2 px-3`}
-                style={{ fontSize: "0.82rem", marginBottom: "0.75rem" }}
+                style={{ fontSize: "0.82rem", marginBottom: "0.5rem" }}
               >
                 <i
                   className={`bi ${csvAlert.type === "success" ? "bi-check-circle" : "bi-exclamation-triangle"}`}
@@ -2341,7 +2223,7 @@ export function DnsChangeForm({
                     display: "flex",
                     alignItems: "center",
                     gap: 4,
-                    padding: "0.25rem 0.6rem",
+                    padding: "0.2rem 0.55rem",
                     fontSize: "0.75rem",
                     fontWeight: 500,
                     border: `1px solid ${csvAlert.type === "success" ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`,
@@ -2352,28 +2234,6 @@ export function DnsChangeForm({
                     color: csvAlert.type === "success" ? "#059669" : "#dc2626",
                     borderRadius: "0.35rem",
                     cursor: "pointer",
-                    transition: "all 0.15s ease",
-                    outline: "none",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background =
-                      csvAlert.type === "success"
-                        ? "rgba(34,197,94,0.15)"
-                        : "rgba(239,68,68,0.15)";
-                    e.currentTarget.style.borderColor =
-                      csvAlert.type === "success"
-                        ? "rgba(34,197,94,0.5)"
-                        : "rgba(239,68,68,0.5)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background =
-                      csvAlert.type === "success"
-                        ? "rgba(34,197,94,0.08)"
-                        : "rgba(239,68,68,0.08)";
-                    e.currentTarget.style.borderColor =
-                      csvAlert.type === "success"
-                        ? "rgba(34,197,94,0.3)"
-                        : "rgba(239,68,68,0.3)";
                   }}
                 >
                   <i className="bi bi-x-lg" />
@@ -2385,7 +2245,7 @@ export function DnsChangeForm({
             {fields.length >= BATCH_CHANGE_LIMIT && (
               <div
                 className="alert alert-warning d-flex align-items-center gap-2 py-2 px-3"
-                style={{ fontSize: "0.82rem", marginBottom: "0.75rem" }}
+                style={{ fontSize: "0.82rem", marginBottom: "0.5rem" }}
               >
                 <i className="bi bi-exclamation-triangle-fill" />
                 Limit reached. Cannot add more than {BATCH_CHANGE_LIMIT} records
@@ -2393,24 +2253,12 @@ export function DnsChangeForm({
               </div>
             )}
 
-            <div style={{ marginBottom: "0.75rem" }}>
-              <a
-                href="https://www.vinyldns.io/portal/dns-changes#dns-change-csv-import"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ fontSize: "0.78rem", color: "#1e5fa8" }}
-              >
-                <i className="bi bi-box-arrow-up-right me-1" />
-                See documentation for sample CSV format
-              </a>
-            </div>
-
             {fields.length === 0 ? (
               <div
                 style={{
                   border: `2px dashed ${isDark ? "#3d5273" : "#94a3b8"}`,
                   borderRadius: "0.65rem",
-                  padding: "2.5rem 1rem",
+                  padding: "2rem 1rem",
                   textAlign: "center",
                   color: isDark ? "#64748b" : "#475569",
                   background: isDark ? "#1e293b" : "#f8fafc",
@@ -2421,7 +2269,7 @@ export function DnsChangeForm({
                   style={{
                     fontSize: "1.6rem",
                     display: "block",
-                    marginBottom: "0.5rem",
+                    marginBottom: "0.4rem",
                   }}
                 />
                 <span style={{ fontSize: "0.85rem", fontWeight: 500 }}>
@@ -2433,14 +2281,62 @@ export function DnsChangeForm({
                 </span>
               </div>
             ) : (
-              fields.map((field, index) => (
-                <ChangeRow
-                  key={field.id}
-                  index={index}
-                  remove={remove}
-                  serverErrors={effectiveRowErrors[index]}
-                />
-              ))
+              <div
+                style={{
+                  overflowX: "auto",
+                  overflowY: "auto",
+                  maxHeight: "calc(100vh - 500px)",
+                }}
+              >
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: "0.82rem",
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      {[
+                        "#",
+                        "Change Type",
+                        "Record Type",
+                        "Input Name",
+                        "TTL",
+                        "Record Data",
+                        "Actions",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          style={{
+                            padding: "0.3rem 0.4rem",
+                            fontSize: "0.72rem",
+                            fontWeight: 700,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.04em",
+                            color: isDark ? "#64748b" : "#64748b",
+                            background: isDark ? "#1a2536" : "#f8fafd",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fields.map((field, index) => (
+                      <ChangeRow
+                        key={field.id}
+                        index={index}
+                        remove={remove}
+                        serverErrors={effectiveRowErrors[index]}
+                        disabled={Boolean(pendingSubmitData)}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -2448,15 +2344,18 @@ export function DnsChangeForm({
         {/* ── Footer Actions ────────────────────────────────────── */}
         <div
           style={{
-            paddingTop: "1rem",
-            borderTop: `1px solid ${isDark ? "#2d4163" : "#e8ecf0"}`,
+            paddingTop: "0.1rem",
+            paddingBottom: "0",
+            position: "sticky",
+            bottom: 0,
+            backgroundColor: isDark ? "#0f172a" : "#ffffff",
+            zIndex: 10,
           }}
         >
           {pendingSubmitData ? (
-            // Two-step confirmation panel — matches AngularJS pendingConfirm step.
-            <div>
+            <div style={{ padding: "0.05rem 0 0.5rem 0" }}>
               <div
-                className="d-flex align-items-start gap-2 p-3 mb-3"
+                className="d-flex align-items-center gap-2 p-2 mb-2"
                 style={{
                   background: isDark
                     ? "rgba(255,193,7,0.08)"
@@ -2468,15 +2367,15 @@ export function DnsChangeForm({
                 }}
               >
                 <i
-                  className="bi bi-exclamation-triangle-fill mt-1"
-                  style={{ flexShrink: 0 }}
+                  className="bi bi-exclamation-triangle-fill"
+                  style={{ flexShrink: 0, fontSize: "1rem", lineHeight: 1.4 }}
                 />
                 <div>
                   <strong>Review before submitting:</strong> You are about to
                   submit{" "}
                   <strong>
-                    {pendingSubmitData.data.changes.length} DNS change
-                    {pendingSubmitData.data.changes.length !== 1 ? "s" : ""}
+                    {pendingSubmitData.rowCount} DNS change
+                    {pendingSubmitData.rowCount !== 1 ? "s" : ""}
                   </strong>
                   .
                   {pendingSubmitData.data.scheduledTime && (
@@ -2492,26 +2391,19 @@ export function DnsChangeForm({
               <div className="d-flex align-items-center gap-2">
                 <button
                   type="button"
+                  className="vds-ubtn vds-ubtn--primary"
                   onClick={handleConfirmSubmit}
                   disabled={isSubmitting}
-                  style={{
-                    background: isSubmitting
-                      ? "#c8d4e0"
-                      : "linear-gradient(90deg, #1e5fa8, #0d1b3e)",
-                    border: "none",
-                    color: "#fff",
-                    borderRadius: "0.45rem",
-                    padding: "0.45rem 1.4rem",
-                    fontSize: "0.85rem",
-                    fontWeight: 600,
-                    boxShadow: isSubmitting
-                      ? "none"
-                      : "0 2px 8px rgba(30,95,168,.25)",
-                    cursor: isSubmitting ? "not-allowed" : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                  }}
+                  style={
+                    isDark
+                      ? {
+                          backgroundColor: "#2563eb",
+                          color: "#f8fafc",
+                          borderColor: "#3b82f6",
+                          boxShadow: "0 1px 3px rgba(37, 99, 235, 0.25)",
+                        }
+                      : undefined
+                  }
                 >
                   {isSubmitting ? (
                     <>
@@ -2527,21 +2419,9 @@ export function DnsChangeForm({
                 </button>
                 <button
                   type="button"
+                  className="vds-ubtn vds-ubtn--secondary"
                   onClick={handleBackToEdit}
                   disabled={isSubmitting}
-                  style={{
-                    background: isDark ? "#1e293b" : "#fff",
-                    border: `1px solid ${isDark ? "#2d4163" : "#d4dae3"}`,
-                    color: isDark ? "#94a3b8" : "#5a6a85",
-                    borderRadius: "0.45rem",
-                    padding: "0.45rem 1.1rem",
-                    fontSize: "0.85rem",
-                    fontWeight: 600,
-                    cursor: isSubmitting ? "not-allowed" : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                  }}
                 >
                   <i className="bi bi-arrow-left" />
                   Back to Edit
@@ -2549,44 +2429,24 @@ export function DnsChangeForm({
               </div>
             </div>
           ) : (
-            <div className="d-flex align-items-center gap-2">
+            <div
+              className="d-flex align-items-center gap-2"
+              style={{ padding: "0.25rem 0 0 0" }}
+            >
               <button
                 type="submit"
+                className="vds-ubtn vds-ubtn--primary"
                 disabled={fields.length === 0 || isSubmitting}
-                style={{
-                  background:
-                    fields.length === 0 || isSubmitting
-                      ? "#c8d4e0"
-                      : "linear-gradient(90deg, #1e5fa8, #0d1b3e)",
-                  border: "none",
-                  color: "#fff",
-                  borderRadius: "0.45rem",
-                  padding: "0.45rem 1.4rem",
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                  boxShadow:
-                    fields.length === 0 || isSubmitting
-                      ? "none"
-                      : "0 2px 8px rgba(30,95,168,.25)",
-                  cursor:
-                    fields.length === 0 || isSubmitting
-                      ? "not-allowed"
-                      : "pointer",
-                  transition: "all 0.2s",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-                onMouseEnter={(e) => {
-                  if (fields.length > 0 && !isSubmitting)
-                    e.currentTarget.style.boxShadow =
-                      "0 3px 12px rgba(30,95,168,.35)";
-                }}
-                onMouseLeave={(e) => {
-                  if (fields.length > 0 && !isSubmitting)
-                    e.currentTarget.style.boxShadow =
-                      "0 2px 8px rgba(30,95,168,.25)";
-                }}
+                style={
+                  isDark
+                    ? {
+                        backgroundColor: "#2563eb",
+                        color: "#f8fafc",
+                        borderColor: "#3b82f6",
+                        boxShadow: "0 1px 3px rgba(37, 99, 235, 0.25)",
+                      }
+                    : undefined
+                }
               >
                 {isSubmitting ? (
                   <>
@@ -2602,35 +2462,15 @@ export function DnsChangeForm({
               </button>
               <button
                 type="button"
-                onClick={onCancel}
+                className="vds-ubtn vds-ubtn--secondary"
+                onClick={() => {
+                  if (hasMeaningfulDiscardData(allChanges)) {
+                    setShowCancelConfirm(true);
+                  } else {
+                    onCancel();
+                  }
+                }}
                 disabled={isSubmitting}
-                style={{
-                  background: isDark ? "#1e293b" : "#fff",
-                  border: `1px solid ${isDark ? "#2d4163" : "#d4dae3"}`,
-                  color: isDark ? "#94a3b8" : "#5a6a85",
-                  borderRadius: "0.45rem",
-                  padding: "0.45rem 1.1rem",
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                  cursor: isSubmitting ? "not-allowed" : "pointer",
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isSubmitting) {
-                    e.currentTarget.style.borderColor = "#1e5fa8";
-                    e.currentTarget.style.color = "#1e5fa8";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isSubmitting) {
-                    e.currentTarget.style.borderColor = isDark
-                      ? "#2d4163"
-                      : "#d4dae3";
-                    e.currentTarget.style.color = isDark
-                      ? "#94a3b8"
-                      : "#5a6a85";
-                  }
-                }}
               >
                 Cancel
               </button>
@@ -2646,6 +2486,138 @@ export function DnsChangeForm({
           onApply={handleDupReviewApply}
           onCancel={handleDupReviewCancel}
         />
+      )}
+
+      {/* ── Cancel confirmation modal ── */}
+      {showCancelConfirm && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cancel-confirm-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowCancelConfirm(false);
+          }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15,23,42,0.65)",
+            backdropFilter: "blur(3px)",
+            zIndex: 1090,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "1.5rem",
+          }}
+        >
+          <div
+            style={{
+              background: isDark ? "#1e293b" : "#ffffff",
+              border: `1px solid ${isDark ? "#2d4163" : "#e8ecf0"}`,
+              borderRadius: "0.85rem",
+              boxShadow: "0 20px 50px rgba(0,0,0,0.4)",
+              width: "min(420px, 100%)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.85rem",
+                padding: "1rem 1.25rem",
+                borderBottom: `1px solid ${isDark ? "#2d4163" : "#e8ecf0"}`,
+              }}
+            >
+              <span
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "50%",
+                  background: isDark ? "#3f1d1d" : "#fef2f2",
+                  color: "#dc2626",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "1rem",
+                  flexShrink: 0,
+                }}
+              >
+                <i className="bi bi-exclamation-triangle-fill" />
+              </span>
+              <h6
+                id="cancel-confirm-title"
+                style={{
+                  margin: 0,
+                  fontWeight: 600,
+                  fontSize: "1rem",
+                  color: isDark ? "#e2e8f0" : "#0d1b3e",
+                }}
+              >
+                Discard batch change?
+              </h6>
+            </div>
+            <div style={{ padding: "1rem 1.25rem" }}>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.88rem",
+                  color: isDark ? "#94a3b8" : "#475569",
+                }}
+              >
+                All changes entered so far will be lost. This action cannot be
+                undone.
+              </p>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "0.5rem",
+                padding: "0.75rem 1.25rem",
+                borderTop: `1px solid ${isDark ? "#2d4163" : "#e8ecf0"}`,
+                background: isDark ? "#162032" : "#f8fafd",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setShowCancelConfirm(false)}
+                style={{
+                  padding: "0.45rem 1rem",
+                  background: "transparent",
+                  border: `1px solid ${isDark ? "#2d4163" : "#d4dae3"}`,
+                  color: isDark ? "#94a3b8" : "#5a6a85",
+                  borderRadius: "0.45rem",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  fontWeight: 500,
+                }}
+              >
+                Keep editing
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCancelConfirm(false);
+                  onCancel();
+                }}
+                style={{
+                  padding: "0.45rem 1.1rem",
+                  background: "#dc2626",
+                  border: "none",
+                  color: "#fff",
+                  borderRadius: "0.45rem",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  boxShadow: "0 2px 8px rgba(220,38,38,0.3)",
+                }}
+              >
+                <i className="bi bi-trash3-fill me-1" />
+                Discard changes
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </FormProvider>
   );

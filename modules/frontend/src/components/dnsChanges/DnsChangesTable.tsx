@@ -20,6 +20,36 @@ import type { DnsChangeSummary } from "../../types/dnsChange";
 import type { PagingState } from "../../types/common";
 import { formatDateTime } from "../../utils/dateUtils";
 
+type SortDir = "asc" | "desc" | null;
+
+function SortArrow({ dir }: { dir: SortDir }) {
+  if (dir === "asc")
+    return (
+      <i
+        className="bi bi-arrow-up"
+        style={{ fontSize: "0.7rem", color: "#2e5090", marginLeft: 3 }}
+      />
+    );
+  if (dir === "desc")
+    return (
+      <i
+        className="bi bi-arrow-down"
+        style={{ fontSize: "0.7rem", color: "#2e5090", marginLeft: 3 }}
+      />
+    );
+  return (
+    <i
+      className="bi bi-arrow-down-up"
+      style={{
+        fontSize: "0.65rem",
+        color: "#898a8b",
+        marginLeft: 3,
+        opacity: 0.7,
+      }}
+    />
+  );
+}
+
 /**
  * Props for DnsChangesTable.
  *
@@ -98,6 +128,9 @@ export function DnsChangesTable({
   currentPaging,
 }: DnsChangesTableProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [sortState, setSortState] = useState<{ dir: "asc" | "desc" } | null>(
+    null,
+  );
 
   const handleCopyId = (id: string) => {
     void navigator.clipboard.writeText(id).then(() => {
@@ -105,6 +138,28 @@ export function DnsChangesTable({
       setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 2000);
     });
   };
+
+  const toggleSort = () =>
+    setSortState((prev) =>
+      prev === null
+        ? { dir: "asc" }
+        : prev.dir === "asc"
+          ? { dir: "desc" }
+          : null,
+    );
+
+  const sortDir: SortDir = sortState === null ? null : sortState.dir;
+
+  const sortedChanges = sortState
+    ? [...changes].sort((a, b) => {
+        const dir = sortState.dir === "asc" ? 1 : -1;
+        return (
+          dir *
+          (new Date(a.createdTimestamp).getTime() -
+            new Date(b.createdTimestamp).getTime())
+        );
+      })
+    : changes;
 
   if (changes.length === 0) {
     return (
@@ -119,7 +174,14 @@ export function DnsChangesTable({
   }
 
   return (
-    <div className="vds-zones-table-wrap">
+    <div
+      className="vds-zones-table-wrap"
+      style={{
+        maxHeight: "calc(100vh - 260px)",
+        overflowY: "auto",
+        overflowX: "auto",
+      }}
+    >
       <style>{COPY_KEYFRAMES}</style>
       <table className="vds-zones-table">
         <thead>
@@ -129,12 +191,21 @@ export function DnsChangesTable({
             <th>CHANGES</th>
             <th>STATUS</th>
             <th>DESCRIPTION</th>
-            <th>SUBMITTED</th>
+            <th
+              onClick={toggleSort}
+              style={{
+                cursor: "pointer",
+                userSelect: "none",
+                whiteSpace: "nowrap",
+              }}
+            >
+              SUBMITTED <SortArrow dir={sortDir} />
+            </th>
             <th>ACTIONS</th>
           </tr>
         </thead>
         <tbody>
-          {changes.map((change) => {
+          {sortedChanges.map((change) => {
             // Cancel is owner-only — the API rejects cancel attempts from
             // anyone other than the original submitter, even super users.
             const isPendingReview =
@@ -149,8 +220,8 @@ export function DnsChangesTable({
                 {/* Full UUID is preserved in the title attr and available via
                     the clipboard button; showing only 8 chars keeps the table
                     readable without wrapping on smaller viewports. */}
-                <td style={{ wordBreak: "break-all" }}>
-                  <div className="d-flex align-items-start gap-1 flex-wrap">
+                <td style={{ whiteSpace: "nowrap" }}>
+                  <div className="d-flex align-items-center gap-1">
                     <Link
                       to={`/dnschanges/${change.id}`}
                       state={
@@ -159,9 +230,11 @@ export function DnsChangesTable({
                           : undefined
                       }
                       className="text-decoration-none small fw-semibold vds-table-primary"
-                      style={{ wordBreak: "break-all" }}
+                      title={change.id}
+                      style={{ whiteSpace: "nowrap", fontFamily: "inherit" }}
                     >
-                      {change.id}
+                      {change.id.substring(0, 8)}
+                      {"\u2026"}
                     </Link>
                     <button
                       type="button"
@@ -192,7 +265,7 @@ export function DnsChangesTable({
                   </div>
                 </td>
                 {ignoreAccess && (
-                  <td>
+                  <td style={{ whiteSpace: "nowrap" }}>
                     <span className="d-flex align-items-center gap-1">
                       <i
                         className="bi bi-person-circle vds-table-secondary"
@@ -204,12 +277,22 @@ export function DnsChangesTable({
                     </span>
                   </td>
                 )}
-                <td>
-                  <span className="vds-count-badge">{change.totalChanges}</span>
+                <td className="vds-table-secondary small">
+                  {change.totalChanges}
                 </td>
-                <td>
+                <td
+                  style={{
+                    overflowWrap: "break-word",
+                    maxWidth: 250,
+                    wordBreak: "break-word",
+                    display: "table-cell",
+                  }}
+                >
                   <span
-                    className={`vds-status-badge ${changeStatusClass(change.status)}`}
+                    className={`vds-status-text ${changeStatusClass(
+                      change.status,
+                    ).replace("vds-status-badge", "vds-status-text")}`}
+                    style={{ display: "inline-block", maxWidth: "100%" }}
                   >
                     {changeStatusLabel(change.status)}
                   </span>
@@ -222,7 +305,13 @@ export function DnsChangesTable({
                     <span className="vds-table-placeholder">{"\u2014"}</span>
                   )}
                 </td>
-                <td className="vds-table-secondary small vds-date-wrap">
+                <td
+                  className="vds-table-secondary small"
+                  style={{
+                    overflowWrap: "break-word",
+                    maxWidth: 250,
+                  }}
+                >
                   {formatDateTime(change.createdTimestamp)}
                 </td>
                 <td>
@@ -234,19 +323,21 @@ export function DnsChangesTable({
                           ? { fromTab, paging: currentPaging }
                           : undefined
                       }
-                      className="vds-action-btn vds-action-btn--view"
+                      className="vds-ubtn vds-ubtn--secondary vds-ubtn--sm"
                       title="View"
                     >
-                      <i className="bi bi-eye-fill" />
+                      <i className="bi bi-eye" />
+                      <span>View</span>
                     </Link>
                     {canCancel && onCancel && (
                       <button
                         type="button"
-                        className="vds-action-btn vds-action-btn--cancel"
+                        className="vds-ubtn vds-ubtn--danger-outline vds-ubtn--sm"
                         title="Cancel"
                         onClick={() => onCancel(change)}
                       >
                         <i className="bi bi-x-circle" />
+                        <span>Cancel</span>
                       </button>
                     )}
                   </div>

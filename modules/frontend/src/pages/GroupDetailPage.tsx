@@ -14,37 +14,59 @@
  * limitations under the License.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { groupsService } from '../services/groupsService';
-import { profileService } from '../services/profileService';
-import { GroupMemberList } from '../components/groups/GroupMemberList';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
-import { Pagination } from '../components/common/Pagination';
-import { TimeFilterDropdown } from '../components/common/TimeFilterDropdown';
-import { useAlerts } from '../contexts/AlertContext';
-import { useProfile } from '../contexts/ProfileContext';
-import { useBreadcrumbs } from '../contexts/BreadcrumbContext';
-import { usePaging } from '../hooks/usePaging';
-import type { Group, GroupChange, GroupMember } from '../types/group';
+import { useState, useEffect, useCallback } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { groupsService } from "../services/groupsService";
+import { profileService } from "../services/profileService";
+import { GroupMemberList } from "../components/groups/GroupMemberList";
+import { LoadingSpinner } from "../components/common/LoadingSpinner";
+import { Pagination } from "../components/common/Pagination";
+import { TimeFilterDropdown } from "../components/common/TimeFilterDropdown";
+import { useAlerts } from "../contexts/AlertContext";
+import { useProfile } from "../contexts/ProfileContext";
+import { useBreadcrumbs } from "../contexts/BreadcrumbContext";
+import { usePaging } from "../hooks/usePaging";
+import type { Group, GroupChange, GroupMember } from "../types/group";
 
-type SortDir = 'asc' | 'desc' | null;
+type SortDir = "asc" | "desc" | null;
 function SortArrow({ dir }: { dir: SortDir }) {
-  if (dir === 'asc')  return <i className="bi bi-arrow-up"      style={{ fontSize: '0.7rem', color: '#2e5090', marginLeft: 3 }} />;
-  if (dir === 'desc') return <i className="bi bi-arrow-down"    style={{ fontSize: '0.7rem', color: '#2e5090', marginLeft: 3 }} />;
-  return                     <i className="bi bi-arrow-down-up" style={{ fontSize: '0.65rem', color: '#898a8b', marginLeft: 3, opacity: 0.7 }} />;
+  if (dir === "asc")
+    return (
+      <i
+        className="bi bi-arrow-up"
+        style={{ fontSize: "0.7rem", color: "#2e5090", marginLeft: 3 }}
+      />
+    );
+  if (dir === "desc")
+    return (
+      <i
+        className="bi bi-arrow-down"
+        style={{ fontSize: "0.7rem", color: "#2e5090", marginLeft: 3 }}
+      />
+    );
+  return (
+    <i
+      className="bi bi-arrow-down-up"
+      style={{
+        fontSize: "0.65rem",
+        color: "#898a8b",
+        marginLeft: 3,
+        opacity: 0.7,
+      }}
+    />
+  );
 }
 
 export function GroupDetailPage() {
-  const { id = '' } = useParams<{ id: string }>();
+  const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addAlert } = useAlerts();
   const { setCrumbs } = useBreadcrumbs();
   const { profile, loading: profileLoading } = useProfile();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'manage' | 'changes'>('manage');
-  const [newMemberLogin, setNewMemberLogin] = useState('');
+  const [activeTab, setActiveTab] = useState<"manage" | "changes">("manage");
+  const [newMemberLogin, setNewMemberLogin] = useState("");
   const [newMemberIsAdmin, setNewMemberIsAdmin] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -55,7 +77,7 @@ export function GroupDetailPage() {
   const [chTimeSort, setChTimeSort] = useState<SortDir>(null);
 
   const { data: group, isLoading } = useQuery({
-    queryKey: ['group', id],
+    queryKey: ["group", id],
     queryFn: async () => {
       const res = await groupsService.getGroup(id);
       return res.data;
@@ -64,7 +86,7 @@ export function GroupDetailPage() {
   });
 
   const { data: memberListData, isLoading: membersLoading } = useQuery({
-    queryKey: ['group-members', id],
+    queryKey: ["group-members", id],
     queryFn: async () => {
       const res = await groupsService.getGroupMemberList(id);
       return res.data.members ?? [];
@@ -75,101 +97,151 @@ export function GroupDetailPage() {
   const removeMemberMutation = useMutation({
     mutationFn: async (memberId: string) => {
       const currentGroup = (await groupsService.getGroup(id)).data;
-      const updatedMembers = currentGroup.members.filter((m) => m.id !== memberId);
-      const updatedAdmins  = currentGroup.admins.filter((a) => a.id !== memberId);
-      return groupsService.updateGroup(id, { ...currentGroup, members: updatedMembers, admins: updatedAdmins });
+      const updatedMembers = currentGroup.members.filter(
+        (m) => m.id !== memberId,
+      );
+      const updatedAdmins = currentGroup.admins.filter(
+        (a) => a.id !== memberId,
+      );
+      return groupsService.updateGroup(id, {
+        ...currentGroup,
+        members: updatedMembers,
+        admins: updatedAdmins,
+      });
     },
     onSuccess: () => {
-      addAlert('success', 'Successfully Removed Member');
-      void queryClient.invalidateQueries({ queryKey: ['group', id] });
-      void queryClient.invalidateQueries({ queryKey: ['group-members', id] });
+      addAlert("success", "Successfully Removed Member");
+      void queryClient.invalidateQueries({ queryKey: ["group", id] });
+      void queryClient.invalidateQueries({ queryKey: ["group-members", id] });
     },
     onError: (err: unknown) => {
       const e = err as { response?: { data?: string | { errors?: string[] } } };
       const data = e?.response?.data;
-      let msg = 'Failed to remove member';
-      if (data && typeof data === 'object' && 'errors' in data && Array.isArray(data.errors)) {
-        msg = data.errors.join('\n');
-      } else if (typeof data === 'string' && data.trim()) {
-        msg = data.replace(/^"|"$/g, '');
+      let msg = "Failed to remove member";
+      if (
+        data &&
+        typeof data === "object" &&
+        "errors" in data &&
+        Array.isArray(data.errors)
+      ) {
+        msg = data.errors.join("\n");
+      } else if (typeof data === "string" && data.trim()) {
+        msg = data.replace(/^"|"$/g, "");
       }
-      addAlert('danger', msg);
+      addAlert("danger", msg);
     },
   });
 
   const addMemberMutation = useMutation({
-    mutationFn: async ({ login, makeAdmin }: { login: string; makeAdmin: boolean }) => {
+    mutationFn: async ({
+      login,
+      makeAdmin,
+    }: {
+      login: string;
+      makeAdmin: boolean;
+    }) => {
       const userRes = await profileService.getUserDataByUsername(login);
       const user = userRes.data;
-      if (!user?.id) throw new Error('User not found');
+      if (!user?.id) throw new Error("User not found");
       const currentGroup = (await groupsService.getGroup(id)).data;
       const alreadyMember = currentGroup.members.some((m) => m.id === user.id);
       const updatedMembers = alreadyMember
         ? currentGroup.members
         : [...currentGroup.members, { id: user.id }];
-      const updatedAdmins = makeAdmin && !currentGroup.admins.some((a) => a.id === user.id)
-        ? [...currentGroup.admins, { id: user.id }]
-        : currentGroup.admins;
-      return groupsService.updateGroup(id, { ...currentGroup, members: updatedMembers, admins: updatedAdmins });
+      const updatedAdmins =
+        makeAdmin && !currentGroup.admins.some((a) => a.id === user.id)
+          ? [...currentGroup.admins, { id: user.id }]
+          : currentGroup.admins;
+      return groupsService.updateGroup(id, {
+        ...currentGroup,
+        members: updatedMembers,
+        admins: updatedAdmins,
+      });
     },
     onSuccess: (_, { login }) => {
-      addAlert('success', `Added ${login}`);
-      setNewMemberLogin('');
+      addAlert("success", `Added ${login}`);
+      setNewMemberLogin("");
       setNewMemberIsAdmin(false);
       setShowAddForm(false);
-      void queryClient.invalidateQueries({ queryKey: ['group', id] });
-      void queryClient.invalidateQueries({ queryKey: ['group-members', id] });
+      void queryClient.invalidateQueries({ queryKey: ["group", id] });
+      void queryClient.invalidateQueries({ queryKey: ["group-members", id] });
     },
     onError: (err: unknown) => {
       const e = err as { response?: { data?: string | { errors?: string[] } } };
       const data = e?.response?.data;
-      let msg = 'Failed to add member';
-      if (data && typeof data === 'object' && 'errors' in data && Array.isArray(data.errors)) {
-        msg = data.errors.join('\n');
-      } else if (typeof data === 'string' && data.trim()) {
-        msg = data.replace(/^"|"$/g, '');
+      let msg = "Failed to add member";
+      if (
+        data &&
+        typeof data === "object" &&
+        "errors" in data &&
+        Array.isArray(data.errors)
+      ) {
+        msg = data.errors.join("\n");
+      } else if (typeof data === "string" && data.trim()) {
+        msg = data.replace(/^"|"$/g, "");
       }
-      addAlert('danger', msg);
+      addAlert("danger", msg);
     },
   });
 
   const toggleAdminMutation = useMutation({
-    mutationFn: async ({ memberId, makeAdmin }: { memberId: string; makeAdmin: boolean }) => {
+    mutationFn: async ({
+      memberId,
+      makeAdmin,
+    }: {
+      memberId: string;
+      makeAdmin: boolean;
+    }) => {
       const currentGroup = (await groupsService.getGroup(id)).data;
       const updatedAdmins = makeAdmin
         ? currentGroup.admins.some((a) => a.id === memberId)
           ? currentGroup.admins
           : [...currentGroup.admins, { id: memberId }]
         : currentGroup.admins.filter((a) => a.id !== memberId);
-      return groupsService.updateGroup(id, { ...currentGroup, admins: updatedAdmins });
+      return groupsService.updateGroup(id, {
+        ...currentGroup,
+        admins: updatedAdmins,
+      });
     },
     onSuccess: (_, { makeAdmin }) => {
-      addAlert('success', makeAdmin ? 'Made group manager' : 'Removed as group manager');
-      void queryClient.invalidateQueries({ queryKey: ['group', id] });
-      void queryClient.invalidateQueries({ queryKey: ['group-members', id] });
+      addAlert(
+        "success",
+        makeAdmin ? "Made group manager" : "Removed as group manager",
+      );
+      void queryClient.invalidateQueries({ queryKey: ["group", id] });
+      void queryClient.invalidateQueries({ queryKey: ["group-members", id] });
     },
     onError: (err: unknown) => {
       const e = err as { response?: { data?: string | { errors?: string[] } } };
       const data = e?.response?.data;
-      let msg = 'Failed to update admin status';
-      if (data && typeof data === 'object' && 'errors' in data && Array.isArray(data.errors) && data.errors.length > 0) {
-        msg = data.errors.join(' ');
-      } else if (typeof data === 'string' && data.trim().length > 0) {
-        msg = data.replace(/^"|"$/g, '');
+      let msg = "Failed to update admin status";
+      if (
+        data &&
+        typeof data === "object" &&
+        "errors" in data &&
+        Array.isArray(data.errors) &&
+        data.errors.length > 0
+      ) {
+        msg = data.errors.join(" ");
+      } else if (typeof data === "string" && data.trim().length > 0) {
+        msg = data.replace(/^"|"$/g, "");
       }
-      addAlert('danger', msg);
+      addAlert("danger", msg);
     },
   });
   const togglingMemberId = toggleAdminMutation.isPending
-    ? (toggleAdminMutation.variables as { memberId: string } | undefined)?.memberId
+    ? (toggleAdminMutation.variables as { memberId: string } | undefined)
+        ?.memberId
     : undefined;
 
   const currentUserMember = memberListData?.find((m) => m.id === profile?.id);
   const isGroupAdmin =
     currentUserMember?.isAdmin ??
-    ((group?.admins.some((a) => a.id === profile?.id) ?? false) || (profile?.isSuper ?? false));
+    ((group?.admins.some((a) => a.id === profile?.id) ?? false) ||
+      (profile?.isSuper ?? false));
   const isMember = group?.members.some((m) => m.id === profile?.id) ?? false;
-  const showChangeHistory = isGroupAdmin || isMember || (profile?.isSupport ?? false);
+  const showChangeHistory =
+    isGroupAdmin || isMember || (profile?.isSupport ?? false);
 
   const {
     paging: chPaging,
@@ -179,13 +251,22 @@ export function GroupDetailPage() {
     prevPageEnabled: chPrevEnabled,
   } = usePaging(100);
 
-  const { data: changesData, isLoading: changesLoading, refetch: refetchChanges } = useQuery({
-    queryKey: ['group-changes', id, chPaging.next],
+  const {
+    data: changesData,
+    isLoading: changesLoading,
+    isFetching: changesFetching,
+    refetch: refetchChanges,
+  } = useQuery({
+    queryKey: ["group-changes", id, chPaging.next],
     queryFn: async () => {
-      const res = await groupsService.getGroupChanges(id, 100, chPaging.next as string | undefined);
+      const res = await groupsService.getGroupChanges(
+        id,
+        100,
+        chPaging.next as string | undefined,
+      );
       return res.data;
     },
-    enabled: Boolean(id) && showChangeHistory && activeTab === 'changes',
+    enabled: Boolean(id) && showChangeHistory && activeTab === "changes",
   });
 
   const chNextEnabled = Boolean(changesData?.nextId);
@@ -200,7 +281,7 @@ export function GroupDetailPage() {
 
   useEffect(() => {
     if (!group) return;
-    setCrumbs([{ label: 'Groups', to: '/groups' }, { label: group.name }]);
+    setCrumbs([{ label: "Groups", to: "/groups" }, { label: group.name }]);
     return () => setCrumbs(null);
   }, [group, setCrumbs]);
 
@@ -208,7 +289,11 @@ export function GroupDetailPage() {
   if (!group) return <div className="alert alert-danger">Group not found.</div>;
 
   const initials = (name: string) =>
-    name.split(/[-_ ]+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
+    name
+      .split(/[-_ ]+/)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? "")
+      .join("");
 
   const copyGroupId = async () => {
     try {
@@ -216,21 +301,35 @@ export function GroupDetailPage() {
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch {
-      addAlert('danger', 'Failed to copy');
+      addAlert("danger", "Failed to copy");
     }
   };
 
   const filteredChanges = (() => {
-    if (!changesData?.changes || chTimeRange === 'all') return changesData?.changes ?? [];
+    if (!changesData?.changes || chTimeRange === "all")
+      return changesData?.changes ?? [];
     const now = Date.now();
     return changesData.changes.filter((c) => {
       const t = new Date(c.created).getTime();
-      if (chTimeRange === 'custom') {
-        const from = chDateFrom ? new Date(chDateFrom + 'T00:00:00').getTime() : 0;
-        const to = chDateTo ? new Date(chDateTo + 'T23:59:59').getTime() : Infinity;
+      if (chTimeRange === "custom") {
+        const from = chDateFrom
+          ? new Date(chDateFrom + "T00:00:00").getTime()
+          : 0;
+        const to = chDateTo
+          ? new Date(chDateTo + "T23:59:59").getTime()
+          : Infinity;
         return t >= from && t <= to;
       }
-      const ms = chTimeRange === '1d' ? 86400000 : chTimeRange === '7d' ? 604800000 : chTimeRange === '30d' ? 2592000000 : chTimeRange === '90d' ? 7776000000 : 2592000000;
+      const ms =
+        chTimeRange === "1d"
+          ? 86400000
+          : chTimeRange === "7d"
+            ? 604800000
+            : chTimeRange === "30d"
+              ? 2592000000
+              : chTimeRange === "90d"
+                ? 7776000000
+                : 2592000000;
       return t >= now - ms;
     });
   })();
@@ -240,13 +339,16 @@ export function GroupDetailPage() {
       {/* ── Page header ── */}
       <div className="rounded-3 mb-2 d-flex justify-content-between align-items-center vds-page-header vds-page-header--lg">
         <div className="d-flex align-items-center gap-3">
-          <div className="rounded-3 d-flex align-items-center justify-content-center fw-bold text-white vds-page-header__icon"
-            style={{ fontSize: '1rem', letterSpacing: '0.04em' }}
+          <div
+            className="rounded-3 d-flex align-items-center justify-content-center fw-bold text-white vds-page-header__icon"
+            style={{ fontSize: "1rem", letterSpacing: "0.04em" }}
           >
             {initials(group.name)}
           </div>
           <div>
-            <h4 className="mb-0 fw-bold vds-page-header__title">{group.name}</h4>
+            <h4 className="mb-0 fw-bold vds-page-header__title">
+              {group.name}
+            </h4>
             <small className="text-muted">{group.email}</small>
           </div>
         </div>
@@ -263,7 +365,10 @@ export function GroupDetailPage() {
       {/* ── Email validation notice ── */}
       <div className="vds-email-warning">
         <i className="bi bi-info-circle-fill fs-6" style={{ flexShrink: 0 }} />
-        <span>Updates to group require a valid email. If group email is invalid please enter a valid email.</span>
+        <span>
+          Updates to group require a valid email. If group email is invalid
+          please enter a valid email.
+        </span>
       </div>
 
       {/* ── Info strip ── */}
@@ -272,31 +377,37 @@ export function GroupDetailPage() {
           <div className="d-flex align-items-center gap-3 vds-info-label">
             Group ID
             <button
-              className={`btn btn-sm p-0 border-0 bg-transparent vds-copy-btn ${copySuccess ? 'text-success' : 'text-secondary'}`}
-              title={copySuccess ? 'Copied!' : 'Copy Group ID to clipboard'}
+              className={`btn btn-sm p-0 border-0 bg-transparent vds-copy-btn ${copySuccess ? "text-success" : "text-secondary"}`}
+              title={copySuccess ? "Copied!" : "Copy Group ID to clipboard"}
               onClick={copyGroupId}
             >
-              <i className={copySuccess ? 'bi bi-check2' : 'bi bi-clipboard'} />
+              <i className={copySuccess ? "bi bi-check2" : "bi bi-clipboard"} />
             </button>
           </div>
-          <div className="fw-semibold text-break vds-info-value">{group.id}</div>
+          <div className="fw-semibold text-break vds-info-value">
+            {group.id}
+          </div>
         </div>
         <div>
           <div className="vds-info-label">Description</div>
-          {group.description?.trim()
-            ? <div className="vds-info-value--md">{group.description}</div>
-            : <div className="vds-info-value--placeholder">No description</div>}
+          {group.description?.trim() ? (
+            <div className="vds-info-value--md">{group.description}</div>
+          ) : (
+            <div className="vds-info-value--placeholder">No description</div>
+          )}
         </div>
         <div>
           <div className="vds-info-label">Members</div>
           <span className="vds-member-badge">
-            <i className="bi bi-people-fill" />{group.members?.length ?? 0}
+            <i className="bi bi-people-fill" />
+            {group.members?.length ?? 0}
           </span>
         </div>
         <div>
           <div className="vds-info-label">Admins</div>
           <span className="vds-member-badge vds-member-badge--admin">
-            <i className="bi bi-shield-fill" />{group.admins?.length ?? 0}
+            <i className="bi bi-shield-fill" />
+            {group.admins?.length ?? 0}
           </span>
         </div>
       </div>
@@ -305,33 +416,37 @@ export function GroupDetailPage() {
       <ul className="nav nav-tabs mb-0 vds-nav-tabs-bar">
         <li className="nav-item">
           <button
-            className={`nav-link vds-tab-btn${activeTab === 'manage' ? ' active fw-semibold vds-tab-btn--active' : ''}`}
-            onClick={() => setActiveTab('manage')}
+            className={`nav-link vds-tab-btn${activeTab === "manage" ? " active fw-semibold vds-tab-btn--active" : ""}`}
+            onClick={() => setActiveTab("manage")}
           >
-            <i className="bi bi-people me-1" />Manage Members
+            <i className="bi bi-people me-1" />
+            Manage Members
           </button>
         </li>
         {showChangeHistory && (
           <li className="nav-item">
             <button
-              className={`nav-link vds-tab-btn${activeTab === 'changes' ? ' active fw-semibold vds-tab-btn--active' : ''}`}
-              onClick={() => setActiveTab('changes')}
+              className={`nav-link vds-tab-btn${activeTab === "changes" ? " active fw-semibold vds-tab-btn--active" : ""}`}
+              onClick={() => setActiveTab("changes")}
             >
-              <i className="bi bi-clock-history me-1" />Change History
+              <i className="bi bi-clock-history me-1" />
+              Change History
             </button>
           </li>
         )}
       </ul>
 
       {/* ── Manage Members tab ── */}
-      {activeTab === 'manage' && (
+      {activeTab === "manage" && (
         <div className="rounded-bottom-3 vds-tab-panel-content vds-tab-enter">
           {/* ── Toolbar: member count + Add Member button ── */}
           <div className="px-4 py-2 d-flex align-items-center gap-2 vds-section-toolbar">
             <i className="bi bi-people-fill text-primary" />
-            <span className="fw-semibold vds-section-toolbar__title">Members</span>
+            <span className="fw-semibold vds-section-toolbar__title">
+              Members
+            </span>
             <span className="vds-member-badge ms-1">
-              {membersLoading ? '…' : memberListData?.length ?? 0}
+              {membersLoading ? "…" : (memberListData?.length ?? 0)}
             </span>
             {isGroupAdmin && (
               showAddForm ? (
@@ -352,8 +467,15 @@ export function GroupDetailPage() {
                       autoFocus
                       onChange={(e) => setNewMemberLogin(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' && newMemberLogin.trim() && !addMemberMutation.isPending) {
-                          addMemberMutation.mutate({ login: newMemberLogin.trim(), makeAdmin: newMemberIsAdmin });
+                        if (
+                          e.key === "Enter" &&
+                          newMemberLogin.trim() &&
+                          !addMemberMutation.isPending
+                        ) {
+                          addMemberMutation.mutate({
+                            login: newMemberLogin.trim(),
+                            makeAdmin: newMemberIsAdmin,
+                          });
                         }
                       }}
                     />
@@ -416,11 +538,13 @@ export function GroupDetailPage() {
       )}
 
       {/* ── Change History tab ── */}
-      {activeTab === 'changes' && (
+      {activeTab === "changes" && (
         <div className="rounded-bottom-3 vds-tab-panel-content vds-tab-enter">
           <div className="px-4 py-2 d-flex align-items-center gap-2 flex-wrap vds-section-toolbar">
             <i className="bi bi-clock-history text-primary" />
-            <span className="fw-semibold vds-section-toolbar__title">Change History</span>
+            <span className="fw-semibold vds-section-toolbar__title">
+              Change History
+            </span>
             {/* ── Time filter pushed to the right ── */}
             <div className="ms-auto d-flex align-items-center gap-2 flex-wrap">
               <TimeFilterDropdown
@@ -433,56 +557,89 @@ export function GroupDetailPage() {
               />
               <button
                 className="btn btn-sm d-flex align-items-center gap-1 vds-member-toggle-btn vds-btn-flat"
-                disabled={changesLoading}
+                disabled={changesLoading || changesFetching}
                 onClick={() => void refetchChanges()}
               >
-                <i className={`bi bi-arrow-clockwise${changesLoading ? ' spin' : ''}`} />
+                <i className="bi bi-arrow-clockwise" />
                 Refresh
               </button>
             </div>
           </div>
-          {chTimeRange !== 'all' && (
+          {chTimeRange !== "all" && (
             <div className="d-flex justify-content-end gap-2 mb-2 flex-wrap align-items-center px-4">
               <span className="vds-active-filter-tag d-flex align-items-center gap-1">
                 <i className="bi bi-calendar3" />
-                {chTimeRange === '1d' ? 'Today'
-                  : chTimeRange === '7d' ? 'Last 7 days'
-                  : chTimeRange === '30d' ? 'Last 30 days'
-                  : chTimeRange === '90d' ? 'Last 90 days'
-                  : chTimeRange === 'custom'
-                    ? [chDateFrom, chDateTo].filter(Boolean).join(' → ') || 'Custom range'
-                    : 'Custom range'}
+                {chTimeRange === "1d"
+                  ? "Today"
+                  : chTimeRange === "7d"
+                    ? "Last 7 days"
+                    : chTimeRange === "30d"
+                      ? "Last 30 days"
+                      : chTimeRange === "90d"
+                        ? "Last 90 days"
+                        : chTimeRange === "custom"
+                          ? [chDateFrom, chDateTo]
+                              .filter(Boolean)
+                              .join(" → ") || "Custom range"
+                          : "Custom range"}
                 <button
                   type="button"
                   className="btn-close ms-1"
-                  style={{ fontSize: '0.5rem', filter: 'invert(30%) sepia(80%) saturate(500%) hue-rotate(190deg)' }}
+                  style={{
+                    fontSize: "0.5rem",
+                    filter:
+                      "invert(30%) sepia(80%) saturate(500%) hue-rotate(190deg)",
+                  }}
                   aria-label="Remove time filter"
-                  onClick={() => { setChTimeRange('all'); setChDateFrom(''); setChDateTo(''); }}
+                  onClick={() => {
+                    setChTimeRange("all");
+                    setChDateFrom("");
+                    setChDateTo("");
+                  }}
                 />
               </span>
               <button
                 type="button"
                 className="btn btn-sm vds-btn-flat d-flex align-items-center gap-1"
-                style={{ color: '#e53e3e', border: '1px solid rgba(229,62,62,0.3)', fontSize: '0.78rem' }}
-                onClick={() => { setChTimeRange('all'); setChDateFrom(''); setChDateTo(''); }}
+                style={{
+                  color: "#e53e3e",
+                  border: "1px solid rgba(229,62,62,0.3)",
+                  fontSize: "0.78rem",
+                }}
+                onClick={() => {
+                  setChTimeRange("all");
+                  setChDateFrom("");
+                  setChDateTo("");
+                }}
               >
-                <i className="bi bi-x-circle" />Clear All
+                <i className="bi bi-x-circle" />
+                Clear All
               </button>
             </div>
           )}
           <div className="p-2">
-            {changesLoading ? (
+            {changesLoading || changesFetching ? (
               <LoadingSpinner />
             ) : !changesData?.changes || changesData.changes.length === 0 ? (
               <div className="vds-empty-state">
-                <i className="bi bi-clock-history fs-2 mb-2" style={{ opacity: 0.4 }} />
+                <i
+                  className="bi bi-clock-history fs-2 mb-2"
+                  style={{ opacity: 0.4 }}
+                />
                 <p className="mb-0 fw-semibold">No changes recorded</p>
               </div>
             ) : filteredChanges.length === 0 ? (
               <div className="vds-empty-state">
-                <i className="bi bi-funnel fs-2 mb-2" style={{ opacity: 0.4 }} />
-                <p className="mb-0 fw-semibold">No changes in selected time range</p>
-                <small className="text-muted">Try adjusting the time filter above.</small>
+                <i
+                  className="bi bi-funnel fs-2 mb-2"
+                  style={{ opacity: 0.4 }}
+                />
+                <p className="mb-0 fw-semibold">
+                  No changes in selected time range
+                </p>
+                <small className="text-muted">
+                  Try adjusting the time filter above.
+                </small>
               </div>
             ) : (
               <div className="vds-groups-table-wrap">
@@ -490,9 +647,17 @@ export function GroupDetailPage() {
                   <thead>
                     <tr>
                       <th
-                        onClick={() => setChTimeSort((d) => d === 'asc' ? 'desc' : 'asc')}
-                        style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
-                      >Time <SortArrow dir={chTimeSort} /></th>
+                        onClick={() =>
+                          setChTimeSort((d) => (d === "asc" ? "desc" : "asc"))
+                        }
+                        style={{
+                          cursor: "pointer",
+                          userSelect: "none",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Time <SortArrow dir={chTimeSort} />
+                      </th>
                       <th>Group Change ID</th>
                       <th>Change Type</th>
                       <th>Change Message</th>
@@ -502,20 +667,33 @@ export function GroupDetailPage() {
                   </thead>
                   <tbody>
                     {[...filteredChanges]
-                      .sort((a, b) => chTimeSort
-                        ? (chTimeSort === 'asc' ? 1 : -1) * (new Date(a.created).getTime() - new Date(b.created).getTime())
-                        : 0)
+                      .sort((a, b) =>
+                        chTimeSort
+                          ? (chTimeSort === "asc" ? 1 : -1) *
+                            (new Date(a.created).getTime() -
+                              new Date(b.created).getTime())
+                          : 0,
+                      )
                       .map((change: GroupChange) => (
-                      <tr key={change.id}>
-                        <td className="vds-table-secondary vds-table-nowrap">
-                          {change.created ? new Date(change.created).toLocaleString() : '—'}
-                        </td>
-                        <td className="vds-table-muted vds-table-mono">
-                          {change.id}
-                        </td>
-                        <td>
-                          <span
-                            className={`badge vds-change-badge vds-change-badge--${(change.changeType ?? '').toLowerCase()}`}
+                        <tr key={change.id}>
+                          <td className="vds-table-secondary vds-table-nowrap">
+                            {change.created
+                              ? new Date(change.created).toLocaleString()
+                              : "—"}
+                          </td>
+                          <td className="vds-table-muted vds-table-mono">
+                            {change.id}
+                          </td>
+                          <td>
+                            <span
+                              className={`badge vds-change-badge vds-change-badge--${(change.changeType ?? "").toLowerCase()}`}
+                            >
+                              {change.changeType}
+                            </span>
+                          </td>
+                          <td
+                            className="vds-table-secondary"
+                            style={{ maxWidth: 280 }}
                           >
                             {change.changeType}
                           </span>
@@ -581,20 +759,53 @@ export function GroupDetailPage() {
             <div className="modal-content vds-group-modal-content">
               <div className="vds-group-modal-header">
                 <i className="bi bi-info-circle-fill text-primary" />
-                <h6 className="modal-title vds-group-modal-title">{groupModal.title}</h6>
-                <button className="btn-close ms-auto" onClick={() => setGroupModal(null)} />
+                <h6 className="modal-title vds-group-modal-title">
+                  {groupModal.title}
+                </h6>
+                <button
+                  className="btn-close ms-auto"
+                  onClick={() => setGroupModal(null)}
+                />
               </div>
               <div className="modal-body px-4 py-3">
-                {([
-                  { label: 'Group ID',    value: groupModal.group.id },
-                  { label: 'Group Name',  value: groupModal.group.name },
-                  { label: 'Email',       value: groupModal.group.email },
-                  { label: 'Description', value: groupModal.group.description ?? null },
-                  { label: 'Status',      value: groupModal.group.status ?? null },
-                  { label: 'Created',     value: groupModal.group.created ? new Date(groupModal.group.created).toLocaleString() : null },
-                  { label: 'Member IDs',  value: groupModal.group.members?.map((m: GroupMember) => m.id).join('\n') ?? null, mono: true },
-                  { label: 'Admin IDs',   value: groupModal.group.admins?.map((a: GroupMember) => a.id).join('\n') ?? null, mono: true },
-                ] as Array<{ label: string; value: string | null; mono?: boolean }>)
+                {(
+                  [
+                    { label: "Group ID", value: groupModal.group.id },
+                    { label: "Group Name", value: groupModal.group.name },
+                    { label: "Email", value: groupModal.group.email },
+                    {
+                      label: "Description",
+                      value: groupModal.group.description ?? null,
+                    },
+                    { label: "Status", value: groupModal.group.status ?? null },
+                    {
+                      label: "Created",
+                      value: groupModal.group.created
+                        ? new Date(groupModal.group.created).toLocaleString()
+                        : null,
+                    },
+                    {
+                      label: "Member IDs",
+                      value:
+                        groupModal.group.members
+                          ?.map((m: GroupMember) => m.id)
+                          .join("\n") ?? null,
+                      mono: true,
+                    },
+                    {
+                      label: "Admin IDs",
+                      value:
+                        groupModal.group.admins
+                          ?.map((a: GroupMember) => a.id)
+                          .join("\n") ?? null,
+                      mono: true,
+                    },
+                  ] as Array<{
+                    label: string;
+                    value: string | null;
+                    mono?: boolean;
+                  }>
+                )
                   .filter((row) => row.value)
                   .map((row) => (
                     <div key={row.label} className="mb-3">
@@ -603,17 +814,24 @@ export function GroupDetailPage() {
                         <textarea
                           readOnly
                           className="form-control form-control-sm vds-group-modal-textarea"
-                          rows={Math.min((row.value!.split('\n').length), 4)}
+                          rows={Math.min(row.value!.split("\n").length, 4)}
                           value={row.value!}
                         />
                       ) : (
-                        <div className="fw-semibold vds-group-modal-value">{row.value}</div>
+                        <div className="fw-semibold vds-group-modal-value">
+                          {row.value}
+                        </div>
                       )}
                     </div>
                   ))}
               </div>
               <div className="modal-footer px-4 py-2 vds-group-modal-footer">
-                <button className="btn btn-sm btn-outline-secondary" onClick={() => setGroupModal(null)}>Close</button>
+                <button
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() => setGroupModal(null)}
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>

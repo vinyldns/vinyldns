@@ -106,6 +106,7 @@ export function RecordsPage() {
   const {
     records,
     isLoading,
+    isFetching,
     nameFilter,
     search,
     nextPage,
@@ -120,7 +121,7 @@ export function RecordsPage() {
   const apiFiltersDisabled = !nameFilter || records.length === 0;
 
   // Collect unique zone IDs from non-shared records to back-fill ownerGroupName
-  // via GET /zones/:id/details, mirroring the AngularJS portal behaviour.
+  // via GET /zones/:id/details.
   const nonSharedZoneIds = useMemo(
     () =>
       [
@@ -1148,7 +1149,7 @@ export function RecordsPage() {
         </div>
       )}
 
-      {isLoading ? (
+      {isLoading || isFetching ? (
         <LoadingSpinner />
       ) : (
         <>
@@ -1169,11 +1170,6 @@ export function RecordsPage() {
           )}
           <RecordsSearchTable
             records={displayedRecords.map((rec) => {
-              // For non-shared zones the Angular portal resolves ownerGroup from
-              // the zone's adminGroup via GET /zones/:id/details. We replicate
-              // that here: prefer the API-embedded ownerGroupName, then the zone
-              // admin group from the details endpoint, then the user's own groups
-              // list as a last resort.
               const zoneDetail = !rec.zoneShared
                 ? zoneDetailsMap?.[rec.zoneId as string]
                 : undefined;

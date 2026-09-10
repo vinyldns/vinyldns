@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { dnsChangeService } from "../services/dnsChangeService";
@@ -129,44 +135,6 @@ function isDarkTheme(): boolean {
     document.documentElement.getAttribute("data-vds-theme") === "dark" ||
     window.matchMedia("(prefers-color-scheme: dark)").matches
   );
-}
-
-/**
- * Returns inline color styles for a per-row change status badge, matching
- * the exact palette used by RecordHistoryModal's historyStatusStyle().
- */
-function changeStatusStyle(status: string): React.CSSProperties {
-  const isDark = isDarkTheme();
-  if (status === "Complete")
-    return {
-      background: isDark ? "rgba(6,78,59,0.25)" : "#ecfdf5",
-      color: isDark ? "#34d399" : "#065f46",
-      border: isDark ? "1px solid rgba(52,211,153,0.3)" : "1px solid #a7f3d0",
-    };
-  if (status === "Failed" || status === "Rejected")
-    return {
-      background: isDark ? "rgba(153,27,27,0.25)" : "#fef2f2",
-      color: isDark ? "#f87171" : "#991b1b",
-      border: isDark ? "1px solid rgba(248,113,113,0.3)" : "1px solid #fecaca",
-    };
-  if (status === "NeedsReview")
-    return {
-      background: isDark ? "rgba(146,64,14,0.25)" : "#fffbeb",
-      color: isDark ? "#fbbf24" : "#92400e",
-      border: isDark ? "1px solid rgba(251,191,36,0.3)" : "1px solid #fde68a",
-    };
-  if (status === "Pending")
-    return {
-      background: isDark ? "rgba(37,99,235,0.25)" : "#dbeafe",
-      color: isDark ? "#60a5fa" : "#1e40af",
-      border: isDark ? "1px solid rgba(96,165,250,0.3)" : "1px solid #bfdbfe",
-    };
-  // Cancelled / default → secondary
-  return {
-    background: isDark ? "rgba(107,114,128,0.15)" : "#f1f5f9",
-    color: isDark ? "#9ca3af" : "#475569",
-    border: isDark ? "1px solid rgba(107,114,128,0.3)" : "1px solid #e2e8f0",
-  };
 }
 
 /**
@@ -403,17 +371,15 @@ function AdditionalInfoCell({
 }
 
 /**
- * Visual badge indicating whether a row is an Add, Update, or Delete operation.
- * Each changeType maps to a distinct color modifier so operators can scan the
- * table at a glance without reading the text.
+ * Colored text (not a badge) indicating whether a row is an Add, Update, or
+ * Delete operation. Semantic color lets operators scan the table at a glance.
  */
 function ChangeTypeBadge({ changeType }: { changeType: string }) {
-  let mod = "vds-change-type-badge--default";
-  if (changeType === "Add") mod = "vds-change-type-badge--add";
-  else if (changeType === "DeleteRecordSet")
-    mod = "vds-change-type-badge--delete";
-  else if (changeType === "UpdateRecord") mod = "vds-change-type-badge--update";
-  return <span className={`vds-change-type-badge ${mod}`}>{changeType}</span>;
+  let mod = "vds-status-text--secondary";
+  if (changeType === "Add") mod = "vds-status-text--success";
+  else if (changeType === "DeleteRecordSet") mod = "vds-status-text--danger";
+  else if (changeType === "UpdateRecord") mod = "vds-status-text--info";
+  return <span className={`vds-status-text ${mod}`}>{changeType}</span>;
 }
 
 /**
@@ -455,7 +421,7 @@ export function DnsChangeDetailPage() {
         to: "/dnschanges",
         state: backState,
       },
-      { label: id ? `${id.substring(0, 8)}\u2026` : "Detail" },
+      { label: "Detail" },
     ]);
     return () => setCrumbs(null);
   }, [id, fromTab, fromPaging, setCrumbs]);
@@ -469,6 +435,9 @@ export function DnsChangeDetailPage() {
     null,
   );
   const [showCancelModal, setShowCancelModal] = useState(false);
+  // Anchor for the review panel so reviewers can jump straight to Approve/Reject
+  // without scrolling past the full changes table.
+  const reviewPanelRef = useRef<HTMLDivElement>(null);
   // Shows a brief "Copied!" confirmation on the Batch ID copy button.
   const [idCopied, setIdCopied] = useState(false);
   const [pageSize, setPageSize] = useState(100);
@@ -497,6 +466,7 @@ export function DnsChangeDetailPage() {
   const {
     data: change,
     isLoading,
+    isFetching,
     refetch,
   } = useQuery({
     queryKey: ["dnschange", id],
@@ -504,6 +474,7 @@ export function DnsChangeDetailPage() {
       const res = await dnsChangeService.getBatchChange(id);
       return res.data;
     },
+    refetchOnWindowFocus: false, // don't refetch when switching tabs
     enabled: Boolean(id),
   });
 
@@ -529,9 +500,11 @@ export function DnsChangeDetailPage() {
   }, [reviewType, change, reviewComment, approveBatchChange, refetch]);
 
   // Same two-phase pattern as handleApprove — guards against accidental rejection.
+  // A comment is required to reject, so the mutation is blocked until one is entered.
   const handleReject = useCallback(() => {
     if (!change) return;
     if (reviewType === "reject") {
+      if (!reviewComment.trim()) return;
       rejectBatchChange(
         { id: change.id, comment: reviewComment || undefined },
         {
@@ -617,7 +590,7 @@ export function DnsChangeDetailPage() {
     pageNum * pageSize,
   );
 
-  if (isLoading) return <LoadingSpinner />;
+  if (isLoading || isFetching) return <LoadingSpinner />;
 
   if (!change)
     return (
@@ -671,17 +644,11 @@ export function DnsChangeDetailPage() {
             <i className="bi bi-list-ol text-white fs-5" />
           </div>
           <div>
-            <div className="d-flex align-items-center gap-2 flex-wrap mb-1">
+            <div className="d-flex align-items-center gap-2 flex-wrap">
               <h4 className="mb-0 fw-bold vds-page-header__title">
                 DNS Change
               </h4>
-              <span
-                className={`vds-status-badge ${batchStatusClass(change.status)}`}
-              >
-                {batchStatusLabel(change.status)}
-              </span>
             </div>
-            <small className="text-muted font-monospace">{change.id}</small>
           </div>
         </div>
         <div className="d-flex gap-2 flex-wrap">
@@ -714,54 +681,60 @@ export function DnsChangeDetailPage() {
         </div>
       </div>
 
-      <div className="vds-info-tiles mb-3">
-        <div className="vds-info-tile">
-          <i className="bi bi-hash vds-info-tile__icon" />
-          <div className="vds-info-tile__label">Batch ID</div>
+      <div className="vds-info-bar mb-3">
+        <div className="vds-info-bar__item vds-info-bar__item--id">
+          <div className="vds-info-bar__label">Batch ID</div>
           <div className="d-flex align-items-center gap-2">
-            <div className="vds-info-tile__value font-monospace text-break flex-grow-1">
+            <span
+              className="vds-info-bar__value vds-info-bar__value--mono flex-grow-1"
+              title={change.id}
+            >
               {change.id}
-            </div>
+            </span>
             <button
               type="button"
-              className="btn btn-sm p-0 border-0 bg-transparent vds-copy-btn flex-shrink-0 vds-info-tile__copy"
+              className="btn btn-sm p-0 border-0 bg-transparent flex-shrink-0"
               title={idCopied ? "Copied!" : "Copy Batch ID"}
               style={{
-                color: idCopied ? "#22c55e" : undefined,
+                color: idCopied ? "#22c55e" : "#94a3b8",
                 transition: "color 0.15s",
+                lineHeight: 1,
               }}
               onClick={handleCopyId}
             >
               <i className={idCopied ? "bi bi-check2" : "bi bi-clipboard"} />
-              {idCopied && (
-                <span style={{ fontSize: "0.72rem", marginLeft: 3 }}>
-                  Copied!
-                </span>
-              )}
             </button>
           </div>
         </div>
-        <div className="vds-info-tile">
-          <i className="bi bi-clock-history vds-info-tile__icon" />
-          <div className="vds-info-tile__label">Submitted</div>
-          <div className="vds-info-tile__value vds-date-wrap">
+        <div className="vds-info-bar__item">
+          <div className="vds-info-bar__label">Submitted</div>
+          <div className="vds-info-bar__value">
             {formatDateTime(change.createdTimestamp)}
           </div>
         </div>
+        <div className="vds-info-bar__item">
+          <div className="vds-info-bar__label">Status</div>
+          <div className="vds-info-bar__value">
+            {batchStatusLabel(change.status)}
+          </div>
+        </div>
         {!isOwner && (
-          <div className="vds-info-tile">
-            <i className="bi bi-person-circle vds-info-tile__icon" />
-            <div className="vds-info-tile__label">Submitter</div>
-            <div className="vds-info-tile__value">{change.userName}</div>
+          <div className="vds-info-bar__item">
+            <div className="vds-info-bar__label">Submitter</div>
+            <div className="vds-info-bar__value" title={change.userName}>
+              {change.userName}
+            </div>
           </div>
         )}
         {(change.ownerGroupName || change.ownerGroupId) && (
-          <div className="vds-info-tile">
-            <i className="bi bi-people-fill vds-info-tile__icon" />
-            <div className="vds-info-tile__label">Owner Group</div>
-            <div className="vds-info-tile__value">
+          <div className="vds-info-bar__item">
+            <div className="vds-info-bar__label">Owner Group</div>
+            <div
+              className="vds-info-bar__value"
+              title={change.ownerGroupName ?? "Group deleted"}
+            >
               {change.ownerGroupName ?? (
-                <span className="text-danger small">
+                <span className="text-danger">
                   <i className="bi bi-exclamation-triangle-fill me-1" />
                   Group deleted
                 </span>
@@ -770,24 +743,22 @@ export function DnsChangeDetailPage() {
           </div>
         )}
         {change.scheduledTime && (
-          <div className="vds-info-tile">
-            <i className="bi bi-calendar-event vds-info-tile__icon" />
-            <div className="vds-info-tile__label">Scheduled</div>
-            <div className="vds-info-tile__value vds-date-wrap">
+          <div className="vds-info-bar__item">
+            <div className="vds-info-bar__label">Scheduled</div>
+            <div className="vds-info-bar__value">
               {formatDateTime(change.scheduledTime)}
             </div>
           </div>
         )}
         {showReviewStatus && (
-          <div className="vds-info-tile">
-            <i className="bi bi-shield-check vds-info-tile__icon" />
-            <div className="vds-info-tile__label">Review Status</div>
-            <div className="mt-2">
-              <span
-                className={`vds-status-badge ${approvalStatusClass(approvalStatus)}`}
-              >
-                {approvalStatusLabel(approvalStatus)}
-              </span>
+          <div className="vds-info-bar__item">
+            <div className="vds-info-bar__label">Review Status</div>
+            <div
+              className={`vds-info-bar__value vds-status-text ${approvalStatusClass(
+                approvalStatus,
+              ).replace("vds-status-badge", "vds-status-text")}`}
+            >
+              {approvalStatusLabel(approvalStatus)}
             </div>
           </div>
         )}
@@ -837,38 +808,35 @@ export function DnsChangeDetailPage() {
         </div>
       )}
 
-      {/* PendingReview notice — mirrors the Angular portal's dns-change-notices config entry */}
       {isPendingReview && (
         <div
           role="alert"
-          className="d-flex align-items-center gap-3 px-4 py-3 rounded-3 mb-3"
+          className="d-flex align-items-center gap-2 px-3 py-2 rounded-3 mb-3"
           style={{
-            background: "linear-gradient(135deg, #0369a1 0%, #0284c7 100%)",
-            border: "1px solid #0ea5e9",
-            boxShadow: "0 4px 14px rgba(3,105,161,0.3)",
-            color: "#ffffff",
+            background: isDarkTheme() ? "rgba(30,95,168,0.12)" : "#f1f6fb",
+            border: `1px solid ${isDarkTheme() ? "#2d4163" : "#d3e2f2"}`,
+            color: isDarkTheme() ? "#cbd5e1" : "#334155",
           }}
         >
           <i
             className="bi bi-info-circle-fill flex-shrink-0"
-            style={{ fontSize: "1.3rem", opacity: 0.95 }}
+            style={{ fontSize: "1rem", color: "#1e5fa8" }}
           />
-          <div style={{ lineHeight: 1.5 }}>
-            <span className="fw-semibold" style={{ fontSize: "0.9rem" }}>
+          <div style={{ lineHeight: 1.45, fontSize: "0.85rem" }}>
+            <span className="fw-semibold">
               Your DNS Change requires further review.
             </span>{" "}
-            <span style={{ fontSize: "0.85rem", opacity: 0.9 }}>
-              It will be approved and processed following the review.
+            <span style={{ opacity: 0.85 }}>
+              It will be processed after the review is complete.
             </span>{" "}
             <a
               href="https://www.vinyldns.io/portal/manual-review-scheduling"
               target="_blank"
               rel="noreferrer"
               style={{
-                color: "#bae6fd",
+                color: "#1e5fa8",
                 textDecoration: "underline",
                 fontWeight: 600,
-                fontSize: "0.85rem",
               }}
             >
               See the docs for more information.
@@ -920,8 +888,9 @@ export function DnsChangeDetailPage() {
       <div
         className="vds-tab-panel-content rounded-3 mb-3"
         style={{
-          borderTop: isDarkTheme() ? "3px solid #64748b" : "3px solid #94a3b8",
-          overflow: "visible",
+          border: isDarkTheme() ? "1px solid #2d4163" : "1px solid #c7deff",
+          borderRadius: "12px",
+          overflow: "hidden",
         }}
       >
         <div className="px-3 py-2 d-flex align-items-center justify-content-between flex-wrap gap-2 vds-section-toolbar">
@@ -939,14 +908,21 @@ export function DnsChangeDetailPage() {
             </span>
           </div>
           <div className="d-flex align-items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              className="btn btn-sm vds-btn-flat d-flex align-items-center gap-1"
-              onClick={() => void refetch()}
-            >
-              <i className="bi bi-arrow-clockwise" />
-              <span className="vds-btn-flat__label">Refresh</span>
-            </button>
+            {canReview && isPendingReview && (
+              <button
+                type="button"
+                className="btn btn-sm vds-btn-flat d-flex align-items-center gap-1"
+                onClick={() =>
+                  reviewPanelRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  })
+                }
+              >
+                <i className="bi bi-clipboard2-check" />
+                <span className="vds-btn-flat__label">Review Actions</span>
+              </button>
+            )}
             {canCancelChange && (
               <button
                 type="button"
@@ -986,52 +962,79 @@ export function DnsChangeDetailPage() {
           </div>
         </div>
 
+        {/* Top Pagination */}
+        {(prevPageEnabled || nextPageEnabled) && (
+          <div
+            className="d-flex align-items-center justify-content-end px-3 py-2"
+            style={{
+              background: isDarkTheme() ? "#0f172a" : "#ffffff",
+              borderBottom: isDarkTheme()
+                ? "1px solid rgba(255,255,255,0.08)"
+                : "1px solid rgba(15,23,42,0.06)",
+            }}
+          >
+            <Pagination
+              onPrev={() => setPageNum((p) => p - 1)}
+              onNext={() => setPageNum((p) => p + 1)}
+              prevEnabled={prevPageEnabled}
+              nextEnabled={nextPageEnabled}
+              rangeLabel={
+                filteredChanges.length > 0
+                  ? `${(pageNum - 1) * pageSize + 1}–${Math.min(pageNum * pageSize, filteredChanges.length)} of ${filteredChanges.length}`
+                  : undefined
+              }
+            />
+          </div>
+        )}
+
+        {/* Scrollable Table Container */}
         <div
           className="vds-zones-table-wrap"
           style={{
-            borderRadius: 0,
-            boxShadow: "none",
-            border: "none",
-            overflowX: "auto",
+            maxHeight: "calc(100vh - 320px)",
             overflowY: "auto",
-            maxHeight: "60vh",
+            overflowX: "auto",
           }}
         >
-          {false && (prevPageEnabled || nextPageEnabled) && (
-            <div className="d-flex align-items-center justify-content-end px-3 pt-2">
-              <Pagination
-                onPrev={() => setPageNum((p) => p - 1)}
-                onNext={() => setPageNum((p) => p + 1)}
-                prevEnabled={prevPageEnabled}
-                nextEnabled={nextPageEnabled}
-                rangeLabel={
-                  filteredChanges.length > 0
-                    ? `${(pageNum - 1) * pageSize + 1}–${Math.min(pageNum * pageSize, filteredChanges.length)} of ${filteredChanges.length}`
-                    : undefined
-                }
-              />
-            </div>
-          )}
-          <table className="vds-zones-table vds-dns-change-detail-table">
+          <table
+            className="vds-zones-table"
+            style={{
+              width: "100%",
+              borderRadius: 0,
+              tableLayout: "auto",
+            }}
+          >
             <thead>
-              <tr>
-                <th>
-                  Change
-                  <br />
-                  Type
+              <tr
+                style={{
+                  background: isDarkTheme() ? "#162035" : "#f1f5f9",
+                }}
+              >
+                <th style={{ position: "sticky", top: 0, zIndex: 2 }}>
+                  Change Type
                 </th>
-                <th>Input Name</th>
-                <th>Recordset Name</th>
-                <th>Zone Name</th>
-                <th>
-                  Record
-                  <br />
-                  Type
+                <th style={{ position: "sticky", top: 0, zIndex: 2 }}>
+                  Input Name
                 </th>
-                <th>Record Data</th>
-                <th>TTL</th>
-                <th>Status</th>
-                <th>Additional Info</th>
+                <th style={{ position: "sticky", top: 0, zIndex: 2 }}>
+                  Recordset Name
+                </th>
+                <th style={{ position: "sticky", top: 0, zIndex: 2 }}>
+                  Zone Name
+                </th>
+                <th style={{ position: "sticky", top: 0, zIndex: 2 }}>
+                  Record Type
+                </th>
+                <th style={{ position: "sticky", top: 0, zIndex: 2 }}>
+                  Record Data
+                </th>
+                <th style={{ position: "sticky", top: 0, zIndex: 2 }}>TTL</th>
+                <th style={{ position: "sticky", top: 0, zIndex: 2 }}>
+                  Status
+                </th>
+                <th style={{ position: "sticky", top: 0, zIndex: 2 }}>
+                  Additional Info
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -1086,7 +1089,12 @@ export function DnsChangeDetailPage() {
                       {c.zoneName || "—"}
                     </td>
                     <td>
-                      <span className="vds-type-badge">{c.type}</span>
+                      <span
+                        className="fw-semibold"
+                        style={{ color: "#475569" }}
+                      >
+                        {c.type}
+                      </span>
                     </td>
                     <td className="vds-table-secondary small">
                       <RecordDataCell change={c} />
@@ -1100,8 +1108,9 @@ export function DnsChangeDetailPage() {
                     <td>
                       <div className="d-flex align-items-center gap-1">
                         <span
-                          className="vds-status-badge"
-                          style={changeStatusStyle(c.status)}
+                          className={`vds-status-text ${changeStatusClass(
+                            c.status,
+                          ).replace("vds-status-badge", "vds-status-text")}`}
                         >
                           {changeStatusLabel(c.status)}
                         </span>
@@ -1144,11 +1153,11 @@ export function DnsChangeDetailPage() {
 
       {canReview && isPendingReview && (
         <div
+          ref={reviewPanelRef}
           className="vds-tab-panel-content rounded-3 mb-3"
           style={{
-            borderTop: isDarkTheme()
-              ? "3px solid #64748b"
-              : "3px solid #94a3b8",
+            border: isDarkTheme() ? "1px solid #2d4163" : "1px solid #c7deff",
+            borderRadius: "12px",
             overflow: "hidden",
           }}
         >
@@ -1227,7 +1236,9 @@ export function DnsChangeDetailPage() {
                   className="bi bi-chat-left-text me-2"
                   style={{ fontSize: "0.8rem" }}
                 />
-                Comment (optional)
+                {reviewType === "reject"
+                  ? "Comment (required for rejection)"
+                  : "Comment (optional)"}
               </label>
               <textarea
                 id="review-comment"
@@ -1280,73 +1291,16 @@ export function DnsChangeDetailPage() {
                 <>
                   <button
                     type="button"
+                    className="vds-ubtn vds-ubtn--danger"
                     onClick={handleReject}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 7,
-                      padding: "9px 18px",
-                      fontSize: "0.85rem",
-                      fontWeight: 600,
-                      border: isDarkTheme()
-                        ? "1px solid #7f1d1d"
-                        : "1px solid #fca5a5",
-                      background: isDarkTheme() ? "#450a0a" : "#fff0f0",
-                      color: isDarkTheme() ? "#fca5a5" : "#b91c1c",
-                      borderRadius: 6,
-                      cursor: "pointer",
-                      transition: "all 0.15s ease",
-                      outline: "none",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = isDarkTheme()
-                        ? "#7f1d1d"
-                        : "#fee2e2";
-                      e.currentTarget.style.borderColor = isDarkTheme()
-                        ? "#ef4444"
-                        : "#ef4444";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = isDarkTheme()
-                        ? "#450a0a"
-                        : "#fff0f0";
-                      e.currentTarget.style.borderColor = isDarkTheme()
-                        ? "#7f1d1d"
-                        : "#fca5a5";
-                    }}
                   >
                     <i className="bi bi-x-circle-fill" />
                     Reject
                   </button>
                   <button
                     type="button"
+                    className="vds-ubtn vds-ubtn--success"
                     onClick={handleApprove}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 7,
-                      padding: "9px 18px",
-                      fontSize: "0.85rem",
-                      fontWeight: 600,
-                      border: "none",
-                      background: isDarkTheme()
-                        ? "linear-gradient(135deg, #166534, #15803d)"
-                        : "linear-gradient(135deg, #16a34a, #15803d)",
-                      color: "#ffffff",
-                      borderRadius: 6,
-                      cursor: "pointer",
-                      transition: "all 0.15s ease",
-                      outline: "none",
-                      boxShadow: isDarkTheme()
-                        ? "0 2px 8px rgba(22,101,52,0.5)"
-                        : "0 2px 8px rgba(22,163,74,0.35)",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.filter = "brightness(1.15)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.filter = "none";
-                    }}
                   >
                     <i className="bi bi-check-circle-fill" />
                     Approve
@@ -1383,34 +1337,8 @@ export function DnsChangeDetailPage() {
                   </div>
                   <button
                     type="button"
+                    className="vds-ubtn vds-ubtn--secondary"
                     onClick={handleCancelReview}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      padding: "8px 14px",
-                      fontSize: "0.82rem",
-                      fontWeight: 500,
-                      border: isDarkTheme()
-                        ? "1px solid #4a6fa5"
-                        : "1px solid #93b4e0",
-                      background: isDarkTheme() ? "#1e3a5f" : "#e8f0fb",
-                      color: isDarkTheme() ? "#93c5fd" : "#1e40af",
-                      borderRadius: 6,
-                      cursor: "pointer",
-                      transition: "all 0.15s ease",
-                      outline: "none",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = isDarkTheme()
-                        ? "#1e4d80"
-                        : "#dbeafe";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = isDarkTheme()
-                        ? "#1e3a5f"
-                        : "#e8f0fb";
-                    }}
                   >
                     <i className="bi bi-arrow-counterclockwise" />
                     Go back
@@ -1418,33 +1346,8 @@ export function DnsChangeDetailPage() {
                   {reviewType === "approve" && (
                     <button
                       type="button"
+                      className="vds-ubtn vds-ubtn--success"
                       onClick={handleApprove}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 7,
-                        padding: "9px 18px",
-                        fontSize: "0.85rem",
-                        fontWeight: 600,
-                        border: "none",
-                        background: isDarkTheme()
-                          ? "linear-gradient(135deg, #166534, #15803d)"
-                          : "linear-gradient(135deg, #16a34a, #15803d)",
-                        color: "#ffffff",
-                        borderRadius: 6,
-                        cursor: "pointer",
-                        transition: "all 0.15s ease",
-                        outline: "none",
-                        boxShadow: isDarkTheme()
-                          ? "0 2px 8px rgba(22,101,52,0.5)"
-                          : "0 2px 8px rgba(22,163,74,0.35)",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.filter = "brightness(1.15)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.filter = "none";
-                      }}
                     >
                       <i className="bi bi-check-circle-fill" />
                       Confirm Approval
@@ -1453,33 +1356,14 @@ export function DnsChangeDetailPage() {
                   {reviewType === "reject" && (
                     <button
                       type="button"
+                      className="vds-ubtn vds-ubtn--danger"
                       onClick={handleReject}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 7,
-                        padding: "9px 18px",
-                        fontSize: "0.85rem",
-                        fontWeight: 600,
-                        border: "none",
-                        background: isDarkTheme()
-                          ? "linear-gradient(135deg, #991b1b, #b91c1c)"
-                          : "linear-gradient(135deg, #dc2626, #b91c1c)",
-                        color: "#ffffff",
-                        borderRadius: 6,
-                        cursor: "pointer",
-                        transition: "all 0.15s ease",
-                        outline: "none",
-                        boxShadow: isDarkTheme()
-                          ? "0 2px 8px rgba(153,27,27,0.5)"
-                          : "0 2px 8px rgba(220,38,38,0.35)",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.filter = "brightness(1.15)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.filter = "none";
-                      }}
+                      disabled={!reviewComment.trim()}
+                      title={
+                        !reviewComment.trim()
+                          ? "A comment is required to reject a DNS change"
+                          : undefined
+                      }
                     >
                       <i className="bi bi-x-circle-fill" />
                       Confirm Rejection
@@ -1646,28 +1530,28 @@ export function DnsChangeDetailPage() {
                     : "#e8f0fb";
                 }}
               >
-                Decline
+                Keep DNS Change
               </button>
               <button
                 type="button"
                 onClick={handleCancelChange}
                 style={{
                   padding: "0.5rem 1.25rem",
-                  background: "linear-gradient(135deg,#f59e0b,#d97706)",
+                  background: "linear-gradient(135deg,#ef4444,#dc2626)",
                   border: "none",
                   color: "#fff",
                   borderRadius: "0.5rem",
                   cursor: "pointer",
                   fontSize: "0.85rem",
                   fontWeight: 600,
-                  boxShadow: "0 4px 12px rgba(245,158,11,0.35)",
+                  boxShadow: "0 4px 12px rgba(220,38,38,0.35)",
                   display: "flex",
                   alignItems: "center",
                   gap: 6,
                 }}
               >
-                <i className="bi bi-check2" />
-                Confirm Cancel
+                <i className="bi bi-x-circle-fill" />
+                Cancel DNS Change
               </button>
             </div>
           </div>
