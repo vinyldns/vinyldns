@@ -219,7 +219,8 @@ user-sync {
     # Optional. When set, disabled accounts whose "employeeType" equals this value
     # are treated as service accounts and are NOT locked, since service accounts are
     # commonly disabled for interactive sign-in while still in active use. Leave unset
-    # to lock every disabled account (default behavior).
+    # to lock every disabled account (default behavior). The comparison is
+    # case-sensitive; surrounding whitespace is ignored.
     # service-account-employee-type = "S"
   }
 }

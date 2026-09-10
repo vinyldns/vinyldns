@@ -204,6 +204,16 @@ class GraphApiUserSyncProviderSpec extends Specification with Mockito {
       provider.parseUserResponse(body, disabledUser) must beSome(disabledUser)
     }
 
+    "still lock a disabled account with a null employeeType" in {
+      val body = """{"value": [{"accountEnabled": false, "employeeType": null}]}"""
+      provider.parseUserResponse(body, disabledUser) must beSome(disabledUser)
+    }
+
+    "not lock a disabled account whose employeeType matches after trimming whitespace" in {
+      val body = """{"value": [{"accountEnabled": false, "employeeType": " S "}]}"""
+      provider.parseUserResponse(body, disabledUser) must beNone
+    }
+
     "still lock an account absent from the directory even if marker is configured" in {
       val body = """{"value": []}"""
       provider.parseUserResponse(body, missingUser) must beSome(missingUser)

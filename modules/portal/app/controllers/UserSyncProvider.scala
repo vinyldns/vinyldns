@@ -179,9 +179,10 @@ class GraphApiUserSyncProvider(
   }
 
   // Only carve out service accounts when an employeeType marker is configured.
+  // employeeType is free text in the directory, so trim it; match is case-sensitive.
   private[controllers] def isServiceAccount(userJson: JsValue): Boolean =
     serviceAccountEmployeeType.exists { marker =>
-      (userJson \ "employeeType").asOpt[String].contains(marker)
+      (userJson \ "employeeType").asOpt[String].map(_.trim).contains(marker)
     }
 
   private[controllers] def escapeODataValue(value: String): String =
