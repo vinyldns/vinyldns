@@ -149,6 +149,7 @@
                     return records.map(r => r.cname).join('\n');
 
                     case 'TXT':
+                    case 'SPF':
                     return records.map(r => r.text).join('\n');
 
                     case 'NS':
@@ -191,6 +192,8 @@
                     return '';
                 }
             };
+
+            $scope.getRecordData = getRecordData;
             
             var recordSearchAutocomplete = $( "#record-search-text" ).autocomplete({
               source: function( request, response ) {
@@ -341,7 +344,7 @@
                                 if (key === 'ownerGroupName') {
                                     if (r.zoneShared)
                                         return toCSVCell(r.ownerGroupName || 'Unowned');
-                                    return toCSVCell(zoneMap[r.zoneId] || 'Unowned');
+                                    return toCSVCell(zoneMap[r.zoneId] || r.ownerGroupName || 'Unowned');
                                 }
                                 return toCSVCell(r[key] || '');
                             }).join(',');
@@ -370,13 +373,15 @@
                     }
 
                     function loadPrivateZoneOwners() {
-                        const privateZoneIds = [
-                            ...new Set(
-                                allRecords
-                                    .filter(r => !r.zoneShared && r.zoneId && r.zoneId !== "unknown")
-                                    .map(r => r.zoneId)
-                            )
-                        ];
+                        if (!shouldLoadPrivateZoneOwners()) {
+                            return Promise.resolve();
+                        }
+
+                        const privateZoneIds = getPrivateZoneIdsToLoad(allRecords, zoneMap);
+                        if (!privateZoneIds.length) {
+                            return Promise.resolve();
+                        }
+
                         const promises = privateZoneIds.map(zoneId =>
                             recordsService.getCommonZoneDetails(zoneId)
                                 .then(function (res) {
@@ -440,6 +445,36 @@
                 }
                 return '"' + str.replace(/"/g, '""') + '"';
             }
+
+            function shouldLoadPrivateZoneOwners() {
+                return !!$scope.selectedFields.ownerGroupName;
+            }
+
+            function getPrivateZoneIdsToLoad(records, zoneMap) {
+                const privateZoneIds = new Set();
+
+                records.forEach(function (record) {
+                    if (!record || record.zoneShared || !record.zoneId || record.zoneId === 'unknown') {
+                        return;
+                    }
+
+                    if (record.ownerGroupName) {
+                        zoneMap[record.zoneId] = record.ownerGroupName;
+                        return;
+                    }
+
+                    if (!zoneMap[record.zoneId]) {
+                        privateZoneIds.add(record.zoneId);
+                    }
+                });
+
+                return Array.from(privateZoneIds);
+            }
+
+            $scope.shouldLoadPrivateZoneOwners = shouldLoadPrivateZoneOwners;
+            $scope.getPrivateZoneIdsToLoad = function (records) {
+                return getPrivateZoneIdsToLoad(records || [], {});
+            };
 
             function updateRecordDisplay(records) {
                 var newRecords = [];
