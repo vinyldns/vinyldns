@@ -8,11 +8,13 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
+    "test:run": "vitest run",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
-    "deploy:portal": "./deploy-to-frondend.sh"
+    "deploy:portal": "./deploy-to-frondend.sh",
+    "test:watch": "vitest --watch"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.28.0",

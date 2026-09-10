@@ -16,7 +16,6 @@
 
 /* ============================================================
    VinylDNS – Global styles
-   Mirrors the look-and-feel from the original portal
    ============================================================ */
 
 /* ---- Sidebar shell ---- */
@@ -30,6 +29,16 @@
   --vds-sidebar-link-hover: rgba(13, 110, 253, 0.12);
   --vds-sidebar-link-active: rgba(13, 110, 253, 0.22);
   --vds-nav-icon-size: 1rem;
+  /* discard-modal light-mode defaults */
+  --vds-dm-bg: #ffffff;
+  --vds-dm-border: #e8ecf0;
+  --vds-dm-header-bg: #f8fafc;
+  --vds-dm-footer-bg: #f8fafd;
+  --vds-dm-title: #0d1b3e;
+  --vds-dm-body: #475569;
+  --vds-dm-icon-bg: #fef2f2;
+  --vds-dm-btn-border: #d4dae3;
+  --vds-dm-btn-color: #5a6a85;
 }
 
 .vds-topbar__actions {
@@ -270,7 +279,7 @@
    When collapsed, tooltips appear to the right of the sidebar.
    ============================================================ */
 
-/* Lift overflow on sidebar so tooltips escape the collapsed 64px width */
+/* Lift overflow on sidebar so tooltips escape the collapsed 92px width */
 .vds-sidebar--collapsed {
   overflow: visible;
 }
@@ -554,6 +563,16 @@ h1.h3 {
   --vds-input-bg: #1a2640;
   --vds-input-text: #cdd9ed;
   --vds-input-border: rgba(127, 168, 216, 0.2);
+  /* discard-modal dark overrides */
+  --vds-dm-bg: #1e293b;
+  --vds-dm-border: #2d4163;
+  --vds-dm-header-bg: #1a2536;
+  --vds-dm-footer-bg: #162032;
+  --vds-dm-title: #e2e8f0;
+  --vds-dm-body: #94a3b8;
+  --vds-dm-icon-bg: #3f1d1d;
+  --vds-dm-btn-border: #2d4163;
+  --vds-dm-btn-color: #94a3b8;
 }
 
 /* ── Base ── */
@@ -620,12 +639,29 @@ h1.h3 {
   -webkit-box-shadow: 0 0 0 1000px #1a2640 inset !important;
   box-shadow: 0 0 0 1000px #1a2640 inset !important;
   -webkit-text-fill-color: #cdd9ed !important;
+  color: #cdd9ed !important;
   caret-color: #cdd9ed !important;
-  /* Freeze background-color and border-color at pre-autofill values (the inline
-     styles we set) so Chrome's autofill highlight never overrides them visually */
+  border-color: rgba(127, 168, 216, 0.2) !important;
   transition:
     background-color 9999s ease 0s,
-    border-color 9999s ease 0s !important;
+    border-color 9999s ease 0s,
+    color 9999s ease 0s !important;
+  outline: none !important;
+}
+[data-vds-theme="light"] .form-control:-webkit-autofill,
+[data-vds-theme="light"] .form-control:-webkit-autofill:hover,
+[data-vds-theme="light"] .form-control:-webkit-autofill:focus,
+[data-vds-theme="light"] .form-control:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+  box-shadow: 0 0 0 1000px #fff inset !important;
+  -webkit-text-fill-color: #212529 !important;
+  color: #212529 !important;
+  caret-color: #212529 !important;
+  border-color: #dde3ec !important;
+  transition:
+    background-color 9999s ease 0s,
+    border-color 9999s ease 0s,
+    color 9999s ease 0s !important;
   outline: none !important;
 }
 [data-vds-theme="dark"] label,
@@ -900,8 +936,12 @@ h1.h3 {
   color: var(--vds-page-text);
   border-color: var(--vds-card-border);
 }
-[data-vds-theme="dark"] .modal-header,
+[data-vds-theme="dark"] .modal-header {
+  background: #1a2a42;
+  border-color: rgba(127, 168, 216, 0.1);
+}
 [data-vds-theme="dark"] .modal-footer {
+  background: #1a2a42;
   border-color: rgba(127, 168, 216, 0.1);
 }
 /* raised alpha so alerts are clearly visible on the dark page bg */
@@ -1104,13 +1144,39 @@ h1.h3 {
 }
 
 .vds-sidebar--collapsed {
-  width: 64px;
-  min-width: 64px;
+  width: 92px;
+  min-width: 92px;
 }
 
 /* ---- Nav list gap ---- */
 .vds-nav-list {
   gap: 2px;
+}
+
+.vds-sidebar--collapsed .vds-nav-list {
+  gap: 6px;
+}
+
+/* ---- Collapsed nav item: icon stacked above wrapped label ---- */
+.vds-nav-link.vds-nav-link--collapsed {
+  justify-content: center;
+  padding: 10px 4px !important;
+  gap: 4px;
+  text-align: center;
+}
+.vds-nav-link--collapsed .vds-nav-icon {
+  font-size: 1.3rem;
+  width: auto;
+}
+.vds-nav-link--collapsed .vds-nav-text {
+  margin-left: 0;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  text-align: center;
+  font-size: 0.66rem;
+  line-height: 1.2;
+  max-width: 100%;
 }
 
 /* ---- Section spacers (collapsed mode) ---- */
@@ -3568,10 +3634,9 @@ h1.h3 {
 .vds-zones-table-wrap {
   border-radius: 0.75rem;
   overflow-x: hidden;
-  overflow-y: auto;
-  max-height: 55vh;
+  overflow-y: visible;
   box-shadow: 0 2px 12px rgba(13, 110, 253, 0.07);
-  border: 1px solid #dce8fb;
+  border: 1px solid #e2e8f0;
   max-width: 100%;
 }
 
@@ -3637,21 +3702,21 @@ h1.h3 {
   margin: 0;
 }
 .vds-zones-table thead tr {
-  background: linear-gradient(90deg, #eaf2ff 0%, #f0f6fc 100%);
-  border-bottom: 2px solid #c7deff;
+  background: #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
 }
 .vds-zones-table thead th {
   padding: 12px 16px;
   font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #4a6fa5;
+  color: #475569;
   white-space: nowrap;
   position: sticky;
   top: 0;
   z-index: 2;
-  background: linear-gradient(90deg, #eaf2ff 0%, #f0f6fc 100%);
+  background: #f1f5f9;
 }
 .vds-zones-table tbody tr {
   border-bottom: 1px solid #f0f4f9;
@@ -3754,13 +3819,13 @@ h1.h3 {
   background: var(--vds-card-bg);
 }
 [data-vds-theme="dark"] .vds-zones-table thead tr {
-  background: linear-gradient(90deg, #162035 0%, #1c2b48 100%);
+  background: #1a2536;
   border-bottom-color: rgba(127, 168, 216, 0.18);
 }
 [data-vds-theme="dark"] .vds-zones-table thead th {
-  color: #7fa8d8;
+  color: #90b8e8;
   letter-spacing: 0.04em;
-  background: linear-gradient(90deg, #162035 0%, #1c2b48 100%);
+  background: #1a2536;
 }
 [data-vds-theme="dark"] .vds-zones-table tbody tr {
   border-bottom-color: rgba(127, 168, 216, 0.07);
@@ -4982,6 +5047,215 @@ h1.h3 {
   border: 1px solid rgba(107, 114, 128, 0.3);
 }
 
+/* ── Info bar (DNS Change detail — single-row metadata) ── */
+.vds-info-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.65rem;
+  background: #fff;
+  padding: 0.5rem 0.25rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+.vds-info-bar__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.25rem 1rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.vds-info-bar__item + .vds-info-bar__item {
+  border-left: 1px solid #eef2f7;
+}
+.vds-info-bar__label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+.vds-info-bar__value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1f2a44;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vds-info-bar__value--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+}
+.vds-info-bar__item--id {
+  flex: 2 1 220px;
+}
+[data-vds-theme="dark"] .vds-info-bar {
+  background: #131c2e;
+  border-color: #2d4163;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+[data-vds-theme="dark"] .vds-info-bar__item + .vds-info-bar__item {
+  border-left-color: #24344f;
+}
+[data-vds-theme="dark"] .vds-info-bar__label {
+  color: #94a3b8;
+}
+[data-vds-theme="dark"] .vds-info-bar__value {
+  color: #e2eaf6;
+}
+
+/* ── Semantic status TEXT (badge-free table cells) ──
+   Communicates status through weighted, colored text instead of pill badges.
+   Shared across DNS Changes list + detail tables for a consistent language. */
+.vds-status-text {
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.vds-status-text--success {
+  color: #047857;
+}
+.vds-status-text--danger {
+  color: #b91c1c;
+}
+.vds-status-text--warning {
+  color: #b45309;
+}
+.vds-status-text--info {
+  color: #1d4ed8;
+}
+.vds-status-text--secondary {
+  color: #64748b;
+}
+[data-vds-theme="dark"] .vds-status-text--success {
+  color: #34d399;
+}
+[data-vds-theme="dark"] .vds-status-text--danger {
+  color: #f87171;
+}
+[data-vds-theme="dark"] .vds-status-text--warning {
+  color: #fbbf24;
+}
+[data-vds-theme="dark"] .vds-status-text--info {
+  color: #60a5fa;
+}
+[data-vds-theme="dark"] .vds-status-text--secondary {
+  color: #94a3b8;
+}
+
+/* ── Unified button system (New DNS Change form + detail actions) ── */
+.vds-ubtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.2;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    filter 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.vds-ubtn:disabled,
+.vds-ubtn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.vds-ubtn--sm {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.78rem;
+  border-radius: 0.4rem;
+}
+.vds-ubtn--primary {
+  background: #1e5fa8;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(30, 95, 168, 0.25);
+}
+.vds-ubtn--primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.vds-ubtn--secondary {
+  background: #fff;
+  color: #1e5fa8;
+  border-color: #cbd5e1;
+}
+.vds-ubtn--secondary:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+.vds-ubtn--success {
+  background: #16a34a;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
+}
+.vds-ubtn--success:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.vds-ubtn--danger {
+  background: #dc2626;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+}
+.vds-ubtn--danger:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.vds-ubtn--danger-outline {
+  background: #fff;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+.vds-ubtn--danger-outline:hover:not(:disabled) {
+  background: #fef2f2;
+}
+.vds-ubtn--success-outline {
+  background: #fff;
+  color: #16a34a;
+  border-color: #86efac;
+}
+.vds-ubtn--success-outline:hover:not(:disabled) {
+  background: #f0fdf4;
+}
+[data-vds-theme="dark"] .vds-ubtn.vds-ubtn--primary {
+  background-color: #1d4ed8 !important;
+  color: #f0f6ff !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 1px 3px rgba(29, 78, 216, 0.35) !important;
+}
+[data-vds-theme="dark"] .vds-ubtn--secondary {
+  background: #1e293b;
+  color: #93c5fd;
+  border-color: #2d4163;
+}
+[data-vds-theme="dark"] .vds-ubtn--secondary:hover:not(:disabled) {
+  background: #24344f;
+}
+[data-vds-theme="dark"] .vds-ubtn--danger-outline {
+  background: #1e293b;
+  color: #fca5a5;
+  border-color: #7f1d1d;
+}
+[data-vds-theme="dark"] .vds-ubtn--danger-outline:hover:not(:disabled) {
+  background: #2a1616;
+}
+[data-vds-theme="dark"] .vds-ubtn--success-outline {
+  background: #1e293b;
+  color: #86efac;
+  border-color: #15803d;
+}
+[data-vds-theme="dark"] .vds-ubtn--success-outline:hover:not(:disabled) {
+  background: #1a3a1a;
+}
+
 /* ── Record type badge (RecordsTable TYPE column) ── */
 .vds-type-badge {
   display: inline-block;
@@ -5022,20 +5296,37 @@ h1.h3 {
 
 /* ── Cancel action button variant ── */
 .vds-action-btn--cancel {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: #fff;
-  box-shadow: 0 3px 8px rgba(245, 158, 11, 0.35);
+  box-shadow: 0 3px 8px rgba(220, 38, 38, 0.35);
 }
 .vds-action-btn--cancel:hover {
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  background: linear-gradient(135deg, #f87171, #ef4444);
   color: #fff;
-  box-shadow: 0 5px 12px rgba(245, 158, 11, 0.45);
+  box-shadow: 0 5px 12px rgba(220, 38, 38, 0.45);
 }
 [data-vds-theme="dark"] .vds-action-btn--cancel,
 [data-vds-theme="dark"] .vds-action-btn--cancel:hover {
-  background: linear-gradient(135deg, #d97706, #b45309);
+  background: linear-gradient(135deg, #dc2626, #991b1b);
   color: #fff;
-  box-shadow: 0 3px 8px rgba(180, 83, 9, 0.4);
+  box-shadow: 0 3px 8px rgba(153, 27, 27, 0.4);
+}
+
+/* ── Labeled action button (icon + text) ── */
+.vds-action-btn--labeled {
+  width: auto;
+  height: 30px;
+  border-radius: 6px;
+  gap: 5px;
+  padding: 0 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.vds-action-btn--labeled:hover {
+  transform: translateY(-1px);
+}
+.vds-action-btn__label {
+  line-height: 1;
 }
 
 /* ============================================================
@@ -5096,17 +5387,22 @@ h1.h3 {
 
 /* ============================================================
    DNS Change Detail Page — compact table variant
-   Tighter cell padding, two-line wrappable headers, and the
-   Additional Info column allowed to grow naturally.
+   Tighter cell padding; columns size to content and wrap so the
+   table stays within the viewport at reduced widths without a
+   horizontal scrollbar. No fixed per-column widths — space is
+   shared dynamically based on the actual data.
    ============================================================ */
+.vds-dns-change-detail-table {
+  table-layout: auto;
+}
 .vds-dns-change-detail-table thead th {
-  padding: 6px 8px;
-  white-space: normal;
+  padding: 14px 16px;
+  white-space: nowrap;
   line-height: 1.3;
   text-align: left;
 }
-/* Badge columns: Change Type (1), Record Type (5), TTL (7), Status (8) —
-   shrink-wrap to content, never compress. */
+/* Short/enumerated columns: Change Type (1), Record Type (5), TTL (7),
+   Status (8) — shrink-wrap to their content, never grab extra space. */
 .vds-dns-change-detail-table thead th:nth-child(1),
 .vds-dns-change-detail-table tbody td:nth-child(1),
 .vds-dns-change-detail-table thead th:nth-child(5),
@@ -5118,28 +5414,24 @@ h1.h3 {
   white-space: nowrap;
   width: 1%;
 }
-/* Text columns — width hints guide the browser to fill space before wrapping.
-   In auto table layout these act as desired widths, not hard constraints. */
+/* Free-text columns: Input Name (2), Recordset (3), Zone (4), Record Data (6),
+   Additional Info (9) — allow wrapping (including mid-token) so a single long
+   value can't force horizontal overflow. */
 .vds-dns-change-detail-table thead th:nth-child(2),
-.vds-dns-change-detail-table tbody td:nth-child(2) {
-  width: 16%;
-}
+.vds-dns-change-detail-table tbody td:nth-child(2),
 .vds-dns-change-detail-table thead th:nth-child(3),
-.vds-dns-change-detail-table tbody td:nth-child(3) {
-  width: 10%;
-}
+.vds-dns-change-detail-table tbody td:nth-child(3),
 .vds-dns-change-detail-table thead th:nth-child(4),
-.vds-dns-change-detail-table tbody td:nth-child(4) {
-  width: 14%;
-} /* Zone Name */
+.vds-dns-change-detail-table tbody td:nth-child(4),
 .vds-dns-change-detail-table thead th:nth-child(6),
-.vds-dns-change-detail-table tbody td:nth-child(6) {
-  width: 18%;
-} /* Record Data */
+.vds-dns-change-detail-table tbody td:nth-child(6),
 .vds-dns-change-detail-table thead th:nth-child(9),
 .vds-dns-change-detail-table tbody td:nth-child(9) {
-  width: 18%;
-} /* Additional Info */
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  min-width: 90px;
+}
 .vds-dns-change-detail-table tbody td {
   padding: 6px 8px;
   vertical-align: top;
@@ -5222,17 +5514,12 @@ h1.h3 {
   position: relative;
   flex: 1 1 0;
   min-width: 160px;
-  padding: 1.1rem 1.25rem 1.1rem 1.25rem;
+  padding: 0.65rem 1rem;
   border-radius: 0.875rem;
   background: #fff;
   border: 1px solid #e4ecf7;
   overflow: hidden;
-  box-shadow:
-    0 1px 4px rgba(30, 95, 168, 0.07),
-    0 2px 12px rgba(30, 95, 168, 0.04);
-  transition:
-    box-shadow 0.22s ease,
-    transform 0.22s ease;
+  box-shadow: 0 1px 4px rgba(30, 95, 168, 0.07);
 }
 .vds-info-tile::before {
   content: "";
@@ -5242,34 +5529,20 @@ h1.h3 {
   right: 0;
   height: 3px;
   background: #1e5fa8;
-  transition: background 0.22s ease;
 }
 .vds-info-tile:hover {
-  transform: translateY(-3px);
-  box-shadow:
-    0 6px 24px rgba(30, 95, 168, 0.16),
-    0 2px 6px rgba(0, 0, 0, 0.06);
-}
-.vds-info-tile:hover::before {
-  background: #3d9bff;
+  box-shadow: 0 2px 8px rgba(30, 95, 168, 0.12);
 }
 .vds-info-tile__icon {
   position: absolute;
   bottom: -0.5rem;
   right: 0.6rem;
-  font-size: 5rem;
+  font-size: 4rem;
   color: #1e5fa8;
   opacity: 0.05;
   line-height: 1;
   pointer-events: none;
-  transition:
-    opacity 0.3s ease,
-    transform 0.4s ease;
   user-select: none;
-}
-.vds-info-tile:hover .vds-info-tile__icon {
-  opacity: 0.11;
-  transform: scale(1.1) rotate(-8deg);
 }
 .vds-info-tile__label {
   font-size: 0.68rem;
@@ -5277,7 +5550,7 @@ h1.h3 {
   color: #1e5fa8;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.3rem;
 }
 .vds-info-tile__value {
   font-size: 0.9rem;
@@ -5319,7 +5592,7 @@ h1.h3 {
   opacity: 0.08 !important;
 }
 [data-vds-theme="dark"] .vds-info-tile:hover .vds-info-tile__icon {
-  opacity: 0.18 !important;
+  opacity: 0.14 !important;
 }
 [data-vds-theme="dark"] .vds-info-tile__label {
   color: #7fb8f0 !important;

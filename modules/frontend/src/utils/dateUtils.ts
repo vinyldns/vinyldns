@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-/** Format a timestamp string for display (mirrors Angular utilityService.formatDateTime) */
 export function formatDateTime(timeStamp: string): string {
   return new Date(timeStamp).toLocaleString('en-us', {
     month: 'short',

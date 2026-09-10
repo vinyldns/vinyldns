@@ -360,9 +360,9 @@ describe("<DnsChangeDetailPage /> Cancel action", () => {
       name: /Cancel Changes/i,
     });
     await userEvent.click(cancelBtn);
-    // Modal opens with a primary "Confirm Cancel" button.
+    // Modal opens with a primary "Cancel DNS Change" button.
     const confirm = await screen.findByRole("button", {
-      name: /Confirm Cancel/i,
+      name: /Cancel DNS Change/i,
     });
     await userEvent.click(confirm);
     expect(cancelBatchChange).toHaveBeenCalledTimes(1);
@@ -475,6 +475,11 @@ describe("<DnsChangeDetailPage /> Review actions (super/support only)", () => {
     const rejectBtn = screen.getByRole("button", { name: /^Reject$/i });
     await userEvent.click(rejectBtn);
     expect(rejectBatchChange).not.toHaveBeenCalled();
+    
+    // Rejection requires a comment, so enter one
+    const commentInput = screen.getByPlaceholderText("Add comments");
+    await userEvent.type(commentInput, "Invalid change");
+    
     const confirm = await screen.findByRole("button", {
       name: /Confirm Rejection/i,
     });

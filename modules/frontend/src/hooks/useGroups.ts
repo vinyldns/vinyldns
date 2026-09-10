@@ -68,7 +68,7 @@ export function useGroups(
   const { addAlert } = useAlerts();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     queryKey: ["groups", ignoreAccess, query, roleFilter, paging.next],
     staleTime: 0,
     queryFn: async () => {
@@ -140,6 +140,7 @@ export function useGroups(
   return {
     groups: data?.groups ?? [],
     isLoading,
+    isFetching,
     nextPage,
     prevPage,
     nextPageEnabled: Boolean(data?.nextId),
