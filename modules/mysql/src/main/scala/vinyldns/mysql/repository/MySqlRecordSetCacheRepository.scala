@@ -403,7 +403,6 @@ class MySqlRecordSetCacheRepository
                   ON recordset.id = recordset_data.recordset_id
               """
           val countOpts = (zoneAndNameFilters ++ typeFilter ++ ownerGroupFilter ++ authFilter).toList
-          
           val countWhere =
             if (countOpts.nonEmpty) {
               val setDelimiter = SQLSyntax.join(countOpts, sqls"AND")
