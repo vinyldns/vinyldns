@@ -288,9 +288,12 @@ lazy val frontendSettings = Seq(
   // Runs `npm run test:coverage` (vitest) for the React app, wired into sbt's test task
   npmTest := {
     import scala.sys.process._
-      val installRet = Process("npm install -f --no-audit --no-fund", baseDirectory.value).!
+      val env = "CI" -> "true"
+      Process("node --version", baseDirectory.value, env).!
+      Process("npm --version", baseDirectory.value, env).!
+      val installRet = Process("npm install -f --no-audit --no-fund", baseDirectory.value, env).!
       if (installRet != 0) sys.error("Frontend npm install failed")
-      val ret = Process("npm run test:coverage", baseDirectory.value).!
+      val ret = Process("npm run test:coverage -- --run", baseDirectory.value, env).!
       if (ret != 0) sys.error("Frontend npm tests failed")
     },
   test in Test := (test in Test).dependsOn(npmTest).value,
