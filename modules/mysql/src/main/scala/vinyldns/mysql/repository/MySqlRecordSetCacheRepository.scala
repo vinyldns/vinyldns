@@ -396,13 +396,13 @@ class MySqlRecordSetCacheRepository
             .flatMap(_ => newResults.lastOption.map(PagingKey.toNextId(_, searchByZone)))
 
           val countQueryBase = sqls"""
-              SELECT COUNT(*) FROM (
+              SELECT /*+ MAX_EXECUTION_TIME(20000) */ COUNT(*) FROM (
                 SELECT recordset_data.recordset_id, recordset_data.type
                 FROM recordset_data
                 RIGHT JOIN recordset
                   ON recordset.id = recordset_data.recordset_id
               """
-          val countOpts = (zoneAndNameFilters ++ typeFilter ++ ownerGroupFilter).toList
+          val countOpts = (zoneAndNameFilters ++ typeFilter ++ ownerGroupFilter ++ authFilter).toList
           val countWhere =
             if (countOpts.nonEmpty) {
               val setDelimiter = SQLSyntax.join(countOpts, sqls"AND")
