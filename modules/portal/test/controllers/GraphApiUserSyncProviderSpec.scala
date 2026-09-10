@@ -36,8 +36,15 @@ class GraphApiUserSyncProviderSpec extends Specification with Mockito {
     */
   class TestableGraphApiProvider(
       userResponses: Map[String, (Int, String)] = Map.empty,
-      tokenResponse: Either[Throwable, String] = Right("test-token")
-  ) extends GraphApiUserSyncProvider("test-tenant", "test-client", "test-secret", "onPremisesSamAccountName") {
+      tokenResponse: Either[Throwable, String] = Right("test-token"),
+      serviceAccountEmployeeType: Option[String] = None
+  ) extends GraphApiUserSyncProvider(
+        "test-tenant",
+        "test-client",
+        "test-secret",
+        "onPremisesSamAccountName",
+        serviceAccountEmployeeType
+      ) {
 
     override private[controllers] def getAccessToken(): IO[String] =
       tokenResponse match {
@@ -176,6 +183,36 @@ class GraphApiUserSyncProviderSpec extends Specification with Mockito {
     "default to enabled when accountEnabled field is missing" in {
       val body = """{"value": [{"displayName": "Test"}]}"""
       provider.parseUserResponse(body, testUser) must beNone
+    }
+  }
+
+  "parseUserResponse with service-account carve-out" should {
+    val provider = new TestableGraphApiProvider(serviceAccountEmployeeType = Some("S"))
+
+    "not lock a disabled account whose employeeType matches the marker" in {
+      val body = """{"value": [{"accountEnabled": false, "employeeType": "S"}]}"""
+      provider.parseUserResponse(body, disabledUser) must beNone
+    }
+
+    "still lock a disabled account whose employeeType differs" in {
+      val body = """{"value": [{"accountEnabled": false, "employeeType": "E"}]}"""
+      provider.parseUserResponse(body, disabledUser) must beSome(disabledUser)
+    }
+
+    "still lock a disabled account with no employeeType" in {
+      val body = """{"value": [{"accountEnabled": false}]}"""
+      provider.parseUserResponse(body, disabledUser) must beSome(disabledUser)
+    }
+
+    "still lock an account absent from the directory even if marker is configured" in {
+      val body = """{"value": []}"""
+      provider.parseUserResponse(body, missingUser) must beSome(missingUser)
+    }
+
+    "ignore employeeType entirely when no marker is configured" in {
+      val noMarker = new TestableGraphApiProvider()
+      val body = """{"value": [{"accountEnabled": false, "employeeType": "S"}]}"""
+      noMarker.parseUserResponse(body, disabledUser) must beSome(disabledUser)
     }
   }
 

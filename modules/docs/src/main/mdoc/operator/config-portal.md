@@ -215,6 +215,12 @@ user-sync {
     # The Graph API user attribute to match against VinylDNS usernames
     # Default: "onPremisesSamAccountName"
     username-attribute = "onPremisesSamAccountName"
+
+    # Optional. When set, disabled accounts whose "employeeType" equals this value
+    # are treated as service accounts and are NOT locked, since service accounts are
+    # commonly disabled for interactive sign-in while still in active use. Leave unset
+    # to lock every disabled account (default behavior).
+    # service-account-employee-type = "S"
   }
 }
 ```
@@ -442,6 +448,7 @@ user-sync {
   polling-interval-hours = 24
   graph-api {
     username-attribute = "onPremisesSamAccountName"
+    # service-account-employee-type = "S"  # optional; don't lock disabled service accounts
   }
 }
 

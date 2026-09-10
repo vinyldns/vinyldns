@@ -50,7 +50,8 @@ class GraphApiUserSyncProvider(
     tenantId: String,
     clientId: String,
     clientSecret: String,
-    usernameAttribute: String
+    usernameAttribute: String,
+    serviceAccountEmployeeType: Option[String] = None
 ) extends UserSyncProvider {
 
   private val logger = LoggerFactory.getLogger(classOf[GraphApiUserSyncProvider])
@@ -161,14 +162,27 @@ class GraphApiUserSyncProvider(
       Some(user)
     } else {
       val accountEnabled = (values.head \ "accountEnabled").asOpt[Boolean].getOrElse(true)
-      if (!accountEnabled) {
+      if (accountEnabled) {
+        None
+      } else if (isServiceAccount(values.head)) {
+        // Service accounts are frequently disabled for interactive sign-in in the
+        // directory while still in active use; don't lock them on that signal alone.
+        logger.info(
+          s"User ${user.userName} is disabled but has service-account employeeType; not marking as stale"
+        )
+        None
+      } else {
         logger.info(s"User ${user.userName} is disabled in Graph API, marking as stale")
         Some(user)
-      } else {
-        None
       }
     }
   }
+
+  // Only carve out service accounts when an employeeType marker is configured.
+  private[controllers] def isServiceAccount(userJson: JsValue): Boolean =
+    serviceAccountEmployeeType.exists { marker =>
+      (userJson \ "employeeType").asOpt[String].contains(marker)
+    }
 
   private[controllers] def escapeODataValue(value: String): String =
     value.replace("'", "''")
@@ -182,7 +196,10 @@ class GraphApiUserSyncProvider(
           s"$usernameAttribute eq '$escapedUsername'",
           "UTF-8"
         )
-        val select = java.net.URLEncoder.encode("accountEnabled", "UTF-8")
+        val selectFields =
+          if (serviceAccountEmployeeType.isDefined) "accountEnabled,employeeType"
+          else "accountEnabled"
+        val select = java.net.URLEncoder.encode(selectFields, "UTF-8")
         // $count=true + ConsistencyLevel: eventual are required for advanced query
         // properties like onPremisesSamAccountName, employeeId, etc.
         // See https://learn.microsoft.com/en-us/graph/aad-advanced-queries
