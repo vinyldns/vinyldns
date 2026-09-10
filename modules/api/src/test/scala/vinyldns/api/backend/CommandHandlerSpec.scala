@@ -319,7 +319,7 @@ class CommandHandlerSpec
       val dbZone = zoneCreate.zone
       val syncWithDbZone = zoneCreate.copy(changeType = ZoneChangeType.Sync, zone = dbZone)
 
-      doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(attackZone.id)
+      doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(zoneCreate.zone.id)
       doReturn(IO.pure(syncWithDbZone)).when(mockZoneSyncProcessor).apply(syncWithDbZone)
 
       Stream.emit(msg).covary[IO].through(processor).compile.drain.unsafeRunSync()

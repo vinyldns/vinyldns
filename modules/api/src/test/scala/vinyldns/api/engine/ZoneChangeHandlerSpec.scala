@@ -137,7 +137,7 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     val modifiedZone = change.zone.copy(name = "modified.zone.")
     val deleteChange = change.copy(changeType = ZoneChangeType.Delete, zone = modifiedZone)
 
-    doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(attackZone.id)
+    doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(change.zone.id)
     doReturn(IO.pure(Right(dbZone))).when(mockZoneRepo).save(dbZone)
     doReturn(IO.pure(deleteChange)).when(mockChangeRepo).save(any[ZoneChange])
 
@@ -171,7 +171,7 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     )
     val updateChange = change.copy(zone = modifiedZone)
 
-    doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(attackZone.id)
+    doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(change.zone.id)
     doReturn(IO.pure(Right(dbZone))).when(mockZoneRepo).save(any[Zone])
     doReturn(IO.pure(updateChange)).when(mockChangeRepo).save(any[ZoneChange])
 
