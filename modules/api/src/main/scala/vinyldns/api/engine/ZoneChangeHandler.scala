@@ -35,45 +35,30 @@ object ZoneChangeHandler {
 
   ): ZoneChange => IO[ZoneChange] =
     zoneChange =>
-      // Load authoritative zone configuration from repository before processing
-      zoneRepository.getZone(zoneChange.zone.id).flatMap {
-        case None =>
+      zoneRepository.save(zoneChange.zone).flatMap {
+        case Left(duplicateZoneError) =>
           zoneChangeRepository.save(
             zoneChange.copy(
               status = ZoneChangeStatus.Failed,
-              systemMessage = Some(s"Zone ${zoneChange.zone.id} not found in repository")
+              systemMessage = Some(duplicateZoneError.message)
             )
           )
-        case Some(_) if zoneChange.changeType == ZoneChangeType.Delete =>
-          // zoneChange.zone already carries status = Deleted (set by ZoneChangeGenerator.forDelete),
-          // so saving it is what actually triggers the cascading delete in the repository.
-          zoneRepository.save(zoneChange.zone).flatMap { _ =>
-            executeWithinTransaction { db: DB =>
-              for {
-                _ <- recordSetRepository
-                  .deleteRecordSetsInZone(db, zoneChange.zone.id, zoneChange.zone.name)
-                _ <- recordSetCacheRepository
-                  .deleteRecordSetDataInZone(db, zoneChange.zone.id, zoneChange.zone.name)
-              } yield ()
-            }.attempt.flatMap { _ =>
+        case Right(_) if zoneChange.changeType == ZoneChangeType.Delete =>
+
+          executeWithinTransaction { db: DB =>
+            for {
+              _ <- recordSetRepository
+              .deleteRecordSetsInZone(db,zoneChange.zone.id, zoneChange.zone.name)
+              _ <- recordSetCacheRepository
+            .deleteRecordSetDataInZone(db,zoneChange.zone.id, zoneChange.zone.name)}
+            yield ()
+          }
+            .attempt
+            .flatMap { _ =>
               zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
             }
-          }
-        case Some(_) =>
-          // zoneChange.zone already reflects the validated, requested update (see
-          // ZoneService.updateZone / Zone.apply(UpdateZoneInput, Zone)) - persist it as-is so that
-          // ACL, adminGroupId, and shared changes actually take effect.
-          zoneRepository.save(zoneChange.zone).flatMap {
-            case Left(duplicateZoneError) =>
-              zoneChangeRepository.save(
-                zoneChange.copy(
-                  status = ZoneChangeStatus.Failed,
-                  systemMessage = Some(duplicateZoneError.message)
-                )
-              )
-            case Right(_) =>
-              logger.info(s"Saving zone change with id: '${zoneChange.id}', zone name: '${zoneChange.zone.name}'")
-              zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
-          }
+        case Right(_) =>
+          logger.info(s"Saving zone change with id: '${zoneChange.id}', zone name: '${zoneChange.zone.name}'")
+          zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
       }
 }

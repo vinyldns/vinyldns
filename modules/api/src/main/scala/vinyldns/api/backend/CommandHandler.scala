@@ -64,7 +64,6 @@ object CommandHandler {
       pollingInterval: FiniteDuration,
       pauseSignal: SignallingRef[IO, Boolean],
       backendResolver: BackendResolver,
-      zoneRepo: ZoneRepository,
       maxOpen: Int = 4
   )(implicit timer: Timer[IO]): Stream[IO, Unit] = {
 
@@ -80,8 +79,7 @@ object CommandHandler {
         recordChangeHandler,
         zoneSyncHandler,
         batchChangeHandler,
-        backendResolver,
-        zoneRepo
+        backendResolver
       )
 
     // Delete messages from message queue when complete
@@ -160,38 +158,19 @@ object CommandHandler {
       recordChangeProcessor: (Backend, RecordSetChange) => IO[RecordSetChange],
       zoneSyncProcessor: ZoneChange => IO[ZoneChange],
       batchChangeProcessor: BatchChangeCommand => IO[Option[BatchChange]],
-      backendResolver: BackendResolver,
-      zoneRepo: ZoneRepository
+      backendResolver: BackendResolver
   ): Pipe[IO, CommandMessage, MessageOutcome] =
     _.evalMap[IO, MessageOutcome] { message =>
       message.command match {
-        // Zone creation bypasses repository validation as zone does not exist in DB
-        case sync: ZoneChange if sync.changeType == ZoneChangeType.Create =>
-          outcomeOf(message)(zoneSyncProcessor(sync))
-
-        // Validate zone existence before processing sync/auto-sync operations
         case sync: ZoneChange
-            if sync.changeType == ZoneChangeType.Sync || sync.changeType == ZoneChangeType.AutomatedSync =>
-          zoneRepo.getZone(sync.zone.id).flatMap {
-            case None =>
-              logger.warn(s"Discarding zone sync ${sync.id}: zone ${sync.zone.id} not found in repository")
-              IO.pure(DeleteMessage(message))
-            case Some(trustedZone) =>
-              outcomeOf(message)(zoneSyncProcessor(sync.copy(zone = trustedZone)))
-          }
+            if sync.changeType == ZoneChangeType.Sync || sync.changeType == ZoneChangeType.AutomatedSync || sync.changeType == ZoneChangeType.Create =>
+          outcomeOf(message)(zoneSyncProcessor(sync))
 
         case zoneChange: ZoneChange =>
           outcomeOf(message)(zoneChangeProcessor(zoneChange))
 
-        // Validate zone existence and use authoritative zone configuration for record operations
         case rcr: RecordSetChange =>
-          zoneRepo.getZone(rcr.zone.id).flatMap {
-            case None =>
-              logger.warn(s"Discarding RecordSetChange ${rcr.id}: zone ${rcr.zone.id} not found in repository")
-              IO.pure(DeleteMessage(message))
-            case Some(trustedZone) =>
-              outcomeOf(message)(recordChangeProcessor(backendResolver.resolve(trustedZone), rcr.copy(zone = trustedZone)))
-          }
+          outcomeOf(message)(recordChangeProcessor(backendResolver.resolve(rcr.zone), rcr))
 
         case bcc: BatchChangeCommand =>
           outcomeOf(message)(batchChangeProcessor(bcc))
@@ -269,8 +248,7 @@ object CommandHandler {
         msgsPerPoll,
         pollingInterval,
         processingSignal,
-        backendResolver,
-        zoneRepo
+        backendResolver
       )
       .compile
       .drain
