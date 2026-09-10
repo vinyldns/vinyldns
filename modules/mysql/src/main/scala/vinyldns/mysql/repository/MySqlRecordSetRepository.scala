@@ -280,6 +280,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val totalCount: Option[Int] =
             if (zoneId.isEmpty) {
               val countQueryBase = sqls"SELECT COUNT(*) FROM recordset"
+              
               val countOpts = (zoneAndNameFilters ++ typeFilter ++ ownerGroupFilter ++ authFilter).toList
 
               val countWhere =
