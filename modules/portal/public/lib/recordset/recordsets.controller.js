@@ -194,7 +194,6 @@
             };
 
             $scope.getRecordData = getRecordData;
-            
             var recordSearchAutocomplete = $( "#record-search-text" ).autocomplete({
               source: function( request, response ) {
                 $.ajax({
