@@ -289,12 +289,15 @@ lazy val frontendSettings = Seq(
   npmTest := {
     import scala.sys.process._
       val env = "CI" -> "true"
+      println("[frontend/npmTest] Starting frontend npm test phase")
       Process("node --version", baseDirectory.value, env).!
       Process("npm --version", baseDirectory.value, env).!
       val installRet = Process("npm install -f --no-audit --no-fund", baseDirectory.value, env).!
       if (installRet != 0) sys.error("Frontend npm install failed")
-      val ret = Process("npm run test:coverage -- --run", baseDirectory.value, env).!
+      // Use forked workers to reduce occasional lingering worker-thread exits in CI/docker.
+      val ret = Process("npm run test:coverage -- --run --pool=forks", baseDirectory.value, env).!
       if (ret != 0) sys.error("Frontend npm tests failed")
+      println("[frontend/npmTest] Frontend npm test phase completed")
     },
   test in Test := (test in Test).dependsOn(npmTest).value,
   mappings in Universal ++= {
