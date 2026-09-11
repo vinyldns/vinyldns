@@ -260,9 +260,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           } else sqls""
 
           val appendQueries = initialQuery.append(appendOpts)
-
           val finalQuery = appendQueries.append(finalQualifiers)
-
+          
           val results = sql"$finalQuery"
             .map(toRecordSet)
             .list()
@@ -270,16 +269,35 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
           val newResults = if (maxPlusOne.contains(results.size)) {
             results.dropRight(1)
-          } else {
-            results
-          }
-
+          } else { results }
+          
           // if size of results is less than the maxItems plus one, we don't have a next id
           // if maxItems is None, we don't have a next id
-
           val nextId = maxPlusOne
             .filter(_ == results.size)
             .flatMap(_ => newResults.lastOption.map(PagingKey.toNextId(_, searchByZone)))
+
+          val totalCount: Option[Int] =
+            if (zoneId.isEmpty) {
+              val countQueryBase = sqls"SELECT COUNT(*) FROM recordset"
+              
+              val countOpts = (zoneAndNameFilters ++ typeFilter ++ ownerGroupFilter ++ authFilter).toList
+
+              val countWhere =
+                if (countOpts.nonEmpty) {
+                  val setDelimiter = SQLSyntax.join(countOpts, sqls"AND")
+                  sqls"WHERE".append(setDelimiter)
+                } else sqls""
+
+              val countQuery = countQueryBase.append(countWhere)
+
+              sql"$countQuery"
+                .map(_.int(1))
+                .single()
+                .apply()
+            } else {
+              None
+            }
 
           ListRecordSetResults(
             recordSets = newResults,
@@ -289,8 +307,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             recordNameFilter = recordNameFilter,
             recordTypeFilter = recordTypeFilter,
             nameSort = nameSort,
-            recordTypeSort = recordTypeSort
-          )
+            recordTypeSort = recordTypeSort,
+            totalCount = totalCount)
         }
       }
     }
