@@ -19,7 +19,7 @@ import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GroupsTable } from "../components/groups/GroupsTable";
 import { GroupForm } from "../components/groups/GroupForm";
-import { Pagination, PaginatedSection } from "../components/common/Pagination";
+import { PaginatedSection } from "../components/common/Pagination";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { useGroups } from "../hooks/useGroups";
 import { groupsService } from "../services/groupsService";
@@ -68,6 +68,7 @@ export function GroupsPage() {
   const {
     groups,
     isLoading,
+    isFetching,
     nextPage,
     prevPage,
     nextPageEnabled,
@@ -393,6 +394,7 @@ export function GroupsPage() {
             <i className="bi bi-plus-circle-fill" />
             New Group
           </button>
+          bu
           <button
             id="refresh-group-button"
             className="btn btn-sm d-flex align-items-center vds-btn-flat"
@@ -965,7 +967,7 @@ export function GroupsPage() {
           </div>
         )}
 
-        {isLoading ? (
+        {isLoading || isFetching ? (
           <LoadingSpinner />
         ) : (
           <>

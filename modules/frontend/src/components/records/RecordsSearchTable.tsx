@@ -260,7 +260,6 @@ const SHOW_MAX = 4;
  * Expandable record-data cell for a single record set row.
  *
  * Renders up to SHOW_MAX values by default and provides a "Show more…" /
- * "Show fewer…" toggle matching the legacy AngularJS portal behavior.
  * Each value is rendered via `renderRecordValue` which handles type-specific
  * field names for all supported DNS record types including DS, SOA, SPF, and SSHFP.
  */

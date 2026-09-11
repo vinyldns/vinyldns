@@ -15,7 +15,7 @@
  */
 
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { screen, waitFor, within, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -94,6 +94,10 @@ describe("<RecordsPage /> (Global RecordSet Search)", () => {
     });
   });
 
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("renders the page header and the FQDN search input", async () => {
     renderWithProviders(<RecordsPage />);
     expect(
@@ -102,8 +106,10 @@ describe("<RecordsPage /> (Global RecordSet Search)", () => {
     expect(screen.getByPlaceholderText(/Search by FQDN/i)).toBeInTheDocument();
   });
 
-  it("calls listRecordSetData on mount", async () => {
+  it("calls listRecordSetData after an FQDN search", async () => {
     renderWithProviders(<RecordsPage />);
+    const input = await screen.findByPlaceholderText(/Search by FQDN/i);
+    await userEvent.type(input, "host{Enter}");
     await waitFor(() => {
       expect(recordsService.listRecordSetData).toHaveBeenCalled();
     });
@@ -117,6 +123,8 @@ describe("<RecordsPage /> (Global RecordSet Search)", () => {
   it("renders rows when the API returns record sets", async () => {
     mockRecords([recordRow()]);
     renderWithProviders(<RecordsPage />);
+    const input = await screen.findByPlaceholderText(/Search by FQDN/i);
+    await userEvent.type(input, "host{Enter}");
     expect(await screen.findByText("host.example.com.")).toBeInTheDocument();
   });
 });
@@ -138,6 +146,10 @@ describe("<RecordsPage /> FQDN search", () => {
     (groupsService.getGroups as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: { groups: [] },
     });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   it("submits the FQDN to the API when the user presses Enter", async () => {
@@ -180,6 +192,10 @@ describe("<RecordsPage /> Type filter gating", () => {
     (groupsService.getGroups as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: { groups: [] },
     });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   it("disables the Type filter until a FQDN search returns results", async () => {
@@ -251,6 +267,10 @@ describe("<RecordsPage /> Owner Group combobox", () => {
     (
       recordsService.getRecordSuggestions as ReturnType<typeof vi.fn>
     ).mockResolvedValue({ data: { recordSets: [] } });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   /** Render and run an FQDN search so the combobox becomes enabled. */
@@ -422,6 +442,10 @@ describe("<RecordsPage /> Clear All", () => {
     (
       recordsService.getRecordSuggestions as ReturnType<typeof vi.fn>
     ).mockResolvedValue({ data: { recordSets: [] } });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   it("resets the owner-group filter and re-issues a no-filter search", async () => {

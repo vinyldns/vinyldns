@@ -15,10 +15,9 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { DnsChangesTable } from "../components/dnsChanges/DnsChangesTable";
-import { DnsChangeForm } from "../components/dnsChanges/DnsChangeForm";
 import { PaginatedSection } from "../components/common/Pagination";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { TimeFilterDropdown } from "../components/common/TimeFilterDropdown";
@@ -27,12 +26,17 @@ import { useDnsChanges } from "../hooks/useDnsChanges";
 import { useProfile } from "../contexts/ProfileContext";
 import { useAlerts } from "../contexts/AlertContext";
 import { dnsChangeService } from "../services/dnsChangeService";
-import type {
-  BatchChangeCount,
-  DnsChangeSummary,
-  CreateDnsChangeRequest,
-} from "../types/dnsChange";
+import { formatDateTime } from "../utils/dateUtils";
+import type { BatchChangeCount, DnsChangeSummary } from "../types/dnsChange";
 import type { PagingState } from "../types/common";
+
+/** Returns true when the document is currently using the dark VDS theme. */
+function isDarkTheme(): boolean {
+  return (
+    document.documentElement.getAttribute("data-vds-theme") === "dark" ||
+    window.matchMedia("(prefers-color-scheme: dark)").matches
+  );
+}
 
 /**
  * DNS Changes page — lists batch change requests submitted to VinylDNS.
@@ -46,6 +50,7 @@ import type { PagingState } from "../types/common";
 export function DnsChangesPage() {
   const { profile } = useProfile();
   const location = useLocation();
+  const navigate = useNavigate();
   const savedState = location.state as {
     tab?: "my" | "all";
     paging?: PagingState;
@@ -63,7 +68,6 @@ export function DnsChangesPage() {
 
   // ── Toolbar visibility ───────────────────────────────────────────────────
   const [showCards, setShowCards] = useState(true);
-  const [showFilters, setShowFilters] = useState(true);
 
   // ── Time filter (client-side) ─────────────────────────────────────────────
   const [changeTimeRange, setChangeTimeRange] = useState<TimeRange>("all");
@@ -107,57 +111,6 @@ export function DnsChangesPage() {
     null,
   );
 
-  // ── New DNS Change modal state ────────────────────────────────────────────
-  const [showNewModal, setShowNewModal] = useState(false);
-  const [newModalRowErrors, setNewModalRowErrors] = useState<string[][]>([]);
-
-  // Lock body scroll while the new-change modal is open.
-  useEffect(() => {
-    if (!showNewModal) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [showNewModal]);
-
-  const handleNewChangeSubmit = (
-    data: CreateDnsChangeRequest,
-    allowManualReview: boolean,
-  ) => {
-    setNewModalRowErrors([]);
-    createBatchChange(
-      { data, allowManualReview },
-      {
-        onSuccess: () => {
-          setShowNewModal(false);
-          setNewModalRowErrors([]);
-          void refetch();
-        },
-        onError: (err: unknown) => {
-          const error = err as {
-            response?: { status?: number; data?: unknown };
-          };
-          if (
-            error.response?.status === 400 &&
-            Array.isArray(error.response.data)
-          ) {
-            const perRow = (
-              error.response.data as Array<{ errors?: string[] }>
-            ).map((c) => c.errors ?? []);
-            setNewModalRowErrors(perRow);
-            if (perRow.some((e) => e.length > 0)) {
-              addAlert(
-                "danger",
-                "Errors found in one or more rows. Please correct and resubmit.",
-              );
-            }
-          }
-        },
-      },
-    );
-  };
-
   const handleConfirmCancel = () => {
     if (!cancelTarget) return;
     cancelBatchChange(cancelTarget.id);
@@ -188,6 +141,7 @@ export function DnsChangesPage() {
         return res.data;
       },
       retry: false, // don't retry on 404 (endpoint not yet deployed)
+      refetchOnWindowFocus: false, // don't refetch when switching tabs
       staleTime: 120_000, // reuse cached counts for 2 min between navigations
       gcTime: 180_000, // keep in memory for 3 min after last subscriber
     });
@@ -278,10 +232,7 @@ export function DnsChangesPage() {
         <button
           type="button"
           className="btn btn-primary d-flex align-items-center gap-2 vds-btn-primary-shadow vds-btn-nav"
-          onClick={() => {
-            setNewModalRowErrors([]);
-            setShowNewModal(true);
-          }}
+          onClick={() => void navigate("/dnschanges/new")}
         >
           <i className="bi bi-plus-circle-fill" />
           New DNS Change
@@ -290,10 +241,13 @@ export function DnsChangesPage() {
 
       <div className="card mb-3 vds-toolbar-card">
         <div className="card-body py-2 px-3">
-          {/* ── Top row: tab pills left · cards/filters toggles + refresh right ── */}
-          <div className="d-flex align-items-center gap-2">
+          {/* ── Toolbar: request scope left; filters and actions right ─────── */}
+          <div
+            className="d-flex align-items-center gap-2"
+            style={{ minWidth: 0, width: "100%" }}
+          >
             {canReview && (
-              <div className="vds-pill-toggle">
+              <div className="vds-pill-toggle" style={{ flex: "0 0 auto" }}>
                 <button
                   type="button"
                   className={`vds-pill-toggle__btn${activeTab === "my" ? " vds-pill-toggle__btn--active" : ""}`}
@@ -313,36 +267,86 @@ export function DnsChangesPage() {
               </div>
             )}
 
-            <div className="ms-auto d-flex align-items-center gap-2">
-              <button
-                className="vds-cards-toggle-btn"
-                onClick={() => setShowCards((v) => !v)}
-              >
-                <span className="vds-cards-toggle-btn__icon">
-                  <i
-                    className={`bi ${showCards ? "bi-grid-fill" : "bi-grid"}`}
+            <div
+              className="ms-auto d-flex align-items-center justify-content-end gap-2"
+              style={{ minWidth: 0, flex: "1 1 auto", overflow: "hidden" }}
+            >
+              {ignoreAccess && (
+                <div
+                  className="vds-search-group input-group input-group-sm"
+                  style={{
+                    flex: "1 1 120px",
+                    minWidth: 120,
+                    overflow: "hidden",
+                  }}
+                >
+                  <span className="input-group-text border-0 bg-transparent pe-1">
+                    <i className="bi bi-person text-muted" />
+                  </span>
+                  <input
+                    type="text"
+                    className="form-control border-0 ps-0 shadow-none bg-transparent"
+                    placeholder="Search by username"
+                    value={submitterName}
+                    onChange={(e) => setSubmitterName(e.target.value)}
                   />
-                </span>
-                <span>{showCards ? "Hide Cards" : "Show Cards"}</span>
-                <span
-                  className={`vds-cards-toggle-btn__dot${showCards ? "" : " vds-cards-toggle-btn__dot--off"}`}
-                />
-              </button>
+                  {submitterName && (
+                    <button
+                      type="button"
+                      className="input-group-text border-0 bg-transparent pe-1"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => setSubmitterName("")}
+                    >
+                      <i className="bi bi-x text-muted" />
+                    </button>
+                  )}
+                </div>
+              )}
+
               <button
                 type="button"
-                className="vds-cards-toggle-btn"
-                onClick={() => setShowFilters((v) => !v)}
+                className={`btn btn-sm d-flex align-items-center gap-1 vds-btn-flat${approvalStatus === "PendingReview" ? " vds-btn-flat--active" : ""}`}
+                onClick={() =>
+                  setApprovalStatus(
+                    approvalStatus === "PendingReview" ? "" : "PendingReview",
+                  )
+                }
+                style={{ flex: "0 0 auto", whiteSpace: "nowrap" }}
               >
-                <span className="vds-cards-toggle-btn__icon">
-                  <i
-                    className={`bi ${showFilters ? "bi-x-lg" : "bi-sliders"}`}
-                  />
-                </span>
-                <span>{showFilters ? "Hide Filters" : "Show Filters"}</span>
-                <span
-                  className={`vds-cards-toggle-btn__dot${showFilters ? "" : " vds-cards-toggle-btn__dot--off"}`}
-                />
+                <i className="bi bi-hourglass-split" />
+                <span className="vds-btn-flat__label">Open Only</span>
+                {approvalStatus === "PendingReview" && (
+                  <span className="vds-filter-chip--accent">On</span>
+                )}
               </button>
+
+              <TimeFilterDropdown
+                value={changeTimeRange}
+                dateFrom={changeDateFrom}
+                dateTo={changeDateTo}
+                onChange={setChangeTimeRange}
+                onDateFromChange={setChangeDateFrom}
+                onDateToChange={setChangeDateTo}
+              />
+
+              {canReview && (
+                <button
+                  type="button"
+                  className="vds-cards-toggle-btn"
+                  onClick={() => setShowCards((v) => !v)}
+                  style={{ flex: "0 0 auto", whiteSpace: "nowrap" }}
+                >
+                  <span className="vds-cards-toggle-btn__icon">
+                    <i
+                      className={`bi ${showCards ? "bi-grid-fill" : "bi-grid"}`}
+                    />
+                  </span>
+                  <span>{showCards ? "Hide Cards" : "Show Cards"}</span>
+                  <span
+                    className={`vds-cards-toggle-btn__dot${showCards ? "" : " vds-cards-toggle-btn__dot--off"}`}
+                  />
+                </button>
+              )}
               <button
                 type="button"
                 className="btn btn-sm vds-btn-flat d-flex align-items-center justify-content-center"
@@ -363,86 +367,11 @@ export function DnsChangesPage() {
               </button>
             </div>
           </div>
-
-          {/* ── Animated filters row ── */}
-          <div
-            className="d-flex align-items-center pt-2"
-            style={{ minHeight: 32 }}
-          >
-            <div
-              style={{
-                width: "100%",
-                maxHeight: showFilters ? "120px" : "0px",
-                opacity: showFilters ? 1 : 0,
-                overflow: showFilters ? "visible" : "hidden",
-                transition:
-                  "max-height 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease",
-              }}
-            >
-              <div className="d-flex align-items-center justify-content-end gap-2">
-                {/* Open Requests Only — styled as a flat filter toggle (matches ZonesPage pattern) */}
-                <button
-                  type="button"
-                  className={`btn btn-sm d-flex align-items-center gap-1 vds-btn-flat${approvalStatus === "PendingReview" ? " vds-btn-flat--active" : ""}`}
-                  onClick={() =>
-                    setApprovalStatus(
-                      approvalStatus === "PendingReview" ? "" : "PendingReview",
-                    )
-                  }
-                >
-                  <i className="bi bi-hourglass-split" />
-                  <span className="vds-btn-flat__label">Open Only</span>
-                  {approvalStatus === "PendingReview" && (
-                    <span className="vds-filter-chip--accent">On</span>
-                  )}
-                </button>
-
-                {/* Submitter filter — All Requests only, grows to fill remaining space */}
-                {ignoreAccess && (
-                  <div
-                    className="vds-search-group input-group input-group-sm"
-                    style={{ flex: 1, minWidth: 120 }}
-                  >
-                    <span className="input-group-text border-0 bg-transparent pe-1">
-                      <i className="bi bi-person text-muted" />
-                    </span>
-                    <input
-                      type="text"
-                      className="form-control border-0 ps-0 shadow-none bg-transparent"
-                      placeholder="Search by username"
-                      value={submitterName}
-                      onChange={(e) => setSubmitterName(e.target.value)}
-                    />
-                    {submitterName && (
-                      <button
-                        type="button"
-                        className="input-group-text border-0 bg-transparent pe-1"
-                        style={{ cursor: "pointer" }}
-                        onClick={() => setSubmitterName("")}
-                      >
-                        <i className="bi bi-x text-muted" />
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {/* Time filter */}
-                <TimeFilterDropdown
-                  value={changeTimeRange}
-                  dateFrom={changeDateFrom}
-                  dateTo={changeDateTo}
-                  onChange={setChangeTimeRange}
-                  onDateFromChange={setChangeDateFrom}
-                  onDateToChange={setChangeDateTo}
-                />
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
       {/* ── Insight cards ── */}
-      {showCards && (
+      {canReview && showCards && (
         <div className="row g-2 mb-3 align-items-stretch">
           {/* Card 1: Total Requests */}
           <div className="col-6 col-sm-4 col-xl d-flex">
@@ -651,17 +580,16 @@ export function DnsChangesPage() {
         <LoadingSpinner message="Loading changes…" />
       ) : (
         <PaginatedSection
-          show={(prevPageEnabled || nextPageEnabled) && dnsChanges.length > 0}
+          show={dnsChanges.length > 0}
           onPrev={prevPage}
           onNext={nextPage}
           prevEnabled={prevPageEnabled}
           nextEnabled={nextPageEnabled}
           rangeLabel={
             dnsChanges.length > 0
-              ? `${(currentPage - 1) * pageSize + 1}–${(currentPage - 1) * pageSize + dnsChanges.length}`
+              ? `${(currentPage - 1) * pageSize + 1}–${(currentPage - 1) * pageSize + dnsChanges.length} of ${cardTotal > 0 ? cardTotal : (currentPage - 1) * pageSize + dnsChanges.length}`
               : undefined
           }
-          totalCount={cardTotal > 0 ? cardTotal : undefined}
         >
           <DnsChangesTable
             changes={displayedChanges}
@@ -695,10 +623,10 @@ export function DnsChangesPage() {
         >
           <div
             style={{
-              background: "#ffffff",
-              border: "1px solid #e8ecf0",
+              background: isDarkTheme() ? "#1e293b" : "#ffffff",
+              border: `1px solid ${isDarkTheme() ? "#2d4163" : "#e8ecf0"}`,
               borderRadius: "0.85rem",
-              boxShadow: "0 25px 60px rgba(0,0,0,0.4)",
+              boxShadow: "0 25px 60px rgba(0,0,0,0.45)",
               width: "min(460px, 100%)",
               overflow: "hidden",
             }}
@@ -710,8 +638,11 @@ export function DnsChangesPage() {
                 alignItems: "center",
                 gap: "0.85rem",
                 padding: "1.1rem 1.4rem",
-                borderBottom: "1px solid #e8ecf0",
-                background: "linear-gradient(90deg,#ffffff,#f8fafd)",
+                borderTop: `2px solid ${isDarkTheme() ? "#475569" : "#cbd5e1"}`,
+                borderBottom: `1px solid ${isDarkTheme() ? "#2d4163" : "#e8ecf0"}`,
+                background: isDarkTheme()
+                  ? "linear-gradient(90deg,#1e293b,#162032)"
+                  : "linear-gradient(90deg,#ffffff,#f8fafd)",
               }}
             >
               <span
@@ -719,7 +650,7 @@ export function DnsChangesPage() {
                   width: 38,
                   height: 38,
                   borderRadius: "50%",
-                  background: "#fff7e0",
+                  background: isDarkTheme() ? "#3b2f0d" : "#fff7e0",
                   color: "#d97706",
                   display: "inline-flex",
                   alignItems: "center",
@@ -737,7 +668,7 @@ export function DnsChangesPage() {
                     margin: 0,
                     fontSize: "1rem",
                     fontWeight: 700,
-                    color: "#0d1b3e",
+                    color: isDarkTheme() ? "#e2e8f0" : "#0d1b3e",
                   }}
                 >
                   Cancel DNS Change
@@ -746,7 +677,7 @@ export function DnsChangesPage() {
                   style={{
                     marginTop: 2,
                     fontSize: "0.75rem",
-                    color: "#64748b",
+                    color: isDarkTheme() ? "#94a3b8" : "#64748b",
                   }}
                 >
                   This action cannot be undone
@@ -759,7 +690,7 @@ export function DnsChangesPage() {
                 style={{
                   background: "transparent",
                   border: "none",
-                  color: "#64748b",
+                  color: isDarkTheme() ? "#94a3b8" : "#64748b",
                   fontSize: "1rem",
                   cursor: "pointer",
                   padding: "0.25rem 0.5rem",
@@ -775,7 +706,7 @@ export function DnsChangesPage() {
               style={{
                 padding: "1.25rem 1.4rem",
                 fontSize: "0.9rem",
-                color: "#334155",
+                color: isDarkTheme() ? "#cbd5e1" : "#334155",
                 lineHeight: 1.6,
               }}
             >
@@ -784,16 +715,41 @@ export function DnsChangesPage() {
                 style={{
                   marginTop: "0.75rem",
                   padding: "0.6rem 0.85rem",
-                  background: "#f8fafd",
-                  border: "1px solid #e2e8f0",
+                  background: isDarkTheme() ? "#0f172a" : "#f8fafd",
+                  border: `1px solid ${isDarkTheme() ? "#2d4163" : "#e2e8f0"}`,
                   borderRadius: "0.5rem",
-                  fontFamily: "ui-monospace,SFMono-Regular,Menlo,monospace",
-                  fontSize: "0.78rem",
-                  color: "#1e5fa8",
-                  wordBreak: "break-all",
                 }}
               >
-                {cancelTarget.id}
+                <div
+                  style={{
+                    fontFamily: "ui-monospace,SFMono-Regular,Menlo,monospace",
+                    fontSize: "0.78rem",
+                    color: isDarkTheme() ? "#7fa8d8" : "#1e5fa8",
+                    wordBreak: "break-all",
+                  }}
+                >
+                  {cancelTarget.id}
+                </div>
+                <div
+                  style={{
+                    marginTop: "0.4rem",
+                    fontSize: "0.78rem",
+                    color: isDarkTheme() ? "#94a3b8" : "#64748b",
+                  }}
+                >
+                  Submitted {formatDateTime(cancelTarget.createdTimestamp)}
+                </div>
+                {cancelTarget.comments && (
+                  <div
+                    style={{
+                      marginTop: "0.25rem",
+                      fontSize: "0.78rem",
+                      color: isDarkTheme() ? "#94a3b8" : "#64748b",
+                    }}
+                  >
+                    {cancelTarget.comments}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -804,8 +760,8 @@ export function DnsChangesPage() {
                 justifyContent: "flex-end",
                 gap: "0.6rem",
                 padding: "0.9rem 1.4rem",
-                borderTop: "1px solid #e8ecf0",
-                background: "#f8fafd",
+                borderTop: `1px solid ${isDarkTheme() ? "#2d4163" : "#e8ecf0"}`,
+                background: isDarkTheme() ? "#162032" : "#f8fafd",
               }}
             >
               <button
@@ -814,122 +770,63 @@ export function DnsChangesPage() {
                 style={{
                   padding: "0.5rem 1.1rem",
                   background: "transparent",
-                  border: "1px solid #d4dbe8",
-                  color: "#334155",
+                  border: isDarkTheme()
+                    ? "1px solid #4a6fa5"
+                    : "1px solid #d4dbe8",
+                  color: isDarkTheme() ? "#93c5fd" : "#334155",
                   borderRadius: "0.5rem",
                   cursor: "pointer",
                   fontSize: "0.85rem",
                   fontWeight: 500,
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = isDarkTheme()
+                    ? "#1e3a5f"
+                    : "#f0f4f9";
+                  e.currentTarget.style.borderColor = isDarkTheme()
+                    ? "#5a82bb"
+                    : "#c2c9d3";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.borderColor = isDarkTheme()
+                    ? "#4a6fa5"
+                    : "#d4dbe8";
                 }}
               >
-                Decline
+                Keep DNS Change
               </button>
               <button
                 type="button"
                 onClick={handleConfirmCancel}
                 style={{
                   padding: "0.5rem 1.25rem",
-                  background: "linear-gradient(135deg,#f59e0b,#d97706)",
+                  background: "linear-gradient(135deg,#ef4444,#dc2626)",
                   border: "none",
                   color: "#fff",
                   borderRadius: "0.5rem",
                   cursor: "pointer",
                   fontSize: "0.85rem",
                   fontWeight: 600,
-                  boxShadow: "0 4px 12px rgba(245,158,11,0.35)",
+                  boxShadow: "0 4px 12px rgba(220,38,38,0.35)",
                   display: "flex",
                   alignItems: "center",
                   gap: 6,
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow =
+                    "0 6px 20px rgba(220,38,38,0.45)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 12px rgba(220,38,38,0.35)";
                 }}
               >
-                <i className="bi bi-check2" />
-                Confirm Cancel
+                <i className="bi bi-x-circle-fill" />
+                Cancel DNS Change
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── New DNS Change modal ──────────────────────────────────────────── */}
-      {showNewModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="new-change-modal-title"
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(15,23,42,0.65)",
-            backdropFilter: "blur(3px)",
-            zIndex: 1080,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1rem",
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget && !isSubmitting)
-              setShowNewModal(false);
-          }}
-        >
-          <div className="vds-nbatch-modal__card">
-            {/* Modal header */}
-            <div className="vds-nbatch-modal__header">
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 10,
-                  background: "linear-gradient(135deg, #1e5fa8, #0d1b3e)",
-                  boxShadow: "0 4px 12px rgba(13,27,62,0.35)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <i className="bi bi-plus-circle-fill text-white fs-6" />
-              </div>
-              <div style={{ flex: 1 }}>
-                <h5
-                  id="new-change-modal-title"
-                  className="vds-nbatch-modal__title"
-                >
-                  New Batch Change
-                </h5>
-                <small className="vds-nbatch-modal__subtitle">
-                  Submit a new DNS batch change request for review and
-                  processing
-                </small>
-              </div>
-              {isSubmitting && (
-                <span className="d-flex align-items-center gap-2 small text-muted me-2">
-                  <span
-                    className="spinner-border spinner-border-sm"
-                    role="status"
-                  />
-                  Submitting…
-                </span>
-              )}
-              <button
-                type="button"
-                aria-label="Close"
-                disabled={isSubmitting}
-                onClick={() => setShowNewModal(false)}
-                className="rhm-header-btn"
-              >
-                <i className="bi bi-x-lg rhm-close-icon" />
-              </button>
-            </div>
-
-            {/* Modal body — scrollable */}
-            <div className="vds-nbatch-modal__body">
-              <DnsChangeForm
-                onSubmit={handleNewChangeSubmit}
-                onCancel={() => setShowNewModal(false)}
-                isSubmitting={isSubmitting}
-                serverRowErrors={newModalRowErrors}
-              />
             </div>
           </div>
         </div>

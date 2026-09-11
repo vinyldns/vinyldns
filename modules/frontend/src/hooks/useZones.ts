@@ -47,7 +47,7 @@ export function useZones(
   const { addAlert } = useAlerts();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     queryKey: [
       "zones",
       ignoreAccess,
@@ -153,6 +153,7 @@ export function useZones(
   return {
     zones: data?.zones ?? [],
     isLoading,
+    isFetching,
     query,
     search,
     accessFilter,
@@ -194,7 +195,7 @@ export function useDeletedZones(ignoreAccess = false, enabled = true) {
     getPanelTitle,
   } = usePaging(100);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     queryKey: ["deleted-zones", ignoreAccess, query, accessFilter, paging.next],
     queryFn: async () => {
       const res = await zonesService.getDeletedZones(
@@ -228,6 +229,7 @@ export function useDeletedZones(ignoreAccess = false, enabled = true) {
   return {
     deletedZones: (data?.zonesDeletedInfo ?? []) as DeletedZoneChange[],
     isLoading,
+    isFetching,
     query,
     search,
     nextPage,
