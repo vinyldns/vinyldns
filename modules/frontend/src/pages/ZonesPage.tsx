@@ -39,20 +39,10 @@ export function ZonesPage() {
   const { profile } = useProfile();
   const isSuper = profile?.isSuper ?? false;
   const isSupport = profile?.isSupport ?? false;
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [, setSearchParams] = useSearchParams();
 
-  // Restore tab + paging cursor from URL on mount
-  const initMainTab = ["myZones", "allZones", "abandonedZones"].includes(
-    searchParams.get("tab") ?? "",
-  )
-    ? (searchParams.get("tab") as MainTab)
-    : "myZones";
-  const initPaging = (() => {
-    const next = searchParams.get("next") ?? undefined;
-    const pn = parseInt(searchParams.get("pn") ?? "0", 10);
-    const sk = (searchParams.get("sk") ?? "").split(",").filter(Boolean);
-    return next || pn > 0 ? { next, pageNum: pn, startKeys: sk } : undefined;
-  })();
+  const initMainTab: MainTab = 'myZones';
+  const initPaging = undefined;
 
   // ── Tab state ────────────────────────────────────────────────────────────────
   const [mainTab, setMainTab] = useState<MainTab>(initMainTab);
@@ -64,6 +54,9 @@ export function ZonesPage() {
   // ── Modals / forms ───────────────────────────────────────────────────────────
   const [showConnectForm, setShowConnectForm] = useState(false);
   const [showCards, setShowCards] = useState(true);
+  const connectFormRef = useRef<HTMLDivElement>(null);
+  const connectSnapshotRef = useRef('');
+  const [connectFormDirty, setConnectFormDirty] = useState(false);
 
   // ── Per-tab search inputs (committed on Search / Enter) ──────────────────────
   const [myZonesInput, setMyZonesInput] = useState("");
@@ -118,39 +111,18 @@ export function ZonesPage() {
   const [abanDateTo, setAbanDateTo] = useState("");
 
   // ── Zones hooks ───────────────────────────────────────────────────────────────
-  const myZones = useZones(
-    false,
-    !myZonesHidePtr,
-    initMainTab === "myZones" ? initPaging : undefined,
-  );
-  const allZones = useZones(
-    true,
-    !allZonesHidePtr,
-    initMainTab === "allZones" ? initPaging : undefined,
-  );
+  const myZones  = useZones(false, !myZonesHidePtr, initPaging);
+  const allZones = useZones(true,  !allZonesHidePtr, initPaging);
 
   const myAbandoned = useDeletedZones(false, true); // always enabled so deletedZones.length is available as fallback
   const allAbandoned = useDeletedZones(true, mainTab === "abandonedZones");
   const activeAbandonedHook =
     abandonedSubTab === "myAbandoned" ? myAbandoned : allAbandoned;
 
-  // Sync mainTab + active tab paging cursor to URL so back-navigation restores state
-  const activePaging =
-    mainTab === "allZones" ? allZones.paging : myZones.paging;
-  const zonesStartKeysStr = activePaging.startKeys
-    .filter(Boolean)
-    .map(String)
-    .join(",");
+  // Keep URL clean (old portal behavior): no tab query params.
   useEffect(() => {
-    const params: Record<string, string> = {};
-    if (mainTab !== "myZones") params.tab = mainTab;
-    if (mainTab !== "abandonedZones") {
-      if (activePaging.next != null) params.next = String(activePaging.next);
-      if (activePaging.pageNum > 0) params.pn = String(activePaging.pageNum);
-      if (zonesStartKeysStr) params.sk = zonesStartKeysStr;
-    }
-    setSearchParams(params, { replace: true });
-  }, [mainTab, activePaging.next, activePaging.pageNum, zonesStartKeysStr]);
+    setSearchParams({}, { replace: true });
+  }, [mainTab]); 
 
   // ── Backend IDs & groups (for ZoneForm) ──────────────────────────────────────
   // Super users see all groups (ignoreAccess=true); support and regular users
@@ -284,17 +256,11 @@ export function ZonesPage() {
   const isPtr = (z: Zone) =>
     z.name.includes("in-addr.arpa") || z.name.includes("ip6.arpa");
   const displaySource = activeHidePtr ? zonesForTab : filterSource;
-  const byGroupActive =
-    mainTab === "allZones" ? allZonesByGroup : myZonesByGroup;
+  const byGroupActive = mainTab === 'allZones' ? allZonesByGroup : myZonesByGroup;
 
-  const isWithinRange = (
-    dateStr: string | undefined,
-    range: TimeRange,
-    from: string,
-    to: string,
-  ): boolean => {
-    if (range === "all") return true;
-    if (!dateStr) return true;
+  const isWithinRange = (dateStr: string | undefined, range: TimeRange, from: string, to: string): boolean => {
+    if (range === 'all') return true;
+    if (!dateStr) return false;  // Exclude zones with no date when filtering by date range
     const ts = new Date(dateStr).getTime();
     const now = Date.now();
     if (range === "1d") return ts >= now - 86400000;
@@ -797,8 +763,82 @@ export function ZonesPage() {
       : insightAllCount;
 
   // Access options: use server-authoritative counts when available, otherwise show both
-  const hasShared = zonesCount != null ? zonesCount.sharedCount > 0 : true;
-  const hasPrivate = zonesCount != null ? zonesCount.privateCount > 0 : true;
+  const hasShared  = zonesCount != null ? (zonesCount.sharedCount  > 0) : true;
+  const hasPrivate = zonesCount != null ? (zonesCount.privateCount > 0) : true;
+
+  const serializeFormState = useCallback((root: HTMLElement | null) => {
+    if (!root) return '';
+    const fields = Array.from(root.querySelectorAll('input, textarea, select')) as Array<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
+
+    return fields
+      .map((field, index) => {
+        const key = field.getAttribute('name') ?? field.getAttribute('id') ?? `${field.tagName.toLowerCase()}-${index}`;
+        if (field instanceof HTMLInputElement) {
+          if (field.type === 'checkbox' || field.type === 'radio') return `${key}:${field.checked}`;
+          if (field.type === 'file') return `${key}:${field.files?.length ?? 0}`;
+        }
+        return `${key}:${field.value}`;
+      })
+      .join('|');
+  }, []);
+
+  const confirmDiscardConnectChanges = useCallback(() => {
+    if (!connectFormDirty) return true;
+    return window.confirm('You have unsaved changes. Do you want to close this form and discard them?');
+  }, [connectFormDirty]);
+
+  const closeConnectForm = useCallback(() => {
+    if (confirmDiscardConnectChanges()) {
+      setShowConnectForm(false);
+    }
+  }, [confirmDiscardConnectChanges]);
+
+  const toggleConnectForm = useCallback(() => {
+    if (showConnectForm) {
+      closeConnectForm();
+      return;
+    }
+    setShowConnectForm(true);
+  }, [showConnectForm, closeConnectForm]);
+
+  useEffect(() => {
+    if (!showConnectForm) {
+      connectSnapshotRef.current = '';
+      setConnectFormDirty(false);
+      return;
+    }
+
+    const node = connectFormRef.current;
+    if (!node) return;
+
+    const updateDirty = () => {
+      setConnectFormDirty(serializeFormState(node) !== connectSnapshotRef.current);
+    };
+
+    connectSnapshotRef.current = serializeFormState(node);
+    updateDirty();
+
+    node.addEventListener('input', updateDirty);
+    node.addEventListener('change', updateDirty);
+
+    return () => {
+      node.removeEventListener('input', updateDirty);
+      node.removeEventListener('change', updateDirty);
+    };
+  }, [showConnectForm, serializeFormState]);
+
+  useEffect(() => {
+    if (!(showConnectForm && connectFormDirty)) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [showConnectForm, connectFormDirty]);
+
   // ── Sync committed queries → hooks ───────────────────────────────────────────
   useEffect(() => {
     myZones.search(myZonesQuery, myZonesByGroup);
@@ -913,6 +953,9 @@ export function ZonesPage() {
 
   // ── Refresh ────────────────────────────────────────────────────────────────────
   const handleRefresh = useCallback(() => {
+    if (showConnectForm && !confirmDiscardConnectChanges()) return;
+    if (showConnectForm) setShowConnectForm(false);
+
     setAccessFilter(null);
     setEmailFilter("");
     setMySuggestionsOpen(false);
@@ -943,7 +986,7 @@ export function ZonesPage() {
       allAbandoned.resetPaging();
       void queryClient.invalidateQueries({ queryKey: ["deleted-zones"] });
     }
-  }, [mainTab, myZones, allZones, myAbandoned, allAbandoned, queryClient]);
+  }, [mainTab, myZones, allZones, myAbandoned, allAbandoned, queryClient, showConnectForm, confirmDiscardConnectChanges]);
 
   // ── Search handlers ───────────────────────────────────────────────────────────
   const handleMyZonesSearch = useCallback(() => {
@@ -1004,7 +1047,7 @@ export function ZonesPage() {
   return (
     <div>
       {/* ── Page header ── */}
-      <div className="rounded-3 mb-4 d-flex justify-content-between align-items-center vds-page-header">
+      <div className="rounded-3 mb-2 d-flex justify-content-between align-items-center vds-page-header">
         <div className="d-flex align-items-center gap-3">
           <div className="rounded-3 d-flex align-items-center justify-content-center vds-page-header__icon">
             <i className="bi bi-diagram-3-fill text-white fs-5" />
@@ -1016,15 +1059,25 @@ export function ZonesPage() {
             </small>
           </div>
         </div>
-        {mainTab === "myZones" && isSuper && (
+        <div className="d-flex align-items-center gap-2">
+          {mainTab === 'myZones' && isSuper && (
+            <button
+              className="btn btn-primary d-flex align-items-center gap-2 vds-btn-primary-shadow vds-btn-nav"
+              onClick={toggleConnectForm}
+            >
+              <i className="bi bi-plug-fill" />
+              Connect Zone
+            </button>
+          )}
           <button
-            className="btn btn-primary d-flex align-items-center gap-2 vds-btn-primary-shadow vds-btn-nav"
-            onClick={() => setShowConnectForm((p) => !p)}
+            type="button"
+            className="btn btn-sm d-flex align-items-center vds-btn-flat"
+            title="Refresh"
+            onClick={handleRefresh}
           >
-            <i className="bi bi-plug-fill" />
-            Connect Zone
+            <i className="bi bi-arrow-clockwise" />
           </button>
-        )}
+        </div>
       </div>
 
       {/* ── Connect Zone modal ── */}
@@ -1034,38 +1087,23 @@ export function ZonesPage() {
             className="modal fade show d-block"
             tabIndex={-1}
             role="dialog"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setShowConnectForm(false);
-            }}
+            onClick={(e) => { if (e.target === e.currentTarget) closeConnectForm(); }}
           >
-            <div
-              className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable"
-              role="document"
-            >
-              <div className="modal-content">
-                <div
-                  className="modal-header"
-                  style={{
-                    background: "linear-gradient(90deg, #1e5fa8, #0d1b3e)",
-                    color: "#fff",
-                  }}
-                >
+            <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+              <div className="modal-content" ref={connectFormRef}>
+                <div className="modal-header" style={{ background: 'linear-gradient(90deg, #1e5fa8, #0d1b3e)', color: '#fff' }}>
                   <h5 className="modal-title d-flex align-items-center gap-2">
                     <i className="bi bi-plug-fill" />
                     Connect to Zone
                   </h5>
-                  <button
-                    type="button"
-                    className="btn-close btn-close-white"
-                    onClick={() => setShowConnectForm(false)}
-                  />
+                  <button type="button" className="btn-close btn-close-white" onClick={closeConnectForm} />
                 </div>
                 <div className="modal-body">
                   <ZoneForm
                     groups={groupsData ?? []}
                     backendIds={backendIds ?? []}
                     onSubmit={handleCreate}
-                    onCancel={() => setShowConnectForm(false)}
+                    onCancel={closeConnectForm}
                     isSubmitting={myZones.isCreating}
                     mode="create"
                   />
@@ -1117,20 +1155,18 @@ export function ZonesPage() {
             </div>
 
             <div className="ms-auto d-flex align-items-center gap-2">
-              <button
-                className="vds-cards-toggle-btn"
-                onClick={() => setShowCards((v) => !v)}
-              >
-                <span className="vds-cards-toggle-btn__icon">
-                  <i
-                    className={`bi ${showCards ? "bi-grid-fill" : "bi-grid"}`}
-                  />
-                </span>
-                <span>{showCards ? "Hide Cards" : "Show Cards"}</span>
-                <span
-                  className={`vds-cards-toggle-btn__dot${showCards ? "" : " vds-cards-toggle-btn__dot--off"}`}
-                />
-              </button>
+              {isSuper && (
+                <button
+                  className="vds-cards-toggle-btn"
+                  onClick={() => setShowCards((v) => !v)}
+                >
+                  <span className="vds-cards-toggle-btn__icon">
+                      <i className={`bi ${showCards ? 'bi-grid-fill' : 'bi-grid'}`} />
+                  </span>
+                  <span>{showCards ? 'Hide Cards' : 'Show Cards'}</span>
+                  <span className={`vds-cards-toggle-btn__dot${showCards ? '' : ' vds-cards-toggle-btn__dot--off'}`} />
+                </button>
+              )}
               <button
                 type="button"
                 className="vds-cards-toggle-btn"
@@ -1146,31 +1182,11 @@ export function ZonesPage() {
                   className={`vds-cards-toggle-btn__dot${showFilters ? "" : " vds-cards-toggle-btn__dot--off"}`}
                 />
               </button>
-              <button
-                type="button"
-                className="btn btn-sm vds-btn-flat d-flex align-items-center justify-content-center"
-                style={{
-                  width: 32,
-                  height: 32,
-                  padding: 0,
-                  flexShrink: 0,
-                  borderRadius: "50%",
-                }}
-                title="Refresh"
-                onClick={handleRefresh}
-              >
-                <i
-                  className="bi bi-arrow-clockwise"
-                  style={{ fontSize: "1rem" }}
-                />
-              </button>
             </div>
           </div>
           {/* ── Filters row (animated) + abandoned subtab always-visible ── */}
-          <div
-            className="d-flex align-items-center pt-2"
-            style={{ minHeight: 32 }}
-          >
+          {(showFilters || mainTab === 'abandonedZones') && (
+          <div className="d-flex align-items-center pt-2">
             {/* Abandoned subtab: always visible on the left */}
             {mainTab === "abandonedZones" && (
               <div className="vds-pill-toggle me-2" style={{ flexShrink: 0 }}>
@@ -1192,40 +1208,33 @@ export function ZonesPage() {
                 </button>
               </div>
             )}
-            {/* Animated filters — always takes remaining space, collapses on hide */}
-            <div
-              className="ms-auto"
-              style={{
-                maxHeight: showFilters ? "60px" : "0px",
-                opacity: showFilters ? 1 : 0,
-                overflow: showFilters ? "visible" : "hidden",
-                transition:
-                  "max-height 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease",
-              }}
-            >
-              <div
-                className="d-flex align-items-center justify-content-end gap-2"
-                style={{ whiteSpace: "nowrap" }}
-              >
-                {/* My Zones search + filters */}
-                {mainTab === "myZones" && (
-                  <>
-                    <div
-                      ref={mySuggestionsRef}
-                      className="position-relative"
-                      style={{ width: 220, flexShrink: 1 }}
-                    >
-                      <div className="vds-search-group input-group input-group-sm">
-                        <span className="input-group-text border-0 bg-transparent pe-1">
-                          <i className="bi bi-search text-muted" />
-                        </span>
-                        <input
-                          type="text"
-                          className="form-control border-0 ps-0 shadow-none bg-transparent"
-                          placeholder={
-                            myZonesByGroup
-                              ? "Search by admin group name"
-                              : "Search zones by name"
+            {/* Filters occupy row only when visible so hidden state leaves no gap */}
+            {showFilters && (
+            <div className="ms-auto">
+              <div className="d-flex align-items-center justify-content-end gap-2" style={{ whiteSpace: 'nowrap' }}>
+              {/* My Zones search + filters */}
+              {mainTab === 'myZones' && (
+                <>
+                  <div ref={mySuggestionsRef} className="position-relative" style={{ width: 220, flexShrink: 1 }}>
+                    <div className="vds-search-group input-group input-group-sm">
+                      <span className="input-group-text border-0 bg-transparent pe-1">
+                        <i className="bi bi-search text-muted" />
+                      </span>
+                      <input
+                        type="text"
+                        className="form-control border-0 ps-0 shadow-none bg-transparent"
+                        placeholder={myZonesByGroup ? 'Search by admin group name' : 'Search zones by name'}
+                        value={myZonesInput}
+                        autoComplete="off"
+                        onFocus={() => { if (myZonesInput.length > 0) setMySuggestionsOpen(true); }}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setMyZonesInput(val);
+                          setMySuggestionsOpen(val.length > 0);
+                          if (val === '') {
+                            setEmailFilter('');
+                            setMyZonesQuery('');
+                            myZones.resetPaging();
                           }
                           value={myZonesInput}
                           autoComplete="off"
@@ -1876,7 +1885,9 @@ export function ZonesPage() {
                 )}
               </div>
             </div>
+            )}
           </div>
+          )}
         </div>
       </div>
 
@@ -2105,30 +2116,19 @@ export function ZonesPage() {
         className={`vds-tab-content${tabFading ? " vds-tab-content--fading" : ""}`}
       >
         {/* ── Insight cards ── */}
-        {showCards && (
-          <div className="row g-2 mb-3 align-items-stretch">
-            {/* ── Card 1: Total Zones ── */}
-            <div
-              className={`${isAbandonedTab ? "col-6 col-md-4" : "col-6 col-md-3"} d-flex`}
-            >
-              <div className="rounded-3 px-3 py-1 w-100 d-flex flex-column vds-insight-card vds-insight-card--blue">
-                <div className="d-flex align-items-center gap-2 mb-1">
-                  <div className="rounded-2 vds-insight-icon vds-insight-icon--blue">
-                    <i className="bi bi-globe2" />
-                  </div>
-                  <span className="vds-insight-label vds-insight-label--blue">
-                    Total Zones
-                    <span className="vds-card-ctx-chip vds-card-ctx-chip--blue ms-1">
-                      {cardContextLabel}
-                      {cardFiltered ? " ·" : ""}
-                    </span>
-                  </span>
-                  <span className="vds-insight-value vds-insight-value--blue">
-                    {cardLoading
-                      ? skeletonBlue
-                      : cardTotal > 0 || anyFilterNow
-                        ? cardTotal
-                        : null}
+        {showCards && isSuper && <div className="row g-2 mb-3 align-items-stretch">
+
+          {/* ── Card 1: Total Zones ── */}
+          <div className={`${isAbandonedTab ? 'col-6 col-md-4' : 'col-6 col-md-3'} d-flex`}>
+            <div className="rounded-3 px-3 py-1 w-100 d-flex flex-column vds-insight-card vds-insight-card--blue">
+              <div className="d-flex align-items-center gap-2 mb-1">
+                <div className="rounded-2 vds-insight-icon vds-insight-icon--blue">
+                  <i className="bi bi-globe2" />
+                </div>
+                <span className="vds-insight-label vds-insight-label--blue">
+                  Total Zones
+                  <span className="vds-card-ctx-chip vds-card-ctx-chip--blue ms-1">
+                    {cardContextLabel}{cardFiltered ? ' ·' : ''}
                   </span>
                 </div>
                 {/* In-view / platform ratio bar */}
@@ -2548,12 +2548,8 @@ export function ZonesPage() {
           ) : (
             <>
               <PaginatedSection
-                show={
-                  (anyServerCompatibleFilter ||
-                    !anyFilterActive ||
-                    byGroupSearchActive) &&
-                  (myZones.nextPageEnabled || myZones.prevPageEnabled)
-                }
+                show={(anyServerCompatibleFilter || !anyFilterActive || byGroupSearchActive) && (myZones.nextPageEnabled || myZones.prevPageEnabled)}
+                showBottom={false}
                 onPrev={myZones.prevPage}
                 onNext={myZones.nextPage}
                 prevEnabled={myZones.prevPageEnabled}
@@ -2585,12 +2581,8 @@ export function ZonesPage() {
           ) : (
             <>
               <PaginatedSection
-                show={
-                  (anyServerCompatibleFilter ||
-                    !anyFilterActive ||
-                    byGroupSearchActive) &&
-                  (allZones.nextPageEnabled || allZones.prevPageEnabled)
-                }
+                show={(anyServerCompatibleFilter || !anyFilterActive || byGroupSearchActive) && (allZones.nextPageEnabled || allZones.prevPageEnabled)}
+                showBottom={false}
                 onPrev={allZones.prevPage}
                 onNext={allZones.nextPage}
                 prevEnabled={allZones.prevPageEnabled}
@@ -2623,11 +2615,8 @@ export function ZonesPage() {
             ) : (
               <>
                 <PaginatedSection
-                  show={
-                    (abanAccessFilterOnly || !anyAbandonedFilterActive) &&
-                    (activeAbandonedHook.nextPageEnabled ||
-                      activeAbandonedHook.prevPageEnabled)
-                  }
+                  show={(abanAccessFilterOnly || !anyAbandonedFilterActive) && (activeAbandonedHook.nextPageEnabled || activeAbandonedHook.prevPageEnabled)}
+                  showBottom={false}
                   onPrev={activeAbandonedHook.prevPage}
                   onNext={activeAbandonedHook.nextPage}
                   prevEnabled={activeAbandonedHook.prevPageEnabled}

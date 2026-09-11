@@ -76,47 +76,8 @@ function FqdnTooltipSpan({ fqdn }: { fqdn: string }) {
 }
 
 /**
- * Single key-value row used inside multi-field record cells (SOA, MX, SRV, etc.)
- * so each field is on its own line rather than one long pipe-separated string.
- */
-function KVRow({ label, value }: { label: string; value: unknown }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "baseline",
-        gap: 4,
-        lineHeight: 1.5,
-        padding: "1px 0",
-      }}
-    >
-      <span
-        style={{
-          fontSize: "0.64rem",
-          fontWeight: 700,
-          color: "#1e5fa8",
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-          minWidth: 58,
-          flexShrink: 0,
-        }}
-      >
-        {label}
-      </span>
-      <span
-        style={{ fontSize: "0.8rem", fontWeight: 500, wordBreak: "break-word" }}
-      >
-        {String(value ?? "—")}
-      </span>
-    </div>
-  );
-}
-
-/**
  * Renders a single DNS record value in a type-aware, human-readable format.
- * Simple types (A, PTR, CNAME, NS, TXT) show a single value inline.
- * Multi-field types (SOA, MX, SRV, DS, NAPTR, SSHFP) use stacked KVRow pairs
- * so the cell stays readable without an overflowing pipe-separated wall of text.
+ * Returns plain text for both simple and multi-field records.
  */
 function renderRecordValue(
   type: string,
@@ -136,109 +97,17 @@ function renderRecordValue(
     case "NS":
       return <span>{String(r.nsdname ?? "—")}</span>;
     case "MX":
-      return (
-        <div
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(30,95,168,0.06), rgba(13,27,62,0.03))",
-            border: "1px solid rgba(30,95,168,0.13)",
-            borderRadius: 6,
-            padding: "3px 8px",
-          }}
-        >
-          <KVRow label="Pref" value={r.preference} />
-          <KVRow label="Exchange" value={r.exchange} />
-        </div>
-      );
+      return <span>{`Pref: ${String(r.preference ?? "—")}, Exchange: ${String(r.exchange ?? "—")}`}</span>;
     case "SRV":
-      return (
-        <div
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(30,95,168,0.06), rgba(13,27,62,0.03))",
-            border: "1px solid rgba(30,95,168,0.13)",
-            borderRadius: 6,
-            padding: "3px 8px",
-          }}
-        >
-          <KVRow label="Priority" value={r.priority} />
-          <KVRow label="Weight" value={r.weight} />
-          <KVRow label="Port" value={r.port} />
-          <KVRow label="Target" value={r.target} />
-        </div>
-      );
+      return <span>{`Priority: ${String(r.priority ?? "—")}, Weight: ${String(r.weight ?? "—")}, Port: ${String(r.port ?? "—")}, Target: ${String(r.target ?? "—")}`}</span>;
     case "NAPTR":
-      return (
-        <div
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(30,95,168,0.06), rgba(13,27,62,0.03))",
-            border: "1px solid rgba(30,95,168,0.13)",
-            borderRadius: 6,
-            padding: "3px 8px",
-          }}
-        >
-          <KVRow label="Order" value={r.order} />
-          <KVRow label="Pref" value={r.preference} />
-          <KVRow label="Flags" value={r.flags} />
-          <KVRow label="Service" value={r.service} />
-          <KVRow label="Regexp" value={r.regexp} />
-          <KVRow label="Replace" value={r.replacement} />
-        </div>
-      );
+      return <span>{`Order: ${String(r.order ?? "—")}, Pref: ${String(r.preference ?? "—")}, Flags: ${String(r.flags ?? "—")}, Service: ${String(r.service ?? "—")}, Regexp: ${String(r.regexp ?? "—")}, Replace: ${String(r.replacement ?? "—")}`}</span>;
     case "DS":
-      return (
-        <div
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(30,95,168,0.06), rgba(13,27,62,0.03))",
-            border: "1px solid rgba(30,95,168,0.13)",
-            borderRadius: 6,
-            padding: "3px 8px",
-          }}
-        >
-          <KVRow label="Keytag" value={r.keytag} />
-          <KVRow label="Algorithm" value={r.algorithm} />
-          <KVRow label="Digest Type" value={r.digestType ?? r.digesttype} />
-          <KVRow label="Digest" value={r.digest} />
-        </div>
-      );
+      return <span>{`Keytag: ${String(r.keytag ?? "—")}, Algorithm: ${String(r.algorithm ?? "—")}, Digest Type: ${String(r.digestType ?? r.digesttype ?? "—")}, Digest: ${String(r.digest ?? "—")}`}</span>;
     case "SOA":
-      return (
-        <div
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(30,95,168,0.06), rgba(13,27,62,0.03))",
-            border: "1px solid rgba(30,95,168,0.13)",
-            borderRadius: 6,
-            padding: "3px 8px",
-          }}
-        >
-          <KVRow label="Mname" value={r.mname} />
-          <KVRow label="Rname" value={r.rname} />
-          <KVRow label="Serial" value={r.serial} />
-          <KVRow label="Refresh" value={r.refresh} />
-          <KVRow label="Retry" value={r.retry} />
-          <KVRow label="Expire" value={r.expire} />
-          <KVRow label="Min" value={r.minimum} />
-        </div>
-      );
+      return <span>{`Mname: ${String(r.mname ?? "—")}, Rname: ${String(r.rname ?? "—")}, Serial: ${String(r.serial ?? "—")}, Refresh: ${String(r.refresh ?? "—")}, Retry: ${String(r.retry ?? "—")}, Expire: ${String(r.expire ?? "—")}, Min: ${String(r.minimum ?? "—")}`}</span>;
     case "SSHFP":
-      return (
-        <div
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(30,95,168,0.06), rgba(13,27,62,0.03))",
-            border: "1px solid rgba(30,95,168,0.13)",
-            borderRadius: 6,
-            padding: "3px 8px",
-          }}
-        >
-          <KVRow label="Algorithm" value={r.algorithm} />
-          <KVRow label="Type" value={r.type} />
-          <KVRow label="Fingerprint" value={r.fingerprint} />
-        </div>
-      );
+      return <span>{`Algorithm: ${String(r.algorithm ?? "—")}, Type: ${String(r.type ?? "—")}, Fingerprint: ${String(r.fingerprint ?? "—")}`}</span>;
     default: {
       const val = (r.address ??
         r.cname ??
@@ -567,12 +436,10 @@ export function RecordsSearchTable({
 
                 {/* TYPE */}
                 <td
-                  className="vds-table-secondary small"
+                  className="vds-table-secondary small fw-semibold"
                   style={{ whiteSpace: "nowrap" }}
                 >
-                  <span className="vds-type-badge">
-                    {String(rec.type ?? "—")}
-                  </span>
+                  {String(rec.type ?? "—")}
                 </td>
 
                 {/* TTL */}

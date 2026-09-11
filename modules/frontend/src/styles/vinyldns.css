@@ -78,7 +78,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 12px 8px;
+  padding: 14px 5px 8px;
 }
 
 /* Full-width logo link (expanded) */
@@ -432,9 +432,10 @@ h1.h3 {
 .vds-main {
   flex: 1 1 0%;
   min-width: 0;
-  padding: 0 1.5rem 1.5rem;
+  padding: 0 1rem 1.5rem;
   height: 100vh;
   overflow-y: auto;
+  overflow-x: hidden;
   background-color: var(--vds-page-bg, #fdfeff);
   color: var(--vds-page-text, #1a1a2e);
   transition:
@@ -447,7 +448,7 @@ h1.h3 {
   align-items: center;
   justify-content: space-between;
   /* bleed past vds-main's left+right padding so it merges flush with the sidebar */
-  margin: 0 -1.5rem 1rem -1.5rem;
+  margin: 0 -1.5rem 0.5rem;
   padding: 1rem 1.5rem;
   background: linear-gradient(
     175deg,
@@ -1139,8 +1140,8 @@ h1.h3 {
    ============================================================ */
 
 .vds-sidebar {
-  width: 220px;
-  min-width: 220px;
+  width: 202px;
+  min-width: 3rem;
 }
 
 .vds-sidebar--collapsed {
@@ -1469,23 +1470,20 @@ h1.h3 {
   justify-content: center;
   width: 34px;
   height: 34px;
-  border-radius: 50%;
-  border: none;
+  border-radius: 6px;
+  border: 1px solid transparent;
   font-size: 0.9rem;
   cursor: pointer;
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease,
-    filter 0.15s ease;
+  transition: none;
   text-decoration: none;
   flex-shrink: 0;
 }
 .vds-action-btn:hover {
-  transform: translateY(-2px) scale(1.1);
-  filter: brightness(1.1);
+  transform: none;
+  filter: none;
 }
 .vds-action-btn:active {
-  transform: scale(0.95);
+  transform: none;
 }
 .vds-action-btn:disabled,
 .vds-action-btn[disabled] {
@@ -1493,19 +1491,32 @@ h1.h3 {
   pointer-events: none;
 }
 .vds-action-btn--view {
-  background: linear-gradient(90deg, #1e5fa8, #0d1b3e);
-  color: #fff;
-  box-shadow: 0 3px 8px rgba(13, 27, 62, 0.4);
+  background: #eef5ff;
+  border-color: #c5daf8;
+  color: #1e4f8f;
+  box-shadow: none;
 }
 .vds-action-btn--edit {
-  background: linear-gradient(135deg, #fff3cd, #ffe88a);
+  background: #fff7db;
+  border-color: #eed48a;
   color: #7d6000;
-  box-shadow: 0 3px 8px rgba(255, 220, 50, 0.35);
+  box-shadow: none;
 }
 .vds-action-btn--delete {
-  background: linear-gradient(135deg, #dc3545, #e35d6a);
-  color: #fff;
-  box-shadow: 0 3px 8px rgba(220, 53, 69, 0.35);
+  background: #fff1f2;
+  border-color: #f7c2c7;
+  color: #b42318;
+  box-shadow: none;
+}
+.vds-action-btn--text {
+  width: auto;
+  height: 24px;
+  border-radius: 6px;
+  padding: 0 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1;
 }
 /* Claim ownership (teal) */
 .vds-action-btn--claim {
@@ -1822,6 +1833,50 @@ h1.h3 {
   white-space: nowrap;
 }
 
+/* ── Records table layout and action-density tuning ───────────────────── */
+.vds-records-table th:nth-child(3),
+.vds-records-table td:nth-child(3) {
+  min-width: 88px;
+  white-space: nowrap;
+}
+.vds-record-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.vds-record-actions .vds-action-btn:not(.vds-action-btn--text) {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  box-shadow: none;
+}
+.vds-record-actions .vds-action-btn--claim,
+.vds-record-actions .vds-action-btn--request,
+.vds-record-actions .vds-action-btn--pending,
+.vds-record-actions .vds-action-btn--ownership-menu,
+.vds-record-actions .vds-action-btn--pending-menu {
+  width: 5em !important;
+  justify-content: center;
+}
+.vds-record-actions--inline {
+  flex-direction: row;
+  flex-wrap: nowrap;
+}
+.vds-record-actions--stack {
+  flex-direction: column;
+  align-items: flex-start;
+}
+.vds-record-actions--stack .vds-action-btn--text {
+  min-width: 58px;
+  justify-content: center;
+}
+
+.vds-create-record-btn {
+  --bs-btn-padding-y: 0.25rem;
+  --bs-btn-padding-x: 0.25rem;
+}
+
 /* ── Dark-mode overrides for ownership ───────────────────────────────── */
 [data-vds-theme="dark"] .vds-owner-group-chip {
   background: rgba(59, 130, 246, 0.12);
@@ -2131,7 +2186,7 @@ h1.h3 {
    ============================================================ */
 .vds-groups-table-wrap {
   border-radius: 0.75rem;
-  overflow-x: hidden;
+  overflow-x: auto;
   overflow-y: auto;
   max-height: 55vh;
   box-shadow: 0 2px 12px rgba(13, 110, 253, 0.07);
@@ -2140,7 +2195,8 @@ h1.h3 {
 }
 .vds-groups-table {
   width: 100%;
-  table-layout: auto;
+  min-width: 980px;
+  table-layout: fixed;
   border-collapse: collapse;
   background: #fff;
   margin: 0;
@@ -2150,7 +2206,7 @@ h1.h3 {
   border-bottom: 2px solid #c7deff;
 }
 .vds-groups-table thead th {
-  padding: 12px 16px;
+  padding: 10px 10px;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -2173,12 +2229,142 @@ h1.h3 {
   background: #f5f9ff;
 }
 .vds-groups-table tbody td {
-  padding: 11px 10px;
+  padding: 10px 6px;
   vertical-align: middle;
-  font-size: 0.88rem;
+  font-size: 0.84rem;
   color: #2c3e50;
   word-break: break-word;
   overflow-wrap: anywhere;
+}
+.vds-groups-table thead th:nth-child(1),
+.vds-groups-table tbody td:nth-child(1) {
+  width: 22%;
+}
+.vds-groups-table thead th:nth-child(2),
+.vds-groups-table tbody td:nth-child(2) {
+  width: 29%;
+}
+.vds-groups-table thead th:nth-child(3),
+.vds-groups-table tbody td:nth-child(3) {
+  width: 23%;
+}
+.vds-groups-table thead th:nth-child(4),
+.vds-groups-table tbody td:nth-child(4) {
+  width: 9%;
+  white-space: nowrap;
+}
+.vds-groups-table thead th:nth-child(5),
+.vds-groups-table tbody td:nth-child(5) {
+  width: 17%;
+  white-space: nowrap;
+}
+.vds-table-actions {
+  flex-wrap: nowrap;
+  gap: 6px !important;
+}
+.vds-groups-table .vds-action-btn--text {
+  height: 22px;
+  padding: 0 6px;
+  font-size: 0.68rem;
+}
+
+/* Manage Members: narrow Name, wider Email */
+.vds-group-members-table thead th:nth-child(1),
+.vds-group-members-table tbody td:nth-child(1) {
+  width: 20%;
+}
+.vds-group-members-table thead th:nth-child(2),
+.vds-group-members-table tbody td:nth-child(2) {
+  width: 14%;
+}
+.vds-group-members-table thead th:nth-child(3),
+.vds-group-members-table tbody td:nth-child(3) {
+  width: 28%;
+}
+.vds-group-members-table thead th:nth-child(4),
+.vds-group-members-table tbody td:nth-child(4) {
+  width: 14%;
+}
+.vds-group-members-table thead th:nth-child(5),
+.vds-group-members-table tbody td:nth-child(5) {
+  width: 12%;
+}
+.vds-group-members-table thead th:nth-child(6),
+.vds-group-members-table tbody td:nth-child(6) {
+  width: 12%;
+}
+
+/* Change History: prevent Change Message / Change Info overlap */
+.vds-group-changes-table thead th:nth-child(1),
+.vds-group-changes-table tbody td:nth-child(1) {
+  width: 14%;
+}
+.vds-group-changes-table thead th:nth-child(2),
+.vds-group-changes-table tbody td:nth-child(2) {
+  width: 20%;
+}
+.vds-group-changes-table thead th:nth-child(3),
+.vds-group-changes-table tbody td:nth-child(3) {
+  width: 11%;
+}
+.vds-group-changes-table thead th:nth-child(4),
+.vds-group-changes-table tbody td:nth-child(4) {
+  width: 24%;
+  white-space: normal;
+}
+.vds-group-changes-table thead th:nth-child(5),
+.vds-group-changes-table tbody td:nth-child(5) {
+  width: 17%;
+  white-space: normal;
+}
+.vds-group-changes-table thead th:nth-child(6),
+.vds-group-changes-table tbody td:nth-child(6) {
+  width: 14%;
+}
+.vds-group-changes-table .vds-history-btn {
+  white-space: normal;
+  line-height: 1.2;
+}
+
+@media (max-width: 992px) {
+  .vds-groups-table-wrap {
+    overflow-x: auto;
+  }
+
+  .vds-groups-table {
+    min-width: 980px;
+    table-layout: auto;
+  }
+
+  .vds-table-actions {
+    flex-wrap: nowrap;
+  }
+
+  .vds-groups-table thead th,
+  .vds-groups-table tbody td {
+    padding: 9px 7px;
+  }
+
+  .vds-groups-table thead th:nth-child(1),
+  .vds-groups-table tbody td:nth-child(1) {
+    width: 21%;
+  }
+  .vds-groups-table thead th:nth-child(2),
+  .vds-groups-table tbody td:nth-child(2) {
+    width: 29%;
+  }
+  .vds-groups-table thead th:nth-child(3),
+  .vds-groups-table tbody td:nth-child(3) {
+    width: 22%;
+  }
+  .vds-groups-table thead th:nth-child(4),
+  .vds-groups-table tbody td:nth-child(4) {
+    width: 9%;
+  }
+  .vds-groups-table thead th:nth-child(5),
+  .vds-groups-table tbody td:nth-child(5) {
+    width: 19%;
+  }
 }
 .vds-group-avatar {
   width: 34px;
@@ -2237,7 +2423,7 @@ h1.h3 {
   padding: 0.5rem 1.5rem;
 }
 .vds-page-header--lg {
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem 1.5rem;
 }
 
 .vds-page-header__icon {
@@ -2293,6 +2479,7 @@ h1.h3 {
   transition:
     transform 0.15s,
     box-shadow 0.15s;
+  max-height: 12rem;
 }
 .vds-insight-card:hover {
   transform: translateY(-2px);
@@ -3282,7 +3469,7 @@ h1.h3 {
   border: 1px solid #dce8fb;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
   border-radius: 0.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
   padding: 0.75rem 1.5rem;
   display: flex;
   flex-wrap: wrap;
@@ -3402,6 +3589,94 @@ h1.h3 {
   font-size: 0.82rem;
 }
 
+.vds-add-member-inline {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #c7deff;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, #f7fbff 0%, #e9f2ff 100%);
+  box-shadow: 0 2px 10px rgba(13, 110, 253, 0.08);
+}
+
+.vds-add-member-inline__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #144d9b;
+  white-space: nowrap;
+}
+
+.vds-add-member-inline__input-wrap {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #c7deff;
+  border-radius: 999px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.vds-add-member-inline__prefix {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  color: #0d6efd;
+  font-size: 0.8rem;
+}
+
+.vds-add-member-inline__input {
+  width: 170px;
+  border: none !important;
+  box-shadow: none !important;
+  font-size: 0.8rem;
+  padding-left: 0.1rem !important;
+  padding-right: 0.55rem !important;
+}
+
+.vds-add-member-inline__switch {
+  cursor: pointer;
+  margin-left: 0.2rem;
+}
+
+.vds-add-member-inline__switch .form-check-input {
+  cursor: pointer;
+}
+
+.vds-add-member-inline__switch-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #35537a;
+  white-space: nowrap;
+}
+
+.vds-add-member-inline__submit {
+  border: 1px solid #1e5fa8 !important;
+  background: linear-gradient(90deg, #1e5fa8, #0f3f7a) !important;
+  color: #fff !important;
+  border-radius: 0.5rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em;
+  padding: .2rem .75rem !important;
+  white-space: nowrap;
+}
+
+.vds-add-member-inline__submit:disabled {
+  opacity: 0.65;
+}
+
+@media (max-width: 1100px) {
+  .vds-add-member-inline {
+    width: 100%;
+    border-radius: 0.65rem;
+    justify-content: flex-start;
+  }
+
+  .vds-add-member-inline__title {
+    min-width: 100%;
+  }
+}
+
 /* Add member form card */
 .vds-add-member-form {
   background: linear-gradient(135deg, #f0f6fc 0%, #e8f0fe 100%);
@@ -3511,6 +3786,9 @@ h1.h3 {
 }
 .vds-table-nowrap {
   white-space: nowrap;
+}
+.vds-date-wrap {
+  white-space: pre-line;
 }
 .vds-table-mono {
   font-family: monospace;
@@ -3633,8 +3911,9 @@ h1.h3 {
    ============================================================ */
 .vds-zones-table-wrap {
   border-radius: 0.75rem;
-  overflow-x: hidden;
-  overflow-y: visible;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 55vh;
   box-shadow: 0 2px 12px rgba(13, 110, 253, 0.07);
   border: 1px solid #e2e8f0;
   max-width: 100%;
@@ -3696,6 +3975,7 @@ h1.h3 {
 
 .vds-zones-table {
   width: 100%;
+  min-width: 980px;
   table-layout: auto;
   border-collapse: collapse;
   background: #fff;
@@ -3706,7 +3986,7 @@ h1.h3 {
   border-bottom: 1px solid #e2e8f0;
 }
 .vds-zones-table thead th {
-  padding: 12px 16px;
+  padding: 8px 16px;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -3729,9 +4009,9 @@ h1.h3 {
   background: #f5f9ff;
 }
 .vds-zones-table tbody td {
-  padding: 11px 16px;
+  padding: 6px 6px;
   vertical-align: middle;
-  font-size: 0.88rem;
+  font-size: 13px;
   color: #2c3e50;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -3740,7 +4020,7 @@ h1.h3 {
    all cell content uses the same 0.88 rem baseline set above. */
 .vds-zones-table tbody td.small,
 .vds-zones-table tbody td .small {
-  font-size: 0.88rem;
+  font-size: 13px;
 }
 
 /* Zone avatar initials bubble */
@@ -3848,6 +4128,34 @@ h1.h3 {
 [data-vds-theme="dark"] .vds-zone-avatar--deleted {
   background: linear-gradient(135deg, #374151, #1f2937);
 }
+
+@media (max-width: 900px) {
+  .vds-zones-table-wrap {
+    max-height: 58vh;
+    overflow-x: auto;
+  }
+
+  .vds-zones-table {
+    min-width: 980px;
+    width: 100%;
+    table-layout: auto;
+  }
+
+  .vds-zones-table thead th,
+  .vds-zones-table tbody td,
+  .vds-zones-table .vds-zone-status-badge,
+  .vds-zones-table .vds-access-badge,
+  .vds-zones-table .vds-change-badge {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .vds-zones-table .vds-table-nowrap {
+    white-space: normal;
+  }
+}
+
 [data-vds-theme="dark"] .vds-zone-status-badge--active {
   background: rgba(16, 185, 129, 0.15);
   color: #6ee7b7;
@@ -4313,10 +4621,6 @@ h1.h3 {
   color: #c0d8f8;
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   Zone Detail Page
-═══════════════════════════════════════════════════════════════ */
-
 /* Zone detail avatar (large initials circle in page header) */
 .vds-zone-detail-avatar {
   width: 54px;
@@ -4347,7 +4651,7 @@ h1.h3 {
   background: var(--vds-card-bg, #fff);
   border: 1px solid var(--vds-card-border, #e3e8f0);
   border-radius: 10px;
-  padding: 10px 14px;
+  padding: 3px 14px;
   flex: 1;
   min-width: 160px;
 }
@@ -4457,7 +4761,7 @@ h1.h3 {
 .vds-recent-changes-panel__header {
   display: flex;
   align-items: center;
-  padding: 10px 16px;
+  padding: 6px 16px;
   font-size: 0.82rem;
   font-weight: 700;
   color: #3c5a80;
@@ -4716,7 +5020,7 @@ h1.h3 {
 .vds-manage-zone-footer {
   display: flex;
   align-items: center;
-  padding: 14px 20px;
+  padding: 6px 20px;
   border-top: 1px solid rgba(91, 143, 232, 0.16);
   background: #f4f7fb;
   border-radius: 0 0 12px 12px;
@@ -6778,15 +7082,36 @@ h1.h3 {
 .vds-record-data-more {
   display: inline-flex;
   align-items: center;
-  padding: 2px 7px;
-  border-radius: 5px;
-  font-size: 0.73rem;
+  align-self: flex-start;
+  padding: 2px 4px;
+  min-height: 15px;
+  border-radius: 2px;
+  font-size: 0.6rem;
   font-weight: 600;
   color: #2e5090;
   background: rgba(46, 80, 144, 0.08);
   border: 1px solid rgba(46, 80, 144, 0.2);
-  cursor: default;
+  cursor: pointer;
+  width: auto;
   white-space: nowrap;
+  line-height: 1;
+}
+.vds-record-kv-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  line-height: 1.3;
+}
+.vds-record-kv-label {
+  min-width: 68px;
+  font-size: 0.77rem;
+  font-weight: 700;
+  color: #334155;
+}
+.vds-record-kv-value {
+  font-size: 0.82rem;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 [data-vds-theme="dark"] .vds-record-data-chip {
   background: #1a2b42;
@@ -6801,6 +7126,9 @@ h1.h3 {
   background: rgba(90, 130, 190, 0.15);
   border-color: rgba(90, 130, 190, 0.3);
   color: #7fb3f5;
+}
+[data-vds-theme="dark"] .vds-record-kv-label {
+  color: #c8d8ee;
 }
 
 /* ============================================================

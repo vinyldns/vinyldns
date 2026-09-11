@@ -46,9 +46,6 @@ export function AbandonedZonesTable({ zones, emptyMessage, emptySubtitle }: Aban
     );
   }
 
-  const initials = (name: string) =>
-    name.split(/[-_.]+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
-
   const sortedZones = (() => {
     if (createdSort) return [...zones].sort((a, b) =>
       (createdSort === 'asc' ? 1 : -1) * (new Date(a.zoneChange.zone.created ?? '').getTime() - new Date(b.zoneChange.zone.created ?? '').getTime()));
@@ -84,10 +81,7 @@ export function AbandonedZonesTable({ zones, emptyMessage, emptySubtitle }: Aban
             return (
               <tr key={item.zoneChange.id}>
                 <td>
-                  <div className="d-flex align-items-center gap-2">
-                    <span className="vds-zone-avatar vds-zone-avatar--deleted">{initials(zone.name)}</span>
-                    <span className="fw-semibold vds-table-secondary">{zone.name}</span>
-                  </div>
+                  <span className="fw-semibold vds-table-secondary">{zone.name}</span>
                 </td>
                 <td className="vds-table-secondary">{zone.email}</td>
                 <td>
@@ -104,10 +98,10 @@ export function AbandonedZonesTable({ zones, emptyMessage, emptySubtitle }: Aban
                     </span>
                   )}
                 </td>
-                <td className="vds-table-secondary vds-table-nowrap">
+                <td className="vds-table-secondary vds-table-nowrap vds-date-wrap">
                   {zone.created ? formatDateTime(zone.created) : '—'}
                 </td>
-                <td className="vds-table-secondary vds-table-nowrap">
+                <td className="vds-table-secondary vds-table-nowrap vds-date-wrap">
                   {zone.updated ? formatDateTime(zone.updated) : '—'}
                 </td>
                 <td>

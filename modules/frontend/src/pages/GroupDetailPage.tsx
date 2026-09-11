@@ -68,17 +68,12 @@ export function GroupDetailPage() {
   const [activeTab, setActiveTab] = useState<"manage" | "changes">("manage");
   const [newMemberLogin, setNewMemberLogin] = useState("");
   const [newMemberIsAdmin, setNewMemberIsAdmin] = useState(false);
-  const [copySuccess, setCopySuccess] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [groupModal, setGroupModal] = useState<{
-    title: string;
-    group: Group;
-  } | null>(null);
-  const [chTimeRange, setChTimeRange] = useState<
-    "all" | "1d" | "7d" | "30d" | "90d" | "custom"
-  >("all");
-  const [chDateFrom, setChDateFrom] = useState("");
-  const [chDateTo, setChDateTo] = useState("");
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [groupModal, setGroupModal] = useState<{ title: string; group: Group } | null>(null);
+  const [chTimeRange, setChTimeRange] = useState<'all' | '1d' | '7d' | '30d' | '90d' | 'custom'>('all');
+  const [chDateFrom, setChDateFrom] = useState('');
+  const [chDateTo, setChDateTo] = useState('');
   const [chTimeSort, setChTimeSort] = useState<SortDir>(null);
 
   const { data: group, isLoading } = useQuery({
@@ -342,7 +337,7 @@ export function GroupDetailPage() {
   return (
     <div>
       {/* ── Page header ── */}
-      <div className="rounded-3 mb-4 d-flex justify-content-between align-items-center vds-page-header vds-page-header--lg">
+      <div className="rounded-3 mb-2 d-flex justify-content-between align-items-center vds-page-header vds-page-header--lg">
         <div className="d-flex align-items-center gap-3">
           <div
             className="rounded-3 d-flex align-items-center justify-content-center fw-bold text-white vds-page-header__icon"
@@ -454,51 +449,19 @@ export function GroupDetailPage() {
               {membersLoading ? "…" : (memberListData?.length ?? 0)}
             </span>
             {isGroupAdmin && (
-              <button
-                className={`btn btn-sm ms-auto d-flex align-items-center gap-1 vds-member-toggle-btn ${
-                  showAddForm ? "vds-btn-flat" : "vds-btn-nav"
-                }`}
-                onClick={() => {
-                  setShowAddForm((v) => !v);
-                  setNewMemberLogin("");
-                  setNewMemberIsAdmin(false);
-                }}
-              >
-                <i
-                  className={`bi ${showAddForm ? "bi-x-lg" : "bi-person-plus-fill"}`}
-                />
-                {showAddForm ? "Cancel" : "Add Member"}
-              </button>
-            )}
-          </div>
-
-          {/* ── Add Member card ── */}
-          {isGroupAdmin && showAddForm && (
-            <div className="mx-4 my-3 rounded-3 p-3 vds-add-member-form">
-              <div className="d-flex align-items-center gap-2 mb-3">
-                <div className="rounded-circle d-flex align-items-center justify-content-center vds-add-member-icon">
-                  <i
-                    className="bi bi-person-plus-fill text-white"
-                    style={{ fontSize: "0.75rem" }}
-                  />
-                </div>
-                <span className="fw-semibold vds-add-member-heading">
-                  Add New Member
-                </span>
-              </div>
-              <div className="d-flex flex-wrap gap-2 align-items-end">
-                <div style={{ width: 220, flexShrink: 0 }}>
-                  <label className="vds-add-member-label">Username</label>
-                  <div className="input-group input-group-sm">
-                    <span className="input-group-text vds-add-member-prefix">
-                      <i
-                        className="bi bi-person"
-                        style={{ color: "#0d6efd" }}
-                      />
+              showAddForm ? (
+                <div className="ms-auto d-flex align-items-center gap-2 flex-wrap vds-add-member-inline">
+                  <span className="vds-add-member-inline__title">
+                    <i className="bi bi-person-plus-fill" />
+                    Add New Member
+                  </span>
+                  <div className="vds-add-member-inline__input-wrap">
+                    <span className="vds-add-member-inline__prefix">
+                      <i className="bi bi-person" />
                     </span>
                     <input
                       type="text"
-                      className="form-control vds-add-member-input"
+                      className="form-control form-control-sm vds-add-member-inline__input"
                       placeholder="e.g. john"
                       value={newMemberLogin}
                       autoFocus
@@ -517,12 +480,7 @@ export function GroupDetailPage() {
                       }}
                     />
                   </div>
-                </div>
-                <div className="d-flex align-items-center gap-2 pb-1">
-                  <div
-                    className="form-check form-switch mb-0 d-flex align-items-center gap-2"
-                    style={{ cursor: "pointer" }}
-                  >
+                  <label className="form-check form-switch mb-0 d-flex align-items-center gap-2 vds-add-member-inline__switch">
                     <input
                       className="form-check-input"
                       type="checkbox"
@@ -530,42 +488,35 @@ export function GroupDetailPage() {
                       id="newMemberAdmin"
                       checked={newMemberIsAdmin}
                       onChange={(e) => setNewMemberIsAdmin(e.target.checked)}
-                      style={{ cursor: "pointer" }}
                     />
-                    <label
-                      className="form-check-label vds-add-member-check-label"
-                      htmlFor="newMemberAdmin"
-                    >
-                      Group Manager
-                    </label>
-                  </div>
+                    <span className="vds-add-member-inline__switch-label">Group Manager</span>
+                  </label>
+                  <button
+                    className="btn btn-sm d-flex align-items-center gap-1 vds-add-member-inline__submit"
+                    disabled={!newMemberLogin.trim() || addMemberMutation.isPending}
+                    onClick={() => addMemberMutation.mutate({ login: newMemberLogin.trim(), makeAdmin: newMemberIsAdmin })}
+                  >
+                    {addMemberMutation.isPending
+                      ? <><span className="spinner-border spinner-border-sm vds-spinner-xs" /> Adding...</>
+                      : <><i className="bi bi-person-check-fill" /> Add</>}
+                  </button>
+                  <button
+                    className="btn btn-sm d-flex align-items-center gap-1 vds-btn-flat"
+                    onClick={() => { setShowAddForm(false); setNewMemberLogin(''); setNewMemberIsAdmin(false); }}
+                  >
+                    <i className="bi bi-x-lg" /> Cancel
+                  </button>
                 </div>
+              ) : (
                 <button
-                  className="btn btn-sm vds-btn-nav d-flex align-items-center gap-1 vds-add-member-btn"
-                  disabled={
-                    !newMemberLogin.trim() || addMemberMutation.isPending
-                  }
-                  onClick={() =>
-                    addMemberMutation.mutate({
-                      login: newMemberLogin.trim(),
-                      makeAdmin: newMemberIsAdmin,
-                    })
-                  }
+                  className="btn btn-sm ms-auto d-flex align-items-center gap-1 vds-member-toggle-btn vds-btn-nav"
+                  onClick={() => setShowAddForm(true)}
                 >
-                  {addMemberMutation.isPending ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm vds-spinner-xs" />{" "}
-                      Adding…
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-person-check-fill" /> Add Member
-                    </>
-                  )}
+                  <i className="bi bi-person-plus-fill" /> Add Member
                 </button>
-              </div>
-            </div>
-          )}
+              )
+            )}
+          </div>
           <div className="p-3">
             {membersLoading ? (
               <LoadingSpinner message="Loading members…" />
@@ -666,7 +617,7 @@ export function GroupDetailPage() {
               </button>
             </div>
           )}
-          <div className="p-3">
+          <div className="p-2">
             {changesLoading || changesFetching ? (
               <LoadingSpinner />
             ) : !changesData?.changes || changesData.changes.length === 0 ? (
@@ -692,7 +643,7 @@ export function GroupDetailPage() {
               </div>
             ) : (
               <div className="vds-groups-table-wrap">
-                <table className="vds-groups-table">
+                <table className="vds-groups-table vds-group-changes-table">
                   <thead>
                     <tr>
                       <th
@@ -744,66 +695,46 @@ export function GroupDetailPage() {
                             className="vds-table-secondary"
                             style={{ maxWidth: 280 }}
                           >
-                            {change.groupChangeMessage
-                              ? change.groupChangeMessage
-                                  .split(". ")
-                                  .filter(Boolean)
-                                  .map((sentence, i) => (
-                                    <div key={i}>
-                                      {sentence}
-                                      {sentence.endsWith(".") ? "" : "."}
-                                    </div>
-                                  ))
-                              : "—"}
-                          </td>
-                          <td>
-                            <div className="d-flex flex-column gap-1">
-                              {change.newGroup && (
-                                <button
-                                  className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                  onClick={() =>
-                                    setGroupModal({
-                                      title:
-                                        change.changeType === "Create"
-                                          ? "Created Group"
-                                          : "New Group",
-                                      group: change.newGroup!,
-                                    })
-                                  }
-                                >
-                                  <i className="bi bi-eye" />
-                                  {change.changeType === "Create"
-                                    ? "View created group"
-                                    : "View new group"}
-                                </button>
-                              )}
-                              {change.changeType === "Update" &&
-                                change.oldGroup && (
-                                  <button
-                                    className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                    onClick={() =>
-                                      setGroupModal({
-                                        title: "Old Group",
-                                        group: change.oldGroup!,
-                                      })
-                                    }
-                                  >
-                                    <i className="bi bi-clock-history" />
-                                    View old group
-                                  </button>
-                                )}
-                            </div>
-                          </td>
-                          <td className="vds-table-secondary">
-                            {change.userName ?? change.userId}
-                          </td>
-                        </tr>
-                      ))}
+                            {change.changeType}
+                          </span>
+                        </td>
+                        <td className="vds-table-secondary">
+                          {change.groupChangeMessage
+                            ? change.groupChangeMessage.split('. ').filter(Boolean).map((sentence, i) => (
+                                <div key={i}>{sentence}{sentence.endsWith('.') ? '' : '.'}</div>
+                              ))
+                            : '—'}
+                        </td>
+                        <td>
+                          <div className="d-flex flex-column gap-1">
+                            {change.newGroup && (
+                              <button
+                                className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                onClick={() => setGroupModal({ title: change.changeType === 'Create' ? 'Created Group' : 'New Group', group: change.newGroup! })}
+                              >
+                                <i className="bi bi-eye" />
+                                {change.changeType === 'Create' ? 'View created group' : 'View new group'}
+                              </button>
+                            )}
+                            {change.changeType === 'Update' && change.oldGroup && (
+                              <button
+                                className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                onClick={() => setGroupModal({ title: 'Old Group', group: change.oldGroup! })}
+                              >
+                                <i className="bi bi-clock-history" />
+                                View old group
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                        <td className="vds-table-secondary">{change.userName ?? change.userId}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
             )}
-            {(chNextEnabled || chPrevEnabled) && (
+            {false && (chNextEnabled || chPrevEnabled) && (
               <Pagination
                 onPrev={chPrevPage}
                 onNext={chNextPage}

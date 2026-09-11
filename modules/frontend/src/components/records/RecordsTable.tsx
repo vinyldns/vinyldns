@@ -17,17 +17,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { RecordSet, RecordData } from '../../types/record';
 
-// ── NS / PTR expand-collapse chip list ───────────────────────────────────────
+// ── NS / PTR expand-collapse plain text list ─────────────────────────────────
 const SHOW_LIMIT = 3;
 function MultiValueChips({ values }: { values: string[] }) {
   const [expanded, setExpanded] = useState(false);
   const visible = expanded ? values : values.slice(0, SHOW_LIMIT);
   const extra = values.length - SHOW_LIMIT;
   return (
-    <div className="d-flex flex-column gap-1">
+    <div className="d-flex flex-column gap-1 align-items-start">
       {visible.map((val, i) => (
-        <span key={i} className="vds-record-data-chip vds-record-data-chip--wrap">
-          <i className="bi bi-dot" style={{ fontSize: '0.65rem', marginRight: 2, opacity: 0.5 }} />
+        <span key={i} className="vds-table-secondary" style={{ fontSize: '0.84rem' }}>
           {val}
         </span>
       ))}
@@ -37,9 +36,7 @@ function MultiValueChips({ values }: { values: string[] }) {
           className="vds-record-data-more"
           onClick={() => setExpanded((v) => !v)}
         >
-          {expanded
-            ? <><i className="bi bi-chevron-up" style={{ fontSize: '0.65rem', marginRight: 3 }} />Show fewer</>
-            : <><i className="bi bi-chevron-down" style={{ fontSize: '0.65rem', marginRight: 3 }} />+{extra} more</>}
+          {expanded ? 'Show fewer' : `+${extra} more`}
         </button>
       )}
     </div>
@@ -79,6 +76,13 @@ const statusClass = (status: string) => {
 
 function formatRecordData(r: RecordSet): React.ReactNode {
   if (!r.records?.length) return <span className="text-muted">—</span>;
+
+  const kvLine = (label: string, value: string | number | undefined) => (
+    <div className="vds-record-kv-row" key={label}>
+      <span className="vds-record-kv-label">{label}</span>
+      <span className="vds-table-secondary vds-record-kv-value">{String(value ?? '—')}</span>
+    </div>
+  );
   
   // NS / PTR: stacked chips with expand/collapse after 3
   if (r.type === 'NS' || r.type === 'PTR') {
@@ -87,25 +91,18 @@ function formatRecordData(r: RecordSet): React.ReactNode {
     return <MultiValueChips values={all} />;
   }
 
-  // SOA: all 7 fields in 4 chips
+  // SOA: structured key/value lines for readability
   if (r.type === 'SOA' && r.records[0]) {
     const d = r.records[0];
     return (
       <div className="d-flex flex-column gap-1">
-        <span className="vds-record-data-chip vds-record-data-chip--wrap">
-          <i className="bi bi-server" style={{ fontSize: '0.65rem', marginRight: 3, opacity: 0.6 }} />
-          {d.mname}
-        </span>
-        <span className="vds-record-data-chip vds-record-data-chip--wrap">
-          <i className="bi bi-envelope" style={{ fontSize: '0.65rem', marginRight: 3, opacity: 0.6 }} />
-          {d.rname}
-        </span>
-        <span className="vds-record-data-chip vds-record-data-chip--dim">
-          serial {d.serial} · refresh {d.refresh} · retry {d.retry}
-        </span>
-        <span className="vds-record-data-chip vds-record-data-chip--dim">
-          expire {d.expire} · minimum {d.minimum}
-        </span>
+        {kvLine('Mname:', d.mname)}
+        {kvLine('Rname:', d.rname)}
+        {kvLine('Serial:', d.serial)}
+        {kvLine('Refresh:', d.refresh)}
+        {kvLine('Retry:', d.retry)}
+        {kvLine('Expire:', d.expire)}
+        {kvLine('Minimum:', d.minimum)}
       </div>
     );
   }
@@ -126,14 +123,15 @@ function formatRecordData(r: RecordSet): React.ReactNode {
       case 'NAPTR':  text = `${d.order} ${d.preference} ${d.flags} ${d.service}`; break;
       default:       text = JSON.stringify(d).slice(0, 40);
     }
-    return <span key={i} className="vds-record-data-chip vds-record-data-chip--wrap">{text}</span>;
+    return <span key={i} className="vds-table-secondary" style={{ fontSize: '0.84rem' }}>{text}</span>;
   });
 
   return (
     <div className="d-flex flex-wrap gap-1 align-items-center">
       {items}
       {r.records.length > 3 && (
-        <span className="vds-record-data-more"
+        <span className="vds-table-secondary"
+          style={{ fontSize: '0.78rem' }}
           title={r.records.slice(3).map((d: RecordData) => JSON.stringify(d)).join('\n')}
         >+{r.records.length - 3} more</span>
       )}
@@ -349,7 +347,7 @@ export function RecordsTable({
         </span>
       </div>
 
-      <table className="vds-zones-table">
+      <table className="vds-zones-table vds-records-table">
         <thead>
           <tr>
             <th>Name</th>
@@ -367,7 +365,11 @@ export function RecordsTable({
                 <th>
                   <span className="vds-th-with-icon">
                     <i className="bi bi-arrow-left-right me-1 text-warning" style={{ fontSize: '0.75rem' }} />
-                    Ownership Transfer Status
+                    <span>
+                      OWNERSHIP TRANSFER
+                      <br />
+                      STATUS
+                    </span>
                   </span>
                 </th>
               </>
@@ -385,8 +387,8 @@ export function RecordsTable({
             return (
               <tr key={rec.id}>
                 <td className="fw-semibold vds-table-primary">{rec.name}</td>
-                <td><span className="vds-record-type-badge">{rec.type}</span></td>
-                <td className="vds-table-secondary">{rec.ttl}s</td>
+                <td className="vds-table-secondary fw-semibold">{rec.type}</td>
+                <td className="vds-table-secondary vds-table-nowrap">{rec.ttl}s</td>
                 <td>{formatRecordData(rec)}</td>
 
                 {isSharedZone && (
@@ -408,23 +410,23 @@ export function RecordsTable({
 
                 {hasActions && (
                   <td>
-                    <div className="d-flex gap-1 align-items-center flex-nowrap">
+                    <div className={`vds-record-actions ${isSharedZone && capability && capability !== 'NONE' ? 'vds-record-actions--stack' : 'vds-record-actions--inline'}`}>
                       {onEdit && (
                         <button
-                          className="vds-action-btn vds-action-btn--edit"
+                          className="vds-action-btn vds-action-btn--edit vds-action-btn--text"
                           onClick={() => onEdit(rec)}
                           title="Edit record"
                         >
-                          <i className="bi bi-pencil-fill" />
+                          Edit
                         </button>
                       )}
                       {onDelete && (
                         <button
-                          className="vds-action-btn vds-action-btn--delete"
+                          className="vds-action-btn vds-action-btn--delete vds-action-btn--text"
                           onClick={() => onDelete(rec)}
                           title="Delete record"
                         >
-                          <i className="bi bi-trash3-fill" />
+                          Delete
                         </button>
                       )}
 

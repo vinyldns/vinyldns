@@ -452,7 +452,7 @@ export function RecordsPage() {
 
   return (
     <div>
-      <div className="rounded-3 mb-4 d-flex justify-content-between align-items-center vds-page-header">
+      <div className="rounded-3 mb-2 d-flex justify-content-between align-items-center vds-page-header">
         <div className="d-flex align-items-center gap-3">
           <div className="rounded-3 d-flex align-items-center justify-content-center vds-page-header__icon">
             <i className="bi bi-search text-white fs-5" />
@@ -550,7 +550,7 @@ export function RecordsPage() {
         </div>
       )}
 
-      <div className="card mb-3 vds-toolbar-card">
+      <div className="card mb-2 vds-toolbar-card">
         <div className="card-body py-2 px-3">
           <div className="d-flex gap-2 flex-wrap align-items-center">
             <div
@@ -1192,7 +1192,7 @@ export function RecordsPage() {
             onToggleSort={handleToggleSort}
             onViewHistory={(rec) => setHistoryRecord(rec)}
           />
-          {records.length > 0 && (prevPageEnabled || nextPageEnabled) && (
+          {false && records.length > 0 && (prevPageEnabled || nextPageEnabled) && (
             <div className="card-footer d-flex align-items-center justify-content-end py-2 px-3 mt-1">
               <Pagination
                 onPrev={prevPage}

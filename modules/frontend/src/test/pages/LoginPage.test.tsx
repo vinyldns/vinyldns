@@ -25,7 +25,14 @@ import { LoginPage } from '../../pages/LoginPage';
 const mockFetch = vi.fn();
 
 beforeEach(() => {
+  mockFetch.mockReset();
   vi.stubGlobal('fetch', mockFetch);
+  mockFetch.mockImplementation(async (input) => {
+    if (input === '/api/authmode') {
+      return { json: async () => ({ mode: 'ldap' }) };
+    }
+    throw new Error(`Unhandled fetch call in test: ${String(input)}`);
+  });
 });
 
 afterEach(() => {
@@ -87,7 +94,15 @@ describe('LoginPage', () => {
 
   describe('successful login', () => {
     it('redirects to / when credentials are accepted', async () => {
-      mockFetch.mockResolvedValueOnce({ ok: true });
+      mockFetch.mockImplementation(async (input) => {
+        if (input === '/api/authmode') {
+          return { json: async () => ({ mode: 'ldap' }) };
+        }
+        if (input === '/login') {
+          return { json: async () => ({ ok: true }) };
+        }
+        throw new Error(`Unhandled fetch call in test: ${String(input)}`);
+      });
       // jsdom does not navigate, so spy on window.location.href assignment
       const locationSpy = vi.spyOn(window, 'location', 'get').mockReturnValue(
         { ...window.location, href: '/' } as Location
@@ -109,7 +124,15 @@ describe('LoginPage', () => {
     });
 
     it('sends the username and password in the request body', async () => {
-      mockFetch.mockResolvedValueOnce({ ok: true });
+      mockFetch.mockImplementation(async (input) => {
+        if (input === '/api/authmode') {
+          return { json: async () => ({ mode: 'ldap' }) };
+        }
+        if (input === '/login') {
+          return { json: async () => ({ ok: true }) };
+        }
+        throw new Error(`Unhandled fetch call in test: ${String(input)}`);
+      });
 
       renderLoginPage();
       await userEvent.type(screen.getByPlaceholderText(/enter username/i), 'fbaggins');
@@ -117,7 +140,9 @@ describe('LoginPage', () => {
       await userEvent.click(screen.getByRole('button', { name: /log in/i }));
 
       await waitFor(() => {
-        const [, options] = mockFetch.mock.calls[0];
+        const loginCall = mockFetch.mock.calls.find(([url]) => url === '/login');
+        expect(loginCall).toBeTruthy();
+        const [, options] = loginCall as [string, RequestInit];
         const body = JSON.parse((options as RequestInit).body as string);
         expect(body.username).toBe('fbaggins');
         expect(body.password).toBe('theOneRing');
@@ -127,9 +152,16 @@ describe('LoginPage', () => {
 
   describe('failed login', () => {
     it('displays the error message returned from the server', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        json: async () => ({ error: 'Authentication failed, please try again' }),
+      mockFetch.mockImplementation(async (input) => {
+        if (input === '/api/authmode') {
+          return { json: async () => ({ mode: 'ldap' }) };
+        }
+        if (input === '/login') {
+          return {
+            json: async () => ({ ok: false, error: 'Authentication failed, please try again' }),
+          };
+        }
+        throw new Error(`Unhandled fetch call in test: ${String(input)}`);
       });
 
       renderLoginPage();
@@ -143,9 +175,16 @@ describe('LoginPage', () => {
     });
 
     it('displays a fallback error when the server returns no error message', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        json: async () => ({}),
+      mockFetch.mockImplementation(async (input) => {
+        if (input === '/api/authmode') {
+          return { json: async () => ({ mode: 'ldap' }) };
+        }
+        if (input === '/login') {
+          return {
+            json: async () => ({ ok: false }),
+          };
+        }
+        throw new Error(`Unhandled fetch call in test: ${String(input)}`);
       });
 
       renderLoginPage();
@@ -159,7 +198,15 @@ describe('LoginPage', () => {
     });
 
     it('displays a connection error when fetch rejects', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network Error'));
+      mockFetch.mockImplementation(async (input) => {
+        if (input === '/api/authmode') {
+          return { json: async () => ({ mode: 'ldap' }) };
+        }
+        if (input === '/login') {
+          throw new Error('Network Error');
+        }
+        throw new Error(`Unhandled fetch call in test: ${String(input)}`);
+      });
 
       renderLoginPage();
       await userEvent.type(screen.getByPlaceholderText(/enter username/i), 'fbaggins');
@@ -174,8 +221,16 @@ describe('LoginPage', () => {
 
   describe('loading state', () => {
     it('disables the submit button while login is in progress', async () => {
-      // Fetch never resolves — keeps the component in loading state
-      mockFetch.mockReturnValueOnce(new Promise(() => {}));
+      // /login never resolves — keeps the component in loading state
+      mockFetch.mockImplementation((input) => {
+        if (input === '/api/authmode') {
+          return Promise.resolve({ json: async () => ({ mode: 'ldap' }) });
+        }
+        if (input === '/login') {
+          return new Promise(() => {});
+        }
+        return Promise.reject(new Error(`Unhandled fetch call in test: ${String(input)}`));
+      });
 
       renderLoginPage();
       await userEvent.type(screen.getByPlaceholderText(/enter username/i), 'fbaggins');

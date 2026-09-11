@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-import { useState, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { recordsService } from "../services/recordsService";
-import { usePaging } from "./usePaging";
-import { useAlerts } from "../contexts/AlertContext";
-import type { RecordSet } from "../types/record";
+import { useState, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { recordsService } from '../services/recordsService';
+import { usePaging } from './usePaging';
+import { useAlerts } from '../contexts/AlertContext';
+import type { RecordSet, RecordSetListResponse } from '../types/record';
 
 // Stable empty-array reference so consumers that use `records` as an effect/memo
 // dependency don't re-run on every render while the query is disabled/loading.
@@ -228,9 +228,23 @@ export function useZoneRecords(zoneId: string) {
     getPanelTitle,
   } = usePaging(100);
   const { addAlert } = useAlerts();
+  const queryClient = useQueryClient();
+
+  const patchZoneRecordCache = useCallback((updater: (items: RecordSet[]) => RecordSet[]) => {
+    queryClient.setQueriesData<RecordSetListResponse>(
+      { queryKey: ['zone-recordsets', zoneId] },
+      (previous) => {
+        if (!previous) return previous;
+        return {
+          ...previous,
+          recordSets: updater(previous.recordSets ?? []),
+        };
+      }
+    );
+  }, [queryClient, zoneId]);
 
   const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ["zone-recordsets", zoneId, nameFilter, typeFilter, paging.next],
+    queryKey: ['zone-recordsets', zoneId, nameFilter, typeFilter, paging.next],
     queryFn: async () => {
       const res = await recordsService.listRecordSetsByZone(
         zoneId,
@@ -242,14 +256,27 @@ export function useZoneRecords(zoneId: string) {
       return res.data;
     },
     enabled: Boolean(zoneId),
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
+
+  const refreshZoneRecords = useCallback(() => {
+    void refetch();
+  }, [refetch]);
 
   const createRecordMutation = useMutation({
     mutationFn: (record: Partial<RecordSet>) =>
       recordsService.createRecordSet(zoneId, record),
-    onSuccess: () => {
-      addAlert("success", "Record created successfully");
-      void refetch();
+    onSuccess: (response) => {
+      const created = response.data.recordSet;
+      patchZoneRecordCache((items) => {
+        if (items.some((record) => record.id === created.id)) return items;
+        return [created, ...items];
+      });
+      addAlert('success', 'Record created successfully');
+      refreshZoneRecords();
     },
     onError: (err: unknown) => {
       addAlert(
@@ -260,16 +287,15 @@ export function useZoneRecords(zoneId: string) {
   });
 
   const updateRecordMutation = useMutation({
-    mutationFn: ({
-      recordSetId,
-      record,
-    }: {
-      recordSetId: string;
-      record: Partial<RecordSet>;
-    }) => recordsService.updateRecordSet(zoneId, recordSetId, record),
-    onSuccess: () => {
-      addAlert("success", "Record updated successfully");
-      void refetch();
+    mutationFn: ({ recordSetId, record }: { recordSetId: string; record: Partial<RecordSet> }) =>
+      recordsService.updateRecordSet(zoneId, recordSetId, record),
+    onSuccess: (response, variables) => {
+      const updated = response.data.recordSet;
+      patchZoneRecordCache((items) =>
+        items.map((item) => (item.id === variables.recordSetId ? updated : item))
+      );
+      addAlert('success', 'Record updated successfully');
+      refreshZoneRecords();
     },
     onError: (err: unknown) => {
       addAlert(
@@ -282,9 +308,10 @@ export function useZoneRecords(zoneId: string) {
   const deleteRecordMutation = useMutation({
     mutationFn: (recordSetId: string) =>
       recordsService.deleteRecordSet(zoneId, recordSetId),
-    onSuccess: () => {
-      addAlert("success", "Record deleted successfully");
-      void refetch();
+    onSuccess: (_response, deletedRecordSetId) => {
+      patchZoneRecordCache((items) => items.filter((item) => item.id !== deletedRecordSetId));
+      addAlert('success', 'Record deleted successfully');
+      refreshZoneRecords();
     },
     onError: (err: unknown) => {
       addAlert(

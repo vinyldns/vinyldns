@@ -46,7 +46,7 @@ export function GroupMemberList({ members, admins, onRemove, onToggleAdmin, canM
 
   return (
     <div className="vds-groups-table-wrap">
-      <table className="vds-groups-table">
+      <table className="vds-groups-table vds-group-members-table">
         <thead>
           <tr>
             <th>User Name</th>

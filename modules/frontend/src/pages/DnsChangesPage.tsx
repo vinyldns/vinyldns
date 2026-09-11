@@ -177,7 +177,7 @@ export function DnsChangesPage() {
     to: string,
   ): boolean => {
     if (range === "all") return true;
-    if (!dateStr) return true;
+    if (!dateStr) return false;  // Exclude entries with no date when filtering by date range
     const ts = new Date(dateStr).getTime();
     const now = Date.now();
     if (range === "1d") return ts >= now - 86400000;

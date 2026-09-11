@@ -70,6 +70,12 @@ export const recordsService = {
     };
     return api.get<RecordSetListResponse>(
       urlBuilder(`/zones/${zoneId}/recordsets`, params),
+      {
+        headers: {
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache',
+        },
+      },
     );
   },
 

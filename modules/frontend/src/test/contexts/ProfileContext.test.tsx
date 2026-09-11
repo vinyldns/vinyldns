@@ -33,6 +33,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { ProfileProvider, useProfile } from '../../contexts/ProfileContext';
 import { frodoUser, superFrodoUser, lockedFrodoUser } from '../fixtures/testData';
 
@@ -65,9 +66,11 @@ function ProfileConsumer() {
 
 function renderProfileConsumer() {
   return render(
-    <ProfileProvider>
-      <ProfileConsumer />
-    </ProfileProvider>
+    <MemoryRouter initialEntries={['/zones']}>
+      <ProfileProvider>
+        <ProfileConsumer />
+      </ProfileProvider>
+    </MemoryRouter>
   );
 }
 
@@ -191,9 +194,11 @@ describe('ProfileContext', () => {
       }
 
       render(
-        <ProfileProvider>
-          <RefreshConsumer />
-        </ProfileProvider>
+        <MemoryRouter initialEntries={['/zones']}>
+          <ProfileProvider>
+            <RefreshConsumer />
+          </ProfileProvider>
+        </MemoryRouter>
       );
 
       // First load

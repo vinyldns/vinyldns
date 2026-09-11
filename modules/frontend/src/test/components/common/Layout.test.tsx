@@ -85,8 +85,8 @@ describe("<Layout />", () => {
     expect(screen.getByRole("link", { name: "Groups" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Zones" })).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Control Panel" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("link", { name: "Control Panel" }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders the page content passed as children", () => {
@@ -150,7 +150,8 @@ describe("<Layout />", () => {
       screen.getByRole("button", { name: /Switch to old portal/i }),
     );
 
-    await waitFor(() => expect(window.location.href).toBe(__OLD_PORTAL_URL__));
+    await waitFor(() => expect(window.location.href).toBe("/"));
+    expect(document.cookie).toContain("ui_mode=old");
 
     Object.defineProperty(window, "location", {
       configurable: true,
@@ -210,13 +211,12 @@ describe("<Layout />", () => {
     vi.unstubAllGlobals();
   });
 
-  it("logs out by posting to the logout endpoint", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({});
-    vi.stubGlobal("fetch", fetchMock);
+  it("logs out by navigating to the logout endpoint", async () => {
     const originalLocation = window.location;
+    const assignMock = vi.fn();
     Object.defineProperty(window, "location", {
       configurable: true,
-      value: { ...originalLocation, href: "" },
+      value: { ...originalLocation, assign: assignMock },
     });
 
     renderLayout();
@@ -225,15 +225,11 @@ describe("<Layout />", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: /Logout/ }));
 
-    await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith("/logout", { method: "POST" }),
-    );
-    await waitFor(() => expect(window.location.href).toBe("/login"));
+    await waitFor(() => expect(assignMock).toHaveBeenCalledWith("/logout"));
 
     Object.defineProperty(window, "location", {
       configurable: true,
       value: originalLocation,
     });
-    vi.unstubAllGlobals();
   });
 });

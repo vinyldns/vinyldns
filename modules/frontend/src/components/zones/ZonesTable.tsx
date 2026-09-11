@@ -61,9 +61,6 @@ export function ZonesTable({ zones, showAllZones, emptyMessage, emptySubtitle }:
     );
   }
 
-  const initials = (name: string) =>
-    name.split(/[-_.]+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
-
   const statusClass = (status: string) => {
     if (status === 'Active') return 'vds-zone-status-badge--active';
     if (status === 'Deleted') return 'vds-zone-status-badge--deleted';
@@ -108,8 +105,7 @@ export function ZonesTable({ zones, showAllZones, emptyMessage, emptySubtitle }:
           {sortedZones.map((zone) => (
             <tr key={zone.id}>
               <td>
-                <div className="d-flex align-items-center gap-2">
-                  <span className="vds-zone-avatar">{initials(zone.name)}</span>
+                <div className="d-flex align-items-center">
                   {zone.accessLevel && zone.accessLevel !== 'NoAccess' ? (
                     <Link
                       to={`/zones/${zone.id}`}
@@ -144,7 +140,7 @@ export function ZonesTable({ zones, showAllZones, emptyMessage, emptySubtitle }:
                   {zone.status}
                 </span>
               </td>
-              <td className="vds-table-secondary vds-table-nowrap">
+              <td className="vds-table-secondary vds-table-nowrap vds-date-wrap">
                 {zone.latestSync ? formatDateTime(zone.latestSync) : '—'}
               </td>
               <td>
@@ -157,10 +153,10 @@ export function ZonesTable({ zones, showAllZones, emptyMessage, emptySubtitle }:
                 {zone.accessLevel && zone.accessLevel !== 'NoAccess' ? (
                   <Link
                     to={`/zones/${zone.id}`}
-                    className="vds-action-btn vds-action-btn--view"
+                    className="vds-action-btn vds-action-btn--view vds-action-btn--text"
                     title="View zone"
                   >
-                    <i className="bi bi-eye-fill" />
+                    View
                   </Link>
                 ) : (
                   <span className="vds-table-muted small" title="No access"><i className="bi bi-lock" /></span>

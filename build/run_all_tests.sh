@@ -60,3 +60,10 @@ if ! "${DIR}/func-test-portal.sh"; then
   echo -e "${F_RED}Error running Portal functional tests${F_RESET}"
   exit 1
 fi
+
+echo "Running Frontend functional tests..."
+if ! "${DIR}/func-test-frontend.sh"; then
+  echo -e "${F_RED}Error running Frontend functional tests${F_RESET}"
+  exit 1
+fi
+
