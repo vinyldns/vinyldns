@@ -12,6 +12,12 @@ Retrieves a group change given the group change ID.
 
 > GET /groups/change/{groupChangeId}
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /groups/change/a3227632-a166-407e-8a74-c0624d967b58
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |

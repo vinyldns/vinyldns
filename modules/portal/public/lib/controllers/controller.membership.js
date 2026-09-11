@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-angular.module('controller.membership', []).controller('MembershipController', function ($scope, $log, $location, $sce, $timeout, pagingService,
+angular.module('controller.membership', []).controller('MembershipController', function ($scope, $log, $location, $timeout, pagingService,
                                                                                          groupsService, profileService, utilityService) {
 
     $scope.membership = { members: [], group: {} };
@@ -37,8 +37,7 @@ angular.module('controller.membership', []).controller('MembershipController', f
     };
 
     $scope.changeMessage = function (groupChangeMessage) {
-        message = groupChangeMessage.replaceAll('. ', '.<br>')
-        return $sce.trustAsHtml(message);
+        return (groupChangeMessage || '').split('. ').join('.\n');
     };
 
     // Initialize Bootstrap tooltips
