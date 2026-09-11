@@ -433,4 +433,44 @@ describe('Controller: RecordsController', function () {
         expect(listRecordSetsByZone.calls.mostRecent().args).toEqual(
             [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, expectedRecordTypeFilter, expectedNameSort, expectedRecordTypeSort]);
     });
+
+    it('recordSetGroupOwnershipStatus does not fetch members when the group id is the string "null"', function () {
+        this.$httpBackend.when('GET', '/api/users/currentuser').respond({});
+        var getGroupMemberList = spyOn(this.groupsService, 'getGroupMemberList')
+            .and.returnValue(this.q.when({data: {members: []}}));
+
+        this.scope.profile = {id: "some-user"};
+        this.scope.recordSetGroupOwnershipStatus("null", this.scope.profile.id, {});
+        this.scope.$digest();
+
+        expect(getGroupMemberList.calls.count()).toBe(0);
+    });
+
+    it('recordSetGroupOwnershipStatus does not fetch members when the requested owner group id is the string "null"', function () {
+        this.$httpBackend.when('GET', '/api/users/currentuser').respond({});
+        var getGroupMemberList = spyOn(this.groupsService, 'getGroupMemberList')
+            .and.returnValue(this.q.when({data: {members: []}}));
+
+        this.scope.profile = {id: "some-user", isSuper: true};
+        var record = {recordSetGroupChange: {ownershipTransferStatus: "AutoApproved", requestedOwnerGroupId: "null"}};
+        this.scope.recordSetGroupOwnershipStatus("valid-owner-group", this.scope.profile.id, record);
+        this.scope.$digest();
+
+        // Only the owner group lookup runs; the "null" requested owner group is skipped
+        expect(getGroupMemberList.calls.count()).toBe(1);
+        expect(getGroupMemberList.calls.mostRecent().args).toEqual(["valid-owner-group"]);
+    });
+
+    it('recordSetGroupOwnershipStatus fetches members for a valid group id', function () {
+        this.$httpBackend.when('GET', '/api/users/currentuser').respond({});
+        var getGroupMemberList = spyOn(this.groupsService, 'getGroupMemberList')
+            .and.returnValue(this.q.when({data: {members: []}}));
+
+        this.scope.profile = {id: "some-user"};
+        this.scope.recordSetGroupOwnershipStatus("valid-group", this.scope.profile.id, {});
+        this.scope.$digest();
+
+        expect(getGroupMemberList.calls.count()).toBe(1);
+        expect(getGroupMemberList.calls.mostRecent().args).toEqual(["valid-group"]);
+    });
 });

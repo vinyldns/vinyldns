@@ -332,10 +332,15 @@ trait DnsJsonProtocol extends JsonValidation {
 
 
   case object ownershipTransferSerializer extends ValidationSerializer[OwnershipTransfer] {
+    // Treat blank and the literal string "null" as an absent group id so bad
+    // client payloads never persist requestedOwnerGroupId as the string "null".
+    private def sanitizeRequestedOwnerGroupId(id: Option[String]): Option[String] =
+      id.map(_.trim).filter(v => v.nonEmpty && !v.equalsIgnoreCase("null"))
+
     override def fromJson(js: JValue): ValidatedNel[String, OwnershipTransfer] =
       (
         (js \ "ownershipTransferStatus").required[OwnershipTransferStatus]("Missing ownershipTransfer.ownershipTransferStatus"),
-        (js \ "requestedOwnerGroupId").optional[String],
+        (js \ "requestedOwnerGroupId").optional[String].map(sanitizeRequestedOwnerGroupId),
         ).mapN(OwnershipTransfer.apply)
 
     override def toJson(rsa: OwnershipTransfer): JValue =
