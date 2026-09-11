@@ -56,7 +56,7 @@
                                                         <span class="fa fa-search"></span>
                                                     </button>
                                                 </span>
-                                                <input id="group-search-text" ng-model="query" type="text" class="form-control"  placeholder="Group Name"/>
+                                                <input id="my-group-search-text" ng-model="query" type="text" class="form-control" placeholder="Group Name"/>
                                             </div>
                                         </form>
                                     </div>
@@ -134,35 +134,50 @@
                 <div class="tab-pane" id="allGroups">
                     <div class="row">
                         <div class="col-md-12">
-
                             <!-- SIMPLE DATATABLE -->
                             <div class="panel panel-default">
                                 <div class="panel-heading">
-                                    <div class="btn-group">
-                                        <button id="open-group-modal-button" class="btn btn-default" ng-click="openModal($event);">
-                                            <span class="fa fa-plus"></span> New Group
-                                        </button>
-                                        <button id="refresh-group-button" class="btn btn-default" ng-click="refresh();">
-                                            <span class="fa fa-refresh"></span> Refresh
-                                        </button>
+                                    <div class="clearfix">
+                                        <div class="btn-group pull-left">
+                                            <button id="open-group-modal-button"
+                                                    class="btn btn-default"
+                                                    ng-click="openModal($event);">
+                                                <span class="fa fa-plus"></span> New Group
+                                            </button>
+                                            <button id="refresh-group-button"
+                                                    class="btn btn-default"
+                                                    ng-click="refresh();">
+                                                <span class="fa fa-refresh"></span> Refresh
+                                            </button>
+                                        </div>
+                                        <div class="pull-right">
+                                            <form ng-submit="refresh()" style="text-align:right;">
+                                                <!-- SEARCH BOX -->
+                                                <div class="input-group" style="width:250px; margin-left:auto;">
+                                                    <span class="input-group-btn">
+                                                        <button id="group-search-button"
+                                                                type="submit"
+                                                                class="btn btn-primary">
+                                                            <span class="fa fa-search"></span>
+                                                        </button>
+                                                    </span>
+                                                    <input id = "all-group-search-text" ng-model="query"
+                                                           type="text"
+                                                           class="form-control all-group-search-text"
+                                                           placeholder="{{!isSearchByUser ? 'Group Name' : 'User Name'}}"/>
+                                                </div>
+                                                <!-- CHECKBOX -->
+                                                <div class="checkbox" style="margin-top:4px; margin-bottom:0;">
+                                                    <label>
+                                                        <input type="checkbox" ng-model="isSearchByUser">
+                                                        Search by User
+                                                    </label>
+                                                </div>
+                                            </form>
+                                        </div>
                                     </div>
-
-                                    <!-- SEARCH BOX -->
-                                    <div class="pull-right">
-                                        <form class="input-group" ng-submit="refresh()">
-                                            <div class="input-group">
-                                                <span class="input-group-btn">
-                                                    <button id="group-search-button" type="submit" class="btn btn-primary btn-left-round">
-                                                        <span class="fa fa-search"></span>
-                                                    </button>
-                                                </span>
-                                                <input id="group-search-text" ng-model="query" type="text" class="form-control"  placeholder="Group Name"/>
-                                            </div>
-                                        </form>
-                                    </div>
-                                    <!-- END SEARCH BOX -->
-
                                 </div>
+                                    <!-- END SEARCH BOX -->
                                 <div id="group-list" class="panel-body">
                                     <p ng-if="!allGroupsLoaded">Loading groups...</p>
                                     <p ng-if="$scope.allGroupsLoaded && searchCriteria(allGroups.items.length)">No groups match the search criteria.</p>
