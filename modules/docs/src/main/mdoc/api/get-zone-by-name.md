@@ -12,6 +12,12 @@ Retrieves a zone with the matching zone name.
 
 > GET /zones/name/{zoneName}
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /zones/name/system-test.
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |
@@ -58,4 +64,10 @@ zone          | map           | Refer to [zone model](zone-model.html) |
     "latestSync": "2016-12-16T15:27:26Z"
   }
 }
+```
+
+#### EXAMPLE ERROR RESPONSE
+
+```text
+Zone with name not-shared. does not exists
 ```

@@ -22,6 +22,12 @@ maxItems         | integer       | no          | The number of items to return i
 ignoreAccess     | boolean       | no          | If false, returns only groups the requesting user is a member of. If true, returns groups in the system, regardless of membership. Defaults to false if not provided. Super and support admin see all groups regardless of this value. |
 abridged         | boolean       | no          | If false, returns all the group details. If true, returns an abridged version of group details. Defaults to false if not provided. |
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /groups?groupNameFilter=eng&maxItems=25&abridged=true
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |

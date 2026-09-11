@@ -12,6 +12,12 @@ Gets a user corresponding to the given identifier (user ID or username).
 
 > GET /users/{userIdentifier}
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /users/ok
+```
+
 #### HTTP RESPONSE TYPES
 
 | Code | description                                                                                                                                                                                |
@@ -41,4 +47,9 @@ Gets a user corresponding to the given identifier (user ID or username).
     }
   ]
 }
+```
+
+#### EXAMPLE ERROR RESPONSE
+```text
+User new-ok was not found
 ```

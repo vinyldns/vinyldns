@@ -12,6 +12,12 @@ Gets a RecordSet in a specified zone.
 
 > GET /zones/{zoneId}/recordsets/{recordSetId}
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /zones/2467dc05-68eb-4498-a9d5-78d24bb0893c/recordsets/dd9c1120-0594-4e61-982e-8ddcbc8b2d21
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |
