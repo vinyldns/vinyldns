@@ -29,6 +29,7 @@ import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.DomainHelpers.removeWhitespace
 import vinyldns.core.domain.{EncryptFromJson, Encrypted, Fqdn}
 import vinyldns.core.domain.record._
+import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
 import vinyldns.core.domain.zone._
 import vinyldns.core.Messages._
 import vinyldns.core.domain.record.OwnershipTransferStatus
@@ -37,9 +38,55 @@ import vinyldns.core.domain.record.OwnershipTransferStatus.OwnershipTransferStat
 trait DnsJsonProtocol extends JsonValidation {
   import vinyldns.core.domain.record.RecordType._
 
+  private type CommonRecordSetInputFields =
+    (
+      String,
+      RecordType,
+      Long,
+      RecordSetStatus,
+      Instant,
+      Option[Instant],
+      List[RecordData],
+      String,
+      String,
+      Option[String],
+      Option[OwnershipTransfer],
+      Option[String]
+    )
+
+  private def commonRecordSetInputFields(
+      js: JValue,
+      recordType: ValidatedNel[String, RecordType]
+  ): ValidatedNel[String, CommonRecordSetInputFields] =
+    (
+      (js \ "name")
+        .required[String]("Missing RecordSet.name")
+        .check(
+          "Record name must not exceed 255 characters" -> checkDomainNameLen,
+          "Record name cannot contain spaces" -> nameDoesNotContainSpaces
+        ),
+      recordType,
+      (js \ "ttl")
+        .required[Long]("Missing RecordSet.ttl")
+        .check(
+          "RecordSet.ttl must be a positive signed 32 bit number" -> (_ <= 2147483647),
+          "RecordSet.ttl must be a positive signed 32 bit number greater than or equal to 30" -> (_ >= 30)
+        ),
+      (js \ "status").default(RecordSetStatus, RecordSetStatus.Pending),
+      (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
+      (js \ "updated").optional[Instant],
+      recordType.andThen(extractRecords(_, js \ "records")),
+      (js \ "id").default[String](UUID.randomUUID().toString),
+      (js \ "account").default[String]("system"),
+      (js \ "ownerGroupId").optional[String],
+      (js \ "recordSetGroupChange").optional[OwnershipTransfer],
+      (js \ "fqdn").optional[String]
+    ).tupled
+
   val dnsSerializers = Seq(
     CreateZoneInputSerializer,
     UpdateZoneInputSerializer,
+    CreateRecordSetInputSerializer,
     ZoneConnectionSerializer,
     AlgorithmSerializer,
     EncryptedSerializer,
@@ -142,6 +189,44 @@ trait DnsJsonProtocol extends JsonValidation {
         ).mapN(UpdateZoneInput.apply)
   }
 
+  case object CreateRecordSetInputSerializer extends ValidationSerializer[CreateRecordSetInput] {
+    import RecordType._
+    override def fromJson(js: JValue): ValidatedNel[String, CreateRecordSetInput] = {
+      val recordType = (js \ "type").required(RecordType, "Missing RecordSet.type")
+      val recordTypeGet: RecordType = recordType.getOrElse(A)
+
+      val createInputResult = (
+        (js \ "zoneId").optional[String],
+        commonRecordSetInputFields(js, recordType)
+      ).mapN {
+        case (zoneId, (name, typ, ttl, status, created, updated, records, id, account, ownerGroupId, recordSetGroupChange, fqdn)) =>
+          CreateRecordSetInput(zoneId, name, typ, ttl, status, created, updated, records, id, account, ownerGroupId, recordSetGroupChange, fqdn)
+      }
+
+      // Put additional record set level checks below
+      createInputResult.checkIf(recordTypeGet == RecordType.CNAME)(
+        "CNAME record sets cannot contain multiple records" -> { crs =>
+          crs.records.length <= 1
+        }
+      )
+    }
+
+    override def toJson(crs: CreateRecordSetInput): JValue =
+      ("type" -> Extraction.decompose(crs.typ)) ~
+        ("zoneId" -> crs.zoneId) ~
+        ("name" -> crs.name) ~
+        ("ttl" -> crs.ttl) ~
+        ("status" -> Extraction.decompose(crs.status)) ~
+        ("created" -> Extraction.decompose(crs.created)) ~
+        ("updated" -> Extraction.decompose(crs.updated)) ~
+        ("records" -> Extraction.decompose(crs.records)) ~
+        ("id" -> crs.id) ~
+        ("account" -> crs.account) ~
+        ("ownerGroupId" -> crs.ownerGroupId) ~
+        ("recordSetGroupChange" -> Extraction.decompose(crs.recordSetGroupChange)) ~
+        ("fqdn" -> crs.fqdn)
+  }
+
   case object AlgorithmSerializer extends ValidationSerializer[Algorithm] {
     override def fromJson(js: JValue): ValidatedNel[String, Algorithm] =
       js match {
@@ -214,31 +299,11 @@ trait DnsJsonProtocol extends JsonValidation {
       val recordTypeGet: RecordType = recordType.getOrElse(A)
       val recordSetResult = (
         (js \ "zoneId").required[String]("Missing RecordSet.zoneId"),
-        (js \ "name")
-          .required[String]("Missing RecordSet.name")
-          .check(
-            "Record name must not exceed 255 characters" -> checkDomainNameLen,
-            "Record name cannot contain spaces" -> nameDoesNotContainSpaces
-          ),
-        recordType,
-        (js \ "ttl")
-          .required[Long]("Missing RecordSet.ttl")
-          .check(
-            // RFC 1035.2.3.4 and  RFC 2181.8
-            "RecordSet.ttl must be a positive signed 32 bit number" -> (_ <= 2147483647),
-            "RecordSet.ttl must be a positive signed 32 bit number greater than or equal to 30" -> (_ >= 30)
-          ),
-        (js \ "status").default(RecordSetStatus, RecordSetStatus.Pending),
-        (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
-        (js \ "updated").optional[Instant],
-        recordType
-          .andThen(extractRecords(_, js \ "records")),
-        (js \ "id").default[String](UUID.randomUUID().toString),
-        (js \ "account").default[String]("system"),
-        (js \ "ownerGroupId").optional[String],
-        (js \ "recordSetGroupChange").optional[OwnershipTransfer],
-        (js \ "fqdn").optional[String]
-        ).mapN(RecordSet.apply)
+        commonRecordSetInputFields(js, recordType)
+      ).mapN {
+        case (zoneId, (name, typ, ttl, status, created, updated, records, id, account, ownerGroupId, recordSetGroupChange, fqdn)) =>
+          RecordSet(zoneId, name, typ, ttl, status, created, updated, records, id, account, ownerGroupId, recordSetGroupChange, fqdn)
+      }
 
       // Put additional record set level checks below
       recordSetResult.checkIf(recordTypeGet == RecordType.CNAME)(
