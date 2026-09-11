@@ -12,6 +12,12 @@ Gets the count of total recordsets in a specified zone.
 
 > GET /zones/{zoneId}/recordsetcount
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /zones/2467dc05-68eb-4498-a9d5-78d24bb0893c/recordsetcount
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |
