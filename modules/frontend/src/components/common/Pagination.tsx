@@ -23,7 +23,6 @@ interface PaginationProps {
   nextEnabled: boolean;
   panelTitle?: string;
   rangeLabel?: string;
-  /** Total count displayed as "X–Y of Z". Shown alongside rangeLabel when provided. */
   totalCount?: number;
 }
 
