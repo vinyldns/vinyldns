@@ -128,7 +128,10 @@
                             </tr>
                             </thead>
                             <tbody>
-                            <tr ng-repeat="change in batch.changes|filter:query" ng-class="{changeError: change.outstandingErrors}">
+                            <tr ng-repeat="change in batch.changes|filter:query as filteredChanges" 
+                                ng-hide="change.type=='TXT' && $index > 0 && filteredChanges[$index - 1].zoneId === change.zoneId && filteredChanges[$index - 1].recordName === change.recordName
+                                 && filteredChanges[$index - 1].type === change.type && filteredChanges[$index - 1].changeType === change.changeType"
+                                ng-class="{changeError: change.outstandingErrors}">
                                 <td ng-bind="change.changeType"></td>
                                 <td class="wrap-long-text">{{change.inputName}}</td>
                                 <td class="wrap-long-text">{{change.recordName}}</td>
@@ -145,7 +148,11 @@
                                         {{change.record.ptrdname}}
                                     </td>
                                     <td ng-if="change.type=='TXT'" class="wrap-long-text">
-                                        {{change.record.text}}
+                                        <ul class="table-cell-list">
+                                        <li class="wrap-long-text" ng-repeat="text in txtRecordGroups[getTxtGroupKey(change)] track by $index">
+                                            {{text}}
+                                        </li>
+                                        </ul>
                                     </td>
                                     <td ng-if="change.type=='MX'">
                                         <ul>
