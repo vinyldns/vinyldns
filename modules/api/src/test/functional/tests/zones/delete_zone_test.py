@@ -17,18 +17,7 @@ def test_delete_zone_success(shared_zone_test_context):
             "name": zone_name,
             "email": "test@test.com",
             "adminGroupId": shared_zone_test_context.ok_group["id"],
-            "connection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            },
-            "transferConnection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            }
+            "backendId": "func-test-backend"
         }
         result = client.create_zone(zone, status=202)
         result_zone = result["zone"]
@@ -58,18 +47,7 @@ def test_delete_zone_twice(shared_zone_test_context):
             "name": zone_name,
             "email": "test@test.com",
             "adminGroupId": shared_zone_test_context.ok_group["id"],
-            "connection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            },
-            "transferConnection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            }
+            "backendId": "func-test-backend"
         }
         result = client.create_zone(zone, status=202)
         result_zone = result["zone"]

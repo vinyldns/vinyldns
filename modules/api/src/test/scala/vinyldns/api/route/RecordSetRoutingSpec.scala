@@ -736,6 +736,7 @@ class RecordSetRoutingSpec
 
     def getRecordSetChange(
                             zoneId: String,
+                            rsId: String,
                             changeId: String,
                             authPrincipal: AuthPrincipal
                           ): Result[RecordSetChange] = {
@@ -743,7 +744,12 @@ class RecordSetRoutingSpec
         case "changeNotFound" => Left(RecordSetChangeNotFoundError(""))
         case "zoneNotFound" => Left(ZoneNotFoundError(""))
         case "forbidden" => Left(NotAuthorizedError(""))
-        case _ => Right(rsChange1)
+        case _ =>
+          if (rsId == "test") {
+            Right(rsChange1)
+          } else {
+            Left(RecordSetNotFoundError(s"RecordSet with id $rsId does not exist."))
+          }
       }
     }.toResult
 
@@ -786,7 +792,7 @@ class RecordSetRoutingSpec
       }
     }.toResult
 
-  }
+}
 
   val recordSetService: RecordSetServiceAlgebra = new TestService
 
@@ -877,6 +883,12 @@ class RecordSetRoutingSpec
 
     "return a 404 Not Found when the change doesn't exist" in {
       Get(s"/zones/${okZone.id}/recordsets/test/changes/changeNotFound") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
+    }
+
+    "return a 404 Not Found when the change exists for a different record set" in {
+      Get(s"/zones/${okZone.id}/recordsets/differentRecordSetId/changes/good") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }

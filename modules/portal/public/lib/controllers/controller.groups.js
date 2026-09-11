@@ -74,7 +74,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         return true;
     };
     // Autocomplete for group search
-    $("#group-search-text").autocomplete({
+    var groupSearch = $("#group-search-text").autocomplete({
       source: function( request, response ) {
         $.ajax({
           url: "/api/groups?maxItems=100&abridged=true",
@@ -102,14 +102,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
       }
     });
 
-    // Autocomplete text-highlight
-    $.ui.autocomplete.prototype._renderItem = function(ul, item) {
-            let txt = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
-            return $("<li></li>")
-                  .data("ui-autocomplete-item", item.value)
-                  .append("<div>" + txt + "</div>")
-                  .appendTo(ul);
-    };
+    vinyldnsAutocomplete.applyRenderer(groupSearch);
 
     $scope.createGroup = function (name, email, description) {
         //prevent user executing service call multiple times
