@@ -334,6 +334,15 @@ export function GroupDetailPage() {
     });
   })();
 
+  const formatChangeTime = (value?: string) => {
+    if (!value) return { date: "—", time: "" };
+    const d = new Date(value);
+    return {
+      date: d.toLocaleDateString("en-GB"),
+      time: d.toLocaleTimeString("en-GB", { hour12: false }),
+    };
+  };
+
   return (
     <div>
       {/* ── Page header ── */}
@@ -674,12 +683,13 @@ export function GroupDetailPage() {
                               new Date(b.created).getTime())
                           : 0,
                       )
-                      .map((change: GroupChange) => (
+                      .map((change: GroupChange) => {
+                        const ts = formatChangeTime(change.created);
+                        return (
                         <tr key={change.id}>
-                          <td className="vds-table-secondary vds-table-nowrap">
-                            {change.created
-                              ? new Date(change.created).toLocaleString()
-                              : "—"}
+                          <td className="vds-table-secondary">
+                            <div className="vds-change-time-date">{ts.date},</div>
+                            <div className="vds-change-time-clock">{ts.time}</div>
                           </td>
                           <td className="vds-table-muted vds-table-mono">
                             {change.id}
@@ -691,13 +701,6 @@ export function GroupDetailPage() {
                               {change.changeType}
                             </span>
                           </td>
-                          <td
-                            className="vds-table-secondary"
-                            style={{ maxWidth: 280 }}
-                          >
-                            {change.changeType}
-                          </span>
-                        </td>
                         <td className="vds-table-secondary">
                           {change.groupChangeMessage
                             ? change.groupChangeMessage.split('. ').filter(Boolean).map((sentence, i) => (
@@ -729,7 +732,8 @@ export function GroupDetailPage() {
                         </td>
                         <td className="vds-table-secondary">{change.userName ?? change.userId}</td>
                       </tr>
-                    ))}
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>

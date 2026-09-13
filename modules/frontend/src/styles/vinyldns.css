@@ -2279,11 +2279,11 @@ h1.h3 {
 }
 .vds-group-members-table thead th:nth-child(3),
 .vds-group-members-table tbody td:nth-child(3) {
-  width: 28%;
+  width: 24%;
 }
 .vds-group-members-table thead th:nth-child(4),
 .vds-group-members-table tbody td:nth-child(4) {
-  width: 14%;
+  width: 18%;
 }
 .vds-group-members-table thead th:nth-child(5),
 .vds-group-members-table tbody td:nth-child(5) {
@@ -2324,6 +2324,14 @@ h1.h3 {
 .vds-group-changes-table .vds-history-btn {
   white-space: normal;
   line-height: 1.2;
+}
+.vds-group-changes-table .vds-change-time-date,
+.vds-group-changes-table .vds-change-time-clock {
+  line-height: 1.2;
+}
+.vds-group-changes-table .vds-change-time-clock {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
 }
 
 @media (max-width: 992px) {
@@ -4761,13 +4769,109 @@ h1.h3 {
 .vds-recent-changes-panel__header {
   display: flex;
   align-items: center;
-  padding: 6px 16px;
+  padding: 3px 16px;
   font-size: 0.82rem;
   font-weight: 700;
   color: #3c5a80;
   background: linear-gradient(90deg, #f0f4fb 0%, #f7f9fd 100%);
   border-bottom: 1px solid var(--vds-card-border, #e3e8f0);
   letter-spacing: 0.02em;
+}
+
+/* Zone Detail: record changes table uses balanced column widths and wraps
+   long additional-info text without squeezing other columns. */
+.vds-zone-record-changes-table {
+  table-layout: fixed;
+}
+.vds-zone-record-changes-table thead th,
+.vds-zone-record-changes-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.vds-zone-record-changes-table thead th:nth-child(1),
+.vds-zone-record-changes-table tbody td:nth-child(1) {
+  width: 14%;
+}
+.vds-zone-record-changes-table thead th:nth-child(2),
+.vds-zone-record-changes-table tbody td:nth-child(2) {
+  width: 17%;
+}
+.vds-zone-record-changes-table thead th:nth-child(3),
+.vds-zone-record-changes-table tbody td:nth-child(3) {
+  width: 10%;
+}
+.vds-zone-record-changes-table thead th:nth-child(4),
+.vds-zone-record-changes-table tbody td:nth-child(4) {
+  width: 14%;
+}
+.vds-zone-record-changes-table thead th:nth-child(5),
+.vds-zone-record-changes-table tbody td:nth-child(5) {
+  width: 10%;
+}
+.vds-zone-record-changes-table thead th:nth-child(6),
+.vds-zone-record-changes-table tbody td:nth-child(6) {
+  width: 10%;
+}
+.vds-zone-record-changes-table thead th:nth-child(7),
+.vds-zone-record-changes-table tbody td:nth-child(7) {
+  width: 25%;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Zone Detail: zone change history table responsive sizing and stacked date/time. */
+.vds-zone-change-history-table {
+  table-layout: fixed;
+  min-width: 860px;
+}
+.vds-zone-change-history-table thead th:nth-child(1),
+.vds-zone-change-history-table tbody td:nth-child(1) {
+  width: 13%;
+}
+.vds-zone-change-history-table thead th:nth-child(2),
+.vds-zone-change-history-table tbody td:nth-child(2) {
+  width: 14%;
+}
+.vds-zone-change-history-table thead th:nth-child(3),
+.vds-zone-change-history-table tbody td:nth-child(3) {
+  width: 10%;
+}
+.vds-zone-change-history-table thead th:nth-child(4),
+.vds-zone-change-history-table tbody td:nth-child(4),
+.vds-zone-change-history-table thead th:nth-child(5),
+.vds-zone-change-history-table tbody td:nth-child(5) {
+  width: 11%;
+}
+.vds-zone-change-history-table thead th:nth-child(6),
+.vds-zone-change-history-table tbody td:nth-child(6) {
+  width: 14%;
+}
+.vds-zone-change-history-table thead th:nth-child(7),
+.vds-zone-change-history-table tbody td:nth-child(7) {
+  width: 14%;
+}
+.vds-zone-change-history-table thead th:nth-child(8),
+.vds-zone-change-history-table tbody td:nth-child(8) {
+  width: 13%;
+}
+.vds-zone-change-datetime {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.vds-zone-change-datetime__date {
+  font-weight: 400;
+  color: #5f7592;
+}
+.vds-zone-change-datetime__time {
+  color: #5f7592;
+}
+[data-vds-theme="dark"] .vds-zone-change-datetime__date {
+  color: #8eabd2;
+}
+[data-vds-theme="dark"] .vds-zone-change-datetime__time {
+  color: #8eabd2;
 }
 
 /* Spin animation for sync button */

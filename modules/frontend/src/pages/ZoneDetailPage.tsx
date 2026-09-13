@@ -14,34 +14,39 @@
  * limitations under the License.
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { GroupCombobox } from '../components/zones/GroupCombobox';
-import { useBreadcrumbs } from '../contexts/BreadcrumbContext';
-import { useProfile } from '../contexts/ProfileContext';
-import { zonesService } from '../services/zonesService';
-import { recordsService } from '../services/recordsService';
-import { groupsService } from '../services/groupsService';
-import { profileService } from '../services/profileService';
-import api from '../services/api';
-import { RecordsTable } from '../components/records/RecordsTable';
-import { RecordForm } from '../components/records/RecordForm';
-import { Pagination } from '../components/common/Pagination';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
-import { TimeFilterDropdown } from '../components/common/TimeFilterDropdown';
-import type { TimeRange } from '../components/common/TimeFilterDropdown';
-import { useZoneRecords } from '../hooks/useRecords';
-import { usePaging } from '../hooks/usePaging';
-import { formatDateTime } from '../utils/dateUtils';
-import type { Zone, AclRule } from '../types/zone';
-import type { RecordSet } from '../types/record';
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { GroupCombobox } from "../components/zones/GroupCombobox";
+import { useBreadcrumbs } from "../contexts/BreadcrumbContext";
+import { useProfile } from "../contexts/ProfileContext";
+import { zonesService } from "../services/zonesService";
+import { recordsService } from "../services/recordsService";
+import { groupsService } from "../services/groupsService";
+import { profileService } from "../services/profileService";
+import api from "../services/api";
+import { RecordsTable } from "../components/records/RecordsTable";
+import { RecordForm } from "../components/records/RecordForm";
+import { Pagination } from "../components/common/Pagination";
+import { LoadingSpinner } from "../components/common/LoadingSpinner";
+import { TimeFilterDropdown } from "../components/common/TimeFilterDropdown";
+import type { TimeRange } from "../components/common/TimeFilterDropdown";
+import { useZoneRecords } from "../hooks/useRecords";
+import { usePaging } from "../hooks/usePaging";
+import { formatDateTime } from "../utils/dateUtils";
+import type { Zone, AclRule } from "../types/zone";
+import type { RecordSet } from "../types/record";
 
-type DetailTab = 'records' | 'recordChanges' | 'zoneChanges' | 'zone';
+type DetailTab = "records" | "recordChanges" | "zoneChanges" | "zone";
 
-const inRange = (dateStr: string | undefined, range: TimeRange, from: string, to: string): boolean => {
-  if (range === 'all') return true;
-  if (!dateStr) return false;  
+const inRange = (
+  dateStr: string | undefined,
+  range: TimeRange,
+  from: string,
+  to: string,
+): boolean => {
+  if (range === "all") return true;
+  if (!dateStr) return true;
   const ts = new Date(dateStr).getTime();
   const now = Date.now();
   if (range === "1d") return ts >= now - 86400000;
@@ -109,6 +114,28 @@ const changeStatusClass = (status: string) => {
   if (status === "Complete") return "vds-zone-status-badge--active";
   if (status === "Failed") return "vds-zone-status-badge--deleted";
   return "vds-zone-status-badge--pending";
+};
+
+const formatDateTimeStack = (dateStr?: string): React.ReactNode => {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return "—";
+  const datePart = d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const timePart = d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  return (
+    <span className="vds-zone-change-datetime">
+      <span className="vds-zone-change-datetime__date">{datePart}</span>
+      <span className="vds-zone-change-datetime__time">{timePart}</span>
+    </span>
+  );
 };
 
 export function ZoneDetailPage() {
@@ -313,9 +340,13 @@ export function ZoneDetailPage() {
   });
 
   const {
-    records, isLoading: recordsLoading, isFetching: recordsFetching,
-    nextPage: recordsNext, prevPage: recordsPrev,
-    nextPageEnabled: recNextEnabled, prevPageEnabled: recPrevEnabled,
+    records,
+    isLoading: recordsLoading,
+    isFetching: recordsFetching,
+    nextPage: recordsNext,
+    prevPage: recordsPrev,
+    nextPageEnabled: recNextEnabled,
+    prevPageEnabled: recPrevEnabled,
     getPanelTitle: recPanelTitle,
     search: searchRecords,
     refetch: refetchRecords,
@@ -1308,7 +1339,7 @@ export function ZoneDetailPage() {
                               <td><span className={`vds-change-badge vds-change-badge--${c.changeType.toLowerCase()}`}>{c.changeType}</span></td>
                               <td><span className={`vds-zone-status-badge ${changeStatusClass(c.status)}`}>{c.status}</span></td>
                               <td className="vds-table-secondary vds-table-nowrap small">{c.userName ?? c.userId}</td>
-                              <td className="vds-table-secondary vds-table-nowrap small vds-date-wrap">{formatDateTime(c.created)}</td>
+                              <td className="vds-table-secondary small vds-date-wrap">{formatDateTimeStack(c.created)}</td>
                               <td className="small">
                                 {c.changeType === 'Create' && (
                                   <button
@@ -1698,11 +1729,15 @@ export function ZoneDetailPage() {
                   </div>
                 )}
                 <RecordsTable
-                  records={records.filter((r) =>
-                    (!statusFilter || r.status === statusFilter) &&
-                    (ttlFilter === null || r.ttl === ttlFilter)
+                  records={records.filter(
+                    (r) =>
+                      (!statusFilter || r.status === statusFilter) &&
+                      (ttlFilter === null || r.ttl === ttlFilter),
                   )}
-                  onEdit={(rec) => { setEditRecord(rec); setShowRecordForm(false); }}
+                  onEdit={(rec) => {
+                    setEditRecord(rec);
+                    setShowRecordForm(false);
+                  }}
                   onDelete={setRecordToDelete}
                   isSharedZone={zoneData.shared ?? false}
                   isSuper={isSuper}
@@ -1710,21 +1745,29 @@ export function ZoneDetailPage() {
                   isZoneAdmin={isZoneAdmin}
                   userGroupIds={userGroupIds}
                   onRequestOwnership={(rec) => {
-                    const mode = rec.ownerGroupId ? 'request' : 'claim';
-                    setOwnershipGroupId('');
+                    const mode = rec.ownerGroupId ? "request" : "claim";
+                    setOwnershipGroupId("");
                     setOwnershipModal({ mode, record: rec });
                   }}
-                  onCloseOwnershipRequest={(rec) => cancelOwnershipRequestMutation.mutate(rec)}
-                  onApproveOwnership={(rec) => approveOwnershipMutation.mutate(rec)}
+                  onCloseOwnershipRequest={(rec) =>
+                    cancelOwnershipRequestMutation.mutate(rec)
+                  }
+                  onApproveOwnership={(rec) =>
+                    approveOwnershipMutation.mutate(rec)
+                  }
                   onRejectOwnership={(rec) => rejectOwnershipMutation.mutate(rec)}
                 />
               </div>
-              {false && (recNextEnabled || recPrevEnabled) && (
-                <Pagination onPrev={recordsPrev} onNext={recordsNext}
-                  prevEnabled={recPrevEnabled} nextEnabled={recNextEnabled}
-                  panelTitle={recPanelTitle()} />
-              )}
-            </>
+                {false && (recNextEnabled || recPrevEnabled) && (
+                  <Pagination
+                    onPrev={recordsPrev}
+                    onNext={recordsNext}
+                    prevEnabled={recPrevEnabled}
+                    nextEnabled={recNextEnabled}
+                    panelTitle={recPanelTitle()}
+                  />
+                )}
+              </>
           )}
 
           {/* Delete modal */}
@@ -2024,7 +2067,11 @@ export function ZoneDetailPage() {
                 />
                 <button
                   className="btn btn-sm vds-btn-flat d-flex align-items-center gap-1"
-                  onClick={() => runWithRecordFormGuard(() => void queryClient.invalidateQueries({ queryKey: ['record-changes', id] }))}
+                  onClick={() =>
+                    void queryClient.invalidateQueries({
+                      queryKey: ["record-changes", id],
+                    })
+                  }
                 >
                   <i className="bi bi-arrow-clockwise" />
                   <span className="vds-btn-flat__label">Refresh</span>
@@ -2032,7 +2079,7 @@ export function ZoneDetailPage() {
               </div>
             </div>
             <div className="vds-zones-table-wrap">
-              <table className="vds-zones-table">
+              <table className="vds-zones-table vds-zone-record-changes-table">
                 <thead>
                   <tr>
                     <th
@@ -2045,14 +2092,10 @@ export function ZoneDetailPage() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      Time <SortArrow dir={rcTimeSort} />
+                      Date & Time <SortArrow dir={rcTimeSort} />
                     </th>
                     <th>Recordset Name</th>
-                    <th>
-                      RECORDSET
-                      <br />
-                      TYPE
-                    </th>
+                    <th>Recordset <br />Type</th>
                     <th>Change Type</th>
                     <th>User</th>
                     <th>Status</th>
@@ -2061,36 +2104,10 @@ export function ZoneDetailPage() {
                 </thead>
                 <tbody>
                   {!rcData?.recordSetChanges?.length ? (
-                    <tr><td colSpan={7} className="text-center text-muted py-5">
-                      <i className="bi bi-clock-history fs-3 d-block mb-2 opacity-25" />
-                      No record changes found.
-                    </td></tr>
-                  ) : [...(rcData.recordSetChanges)]
-                      .filter((c) => inRange(c.created, rcTimeRange, rcDateFrom, rcDateTo))
-                      .sort((a, b) => rcTimeSort
-                        ? (rcTimeSort === 'asc' ? 1 : -1) * (new Date(a.created).getTime() - new Date(b.created).getTime())
-                        : 0)
-                      .map((c) => (
-                    <tr key={c.id}>
-                      <td className="vds-table-secondary vds-table-nowrap small vds-date-wrap">{formatDateTime(c.created)}</td>
-                      <td className="fw-semibold vds-table-primary">{c.recordSet.name}</td>
-                      <td className="vds-table-secondary fw-semibold">{c.recordSet.type}</td>
-                      <td>
-                        <div className="d-flex align-items-center gap-1 flex-wrap">
-                          <span className={`vds-change-badge vds-change-badge--${c.changeType.toLowerCase()}`}>{c.changeType}</span>
-                          <button
-                            className="vds-copy-id-btn"
-                            title="Copy change ID"
-                            onClick={() => {
-                              void navigator.clipboard.writeText(c.id);
-                              setCopiedRcChangeId(c.id);
-                              setTimeout(() => setCopiedRcChangeId(null), 1800);
-                            }}
-                          >
-                            <i className={`bi ${copiedRcChangeId === c.id ? 'bi-check-lg' : 'bi-clipboard'}`}
-                              style={{ color: copiedRcChangeId === c.id ? '#22c55e' : undefined }} />
-                          </button>
-                        </div>
+                    <tr>
+                      <td colSpan={7} className="text-center text-muted py-5">
+                        <i className="bi bi-clock-history fs-3 d-block mb-2 opacity-25" />
+                        No record changes found.
                       </td>
                     </tr>
                   ) : (
@@ -2107,16 +2124,14 @@ export function ZoneDetailPage() {
                       )
                       .map((c) => (
                         <tr key={c.id}>
-                          <td className="vds-table-secondary vds-table-nowrap small">
-                            {formatDateTime(c.created)}
+                          <td className="vds-table-secondary small">
+                            {formatDateTimeStack(c.created)}
                           </td>
                           <td className="fw-semibold vds-table-primary">
                             {c.recordSet.name}
                           </td>
-                          <td>
-                            <span className="vds-record-type-badge">
-                              {c.recordSet.type}
-                            </span>
+                          <td className="vds-table-secondary fw-semibold vds-table-nowrap">
+                            {c.recordSet.type}
                           </td>
                           <td>
                             <div className="d-flex align-items-center gap-1 flex-wrap">
@@ -2165,23 +2180,72 @@ export function ZoneDetailPage() {
                                 {c.systemMessage}
                               </div>
                             )}
-                            {c.changeType === 'Update' && (<>
-                              <button className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                onClick={() => setViewingRecordSet({ label: 'New Record Set', rs: c.recordSet })}>
-                                <i className="bi bi-eye" />View new recordset
-                              </button>
-                              {c.updates?.recordSet && (
-                                <button className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                  onClick={() => setViewingRecordSet({ label: 'Old Record Set', rs: c.updates!.recordSet! })}>
-                                  <i className="bi bi-clock-history" />View old recordset
-                                </button>
-                              )}
-                            </>)}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                            {c.status !== "Failed" && (
+                              <div className="d-flex flex-column gap-1">
+                                {c.changeType === "Create" && (
+                                  <button
+                                    className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                    onClick={() =>
+                                      setViewingRecordSet({
+                                        label: "Created Record Set",
+                                        rs: c.recordSet,
+                                      })
+                                    }
+                                  >
+                                    <i className="bi bi-eye" />
+                                    View created recordset
+                                  </button>
+                                )}
+                                {c.changeType === "Delete" && (
+                                  <button
+                                    className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                    onClick={() =>
+                                      setViewingRecordSet({
+                                        label: "Deleted Record Set",
+                                        rs: c.recordSet,
+                                      })
+                                    }
+                                  >
+                                    <i className="bi bi-clock-history" />
+                                    View deleted recordset
+                                  </button>
+                                )}
+                                {c.changeType === "Update" && (
+                                  <>
+                                    <button
+                                      className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                      onClick={() =>
+                                        setViewingRecordSet({
+                                          label: "New Record Set",
+                                          rs: c.recordSet,
+                                        })
+                                      }
+                                    >
+                                      <i className="bi bi-eye" />
+                                      View new recordset
+                                    </button>
+                                    {c.updates?.recordSet && (
+                                      <button
+                                        className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                        onClick={() =>
+                                          setViewingRecordSet({
+                                            label: "Old Record Set",
+                                            rs: c.updates!.recordSet!,
+                                          })
+                                        }
+                                      >
+                                        <i className="bi bi-clock-history" />
+                                        View old recordset
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -2190,8 +2254,7 @@ export function ZoneDetailPage() {
                 prevEnabled={rcPrevEnabled} nextEnabled={rcNextEnabled} panelTitle={rcPanelTitle()} />
             )}
           </div>
-        )
-      )}
+        ))}
 
       {/* ── Zone Change History ── */}
       {activeTab === "zoneChanges" &&
@@ -2221,7 +2284,7 @@ export function ZoneDetailPage() {
               </div>
             </div>
             <div className="vds-zones-table-wrap">
-              <table className="vds-zones-table">
+              <table className="vds-zones-table vds-zone-change-history-table">
                 <thead>
                   <tr>
                     <th>User Name</th>
@@ -2292,59 +2355,108 @@ export function ZoneDetailPage() {
                         return 0;
                       })
                       .map((c) => (
-                    <tr key={c.id}>
-                      <td className="vds-table-secondary small">
-                        {c.userId === 'system'
-                          ? <span className="vds-table-mono" style={{ fontSize: '0.75rem', opacity: 0.7 }}>system</span>
-                          : (zcUserNames[c.userId] ?? c.userId)}
-                      </td>
-                      <td className="vds-table-secondary small">{c.zone.email}</td>
-                      <td>
-                        <span className={`vds-access-badge ${c.zone.shared ? 'vds-access-badge--shared' : 'vds-access-badge--private'}`}>
-                          <i className={`bi ${c.zone.shared ? 'bi-share-fill' : 'bi-lock-fill'} me-1`} style={{ fontSize: '0.6rem' }} />
-                          {c.zone.shared ? 'Shared' : 'Private'}
-                        </span>
-                      </td>
-                      <td className="vds-table-secondary vds-table-nowrap small vds-date-wrap">{c.zone.created ? formatDateTime(c.zone.created) : '—'}</td>
-                      <td className="vds-table-secondary vds-table-nowrap small vds-date-wrap">{c.zone.updated ? formatDateTime(c.zone.updated) : '—'}</td>
-                      <td>
-                        <div className="d-flex align-items-center gap-1 flex-wrap">
-                          <span className={`vds-change-badge vds-change-badge--${c.changeType === 'AutomatedSync' ? 'sync' : c.changeType.toLowerCase()}`}>
-                            {c.changeType === 'AutomatedSync' ? 'Automated Sync' : c.changeType}
-                          </span>
-                          <button
-                            className="vds-copy-id-btn"
-                            title={`Copy change ID`}
-                            onClick={() => {
-                              void navigator.clipboard.writeText(c.id);
-                              setCopiedChangeId(c.id);
-                              setTimeout(() => setCopiedChangeId(null), 1800);
-                            }}
-                          >
-                            <i className={`bi ${copiedChangeId === c.id ? 'bi-check-lg' : 'bi-clipboard'}`}
-                              style={{ color: copiedChangeId === c.id ? '#22c55e' : undefined }} />
-                          </button>
-                        </div>
-                      </td>
-                      <td className="small">
-                        {zcGroupNames[c.zone.adminGroupId]
-                          ? <Link to={`/groups/${c.zone.adminGroupId}`} className="vds-table-link">{zcGroupNames[c.zone.adminGroupId]}</Link>
-                          : c.zone.adminGroupId
-                            ? <Link to={`/groups/${c.zone.adminGroupId}`} className="vds-table-link vds-table-mono" style={{ fontSize: '0.75rem' }}>{c.zone.adminGroupId}</Link>
-                            : <span className="vds-table-secondary">—</span>}
-                      </td>
-                      <td>
-                        {(c.zone.acl?.rules?.length ?? 0) > 0 && (
-                          <button
-                            className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                            onClick={() => setAclModal({ rules: c.zone.acl!.rules })}
-                          >
-                            <i className="bi bi-shield-lock" />ACL Rules
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                        <tr key={c.id}>
+                          <td className="vds-table-secondary small">
+                            {c.userId === "system" ? (
+                              <span
+                                className="vds-table-mono"
+                                style={{ fontSize: "0.75rem", opacity: 0.7 }}
+                              >
+                                system
+                              </span>
+                            ) : (
+                              (zcUserNames[c.userId] ?? c.userId)
+                            )}
+                          </td>
+                          <td className="vds-table-secondary small">
+                            {c.zone.email}
+                          </td>
+                          <td>
+                            <span
+                              className={`vds-access-badge ${c.zone.shared ? "vds-access-badge--shared" : "vds-access-badge--private"}`}
+                            >
+                              <i
+                                className={`bi ${c.zone.shared ? "bi-share-fill" : "bi-lock-fill"} me-1`}
+                                style={{ fontSize: "0.6rem" }}
+                              />
+                              {c.zone.shared ? "Shared" : "Private"}
+                            </span>
+                          </td>
+                          <td className="vds-table-secondary small">
+                            {formatDateTimeStack(c.zone.created)}
+                          </td>
+                          <td className="vds-table-secondary small">
+                            {formatDateTimeStack(c.zone.updated)}
+                          </td>
+                          <td>
+                            <div className="d-flex align-items-center gap-1 flex-wrap">
+                              <span
+                                className={`vds-change-badge vds-change-badge--${c.changeType === "AutomatedSync" ? "sync" : c.changeType.toLowerCase()}`}
+                              >
+                                {c.changeType === "AutomatedSync"
+                                  ? "Automated Sync"
+                                  : c.changeType}
+                              </span>
+                              <button
+                                className="vds-copy-id-btn"
+                                title={`Copy change ID`}
+                                onClick={() => {
+                                  void navigator.clipboard.writeText(c.id);
+                                  setCopiedChangeId(c.id);
+                                  setTimeout(
+                                    () => setCopiedChangeId(null),
+                                    1800,
+                                  );
+                                }}
+                              >
+                                <i
+                                  className={`bi ${copiedChangeId === c.id ? "bi-check-lg" : "bi-clipboard"}`}
+                                  style={{
+                                    color:
+                                      copiedChangeId === c.id
+                                        ? "#22c55e"
+                                        : undefined,
+                                  }}
+                                />
+                              </button>
+                            </div>
+                          </td>
+                          <td className="small">
+                            {zcGroupNames[c.zone.adminGroupId] ? (
+                              <Link
+                                to={`/groups/${c.zone.adminGroupId}`}
+                                className="vds-table-link"
+                              >
+                                {zcGroupNames[c.zone.adminGroupId]}
+                              </Link>
+                            ) : c.zone.adminGroupId ? (
+                              <Link
+                                to={`/groups/${c.zone.adminGroupId}`}
+                                className="vds-table-link vds-table-mono"
+                                style={{ fontSize: "0.75rem" }}
+                              >
+                                {c.zone.adminGroupId}
+                              </Link>
+                            ) : (
+                              <span className="vds-table-secondary">—</span>
+                            )}
+                          </td>
+                          <td>
+                            {(c.zone.acl?.rules?.length ?? 0) > 0 && (
+                              <button
+                                className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                onClick={() =>
+                                  setAclModal({ rules: c.zone.acl!.rules })
+                                }
+                              >
+                                <i className="bi bi-shield-lock" />
+                                ACL Rules
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -2376,7 +2488,7 @@ export function ZoneDetailPage() {
           )}
 
           {/* ── Zone Info Panel ── */}
-          <div className="vds-recent-changes-panel mb-3">
+          <div className="vds-recent-changes-panel mb-4">
             <div className="vds-recent-changes-panel__header">
               <i className="bi bi-info-circle me-2" />
               Zone Info
@@ -2397,7 +2509,11 @@ export function ZoneDetailPage() {
               <div className="ms-auto d-flex align-items-center gap-2">
                 <button
                   className="btn btn-sm vds-btn-flat d-flex align-items-center gap-1"
-                  onClick={() => runWithRecordFormGuard(() => void queryClient.invalidateQueries({ queryKey: ['zone', id] }))}
+                  onClick={() =>
+                    void queryClient.invalidateQueries({
+                      queryKey: ["zone", id],
+                    })
+                  }
                 >
                   <i className="bi bi-arrow-clockwise" />
                   <span className="vds-btn-flat__label">Refresh</span>
@@ -2416,26 +2532,126 @@ export function ZoneDetailPage() {
             </div>
 
             {zoneInfoOpen && (
-            <div className="p-2">
-              {!isZoneAdmin && zoneData && (
-                <div className="row g-4">
-                  {[
-                    { icon: 'bi-tag', label: 'Zone ID', value: zoneData.id, mono: true, copy: true },
-                    { icon: 'bi-envelope', label: 'Zone Email', value: zoneData.email },
-                    { icon: 'bi-circle-half', label: 'Status', value: zoneData.status, badge: true },
-                    { icon: 'bi-share-fill', label: 'Access', value: zoneData.shared ? 'Shared' : 'Private' },
-                    { icon: 'bi-server', label: 'DNS Backend ID', value: zoneData.backendId ?? '—', mono: true },
-                    { icon: 'bi-calendar3', label: 'Created', value: zoneData.created ? formatDateTime(zoneData.created) : '—' },
-                    { icon: 'bi-pencil-square', label: 'Latest Update', value: zoneData.updated ? formatDateTime(zoneData.updated) : '—' },
-                    { icon: 'bi-arrow-clockwise', label: 'Latest Sync', value: zoneData.latestSync ? formatDateTime(zoneData.latestSync) : '—' },
-                  ].map(field => (
-                    <div key={field.label} className="col-sm-6 col-lg-4 col-xl-3">
-                      <div className="vds-zone-info-card">
-                        <div className="vds-zone-info-card__icon"><i className={`bi ${field.icon}`} /></div>
-                        <div className="vds-zone-info-card__label">{field.label}</div>
-                        {field.badge ? (
-                          <span className={`vds-zone-status-badge ${statusClass(field.value)}`}>{field.value}</span>
-                        ) : field.copy ? (
+              <div className="p-2">
+                {!isZoneAdmin && zoneData && (
+                  <div className="row g-4">
+                    {[
+                      {
+                        icon: "bi-tag",
+                        label: "Zone ID",
+                        value: zoneData.id,
+                        mono: true,
+                        copy: true,
+                      },
+                      {
+                        icon: "bi-envelope",
+                        label: "Zone Email",
+                        value: zoneData.email,
+                      },
+                      {
+                        icon: "bi-circle-half",
+                        label: "Status",
+                        value: zoneData.status,
+                        badge: true,
+                      },
+                      {
+                        icon: "bi-share-fill",
+                        label: "Access",
+                        value: zoneData.shared ? "Shared" : "Private",
+                      },
+                      {
+                        icon: "bi-server",
+                        label: "DNS Backend ID",
+                        value: zoneData.backendId ?? "—",
+                        mono: true,
+                      },
+                      {
+                        icon: "bi-calendar3",
+                        label: "Created",
+                        value: zoneData.created
+                          ? formatDateTime(zoneData.created)
+                          : "—",
+                      },
+                      {
+                        icon: "bi-pencil-square",
+                        label: "Latest Update",
+                        value: zoneData.updated
+                          ? formatDateTime(zoneData.updated)
+                          : "—",
+                      },
+                      {
+                        icon: "bi-arrow-clockwise",
+                        label: "Latest Sync",
+                        value: zoneData.latestSync
+                          ? formatDateTime(zoneData.latestSync)
+                          : "—",
+                      },
+                    ].map((field) => (
+                      <div
+                        key={field.label}
+                        className="col-sm-6 col-lg-4 col-xl-3"
+                      >
+                        <div className="vds-zone-info-card">
+                          <div className="vds-zone-info-card__icon">
+                            <i className={`bi ${field.icon}`} />
+                          </div>
+                          <div className="vds-zone-info-card__label">
+                            {field.label}
+                          </div>
+                          {field.badge ? (
+                            <span
+                              className={`vds-zone-status-badge ${statusClass(field.value)}`}
+                            >
+                              {field.value}
+                            </span>
+                          ) : field.copy ? (
+                            <div
+                              className="vds-zone-info-card__value vds-zone-info-card__value--clickable"
+                              title="Click to copy"
+                              onClick={() => {
+                                void navigator.clipboard.writeText(field.value);
+                                setCopiedZoneId(true);
+                                setTimeout(() => setCopiedZoneId(false), 1800);
+                              }}
+                            >
+                              <span
+                                style={{
+                                  fontFamily: "monospace",
+                                  fontSize: "0.78rem",
+                                  wordBreak: "break-all",
+                                }}
+                              >
+                                {field.value}
+                              </span>
+                              <i
+                                className={`bi ${copiedZoneId ? "bi-check-lg text-success" : "bi-clipboard"} ms-1`}
+                                style={{ fontSize: "0.7rem", opacity: 0.6 }}
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              className={`vds-zone-info-card__value${field.mono ? " vds-table-mono" : ""}`}
+                            >
+                              {field.value}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* ─── EDITABLE view (zone admin) ─── */}
+                {isZoneAdmin && zoneFormData && (
+                  <>
+                    <div className="row g-3 mb-3">
+                      {/* ── Left column ── */}
+                      <div className="col-lg-6">
+                        {/* Zone ID (read-only, copyable) */}
+                        <div className="mb-2">
+                          <label className="vds-zone-form__label">
+                            Zone ID
+                          </label>
                           <div
                             className="form-control vds-zone-form__input d-flex align-items-center justify-content-between"
                             style={{
@@ -2463,36 +2679,6 @@ export function ZoneDetailPage() {
                               style={{ fontSize: "0.75rem", opacity: 0.6 }}
                             />
                           </div>
-                        ) : (
-                          <div className={`vds-zone-info-card__value${field.mono ? ' vds-table-mono' : ''}${field.label === 'Created' || field.label === 'Latest Update' || field.label === 'Latest Sync' ? ' vds-date-wrap' : ''}`}>{field.value}</div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* ─── EDITABLE view (zone admin) ─── */}
-              {isZoneAdmin && zoneFormData && (
-                <>
-                  <div className="row g-3 mb-3">
-                    {/* ── Left column ── */}
-                    <div className="col-lg-6">
-                      {/* Zone ID (read-only, copyable) */}
-                      <div className="mb-3">
-                        <label className="vds-zone-form__label">Zone ID</label>
-                        <div
-                          className="form-control vds-zone-form__input d-flex align-items-center justify-content-between"
-                          style={{ cursor: 'pointer', userSelect: 'none', background: '#f4f7fb' }}
-                          title="Click to copy Zone ID"
-                          onClick={() => {
-                            void navigator.clipboard.writeText(zoneFormData.id);
-                            setCopiedZoneId(true);
-                            setTimeout(() => setCopiedZoneId(false), 1800);
-                          }}
-                        >
-                          <span className="vds-table-mono" style={{ fontSize: '0.82rem', opacity: 0.8 }}>{zoneFormData.id}</span>
-                          <i className={`bi ${copiedZoneId ? 'bi-check-lg text-success' : 'bi-clipboard'}`} style={{ fontSize: '0.75rem', opacity: 0.6 }} />
                         </div>
                         {/* Zone Email */}
                         <div className="mb-3">
@@ -2519,47 +2705,33 @@ export function ZoneDetailPage() {
                             className="form-control vds-zone-form__input d-flex align-items-center"
                             style={{ background: "#f4f7fb" }}
                           >
-                            <i className="bi bi-box-arrow-up-right" />View group
-                          </Link>
-                        )}
-                      </div>
-                      {/* Backend ID */}
-                      <div className="mb-0">
-                        <label className="vds-zone-form__label">DNS Backend ID <span className="text-muted fw-normal">(optional)</span></label>
-                        <select
-                          className="form-select vds-zone-form__input"
-                          value={zoneFormData.backendId ?? ''}
-                          onChange={e => setZoneFormData(prev => prev ? { ...prev, backendId: e.target.value || undefined } : prev)}
-                        >
-                          <option value="">— Default —</option>
-                          {(backendIds ?? []).map(bid => (
-                            <option key={bid} value={bid}>{bid}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* ── Right column ── */}
-                    <div className="col-lg-6">
-                      {/* Created */}
-                      <div className="mb-3">
-                        <label className="vds-zone-form__label">Created</label>
-                        <div className="form-control vds-zone-form__input vds-date-wrap" style={{ background: '#f4f7fb', color: '#64748b' }}>
-                          {zoneFormData.created ? formatDateTime(zoneFormData.created) : '—'}
+                            <span
+                              className={`vds-zone-status-badge ${statusClass(zoneFormData.status)}`}
+                            >
+                              {zoneFormData.status}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      {/* Latest Update */}
-                      <div className="mb-3">
-                        <label className="vds-zone-form__label">Latest Update</label>
-                        <div className="form-control vds-zone-form__input vds-date-wrap" style={{ background: '#f4f7fb', color: '#64748b' }}>
-                          {zoneFormData.updated ? formatDateTime(zoneFormData.updated) : '—'}
-                        </div>
-                      </div>
-                      {/* Latest Sync */}
-                      <div className="mb-3">
-                        <label className="vds-zone-form__label">Latest Sync</label>
-                        <div className="form-control vds-zone-form__input vds-date-wrap" style={{ background: '#f4f7fb', color: '#64748b' }}>
-                          {zoneFormData.latestSync ? formatDateTime(zoneFormData.latestSync) : '—'}
+                        {/* Access */}
+                        <div className="mb-3">
+                          <label className="vds-zone-form__label">Access</label>
+                          <select
+                            className="form-select vds-zone-form__input"
+                            value={String(zoneFormData.shared ?? false)}
+                            onChange={(e) =>
+                              setZoneFormData((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      shared: e.target.value === "true",
+                                    }
+                                  : prev,
+                              )
+                            }
+                          >
+                            <option value="true">Shared</option>
+                            <option value="false">Private</option>
+                          </select>
                         </div>
                         {/* Admin Group */}
                         <div className="mb-3">
@@ -2680,7 +2852,7 @@ export function ZoneDetailPage() {
                       </button>
                       {zoneConnOpen && (
                         <div
-                          className="p-3 rounded-3 border"
+                          className="p-2 rounded-3 border"
                           style={{ background: "#f8fafc" }}
                         >
                           <div className="row g-3">
@@ -3094,37 +3266,6 @@ export function ZoneDetailPage() {
                     />
                   </button>
                 </div>
-              )}
-            </div>
-            )}
-          </div>
-
-          {isZoneAdmin && (
-          <div className="vds-recent-changes-panel mt-3">
-            <div className="vds-recent-changes-panel__header">
-              <i className="bi bi-shield-lock me-2" />Zone Access Rules
-              <div className="ms-auto d-flex align-items-center gap-2">
-                <button
-                  className="btn btn-sm vds-btn-flat d-flex align-items-center gap-1"
-                  onClick={() => runWithRecordFormGuard(() => void queryClient.invalidateQueries({ queryKey: ['zone', id] }))}
-                >
-                  <i className="bi bi-arrow-clockwise" />
-                  <span className="vds-btn-flat__label">Refresh</span>
-                </button>
-                <button
-                  className="btn btn-sm vds-btn-nav d-flex align-items-center gap-1"
-                  onClick={() => setAclRuleModal({ mode: 'create', rule: { priority: 'User', accessLevel: 'Read', recordTypes: [] } })}
-                >
-                  <i className="bi bi-plus-circle-fill" />Create ACL Rule
-                </button>
-                <button
-                  className="vds-panel-toggle-btn"
-                  onClick={() => setZoneAclOpen(o => !o)}
-                  title={zoneAclOpen ? 'Collapse' : 'Expand'}
-                  aria-label={zoneAclOpen ? 'Collapse' : 'Expand'}
-                >
-                  <i className={`bi bi-chevron-${zoneAclOpen ? 'up' : 'down'}`} />
-                </button>
               </div>
               {zoneAclOpen && (
                 <div className="vds-zones-table-wrap">
@@ -3211,14 +3352,9 @@ export function ZoneDetailPage() {
                                   All Types
                                 </span>
                               ) : (
-                                rule.recordTypes.map((t) => (
-                                  <span
-                                    key={t}
-                                    className="vds-record-type-badge me-1"
-                                  >
-                                    {t}
-                                  </span>
-                                ))
+                                <span className="fw-semibold">
+                                  {rule.recordTypes.join(", ")}
+                                </span>
                               )}
                             </td>
                             <td className="vds-table-secondary small vds-table-mono">
@@ -3352,89 +3488,46 @@ export function ZoneDetailPage() {
                   </div>
                 </div>
 
-                <div className="row g-3 mb-2">
-                  <div className="col-sm-4">
-                    <label className="vds-zone-form__label d-flex align-items-center gap-2">
-                      <i className="bi bi-clock" />Hour (UTC)
-                    </label>
-                    <select
-                      className="form-select vds-zone-form__input"
-                      value={syncHour}
-                      disabled={syncScheduleRemove}
-                      onChange={e => setSyncHour(Number(e.target.value))}
-                    >
-                      {Array.from({ length: 24 }, (_, i) => (
-                        <option key={i} value={i}>{String(i).padStart(2, '0')}:00</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="col-sm-4">
-                    <label className="vds-zone-form__label d-flex align-items-center gap-2">
-                      <i className="bi bi-hourglass-split" />Minute
-                    </label>
-                    <select
-                      className="form-select vds-zone-form__input"
-                      value={syncMinute}
-                      disabled={syncScheduleRemove}
-                      onChange={e => setSyncMinute(Number(e.target.value))}
-                    >
-                      {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
-                        <option key={m} value={m}>:{String(m).padStart(2, '0')}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="col-sm-4">
-                    <label className="vds-zone-form__label d-flex align-items-center gap-2">
-                      <i className="bi bi-code" />Generated Expression
-                    </label>
-                    <div
-                      className="form-control vds-zone-form__input d-flex align-items-center justify-content-between"
-                      style={{ background: '#f4f7fb', fontFamily: 'monospace', fontSize: '0.82rem', opacity: syncScheduleRemove ? 0.45 : 1 }}
-                      title="Quartz cron expression"
-                    >
-                      <span>
-                        {syncScheduleRemove
-                          ? '— removed —'
-                          : syncDays.length
-                            ? `0 ${syncMinute} ${syncHour} ? * ${syncDays.join(',')}`
-                            : '— select at least 1 day —'}
-                      </span>
-                    </div>
-
-                {/* ─── UTC Time Converter ─── */}
-                <div className="mb-2">
-                  <button
-                    type="button"
-                    className="btn btn-sm vds-btn-flat d-flex align-items-center gap-2 mb-2"
-                    onClick={() => setShowUtcConverter(o => !o)}
-                  >
-                    <i className={`bi bi-chevron-${showUtcConverter ? 'down' : 'right'}`} />
-                    <i className="bi bi-globe2" />Convert to UTC time
-                  </button>
-                  {showUtcConverter && (
-                    <div className="p-2 rounded-3 border d-flex align-items-center gap-3 flex-wrap vds-utc-converter-box" style={{ background: '#f8fafc' }}>
-                      <div>
-                        <label className="vds-zone-form__label">Your local time</label>
-                        <input
-                          type="time"
-                          className="form-control vds-zone-form__input"
-                          style={{ width: 150 }}
-                          value={localTimeInput}
-                          onChange={e => {
-                            setLocalTimeInput(e.target.value);
-                            if (e.target.value) {
-                              const [h, m] = e.target.value.split(':').map(Number);
-                              const d = new Date();
-                              d.setHours(h, m, 0, 0);
-                              setUtcTimeOutput(`${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')} UTC`);
-                            } else {
-                              setUtcTimeOutput('');
-                            }
-                          }}
-                        />
-                        <p className="text-muted mb-0 mt-1" style={{ fontSize: '0.72rem' }}>
-                          {Intl.DateTimeFormat().resolvedOptions().timeZone}
-                        </p>
+                    <div className="row g-3 mb-2">
+                      <div className="col-sm-4">
+                        <label className="vds-zone-form__label d-flex align-items-center gap-2">
+                          <i className="bi bi-clock" />
+                          Hour (UTC)
+                        </label>
+                        <select
+                          className="form-select vds-zone-form__input"
+                          value={syncHour}
+                          disabled={syncScheduleRemove}
+                          onChange={(e) => setSyncHour(Number(e.target.value))}
+                        >
+                          {Array.from({ length: 24 }, (_, i) => (
+                            <option key={i} value={i}>
+                              {String(i).padStart(2, "0")}:00
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-sm-4">
+                        <label className="vds-zone-form__label d-flex align-items-center gap-2">
+                          <i className="bi bi-hourglass-split" />
+                          Minute
+                        </label>
+                        <select
+                          className="form-select vds-zone-form__input"
+                          value={syncMinute}
+                          disabled={syncScheduleRemove}
+                          onChange={(e) =>
+                            setSyncMinute(Number(e.target.value))
+                          }
+                        >
+                          {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(
+                            (m) => (
+                              <option key={m} value={m}>
+                                :{String(m).padStart(2, "0")}
+                              </option>
+                            ),
+                          )}
+                        </select>
                       </div>
                       <div className="col-sm-4">
                         <label className="vds-zone-form__label d-flex align-items-center gap-2">
@@ -3699,8 +3792,13 @@ export function ZoneDetailPage() {
 
           {/* ── ACL Rule Create / Edit Modal ── */}
           {aclRuleModal && (
-            <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
-              onMouseDown={e => { if (e.target === e.currentTarget) closeAclRuleModal(); }}>
+            <div
+              className="modal d-block"
+              style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget) closeAclRuleModal();
+              }}
+            >
               <div className="modal-dialog modal-dialog-centered modal-lg">
                 <div className="modal-content">
                   <div
@@ -3717,7 +3815,11 @@ export function ZoneDetailPage() {
                         ? "Create ACL Rule"
                         : "Update ACL Rule"}
                     </h5>
-                    <button type="button" className="btn-close btn-close-white" onClick={closeAclRuleModal} />
+                    <button
+                      type="button"
+                      className="btn-close btn-close-white"
+                      onClick={closeAclRuleModal}
+                    />
                   </div>
                   <div className="modal-body p-4">
                     <div className="row g-3">
@@ -4062,8 +4164,12 @@ export function ZoneDetailPage() {
                       <i className="bi bi-arrow-counterclockwise me-1" />
                       Clear Form
                     </button>
-                    <button type="button" className="btn btn-sm btn-outline-secondary" onClick={closeAclRuleModal}>
-                      Close
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={closeAclRuleModal}
+                    >
+                      Cancel
                     </button>
                     <button
                       type="button"
@@ -4308,14 +4414,7 @@ export function ZoneDetailPage() {
                           <td className="vds-table-secondary small">
                             {!rule.recordTypes?.length
                               ? "All Types"
-                              : rule.recordTypes.map((t) => (
-                                  <span
-                                    key={t}
-                                    className="vds-record-type-badge me-1"
-                                  >
-                                    {t}
-                                  </span>
-                                ))}
+                              : rule.recordTypes.join(", ")}
                           </td>
                           <td className="vds-table-secondary small vds-table-mono">
                             {rule.recordMask ?? "—"}

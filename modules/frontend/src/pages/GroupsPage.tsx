@@ -518,7 +518,6 @@ export function GroupsPage() {
             <i className="bi bi-plus-circle-fill" />
             New Group
           </button>
-          bu
           <button
             id="refresh-group-button"
             className="btn btn-sm d-flex align-items-center vds-btn-flat"

@@ -143,7 +143,7 @@ export function ZonesPage() {
     },
   });
 
-  const { data: zonesCount } = useQuery({
+  const { data: zonesCount, isError: zonesCountError } = useQuery({
     queryKey: ["zones-count"],
     queryFn: async () => {
       const res = await zonesService.countZones();
@@ -397,10 +397,10 @@ export function ZonesPage() {
 
   const cardLoading =
     mainTab === "abandonedZones"
-      ? insightAbandonedData === undefined || zonesCount === undefined
+      ? insightAbandonedData === undefined || (!zonesCountError && zonesCount === undefined)
       : mainTab === "allZones"
-        ? insightAllZones === undefined || zonesCount === undefined
-        : insightMyZones === undefined || zonesCount === undefined;
+        ? insightAllZones === undefined || (!zonesCountError && zonesCount === undefined)
+        : insightMyZones === undefined || (!zonesCountError && zonesCount === undefined);
 
   const anyFilterNow =
     mainTab === "abandonedZones" ? anyAbandonedFilterActive : anyFilterActive;
@@ -737,7 +737,11 @@ export function ZonesPage() {
         )
       : 0;
   // Header shows health% for all tabs (PTR% for abandoned, active% for others).
-  const displayZoneHealthHeader = zonesCount != null ? `${healthPct}%` : null;
+  const displayZoneHealthHeader = zonesCountError
+    ? "-"
+    : zonesCount != null
+      ? `${healthPct}%`
+      : null;
   const skeletonBlue = (
     <span className="vds-insight-skeleton vds-insight-skeleton--blue" />
   );
@@ -1226,7 +1230,10 @@ export function ZonesPage() {
                         placeholder={myZonesByGroup ? 'Search by admin group name' : 'Search zones by name'}
                         value={myZonesInput}
                         autoComplete="off"
-                        onFocus={() => { if (myZonesInput.length > 0) setMySuggestionsOpen(true); }}
+                        onFocus={() => {
+                          if (myZonesInput.length > 0)
+                            setMySuggestionsOpen(true);
+                        }}
                         onChange={(e) => {
                           const val = e.target.value;
                           setMyZonesInput(val);
@@ -1236,30 +1243,15 @@ export function ZonesPage() {
                             setMyZonesQuery('');
                             myZones.resetPaging();
                           }
-                          value={myZonesInput}
-                          autoComplete="off"
-                          onFocus={() => {
-                            if (myZonesInput.length > 0)
-                              setMySuggestionsOpen(true);
-                          }}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setMyZonesInput(val);
-                            setMySuggestionsOpen(val.length > 0);
-                            if (val === "") {
-                              setEmailFilter("");
-                              setMyZonesQuery("");
-                              myZones.resetPaging();
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              setMySuggestionsOpen(false);
-                              handleMyZonesSearch();
-                            }
-                            if (e.key === "Escape") setMySuggestionsOpen(false);
-                          }}
-                        />
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            setMySuggestionsOpen(false);
+                            handleMyZonesSearch();
+                          }
+                          if (e.key === "Escape") setMySuggestionsOpen(false);
+                        }}
+                      />
                       </div>
                       {mySuggestionsOpen &&
                         (() => {
@@ -2130,6 +2122,16 @@ export function ZonesPage() {
                   <span className="vds-card-ctx-chip vds-card-ctx-chip--blue ms-1">
                     {cardContextLabel}{cardFiltered ? ' ·' : ''}
                   </span>
+                </span>
+                <span className="vds-insight-value vds-insight-value--blue">
+                  {zonesCountError
+                    ? "-"
+                    : cardLoading
+                    ? skeletonBlue
+                    : cardTotal > 0 || anyFilterNow
+                      ? cardTotal
+                      : null}
+                </span>
                 </div>
                 {/* In-view / platform ratio bar */}
                 {!cardLoading &&
@@ -2155,7 +2157,9 @@ export function ZonesPage() {
                     {card1RefLabel}
                   </div>
                   <div className="vds-insight-stat-value vds-insight-stat-value--blue">
-                    {cardLoading
+                    {zonesCountError
+                      ? "-"
+                      : cardLoading
                       ? "…"
                       : cardTotal > 0 || anyFilterNow
                         ? cardTotal
@@ -2164,7 +2168,7 @@ export function ZonesPage() {
                   <div className="vds-insight-stat-value vds-insight-stat-value--blue vds-insight-stat-value--right">
                     {cardTotal > 0 || anyFilterNow
                       ? card1RefCount == null
-                        ? "…"
+                        ? (zonesCountError ? "-" : "…")
                         : card1RefCount
                       : "—"}
                   </div>
@@ -2173,20 +2177,20 @@ export function ZonesPage() {
                     {mainTab !== "abandonedZones" ? (
                       cardTotal > 0 || anyFilterNow ? (
                         <>
-                          You own {insightMyCount ?? "…"} of{" "}
-                          {insightAllCount ?? "…"} platform zones
+                          You own {insightMyCount ?? (zonesCountError ? "-" : "…")} of{" "}
+                          {insightAllCount ?? (zonesCountError ? "-" : "…")} platform zones
                         </>
                       ) : (
                         "No zones yet"
                       )
                     ) : isAllAbandonedSubTab ? (
                       <>
-                        {cardTotal} matching · {insightAbandonedCount ?? "…"}{" "}
+                        {cardTotal} matching · {insightAbandonedCount ?? (zonesCountError ? "-" : "…")}{" "}
                         total abandoned
                       </>
                     ) : cardTotal > 0 || anyFilterNow ? (
                       <>
-                        {cardTotal} matching · {insightAbandonedCount ?? "…"}{" "}
+                        {cardTotal} matching · {insightAbandonedCount ?? (zonesCountError ? "-" : "…")}{" "}
                         total abandoned
                       </>
                     ) : (
@@ -2210,7 +2214,7 @@ export function ZonesPage() {
                               (isSuper || isSupport
                                 ? insightAbandonedCount
                                 : myAbandoned.deletedZones.length))
-                            : insightAbandonedCount) ?? "…"}
+                            : insightAbandonedCount) ?? (zonesCountError ? "-" : "…")}
                         </span>
                         <span className="ms-1" style={{ fontWeight: 400 }}>
                           zone
@@ -2252,7 +2256,8 @@ export function ZonesPage() {
                           : null}
                     </span>
                   </div>
-                  {!cardLoading &&
+                  {!zonesCountError &&
+                  !cardLoading &&
                   cardTotal > 0 &&
                   healthBase > 0 &&
                   (cardTotal > 0 || anyFilterNow) ? (
@@ -2302,26 +2307,32 @@ export function ZonesPage() {
                       {isAbandonedTab ? "Non-PTR" : "Syncing"}
                     </div>
                     <div className="vds-insight-stat-value vds-insight-stat-value--teal">
-                      {cardLoading
+                      {zonesCountError
+                        ? "-"
+                        : cardLoading
                         ? "…"
                         : isAbandonedTab
-                          ? (resolvedAbandonedPtrCount ?? "…")
+                          ? (resolvedAbandonedPtrCount ?? (zonesCountError ? "-" : "…"))
                           : cardTotal > 0 || anyFilterNow
-                            ? displayActiveCount
+                            ? (displayActiveCount ?? (zonesCountError ? "-" : "…"))
                             : "—"}
                     </div>
                     <div className="vds-insight-stat-value vds-insight-stat-value--teal vds-insight-stat-value--right">
-                      {cardLoading
+                      {zonesCountError
+                        ? "-"
+                        : cardLoading
                         ? "…"
                         : isAbandonedTab
-                          ? (resolvedAbandonedNonPtrCount ?? "…")
+                          ? (resolvedAbandonedNonPtrCount ?? (zonesCountError ? "-" : "…"))
                           : cardTotal > 0 || anyFilterNow
-                            ? displaySyncingCount
+                            ? (displaySyncingCount ?? (zonesCountError ? "-" : "…"))
                             : "—"}
                     </div>
                     <div className="vds-insight-footnote">
                       <i className="bi bi-activity me-1 vds-icon-teal-dim" />
-                      {isAbandonedTab ? (
+                      {zonesCountError ? (
+                        "-"
+                      ) : isAbandonedTab ? (
                         cardLoading ? (
                           "Loading…"
                         ) : (
@@ -2362,7 +2373,9 @@ export function ZonesPage() {
                     </span>
                   </span>
                   <span className="vds-insight-value vds-insight-value--purple">
-                    {cardLoading
+                    {zonesCountError
+                      ? "-"
+                      : cardLoading
                       ? skeletonPurple
                       : cardTotal > 0 || anyFilterNow
                         ? cardTotal
@@ -2370,7 +2383,7 @@ export function ZonesPage() {
                   </span>
                 </div>
                 {/* Shared / Private ratio bar */}
-                {!cardLoading && cardTotal > 0 && accessSplitTotal > 0 && (
+                {!zonesCountError && !cardLoading && cardTotal > 0 && accessSplitTotal > 0 && (
                   <div className="vds-insight-access-bar mb-1">
                     <div
                       className="vds-insight-access-bar__shared"
@@ -2397,23 +2410,29 @@ export function ZonesPage() {
                     Private
                   </div>
                   <div className="vds-insight-stat-value vds-insight-stat-value--purple">
-                    {cardLoading
+                    {zonesCountError
+                      ? "-"
+                      : cardLoading
                       ? "…"
                       : cardTotal > 0 || anyFilterNow
-                        ? displaySharedCount
+                        ? (displaySharedCount ?? (zonesCountError ? "-" : "…"))
                         : "—"}
                   </div>
                   <div className="vds-insight-stat-value vds-insight-stat-value--purple vds-insight-stat-value--right">
-                    {cardLoading
+                    {zonesCountError
+                      ? "-"
+                      : cardLoading
                       ? "…"
                       : cardTotal > 0 || anyFilterNow
-                        ? displayPrivateCount
+                        ? (displayPrivateCount ?? (zonesCountError ? "-" : "…"))
                         : "—"}
                   </div>
                   <div className="vds-insight-footnote">
                     <i className="bi bi-arrow-left-right me-1 vds-icon-purple-dim" />
                     PTR reverse zones:{" "}
-                    {cardLoading
+                    {zonesCountError
+                      ? "-"
+                      : cardLoading
                       ? "…"
                       : cardTotal === 0 && !anyFilterNow
                         ? "—"
@@ -2460,14 +2479,18 @@ export function ZonesPage() {
                 {/* Summary strip */}
                 <div className="vds-lifecycle-newest">
                   <span className="vds-lifecycle-newest__age">
-                    {cardLoading
+                    {zonesCountError
+                      ? "-"
+                      : cardLoading
                       ? "Loading…"
                       : cardSource.length > 0
                         ? `${cardSource.length} zone${cardSource.length === 1 ? "" : "s"} · ${cardActiveCount} active`
                         : "No zones in view"}
                   </span>
                   <span className="vds-lifecycle-newest__meta">
-                    {!cardLoading && cardOldestAgeDays !== null
+                    {zonesCountError
+                      ? "-"
+                      : !cardLoading && cardOldestAgeDays !== null
                       ? `Running for ${fmtAge(cardOldestAgeDays)} · ${cardNewThisMonth} added in last 30d`
                       : cardLoading
                         ? ""
@@ -2485,7 +2508,11 @@ export function ZonesPage() {
                           : undefined
                       }
                     >
-                      {cardLoading ? skeletonAmber : cardNeverSynced}
+                      {zonesCountError
+                        ? "-"
+                        : cardLoading
+                          ? skeletonAmber
+                          : cardNeverSynced}
                     </span>
                     <span className="vds-lifecycle-tile__label">
                       Never synced
@@ -2496,7 +2523,11 @@ export function ZonesPage() {
                       className="vds-lifecycle-tile__num"
                       style={{ color: "#0ca678" }}
                     >
-                      {cardLoading ? skeletonAmber : cardRecentlySynced}
+                      {zonesCountError
+                        ? "-"
+                        : cardLoading
+                          ? skeletonAmber
+                          : cardRecentlySynced}
                     </span>
                     <span className="vds-lifecycle-tile__label">
                       Synced ≤7d
@@ -2507,7 +2538,11 @@ export function ZonesPage() {
                       className="vds-lifecycle-tile__num"
                       style={{ color: "#6f42c1" }}
                     >
-                      {cardLoading ? skeletonAmber : cardNewThisMonth}
+                      {zonesCountError
+                        ? "-"
+                        : cardLoading
+                          ? skeletonAmber
+                          : cardNewThisMonth}
                     </span>
                     <span className="vds-lifecycle-tile__label">
                       New in 30d
@@ -2515,7 +2550,9 @@ export function ZonesPage() {
                   </div>
                   <div className="vds-lifecycle-tile">
                     <span className="vds-lifecycle-tile__num">
-                      {cardLoading
+                      {zonesCountError
+                        ? "-"
+                        : cardLoading
                         ? skeletonAmber
                         : cardOldestAgeDays !== null
                           ? fmtAge(cardOldestAgeDays)
@@ -2532,14 +2569,16 @@ export function ZonesPage() {
                     style={{ color: "#b07d2a", opacity: 0.75 }}
                   />
                   <span style={{ color: "#8099b8" }}>
-                    Showing zones {pageStart.toLocaleString()}–
-                    {pageEnd.toLocaleString()} of {cardTotal.toLocaleString()}
+                    {zonesCountError
+                      ? "Showing zones -"
+                      : <>Showing zones {pageStart.toLocaleString()}–
+                    {pageEnd.toLocaleString()} of {cardTotal.toLocaleString()}</>}
                   </span>
                 </div>
               </div>
             </div>
           </div>
-        )}
+        }
 
         {/* ── My Zones content ── */}
         {mainTab === "myZones" &&
