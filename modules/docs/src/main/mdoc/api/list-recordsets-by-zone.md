@@ -22,6 +22,12 @@ nameSort          | string        | no          | Name sort order for record set
 startFrom     | string            | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
 maxItems      | integer           | no          | The number of items to return in the page.  Valid values are 1 to 100. Defaults to 100 if not provided. |
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /zones/2467dc05-68eb-4498-a9d5-78d24bb0893c/recordsets?recordNameFilter=vinyl*&recordTypeFilter=A&maxItems=100
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |
@@ -158,4 +164,10 @@ nameSort            | string  | name sort order sent in request
   "maxItems": 100,
   "nameSort": "ASC"
 }
+```
+
+#### EXAMPLE ERROR RESPONSE
+
+```text
+maxItems was 500, maxItems must be between 0 and 100
 ```

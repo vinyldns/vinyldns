@@ -26,6 +26,12 @@ userName      | string        | no          | Filter batch changes based on subm
 dateTimeRangeStart    | string        | no          | Start date time value to filter batch changes based on date time range |
 dateTimeRangeEnd      | string        | no          | End date time value to filter batch changes based on date time range |
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /zones/batchrecordchanges?maxItems=25&approvalStatus=PendingReview&userName=vinyl201
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |

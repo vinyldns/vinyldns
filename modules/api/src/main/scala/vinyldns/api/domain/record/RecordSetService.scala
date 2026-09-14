@@ -695,6 +695,7 @@ class RecordSetService(
 
   def getRecordSetChange(
                           zoneId: String,
+                          rsId: String,
                           changeId: String,
                           authPrincipal: AuthPrincipal
                         ): Result[RecordSetChange] =
@@ -706,8 +707,14 @@ class RecordSetService(
           RecordSetChangeNotFoundError(
             s"Unable to find record set change with id $changeId in zone ${zone.name}"
           )
-        )
-        .toResult[RecordSetChange]
+        ).toResult[RecordSetChange]
+      _ <- if (change.recordSet.id == rsId) {
+        ().toResult
+      } else {
+        Left(RecordSetNotFoundError(
+          s"RecordSet with id $rsId does not exist."
+        )).toResult
+      }
       _ <- canViewRecordSet(
         authPrincipal,
         change.recordSet.name,
@@ -723,14 +730,14 @@ class RecordSetService(
                             maxItems: Int = 100,
                             authPrincipal: AuthPrincipal
                           ): Result[ListRecordSetChangesResponse] =
-      for {
-        zone <- getZone(zoneId)
-        _ <- canSeeZone(authPrincipal, zone).toResult
-        recordSetChangesResults <- recordChangeRepository
-          .listRecordSetChanges(Some(zone.id), startFrom, maxItems, None, None)
-          .toResult[ListRecordSetChangesResults]
-        recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
-      } yield ListRecordSetChangesResponse(zoneId, recordSetChangesResults, recordSetChangesInfo)
+    for {
+      zone <- getZone(zoneId)
+      _ <- canSeeZone(authPrincipal, zone).toResult
+      recordSetChangesResults <- recordChangeRepository
+        .listRecordSetChanges(Some(zone.id), startFrom, maxItems, None, None)
+        .toResult[ListRecordSetChangesResults]
+      recordSetChangesInfo <- buildRecordSetChangeInfo(recordSetChangesResults.items)
+    } yield ListRecordSetChangesResponse(zoneId, recordSetChangesResults, recordSetChangesInfo)
 
   def listRecordSetChangeHistory(
                             zoneId: Option[String] = None,
