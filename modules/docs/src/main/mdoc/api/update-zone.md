@@ -87,3 +87,9 @@ status        | string        | The status of the zone change
   "id": "d1fcd28d-61fe-4c24-ac0b-4377d66d50db"
 }
 ```
+
+#### EXAMPLE ERROR RESPONSE
+
+```text
+Invalid backendId: [Some(dummy-backend)]; please check system configuration
+```
