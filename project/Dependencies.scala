@@ -83,7 +83,7 @@ object Dependencies {
 
   lazy val mysqlDependencies = Seq(
     "org.flywaydb"              %  "flyway-core"                    % "5.2.4",
-    "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.3.0",
+    "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.7.13",
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
     "com.zaxxer"                %  "HikariCP"                       % "3.2.0",
