@@ -120,7 +120,6 @@ class MySqlZoneChangeRepositoryIntegrationSpec
       .map(num => okGroup.copy(name = num.toString, id = UUID.randomUUID().toString))
       .toList
 
-    // generate some ACLs
     private val groupAclRules = groups.map(
       g =>
         ACLRule(
