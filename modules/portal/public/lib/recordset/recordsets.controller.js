@@ -111,7 +111,7 @@
               source: function( request, response ) {
                 $.ajax({
                   url: "/api/recordsets?maxItems=100",
-                  dataType: "json", 
+                  dataType: "json",
                   data: {recordNameFilter: request.term, nameSort: $scope.nameSort},
                   success: function( data ) {
                     const recordSearch =  JSON.parse(JSON.stringify(data));
