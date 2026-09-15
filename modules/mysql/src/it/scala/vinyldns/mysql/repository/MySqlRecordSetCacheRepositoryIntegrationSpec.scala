@@ -22,9 +22,11 @@ import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
+import vinyldns.core.TestMembershipData.{okGroup, okUser}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.record.RecordType._
-import vinyldns.core.domain.zone.Zone
+import vinyldns.core.domain.auth.AuthPrincipal
+import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneACL}
 import vinyldns.mysql.TestMySqlInstance
 import vinyldns.mysql.repository.MySqlRecordSetRepository.PagingKey
 import vinyldns.mysql.TransactionProvider
@@ -44,6 +46,8 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
 
   private val recordSetRepo = TestMySqlInstance.recordSetRepository.asInstanceOf[MySqlRecordSetRepository]
 
+  private val zoneRepo = TestMySqlInstance.zoneRepository
+
   override protected def beforeEach(): Unit = clear()
 
   override protected def afterAll(): Unit = clear()
@@ -52,6 +56,7 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
     DB.localTx { s =>
       s.executeUpdate("DELETE FROM recordset_data")
       s.executeUpdate("DELETE FROM recordset")
+      s.executeUpdate("DELETE FROM zone")
     }
 
   def generateInserts(zone: Zone, count: Int, word: String = "insert"): List[RecordSetChange] = {
@@ -90,6 +95,9 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
 
   def recordSetDataWithFQDN(recordSet: RecordSet, zone: Zone): RecordSet =
     recordSet.copy(fqdn = Some(s"""${recordSet.name}.${zone.name}"""))
+
+  def saveZones(zones: Seq[Zone]): Unit =
+    zones.foreach(zone => zoneRepo.save(zone).unsafeRunSync())
 
   "apply" should {
     "properly revert changes that fail processing" in {
@@ -447,6 +455,95 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
       found.recordSets should contain theSameElementsAs existing
         .map(r => recordSetDataWithFQDN(r, okZone))
         .reverse
+    }
+    "omit recordsets from groups if the user has more than 30 groups when doing a global search" in {
+      val groups = (1 to 40).map { num =>
+        okGroup.copy(name = "%02d".format(num), id = UUID.randomUUID().toString)
+      }
+
+      val zones = groups.map { group =>
+        okZone.copy(
+          name = s"${group.name}.",
+          id = UUID.randomUUID().toString,
+          adminGroupId = group.id,
+          acl = ZoneACL()
+        )
+      }
+
+      val changes = zones.map { zone =>
+        makeTestAddChange(
+          aaaa.copy(
+            zoneId = zone.id,
+            name = s"${zone.name.dropRight(1)}-record",
+            id = UUID.randomUUID().toString
+          ),
+          zone
+        )
+      }
+
+      saveZones(zones)
+      insert(changes.toList)
+
+      val auth = AuthPrincipal(okUser, groups.map(_.id))
+
+      val found = recordSetCacheRepo
+        .listRecordSetData(None, None, None, Some("*"), None, None, NameSort.ASC, Some(auth))
+        .unsafeRunSync()
+
+      found.recordSets.map(_.zoneId) should contain theSameElementsAs zones.take(29).map(_.id)
+    }
+    "return recordsets from zones shared with everyone when doing a global search" in {
+      val allAccessZone = okZone.copy(
+        name = "all-access-recordsets.",
+        id = UUID.randomUUID().toString,
+        acl = ZoneACL(
+          rules = Set(
+            ACLRule(
+              accessLevel = AccessLevel.Read,
+              userId = None,
+              groupId = None
+            )
+          )
+        )
+      )
+      val noAccessZone = abcZone.copy(
+        name = "no-access-recordsets.",
+        id = UUID.randomUUID().toString,
+        adminGroupId = okGroup.id,
+        acl = ZoneACL()
+      )
+
+      val allAccessRecord = aaaa.copy(
+        zoneId = allAccessZone.id,
+        name = "all-access-record",
+        id = UUID.randomUUID().toString
+      )
+      val noAccessRecord = aaaa.copy(
+        zoneId = noAccessZone.id,
+        name = "no-access-record",
+        id = UUID.randomUUID().toString
+      )
+
+      val allAccessChange = makeTestAddChange(allAccessRecord, allAccessZone)
+      val noAccessChange = makeTestAddChange(noAccessRecord, noAccessZone)
+
+      saveZones(Seq(allAccessZone, noAccessZone))
+      insert(List(allAccessChange, noAccessChange))
+
+      val found = recordSetCacheRepo
+        .listRecordSetData(
+          None,
+          None,
+          None,
+          Some("*access-record*"),
+          None,
+          None,
+          NameSort.ASC,
+          Some(AuthPrincipal(okUser, Seq.empty))
+        )
+        .unsafeRunSync()
+
+      found.recordSets should contain theSameElementsAs List(recordSetDataWithFQDN(allAccessChange.recordSet, allAccessZone))
     }
     "return no recordsets when no zoneId or recordNameFilter are given" in {
       val found =

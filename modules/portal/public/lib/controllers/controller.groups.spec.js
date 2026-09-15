@@ -24,6 +24,8 @@ describe('Controller: GroupsController', function () {
         module('controller.groups')
     });
     beforeEach(inject(function ($rootScope, $controller, $q, groupsService, profileService, utilityService, pagingService) {
+        this.rootScope = $rootScope;
+        this.controllerFactory = $controller;
         this.scope = $rootScope.$new();
         this.groupsService = groupsService;
         this.utilityService = utilityService;
@@ -227,5 +229,30 @@ describe('Controller: GroupsController', function () {
         expect(getGroupSets.calls.count()).toBe(3);
         expect(getGroupSets.calls.mostRecent().args).toEqual(
             [expectedMaxItems, expectedStartFrom, expectedIgnoreAccess, expectedQuery]);
+    });
+
+    it('renders group autocomplete labels as text while preserving highlights', function () {
+        document.body.innerHTML = '<input id="group-search-text" />';
+
+        var scope = this.rootScope.$new();
+        this.controllerFactory('GroupsController', {'$scope': scope});
+
+        var instance = $('#group-search-text').autocomplete('instance');
+        var rendered = instance._renderItem($('<ul></ul>'), {
+            label: '<img src=x onerror=alert(1)>Team',
+            value: '<img src=x onerror=alert(1)>Team'
+        });
+
+        instance.term = 'Team';
+        rendered = instance._renderItem($('<ul></ul>'), {
+            label: '<img src=x onerror=alert(1)>Team',
+            value: '<img src=x onerror=alert(1)>Team'
+        });
+
+        expect(rendered.find('img').length).toBe(0);
+        expect(rendered.find('div').text()).toBe('<img src=x onerror=alert(1)>Team');
+        expect(rendered.find('b').text()).toBe('Team');
+
+        document.body.innerHTML = '';
     });
 });

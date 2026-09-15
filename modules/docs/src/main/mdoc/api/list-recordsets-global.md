@@ -10,7 +10,7 @@ Retrieves a list of RecordSets globally in the VinylDNS database based on search
 
 #### HTTP REQUEST
 
-> GET /recordsets?startFrom={response.nextId}&maxItems={1 - 100}&recordNameFilter={recordNameFilter}&recordTypeFilter={recordTypeFilter}&recordOwnerGroupFilter={recordOwnerGroupFilter}&nameSort={nameSort}
+> GET /recordsets?startFrom={response.nextId}&maxItems={1 - 100}&recordNameFilter={recordNameFilter}&recordTypeFilter={recordTypeFilter}&recordOwnerGroupFilter={recordOwnerGroupFilter}&nameSort={nameSort}&recordTypeSort={recordTypeSort}
 
 #### HTTP REQUEST PARAMS
 
@@ -20,8 +20,15 @@ recordNameFilter | string     | yes         | Characters that are part of the re
 recordTypeFilter | Array of RecordType | no | An array of record types to filter for listing record sets.  Refer to [recordset mode](recordset-model.html) for supported types.  Invalid record types will be ignored.  If left empty or no valid record types are provided, then all record types will be returned. |
 recordOwnerGroupFilter | string | no        | Owner group ID for record set. |
 nameSort      | string        | no          | Name sort order for record sets returned by list record set response.  Valid values are `ASC` (ascending; default) and `DESC` (descending). |
+recordTypeSort | string       | no          | Record type sort order for record sets returned by list record set response. Valid values are `NONE` (default), `ASC`, and `DESC`. |
 startFrom     | string        | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
 maxItems      | integer       | no          | The number of items to return in the page.  Valid values are 1 to 100. Defaults to 100 if not provided. |
+
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /recordsets?recordNameFilter=foo*&recordTypeFilter=A&nameSort=ASC&recordTypeSort=NONE&maxItems=100
+```
 
 #### HTTP RESPONSE TYPES
 
@@ -42,6 +49,7 @@ recordNameFilter    | string  | name filter sent in request |
 recordTypeFilter    | Array of RecordType | record type filter sent in request |
 recordOwnerGroupFilter | string | record owner group sent in request |
 nameSort      | string  | name sort order sent in request
+recordTypeSort | string  | record type sort order sent in request
 
 #### EXAMPLE RESPONSE
 
@@ -72,6 +80,7 @@ nameSort      | string  | name sort order sent in request
   "recordTypeFilter": [
     "A"
   ],
-  "nameSort": "ASC"
+  "nameSort": "ASC",
+  "recordTypeSort": "NONE"
 }
 ```

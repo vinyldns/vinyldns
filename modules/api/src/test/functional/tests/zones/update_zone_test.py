@@ -7,6 +7,15 @@ from vinyldns_context import VinylDNSTestContext
 from datetime import datetime, timezone, timedelta
 
 
+def new_backend_zone(shared_zone_test_context, zone_name, admin_group_id=None):
+    return {
+        "name": zone_name,
+        "email": "test@test.com",
+        "adminGroupId": admin_group_id or shared_zone_test_context.ok_group["id"],
+        "backendId": "func-test-backend"
+    }
+
+
 @pytest.mark.serial
 def test_update_zone_success(shared_zone_test_context):
     """
@@ -25,23 +34,7 @@ def test_update_zone_success(shared_zone_test_context):
             "recordTypes": ["A", "AAAA", "CNAME"]
         }
 
-        zone = {
-            "name": zone_name,
-            "email": "test@test.com",
-            "adminGroupId": shared_zone_test_context.ok_group["id"],
-            "connection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            },
-            "transferConnection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            }
-        }
+        zone = new_backend_zone(shared_zone_test_context, zone_name)
         result = client.create_zone(zone, status=202)
         result_zone = result["zone"]
         client.wait_until_zone_active(result_zone["id"])
@@ -84,23 +77,7 @@ def test_update_zone_success_wildcard(shared_zone_test_context):
             "recordTypes": ["A", "AAAA", "CNAME"]
         }
 
-        zone = {
-            "name": zone_name,
-            "email": "test@test.com",
-            "adminGroupId": shared_zone_test_context.ok_group["id"],
-            "connection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            },
-            "transferConnection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            }
-        }
+        zone = new_backend_zone(shared_zone_test_context, zone_name)
         result = client.create_zone(zone, status=202)
         result_zone = result["zone"]
         client.wait_until_zone_active(result_zone["id"])
@@ -143,23 +120,7 @@ def test_update_zone_success_number_of_dots(shared_zone_test_context):
             "recordTypes": ["A", "AAAA", "CNAME"]
         }
 
-        zone = {
-            "name": zone_name,
-            "email": "test@test.com",
-            "adminGroupId": shared_zone_test_context.ok_group["id"],
-            "connection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            },
-            "transferConnection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            }
-        }
+        zone = new_backend_zone(shared_zone_test_context, zone_name)
         result = client.create_zone(zone, status=202)
         result_zone = result["zone"]
         client.wait_until_zone_active(result_zone["id"])
@@ -202,23 +163,7 @@ def test_update_invalid_email(shared_zone_test_context):
             "recordTypes": ["A", "AAAA", "CNAME"]
         }
 
-        zone = {
-            "name": zone_name,
-            "email": "test@test.com",
-            "adminGroupId": shared_zone_test_context.ok_group["id"],
-            "connection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            },
-            "transferConnection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            }
-        }
+        zone = new_backend_zone(shared_zone_test_context, zone_name)
         result = client.create_zone(zone, status=202)
         result_zone = result["zone"]
         client.wait_until_zone_active(result_zone["id"])
@@ -247,23 +192,7 @@ def test_update_invalid_domain(shared_zone_test_context):
             "recordTypes": ["A", "AAAA", "CNAME"]
         }
 
-        zone = {
-            "name": zone_name,
-            "email": "test@test.com",
-            "adminGroupId": shared_zone_test_context.ok_group["id"],
-            "connection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            },
-            "transferConnection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            }
-        }
+        zone = new_backend_zone(shared_zone_test_context, zone_name)
         result = client.create_zone(zone, status=202)
         result_zone = result["zone"]
         client.wait_until_zone_active(result_zone["id"])
@@ -293,23 +222,7 @@ def test_update_invalid_email_number_of_dots(shared_zone_test_context):
             "recordTypes": ["A", "AAAA", "CNAME"]
         }
 
-        zone = {
-            "name": zone_name,
-            "email": "test@test.com",
-            "adminGroupId": shared_zone_test_context.ok_group["id"],
-            "connection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            },
-            "transferConnection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            }
-        }
+        zone = new_backend_zone(shared_zone_test_context, zone_name)
         result = client.create_zone(zone, status=202)
         result_zone = result["zone"]
         client.wait_until_zone_active(result_zone["id"])
@@ -331,23 +244,7 @@ def test_update_zone_sync_schedule_fails(shared_zone_test_context):
     try:
         zone_name = f"one-time{shared_zone_test_context.partition_id}"
 
-        zone = {
-            "name": zone_name,
-            "email": "test@test.com",
-            "adminGroupId": shared_zone_test_context.ok_group["id"],
-            "connection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            },
-            "transferConnection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            }
-        }
+        zone = new_backend_zone(shared_zone_test_context, zone_name)
         result = client.create_zone(zone, status=202)
         result_zone = result["zone"]
         client.wait_until_zone_active(result_zone["id"])
@@ -372,23 +269,7 @@ def test_update_zone_sync_schedule_success(shared_zone_test_context):
     try:
         zone_name = f"one-time{shared_zone_test_context.partition_id}"
 
-        zone = {
-            "name": zone_name,
-            "email": "test@test.com",
-            "adminGroupId": shared_zone_test_context.ok_group["id"],
-            "connection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            },
-            "transferConnection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            }
-        }
+        zone = new_backend_zone(shared_zone_test_context, zone_name)
         result = client.create_zone(zone, status=202)
         result_zone = result["zone"]
         client.wait_until_zone_active(result_zone["id"])
@@ -489,23 +370,7 @@ def test_update_missing_zone_data(shared_zone_test_context):
     try:
         zone_name = f"one-time{shared_zone_test_context.partition_id}."
 
-        zone = {
-            "name": zone_name,
-            "email": "test@test.com",
-            "adminGroupId": shared_zone_test_context.ok_group["id"],
-            "connection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            },
-            "transferConnection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            }
-        }
+        zone = new_backend_zone(shared_zone_test_context, zone_name)
         result = client.create_zone(zone, status=202)
         result_zone = result["zone"]
         client.wait_until_zone_active(result["zone"]["id"])
@@ -539,23 +404,7 @@ def test_update_invalid_zone_data(shared_zone_test_context):
     try:
         zone_name = f"one-time{shared_zone_test_context.partition_id}."
 
-        zone = {
-            "name": zone_name,
-            "email": "test@test.com",
-            "adminGroupId": shared_zone_test_context.ok_group["id"],
-            "connection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            },
-            "transferConnection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            }
-        }
+        zone = new_backend_zone(shared_zone_test_context, zone_name)
         result = client.create_zone(zone, status=202)
         result_zone = result["zone"]
         client.wait_until_zone_active(result["zone"]["id"])
@@ -588,19 +437,8 @@ def test_update_zone_returns_404_if_zone_not_found(shared_zone_test_context):
         "name": f"one-time{shared_zone_test_context.partition_id}.",
         "email": "test@test.com",
         "id": "nothere",
-        "connection": {
-            "name": "old-shared.",
-            "keyName": VinylDNSTestContext.dns_key_name,
-            "key": VinylDNSTestContext.dns_key,
-            "primaryServer": VinylDNSTestContext.name_server_ip
-        },
-        "transferConnection": {
-            "name": "old-shared.",
-            "keyName": VinylDNSTestContext.dns_key_name,
-            "key": VinylDNSTestContext.dns_key,
-            "primaryServer": VinylDNSTestContext.name_server_ip
-        },
-        "adminGroupId": shared_zone_test_context.ok_group["id"]
+        "adminGroupId": shared_zone_test_context.ok_group["id"],
+        "backendId": "func-test-backend"
     }
     client.update_zone(zone, status=404)
 
@@ -1045,8 +883,14 @@ def test_activate_reverse_v4_zone_with_bad_key_fails(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
 
     update = copy.deepcopy(shared_zone_test_context.ip4_reverse_zone)
-    update["connection"]["key"] = "f00sn+4G2ldMn0q1CV3vsg=="
-    client.update_zone(update, status=400)
+    update["connection"] = {
+        "name": "ip4.",
+        "keyName": VinylDNSTestContext.dns_key_name,
+        "key": "f00sn+4G2ldMn0q1CV3vsg==",
+        "primaryServer": VinylDNSTestContext.name_server_ip
+    }
+    result = client.update_zone(update, status=400)
+    assert_that(result, contains_string("Custom zone connections are not supported"))
 
 
 def test_activate_reverse_v6_zone_with_bad_key_fails(shared_zone_test_context):
@@ -1056,8 +900,14 @@ def test_activate_reverse_v6_zone_with_bad_key_fails(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
 
     update = copy.deepcopy(shared_zone_test_context.ip6_reverse_zone)
-    update["connection"]["key"] = "f00sn+4G2ldMn0q1CV3vsg=="
-    client.update_zone(update, status=400)
+    update["connection"] = {
+        "name": "ip6.",
+        "keyName": VinylDNSTestContext.dns_key_name,
+        "key": "f00sn+4G2ldMn0q1CV3vsg==",
+        "primaryServer": VinylDNSTestContext.name_server_ip
+    }
+    result = client.update_zone(update, status=400)
+    assert_that(result, contains_string("Custom zone connections are not supported"))
 
 
 def test_user_cannot_update_zone_to_nonexisting_admin_group(shared_zone_test_context):
@@ -1066,7 +916,6 @@ def test_user_cannot_update_zone_to_nonexisting_admin_group(shared_zone_test_con
     """
     zone_update = copy.deepcopy(shared_zone_test_context.ok_zone)
     zone_update["adminGroupId"] = "some-bad-id"
-    zone_update["connection"]["key"] = VinylDNSTestContext.dns_key
 
     shared_zone_test_context.ok_vinyldns_client.update_zone(zone_update, status=400)
 
@@ -1085,18 +934,7 @@ def test_user_can_update_zone_to_another_admin_group(shared_zone_test_context):
                 "name": f"one-time{shared_zone_test_context.partition_id}.",
                 "email": "test@test.com",
                 "adminGroupId": shared_zone_test_context.dummy_group["id"],
-                "connection": {
-                    "name": "vinyldns.",
-                    "keyName": VinylDNSTestContext.dns_key_name,
-                    "key": VinylDNSTestContext.dns_key,
-                    "primaryServer": VinylDNSTestContext.name_server_ip
-                },
-                "transferConnection": {
-                    "name": "vinyldns.",
-                    "keyName": VinylDNSTestContext.dns_key_name,
-                    "key": VinylDNSTestContext.dns_key,
-                    "primaryServer": VinylDNSTestContext.name_server_ip
-                }
+                "backendId": "func-test-backend"
             }, status=202
         )
         zone = result["zone"]
@@ -1213,13 +1051,8 @@ def test_update_connection_info_success(shared_zone_test_context):
     client = shared_zone_test_context.ok_vinyldns_client
     zone = shared_zone_test_context.system_test_zone
 
-    # validating current zone state
     to_update = client.get_zone(zone["id"])["zone"]
-    assert_that(to_update, has_key("connection"))
-    assert_that(to_update, has_key("transferConnection"))
-
-    to_update.pop("connection")
-    to_update.pop("transferConnection")
+    assert_that(to_update, has_key("backendId"))
     to_update["backendId"] = "func-test-backend"
     test_rs = None
     try:
@@ -1227,8 +1060,6 @@ def test_update_connection_info_success(shared_zone_test_context):
         client.wait_until_zone_change_status_synced(change)
         new_zone = change["zone"]
 
-        assert_that(new_zone, is_not(has_key("connection")))
-        assert_that(new_zone, is_not(has_key("transferConnection")))
         assert_that(new_zone["backendId"], is_("func-test-backend"))
 
         # test adding a recordset - validates the key
@@ -1253,8 +1084,6 @@ def test_update_connection_info_invalid_backendid(shared_zone_test_context):
     zone = shared_zone_test_context.ok_zone
 
     to_update = client.get_zone(zone["id"])["zone"]
-    to_update.pop("connection")
-    to_update.pop("transferConnection")
     to_update["backendId"] = "bad-backend-id"
 
     result = client.update_zone(to_update, status=400)

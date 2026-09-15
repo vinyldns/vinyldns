@@ -102,13 +102,21 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
             val sb = new StringBuilder
             sb.append(BASE_GET_USERS)
             sb.append("WHERE ID IN (" + userIds.toList.as("?").mkString(",") + ")")
-            startFrom.foreach(start => sb.append(s" AND id > '$start'"))
+            // Bound parameters appended after the IN-clause placeholders, in order.
+            val extraParams = scala.collection.mutable.ListBuffer[Any]()
+            startFrom.foreach { start =>
+              sb.append(" AND id > ?")
+              extraParams += start
+            }
             sb.append(" ORDER BY id ASC")
             // Grab one more than the maxItem limit, if provided, to determine whether nextId should be returned
-            maxItems.foreach(limit => sb.append(s" LIMIT ${limit + 1}"))
+            maxItems.foreach { limit =>
+              sb.append(" LIMIT ?")
+              extraParams += (limit + 1)
+            }
             val query = sb.toString
             SQL(query)
-              .bind(userIds.toList: _*)
+              .bind(userIds.toList ++ extraParams.toList: _*)
               .map(toUser(1))
               .list()
               .apply()

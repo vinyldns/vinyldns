@@ -24,11 +24,15 @@ import vinyldns.api.Interfaces.ensuring
 import vinyldns.core.Messages._ 
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record.RecordType
-import vinyldns.core.domain.zone.{ACLRule, Zone, ZoneACL}
+import vinyldns.core.domain.zone.{ACLRule, Zone, ZoneACL, ZoneConnection}
 
 import scala.util.{Failure, Success, Try}
 
 class ZoneValidations(syncDelayMillis: Int) {
+
+  private val customConnectionError = InvalidRequest(
+    "Custom zone connections are not supported; use a configured backendId"
+  )
 
   def outsideSyncDelay(zone: Zone): Either[Throwable, Unit] =
     zone.latestSync match {
@@ -36,6 +40,23 @@ class ZoneValidations(syncDelayMillis: Int) {
         RecentSyncError(RecentSyncErrorMsg.format(zone.name)).asLeft
       }
       case _ => Right(())
+    }
+
+  def noCustomZoneConnections(
+      connection: Option[ZoneConnection],
+      transferConnection: Option[ZoneConnection]
+  ): Either[Throwable, Unit] =
+    ensuring(customConnectionError)(connection.isEmpty && transferConnection.isEmpty)
+
+  // Allows removing a pre-existing connection, but rejects introducing or modifying one.
+  def noCustomZoneConnectionUpdates(newZone: Zone, existingZone: Zone): Either[Throwable, Unit] =
+    if (
+      newZone.connection != existingZone.connection ||
+      newZone.transferConnection != existingZone.transferConnection
+    ) {
+      noCustomZoneConnections(newZone.connection, newZone.transferConnection)
+    } else {
+      Right(())
     }
 
   // TODO - zone ACL validations should happen up front as input validation longer term
