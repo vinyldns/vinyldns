@@ -38,7 +38,6 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.TestMembershipData.{dummyAuth, dummyGroup, okGroup, okUser}
 
 import scala.concurrent.duration._
-import scala.util.Random
 
 class MySqlZoneChangeRepositoryIntegrationSpec
     extends AnyWordSpec
@@ -78,32 +77,44 @@ class MySqlZoneChangeRepositoryIntegrationSpec
     val statuses: List[ZoneChangeStatus] = ZoneChangeStatus.Pending :: ZoneChangeStatus.Failed ::
       ZoneChangeStatus.Synced :: Nil
 
+    private val baseCreated = Instant.now.truncatedTo(ChronoUnit.MILLIS)
+
     val changes
-        : IndexedSeq[ZoneChange] = for { zone <- zones; status <- statuses } yield ZoneChange(
-      zone,
-      zone.account,
-      ZoneChangeType.Update,
-      status,
-      created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(Random.nextInt(1000))
-    )
+        : IndexedSeq[ZoneChange] =
+      (for { zone <- zones; status <- statuses } yield (zone, status)).zipWithIndex.map {
+        case ((zone, status), idx) =>
+          ZoneChange(
+            zone,
+            zone.account,
+            ZoneChangeType.Update,
+            status,
+            created = baseCreated.minusSeconds((idx + 1).toLong)
+          )
+      }
 
     val failedChanges
-    : IndexedSeq[ZoneChange] = for { zone <- zones } yield ZoneChange(
-      zone,
-      zone.account,
-      ZoneChangeType.Update,
-      status= ZoneChangeStatus.Failed,
-      created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(Random.nextInt(1000))
-    )
+    : IndexedSeq[ZoneChange] = zones.zipWithIndex.map {
+      case (zone, idx) =>
+        ZoneChange(
+          zone,
+          zone.account,
+          ZoneChangeType.Update,
+          status = ZoneChangeStatus.Failed,
+          created = baseCreated.minusSeconds((idx + 1).toLong)
+        )
+    }
 
     val successChanges
-    : IndexedSeq[ZoneChange] = for { zone <- zones } yield ZoneChange(
-      zone,
-      zone.account,
-      ZoneChangeType.Update,
-      status= ZoneChangeStatus.Synced,
-      created = Instant.now.truncatedTo(ChronoUnit.MILLIS).minusSeconds(Random.nextInt(1000))
-    )
+    : IndexedSeq[ZoneChange] = zones.zipWithIndex.map {
+      case (zone, idx) =>
+        ZoneChange(
+          zone,
+          zone.account,
+          ZoneChangeType.Update,
+          status = ZoneChangeStatus.Synced,
+          created = baseCreated.minusSeconds((idx + 101).toLong)
+        )
+    }
 
     val groups = (11 until 20)
       .map(num => okGroup.copy(name = num.toString, id = UUID.randomUUID().toString))
