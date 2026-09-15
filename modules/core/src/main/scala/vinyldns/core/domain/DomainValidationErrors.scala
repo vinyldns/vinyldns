@@ -146,14 +146,18 @@ final case class UserIsNotAuthorizedError(
 
   def message: String = {
     val groupName = ownerGroupName.getOrElse(ownerGroupId)
-    val groupUrl  = s"/groups/$ownerGroupId"
-    val contact   = contactEmail.getOrElse("")
+    val guidanceMsg = contactEmail match {
+      case Some(email) if email.nonEmpty =>
+        s"Only members of this group may update the record. Please contact them for assistance: $email."
+      case _ =>
+        "Only members of this group may update the record."
+    }
 
     NotAuthorizedErrorMsg.format(
       recordName,
       groupName,
-      groupUrl,
-      contact
+      ownerGroupId,
+      guidanceMsg
     )
   }
 }

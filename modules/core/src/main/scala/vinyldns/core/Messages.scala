@@ -130,7 +130,7 @@ object Messages {
 
   val DeleteRecordDataDoesNotExistErrorMsg: String = "Record data %s does not exist for \"%s\".".orConfig
 
-  val NotAuthorizedErrorMsg: String = "The record \"%s\" is owned by the [%s] group(%s). Only members of this group may update the record. Please contact them for assistance: %s.".orConfig
+  val NotAuthorizedErrorMsg: String = "The record \"%s\" is owned by the %s group (id: %s). %s".orConfig
 
   val InvalidIPv4CNameErrorMsg: String = "Invalid Cname: \"%s\", Valid CNAME record data should not be an IP address".orConfig
 
