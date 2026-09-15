@@ -491,6 +491,7 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
         .unsafeRunSync()
 
       found.recordSets.map(_.zoneId) should contain theSameElementsAs zones.take(29).map(_.id)
+      found.totalCount shouldBe Some(29)
     }
     "return recordsets from zones shared with everyone when doing a global search" in {
       val allAccessZone = okZone.copy(
@@ -544,6 +545,7 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
         .unsafeRunSync()
 
       found.recordSets should contain theSameElementsAs List(recordSetDataWithFQDN(allAccessChange.recordSet, allAccessZone))
+      found.totalCount shouldBe Some(1)
     }
     "return no recordsets when no zoneId or recordNameFilter are given" in {
       val found =
