@@ -872,7 +872,7 @@ export function DnsChangeDetailPage() {
                 </span>
               )}
               {change.reviewTimestamp && (
-                <span className="text-muted fw-normal">
+                <span className="text-muted fw-normal vds-date-wrap">
                   {" "}
                   · {formatDateTime(change.reviewTimestamp)}
                 </span>

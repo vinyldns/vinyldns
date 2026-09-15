@@ -116,6 +116,28 @@ const changeStatusClass = (status: string) => {
   return "vds-zone-status-badge--pending";
 };
 
+const formatDateTimeStack = (dateStr?: string): React.ReactNode => {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return "—";
+  const datePart = d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const timePart = d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  return (
+    <span className="vds-zone-change-datetime">
+      <span className="vds-zone-change-datetime__date">{datePart}</span>
+      <span className="vds-zone-change-datetime__time">{timePart}</span>
+    </span>
+  );
+};
+
 export function ZoneDetailPage() {
   const { id = "" } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
@@ -126,7 +148,12 @@ export function ZoneDetailPage() {
 
   const [activeTab, setActiveTab] = useState<DetailTab>("records");
   const [showRecordForm, setShowRecordForm] = useState(false);
-  const [editRecord, setEditRecord] = useState<RecordSet | null>(null);
+  const [editRecord, setEditRecord]        = useState<RecordSet | null>(null);
+  const recordFormRef = useRef<HTMLDivElement>(null);
+  const recordSnapshotRef = useRef('');
+  const [recordFormDirty, setRecordFormDirty] = useState(false);
+  const aclRuleSnapshotRef = useRef('');
+  const [aclRuleDirty, setAclRuleDirty] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState<RecordSet | null>(null);
   const [nameFilter, setNameFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -214,12 +241,57 @@ export function ZoneDetailPage() {
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const ttlDropdownRef = useRef<HTMLDivElement>(null);
 
-  const {
-    data: zoneData,
-    isLoading: zoneLoading,
-    isFetching: zoneFetching,
-  } = useQuery({
-    queryKey: ["zone", id],
+  const serializeFormState = useCallback((root: HTMLElement | null) => {
+    if (!root) return '';
+    const fields = Array.from(root.querySelectorAll('input, textarea, select')) as Array<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
+
+    return fields
+      .map((field, index) => {
+        const key = field.getAttribute('name') ?? field.getAttribute('id') ?? `${field.tagName.toLowerCase()}-${index}`;
+        if (field instanceof HTMLInputElement) {
+          if (field.type === 'checkbox' || field.type === 'radio') return `${key}:${field.checked}`;
+          if (field.type === 'file') return `${key}:${field.files?.length ?? 0}`;
+        }
+        return `${key}:${field.value}`;
+      })
+      .join('|');
+  }, []);
+
+  const confirmDiscardRecordChanges = useCallback(() => {
+    if (!recordFormDirty) return true;
+    return window.confirm('You have unsaved changes. Do you want to close this form and discard them?');
+  }, [recordFormDirty]);
+
+  const closeRecordForm = useCallback(() => {
+    if (confirmDiscardRecordChanges()) {
+      setShowRecordForm(false);
+      setEditRecord(null);
+    }
+  }, [confirmDiscardRecordChanges]);
+
+  const confirmDiscardAclRuleChanges = useCallback(() => {
+    if (!aclRuleDirty) return true;
+    return window.confirm('You have unsaved changes. Do you want to close this form and discard them?');
+  }, [aclRuleDirty]);
+
+  const closeAclRuleModal = useCallback(() => {
+    if (confirmDiscardAclRuleChanges()) {
+      setAclRuleModal(null);
+    }
+  }, [confirmDiscardAclRuleChanges]);
+
+  const runWithRecordFormGuard = useCallback((action: () => void) => {
+    const formOpen = showRecordForm || !!editRecord;
+    if (formOpen && !confirmDiscardRecordChanges()) return;
+    if (formOpen) {
+      setShowRecordForm(false);
+      setEditRecord(null);
+    }
+    action();
+  }, [showRecordForm, editRecord, confirmDiscardRecordChanges]);
+
+  const { data: zoneData, isLoading: zoneLoading, isFetching: zoneFetching, } = useQuery({
+    queryKey: ['zone', id],
     queryFn: async () => {
       const res = await zonesService.getZone(id);
       return res.data.zone;
@@ -827,6 +899,73 @@ export function ZoneDetailPage() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  useEffect(() => {
+    if (!(showRecordForm || editRecord)) {
+      recordSnapshotRef.current = '';
+      setRecordFormDirty(false);
+      return;
+    }
+
+    const node = recordFormRef.current;
+    if (!node) return;
+
+    const updateDirty = () => {
+      setRecordFormDirty(serializeFormState(node) !== recordSnapshotRef.current);
+    };
+
+    recordSnapshotRef.current = serializeFormState(node);
+    updateDirty();
+
+    node.addEventListener('input', updateDirty);
+    node.addEventListener('change', updateDirty);
+
+    return () => {
+      node.removeEventListener('input', updateDirty);
+      node.removeEventListener('change', updateDirty);
+    };
+  }, [showRecordForm, editRecord, serializeFormState]);
+
+  useEffect(() => {
+    if (!((showRecordForm || editRecord) && recordFormDirty)) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [showRecordForm, editRecord, recordFormDirty]);
+
+  useEffect(() => {
+    if (!aclRuleModal) {
+      aclRuleSnapshotRef.current = '';
+      setAclRuleDirty(false);
+      return;
+    }
+
+    const currentSnapshot = JSON.stringify(aclRuleModal.rule);
+    if (!aclRuleSnapshotRef.current) {
+      aclRuleSnapshotRef.current = currentSnapshot;
+      setAclRuleDirty(false);
+      return;
+    }
+
+    setAclRuleDirty(currentSnapshot !== aclRuleSnapshotRef.current);
+  }, [aclRuleModal]);
+
+  useEffect(() => {
+    if (!(aclRuleModal && aclRuleDirty)) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [aclRuleModal, aclRuleDirty]);
+
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleCreateRecord = (data: Partial<RecordSet>) => {
     createRecord(data, { onSuccess: () => setShowRecordForm(false) });
@@ -899,7 +1038,7 @@ export function ZoneDetailPage() {
   return (
     <div>
       {/* ── Page header ── */}
-      <div className="rounded-3 mb-3 d-flex justify-content-between align-items-center vds-page-header vds-page-header--lg">
+      <div className="rounded-3 mb-2 d-flex justify-content-between align-items-center vds-page-header vds-page-header--lg">
         <div className="d-flex align-items-center gap-3">
           <div className="vds-zone-detail-avatar">
             {initials(zoneData.name)}
@@ -937,7 +1076,7 @@ export function ZoneDetailPage() {
         </button>
       </div>
 
-      <div className="vds-zone-meta-strip mb-3">
+      <div className="vds-zone-meta-strip mb-2">
         <div
           className="vds-zone-meta-item"
           style={{ cursor: "pointer", userSelect: "none" }}
@@ -985,9 +1124,7 @@ export function ZoneDetailPage() {
           </div>
           <div>
             <div className="vds-zone-meta-label">Created</div>
-            <div className="vds-zone-meta-value">
-              {zoneData.created ? formatDateTime(zoneData.created) : "—"}
-            </div>
+            <div className="vds-zone-meta-value vds-date-wrap">{zoneData.created ? formatDateTime(zoneData.created) : '—'}</div>
           </div>
         </div>
         <div className="vds-zone-meta-item">
@@ -996,9 +1133,7 @@ export function ZoneDetailPage() {
           </div>
           <div>
             <div className="vds-zone-meta-label">Last Sync</div>
-            <div className="vds-zone-meta-value">
-              {zoneData.latestSync ? formatDateTime(zoneData.latestSync) : "—"}
-            </div>
+            <div className="vds-zone-meta-value vds-date-wrap">{zoneData.latestSync ? formatDateTime(zoneData.latestSync) : '—'}</div>
           </div>
         </div>
         {zoneData.backendId && (
@@ -1015,7 +1150,7 @@ export function ZoneDetailPage() {
       </div>
 
       {/* ── Tab toolbar ── */}
-      <div className="card mb-3 vds-toolbar-card">
+      <div className="card mb-2 vds-toolbar-card">
         <div className="card-body py-2 px-3">
           <div className="vds-pill-toggle">
             <button
@@ -1064,18 +1199,10 @@ export function ZoneDetailPage() {
                 className="modal fade show d-block"
                 tabIndex={-1}
                 role="dialog"
-                onClick={(e) => {
-                  if (e.target === e.currentTarget) {
-                    setShowRecordForm(false);
-                    setEditRecord(null);
-                  }
-                }}
+                onClick={(e) => { if (e.target === e.currentTarget) closeRecordForm(); }}
               >
-                <div
-                  className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable"
-                  role="document"
-                >
-                  <div className="modal-content">
+                <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+                  <div className="modal-content" ref={recordFormRef}>
                     <div
                       className="modal-header"
                       style={{
@@ -1096,10 +1223,7 @@ export function ZoneDetailPage() {
                       <button
                         type="button"
                         className="btn-close btn-close-white"
-                        onClick={() => {
-                          setShowRecordForm(false);
-                          setEditRecord(null);
-                        }}
+                        onClick={closeRecordForm}
                       />
                     </div>
                     <div className="modal-body">
@@ -1107,14 +1231,9 @@ export function ZoneDetailPage() {
                         zoneId={id}
                         zoneName={zoneData.name}
                         initialData={editRecord ?? undefined}
-                        onSubmit={
-                          editRecord ? handleUpdateRecord : handleCreateRecord
-                        }
-                        onCancel={() => {
-                          setShowRecordForm(false);
-                          setEditRecord(null);
-                        }}
-                        mode={editRecord ? "edit" : "create"}
+                        onSubmit={editRecord ? handleUpdateRecord : handleCreateRecord}
+                        onCancel={closeRecordForm}
+                        mode={editRecord ? 'edit' : 'create'}
                         isSharedZone={zoneData?.shared ?? false}
                         isReverseZone={
                           zoneData.name.endsWith("in-addr.arpa.") ||
@@ -1146,7 +1265,7 @@ export function ZoneDetailPage() {
             <>
               {/* ── Recent Record Changes ── */}
               {recentRcData?.recordSetChanges?.length ? (
-                <div className="vds-recent-changes-panel mb-3">
+                <div className="vds-recent-changes-panel mb-2">
                   <div className="vds-recent-changes-panel__header">
                     <i className="bi bi-clock-history me-2" />
                     Recent Record Changes
@@ -1161,11 +1280,7 @@ export function ZoneDetailPage() {
                       />
                       <button
                         className="btn btn-sm vds-btn-flat d-flex align-items-center gap-1"
-                        onClick={() =>
-                          void queryClient.invalidateQueries({
-                            queryKey: ["record-changes-recent", id],
-                          })
-                        }
+                        onClick={() => runWithRecordFormGuard(() => void queryClient.invalidateQueries({ queryKey: ['record-changes-recent', id] }))}
                         title="Refresh recent changes"
                       >
                         <i className="bi bi-arrow-clockwise" />
@@ -1193,166 +1308,88 @@ export function ZoneDetailPage() {
                       </button>
                     </div>
                   </div>
-                  {recentChangesOpen &&
-                    (recentRcFetching ? (
-                      <LoadingSpinner />
-                    ) : (
-                      <>
-                        <div className="vds-zones-table-wrap">
-                          <table className="vds-zones-table">
-                            <thead>
-                              <tr>
-                                <th>Record</th>
-                                <th>Type</th>
-                                <th>Change</th>
-                                <th>Status</th>
-                                <th>User</th>
-                                <th
-                                  onClick={() =>
-                                    setRecentRcDateSort((d) =>
-                                      d === "asc" ? "desc" : "asc",
-                                    )
-                                  }
-                                  style={{
-                                    cursor: "pointer",
-                                    userSelect: "none",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  Date <SortArrow dir={recentRcDateSort} />
-                                </th>
-                                <th>Additional Info</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {[...recentRcData.recordSetChanges]
-                                .filter((c) =>
-                                  inRange(
-                                    c.created,
-                                    recentRcTimeRange,
-                                    recentRcDateFrom,
-                                    recentRcDateTo,
-                                  ),
-                                )
-                                .sort((a, b) =>
-                                  recentRcDateSort
-                                    ? (recentRcDateSort === "asc" ? 1 : -1) *
-                                      (new Date(a.created).getTime() -
-                                        new Date(b.created).getTime())
-                                    : 0,
-                                )
-                                .map((c) => (
-                                  <tr key={c.id}>
-                                    <td className="fw-semibold vds-table-primary">
-                                      {c.recordSet.name}
-                                    </td>
-                                    <td>
-                                      <span className="vds-record-type-badge">
-                                        {c.recordSet.type}
-                                      </span>
-                                    </td>
-                                    <td>
-                                      <span
-                                        className={`vds-change-badge vds-change-badge--${c.changeType.toLowerCase()}`}
-                                      >
-                                        {c.changeType}
-                                      </span>
-                                    </td>
-                                    <td>
-                                      <span
-                                        className={`vds-zone-status-badge ${changeStatusClass(c.status)}`}
-                                      >
-                                        {c.status}
-                                      </span>
-                                    </td>
-                                    <td className="vds-table-secondary vds-table-nowrap small">
-                                      {c.userName ?? c.userId}
-                                    </td>
-                                    <td className="vds-table-secondary vds-table-nowrap small">
-                                      {formatDateTime(c.created)}
-                                    </td>
-                                    <td className="small">
-                                      {c.changeType === "Create" && (
-                                        <button
-                                          className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                          onClick={() =>
-                                            setViewingRecordSet({
-                                              label: "Created Record Set",
-                                              rs: c.recordSet,
-                                            })
-                                          }
-                                        >
-                                          <i className="bi bi-eye" />
-                                          View created recordset
-                                        </button>
-                                      )}
-                                      {c.changeType === "Update" && (
-                                        <div className="d-flex flex-column gap-1">
-                                          <button
-                                            className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                            onClick={() =>
-                                              setViewingRecordSet({
-                                                label: "New Record Set",
-                                                rs: c.recordSet,
-                                              })
-                                            }
-                                          >
-                                            <i className="bi bi-eye" />
-                                            View new recordset
-                                          </button>
-                                          {c.updates?.recordSet && (
-                                            <button
-                                              className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                              onClick={() =>
-                                                setViewingRecordSet({
-                                                  label: "Old Record Set",
-                                                  rs: c.updates!.recordSet!,
-                                                })
-                                              }
-                                            >
-                                              <i className="bi bi-clock-history" />
-                                              View old recordset
-                                            </button>
-                                          )}
-                                        </div>
-                                      )}
-                                      {c.changeType === "Delete" && (
-                                        <button
-                                          className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                          onClick={() =>
-                                            setViewingRecordSet({
-                                              label: "Deleted Record Set",
-                                              rs: c.recordSet,
-                                            })
-                                          }
-                                        >
-                                          <i className="bi bi-clock-history" />
-                                          View deleted recordset
-                                        </button>
-                                      )}
-                                    </td>
-                                  </tr>
-                                ))}
-                            </tbody>
-                          </table>
-                        </div>
-                        {(recentRcNextEnabled || recentRcPrevEnabled) && (
-                          <Pagination
-                            onPrev={recentRcPrevPage}
-                            onNext={recentRcNextPage}
-                            prevEnabled={recentRcPrevEnabled}
-                            nextEnabled={recentRcNextEnabled}
-                            panelTitle={recentRcPanelTitle()}
-                          />
-                        )}
-                      </>
-                    ))}
+                  {recentChangesOpen && (
+                    <>
+                      <div className="vds-zones-table-wrap">
+                        <table className="vds-zones-table">
+                        <thead>
+                          <tr>
+                            <th>Record</th>
+                            <th>Type</th>
+                            <th>Change</th>
+                            <th>Status</th>
+                            <th>User</th>
+                            <th
+                              onClick={() => setRecentRcDateSort((d) => d === 'asc' ? 'desc' : 'asc')}
+                              style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
+                            >Date <SortArrow dir={recentRcDateSort} /></th>
+                            <th>Additional Info</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[...(recentRcData.recordSetChanges)]
+                            .filter((c) => inRange(c.created, recentRcTimeRange, recentRcDateFrom, recentRcDateTo))
+                            .sort((a, b) => recentRcDateSort
+                              ? (recentRcDateSort === 'asc' ? 1 : -1) * (new Date(a.created).getTime() - new Date(b.created).getTime())
+                              : 0)
+                            .map((c) => (
+                            <tr key={c.id}>
+                              <td className="fw-semibold vds-table-primary">{c.recordSet.name}</td>
+                              <td className="vds-table-secondary fw-semibold">{c.recordSet.type}</td>
+                              <td><span className={`vds-change-badge vds-change-badge--${c.changeType.toLowerCase()}`}>{c.changeType}</span></td>
+                              <td><span className={`vds-zone-status-badge ${changeStatusClass(c.status)}`}>{c.status}</span></td>
+                              <td className="vds-table-secondary vds-table-nowrap small">{c.userName ?? c.userId}</td>
+                              <td className="vds-table-secondary small vds-date-wrap">{formatDateTimeStack(c.created)}</td>
+                              <td className="small">
+                                {c.changeType === 'Create' && (
+                                  <button
+                                    className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                    onClick={() => setViewingRecordSet({ label: 'Created Record Set', rs: c.recordSet })}>
+                                    <i className="bi bi-eye" />View created recordset
+                                  </button>
+                                )}
+                                {c.changeType === 'Update' && (
+                                  <div className="d-flex flex-column gap-1">
+                                    <button
+                                      className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                      onClick={() => setViewingRecordSet({ label: 'New Record Set', rs: c.recordSet })}>
+                                      <i className="bi bi-eye" />View new recordset
+                                    </button>
+                                    {c.updates?.recordSet && (
+                                      <button
+                                        className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                        onClick={() => setViewingRecordSet({ label: 'Old Record Set', rs: c.updates!.recordSet! })}>
+                                        <i className="bi bi-clock-history" />View old recordset
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                                {c.changeType === 'Delete' && (
+                                  <button
+                                    className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                    onClick={() => setViewingRecordSet({ label: 'Deleted Record Set', rs: c.recordSet })}>
+                                    <i className="bi bi-clock-history" />View deleted recordset
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {false && (recentRcNextEnabled || recentRcPrevEnabled) && (
+                      <Pagination onPrev={recentRcPrevPage} onNext={recentRcNextPage}
+                        prevEnabled={recentRcPrevEnabled} nextEnabled={recentRcNextEnabled}
+                        panelTitle={recentRcPanelTitle()} />
+                    )}
+                    </>
+                  )}
                 </div>
               ) : null}
 
               {/* Records toolbar */}
               <div className="card mb-2 vds-toolbar-card">
-                <div className="card-body py-2 px-3">
+                <div className="card-body py-2 px-2">
                   <div className="d-flex gap-2 align-items-center flex-wrap">
                     <div className="vds-record-count-badge">
                       <i className="bi bi-file-earmark-text vds-record-count-badge__icon" />
@@ -1557,13 +1594,10 @@ export function ZoneDetailPage() {
                       )}
                     </div>
 
-                    <div className="ms-auto d-flex align-items-center gap-2">
+                    <div className="ms-auto d-flex align-items-center gap-2 flex-wrap justify-content-end">
                       <button
-                        className="btn btn-sm d-flex align-items-center gap-1 vds-btn-nav"
-                        onClick={() => {
-                          setShowRecordForm(true);
-                          setEditRecord(null);
-                        }}
+                        className="btn btn-sm d-flex align-items-center gap-1 vds-btn-nav vds-create-record-btn"
+                        onClick={() => { setShowRecordForm(true); setEditRecord(null); }}
                       >
                         <i className="bi bi-plus-circle-fill" />
                         Create New Record
@@ -1583,17 +1617,18 @@ export function ZoneDetailPage() {
                       </button>
                       <button
                         className="btn btn-sm d-flex align-items-center gap-1 vds-btn-flat"
-                        onClick={() => {
-                          setNameFilter("");
-                          setTypeFilter("");
-                          setStatusFilter("");
+                        disabled={recordsFetching}
+                        onClick={() => runWithRecordFormGuard(() => {
+                          setNameFilter('');
+                          setTypeFilter('');
+                          setStatusFilter('');
                           setTtlFilter(null);
                           searchRecords({ name: "", type: "" });
                           void refetchRecords();
-                        }}
+                        })}
                       >
-                        <i className="bi bi-arrow-clockwise" />
-                        <span className="vds-btn-flat__label">Refresh</span>
+                        <i className={`bi bi-arrow-clockwise${recordsFetching ? ' vds-spin' : ''}`} />
+                        <span className="vds-btn-flat__label">{recordsFetching ? 'Refreshing...' : 'Refresh'}</span>
                       </button>
                     </div>
                   </div>
@@ -1684,45 +1719,55 @@ export function ZoneDetailPage() {
                 </div>
               )}
 
-              <RecordsTable
-                records={records.filter(
-                  (r) =>
-                    (!statusFilter || r.status === statusFilter) &&
-                    (ttlFilter === null || r.ttl === ttlFilter),
+              <div className="position-relative">
+                {recordsFetching && (
+                  <div className="vds-table-fetch-overlay" role="status" aria-live="polite" aria-label="Refreshing records">
+                    <div className="vds-table-fetch-spinner">
+                      <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+                      Refreshing records...
+                    </div>
+                  </div>
                 )}
-                onEdit={(rec) => {
-                  setEditRecord(rec);
-                  setShowRecordForm(false);
-                }}
-                onDelete={setRecordToDelete}
-                isSharedZone={zoneData.shared ?? false}
-                isSuper={isSuper}
-                isSupport={isSupport}
-                isZoneAdmin={isZoneAdmin}
-                userGroupIds={userGroupIds}
-                onRequestOwnership={(rec) => {
-                  const mode = rec.ownerGroupId ? "request" : "claim";
-                  setOwnershipGroupId("");
-                  setOwnershipModal({ mode, record: rec });
-                }}
-                onCloseOwnershipRequest={(rec) =>
-                  cancelOwnershipRequestMutation.mutate(rec)
-                }
-                onApproveOwnership={(rec) =>
-                  approveOwnershipMutation.mutate(rec)
-                }
-                onRejectOwnership={(rec) => rejectOwnershipMutation.mutate(rec)}
-              />
-              {(recNextEnabled || recPrevEnabled) && (
-                <Pagination
-                  onPrev={recordsPrev}
-                  onNext={recordsNext}
-                  prevEnabled={recPrevEnabled}
-                  nextEnabled={recNextEnabled}
-                  panelTitle={recPanelTitle()}
+                <RecordsTable
+                  records={records.filter(
+                    (r) =>
+                      (!statusFilter || r.status === statusFilter) &&
+                      (ttlFilter === null || r.ttl === ttlFilter),
+                  )}
+                  onEdit={(rec) => {
+                    setEditRecord(rec);
+                    setShowRecordForm(false);
+                  }}
+                  onDelete={setRecordToDelete}
+                  isSharedZone={zoneData.shared ?? false}
+                  isSuper={isSuper}
+                  isSupport={isSupport}
+                  isZoneAdmin={isZoneAdmin}
+                  userGroupIds={userGroupIds}
+                  onRequestOwnership={(rec) => {
+                    const mode = rec.ownerGroupId ? "request" : "claim";
+                    setOwnershipGroupId("");
+                    setOwnershipModal({ mode, record: rec });
+                  }}
+                  onCloseOwnershipRequest={(rec) =>
+                    cancelOwnershipRequestMutation.mutate(rec)
+                  }
+                  onApproveOwnership={(rec) =>
+                    approveOwnershipMutation.mutate(rec)
+                  }
+                  onRejectOwnership={(rec) => rejectOwnershipMutation.mutate(rec)}
                 />
-              )}
-            </>
+              </div>
+                {false && (recNextEnabled || recPrevEnabled) && (
+                  <Pagination
+                    onPrev={recordsPrev}
+                    onNext={recordsNext}
+                    prevEnabled={recPrevEnabled}
+                    nextEnabled={recNextEnabled}
+                    panelTitle={recPanelTitle()}
+                  />
+                )}
+              </>
           )}
 
           {/* Delete modal */}
@@ -2034,7 +2079,7 @@ export function ZoneDetailPage() {
               </div>
             </div>
             <div className="vds-zones-table-wrap">
-              <table className="vds-zones-table">
+              <table className="vds-zones-table vds-zone-record-changes-table">
                 <thead>
                   <tr>
                     <th
@@ -2047,10 +2092,10 @@ export function ZoneDetailPage() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      Time <SortArrow dir={rcTimeSort} />
+                      Date & Time <SortArrow dir={rcTimeSort} />
                     </th>
                     <th>Recordset Name</th>
-                    <th>Recordset Type</th>
+                    <th>Recordset <br />Type</th>
                     <th>Change Type</th>
                     <th>User</th>
                     <th>Status</th>
@@ -2079,16 +2124,14 @@ export function ZoneDetailPage() {
                       )
                       .map((c) => (
                         <tr key={c.id}>
-                          <td className="vds-table-secondary vds-table-nowrap small">
-                            {formatDateTime(c.created)}
+                          <td className="vds-table-secondary small">
+                            {formatDateTimeStack(c.created)}
                           </td>
                           <td className="fw-semibold vds-table-primary">
                             {c.recordSet.name}
                           </td>
-                          <td>
-                            <span className="vds-record-type-badge">
-                              {c.recordSet.type}
-                            </span>
+                          <td className="vds-table-secondary fw-semibold vds-table-nowrap">
+                            {c.recordSet.type}
                           </td>
                           <td>
                             <div className="d-flex align-items-center gap-1 flex-wrap">
@@ -2206,14 +2249,9 @@ export function ZoneDetailPage() {
                 </tbody>
               </table>
             </div>
-            {(rcNextEnabled || rcPrevEnabled) && (
-              <Pagination
-                onPrev={rcPrevPage}
-                onNext={rcNextPage}
-                prevEnabled={rcPrevEnabled}
-                nextEnabled={rcNextEnabled}
-                panelTitle={rcPanelTitle()}
-              />
+            {false && (rcNextEnabled || rcPrevEnabled) && (
+              <Pagination onPrev={rcPrevPage} onNext={rcNextPage}
+                prevEnabled={rcPrevEnabled} nextEnabled={rcNextEnabled} panelTitle={rcPanelTitle()} />
             )}
           </div>
         ))}
@@ -2238,11 +2276,7 @@ export function ZoneDetailPage() {
                 />
                 <button
                   className="btn btn-sm vds-btn-flat d-flex align-items-center gap-1"
-                  onClick={() =>
-                    void queryClient.invalidateQueries({
-                      queryKey: ["zone-changes", id],
-                    })
-                  }
+                  onClick={() => runWithRecordFormGuard(() => void queryClient.invalidateQueries({ queryKey: ['zone-changes', id] }))}
                 >
                   <i className="bi bi-arrow-clockwise" />
                   <span className="vds-btn-flat__label">Refresh</span>
@@ -2250,7 +2284,7 @@ export function ZoneDetailPage() {
               </div>
             </div>
             <div className="vds-zones-table-wrap">
-              <table className="vds-zones-table">
+              <table className="vds-zones-table vds-zone-change-history-table">
                 <thead>
                   <tr>
                     <th>User Name</th>
@@ -2348,15 +2382,11 @@ export function ZoneDetailPage() {
                               {c.zone.shared ? "Shared" : "Private"}
                             </span>
                           </td>
-                          <td className="vds-table-secondary vds-table-nowrap small">
-                            {c.zone.created
-                              ? formatDateTime(c.zone.created)
-                              : "—"}
+                          <td className="vds-table-secondary small">
+                            {formatDateTimeStack(c.zone.created)}
                           </td>
-                          <td className="vds-table-secondary vds-table-nowrap small">
-                            {c.zone.updated
-                              ? formatDateTime(c.zone.updated)
-                              : "—"}
+                          <td className="vds-table-secondary small">
+                            {formatDateTimeStack(c.zone.updated)}
                           </td>
                           <td>
                             <div className="d-flex align-items-center gap-1 flex-wrap">
@@ -2430,14 +2460,9 @@ export function ZoneDetailPage() {
                 </tbody>
               </table>
             </div>
-            {(zcNextEnabled || zcPrevEnabled) && (
-              <Pagination
-                onPrev={zcPrevPage}
-                onNext={zcNextPage}
-                prevEnabled={zcPrevEnabled}
-                nextEnabled={zcNextEnabled}
-                panelTitle={zcPanelTitle()}
-              />
+            {false && (zcNextEnabled || zcPrevEnabled) && (
+              <Pagination onPrev={zcPrevPage} onNext={zcNextPage}
+                prevEnabled={zcPrevEnabled} nextEnabled={zcNextEnabled} panelTitle={zcPanelTitle()} />
             )}
           </div>
         ))}
@@ -2507,7 +2532,7 @@ export function ZoneDetailPage() {
             </div>
 
             {zoneInfoOpen && (
-              <div className="p-4">
+              <div className="p-2">
                 {!isZoneAdmin && zoneData && (
                   <div className="row g-4">
                     {[
@@ -2623,7 +2648,7 @@ export function ZoneDetailPage() {
                       {/* ── Left column ── */}
                       <div className="col-lg-6">
                         {/* Zone ID (read-only, copyable) */}
-                        <div className="mb-3">
+                        <div className="mb-2">
                           <label className="vds-zone-form__label">
                             Zone ID
                           </label>
@@ -2827,7 +2852,7 @@ export function ZoneDetailPage() {
                       </button>
                       {zoneConnOpen && (
                         <div
-                          className="p-3 rounded-3 border"
+                          className="p-2 rounded-3 border"
                           style={{ background: "#f8fafc" }}
                         >
                           <div className="row g-3">
@@ -3327,14 +3352,9 @@ export function ZoneDetailPage() {
                                   All Types
                                 </span>
                               ) : (
-                                rule.recordTypes.map((t) => (
-                                  <span
-                                    key={t}
-                                    className="vds-record-type-badge me-1"
-                                  >
-                                    {t}
-                                  </span>
-                                ))
+                                <span className="fw-semibold">
+                                  {rule.recordTypes.join(", ")}
+                                </span>
                               )}
                             </td>
                             <td className="vds-table-secondary small vds-table-mono">
@@ -3394,7 +3414,7 @@ export function ZoneDetailPage() {
 
           {/* ── Zone Sync Schedule Panel (super users only) ── */}
           {isSuper && (
-            <div className="vds-recent-changes-panel mt-4">
+            <div className="vds-recent-changes-panel mt-3">
               <div className="vds-recent-changes-panel__header">
                 <i className="bi bi-calendar-check me-2" />
                 Schedule Zone Sync
@@ -3411,43 +3431,24 @@ export function ZoneDetailPage() {
                   </button>
                 </div>
               </div>
-              {zoneSyncOpen && (
-                <>
-                  <div className="p-4">
-                    <div className="mb-4">
-                      <label className="vds-zone-form__label d-flex align-items-center gap-2">
-                        <i className="bi bi-calendar-week" />
-                        Run on Days
-                      </label>
-                      <div className="d-flex gap-2 flex-wrap mt-2">
-                        {[
-                          { short: "MON", label: "Mon" },
-                          { short: "TUE", label: "Tue" },
-                          { short: "WED", label: "Wed" },
-                          { short: "THU", label: "Thu" },
-                          { short: "FRI", label: "Fri" },
-                          { short: "SAT", label: "Sat" },
-                          { short: "SUN", label: "Sun" },
-                        ].map(({ short, label }) => {
-                          const active = syncDays.includes(short);
-                          return (
-                            <button
-                              key={short}
-                              type="button"
-                              className={`vds-acl-type-chip${active ? " vds-acl-type-chip--active" : ""}`}
-                              disabled={syncScheduleRemove}
-                              onClick={() =>
-                                setSyncDays((prev) =>
-                                  prev.includes(short)
-                                    ? prev.filter((d) => d !== short)
-                                    : [...prev, short],
-                                )
-                              }
-                            >
-                              {label}
-                            </button>
-                          );
-                        })}
+              {zoneSyncOpen && (              <>
+              <div className="p-2">
+                <div className="mb-2">
+                  <label className="vds-zone-form__label d-flex align-items-center gap-2">
+                    <i className="bi bi-calendar-week" />Run on Days
+                  </label>
+                  <div className="d-flex gap-2 flex-wrap mt-2">
+                    {[
+                      { short: 'MON', label: 'Mon' },
+                      { short: 'TUE', label: 'Tue' },
+                      { short: 'WED', label: 'Wed' },
+                      { short: 'THU', label: 'Thu' },
+                      { short: 'FRI', label: 'Fri' },
+                      { short: 'SAT', label: 'Sat' },
+                      { short: 'SUN', label: 'Sun' },
+                    ].map(({ short, label }) => {
+                      const active = syncDays.includes(short);
+                      return (
                         <button
                           type="button"
                           className="btn btn-sm btn-outline-secondary px-2 py-0"
@@ -3459,40 +3460,35 @@ export function ZoneDetailPage() {
                         >
                           Weekdays
                         </button>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-secondary px-2 py-0"
-                          style={{ fontSize: "0.75rem", height: 28 }}
-                          disabled={syncScheduleRemove}
-                          onClick={() =>
-                            setSyncDays([
-                              "MON",
-                              "TUE",
-                              "WED",
-                              "THU",
-                              "FRI",
-                              "SAT",
-                              "SUN",
-                            ])
-                          }
-                        >
-                          All Days
-                        </button>
-                        {syncDays.length > 0 && (
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-danger px-2 py-0"
-                            style={{ fontSize: "0.75rem", height: 28 }}
-                            disabled={syncScheduleRemove}
-                            onClick={() => setSyncDays([])}
-                          >
-                            Clear All
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary px-2 py-0"
+                      style={{ fontSize: '0.75rem', height: 28 }}
+                      disabled={syncScheduleRemove}
+                      onClick={() => setSyncDays(['MON','TUE','WED','THU','FRI'])}
+                    >Weekdays</button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary px-2 py-0"
+                      style={{ fontSize: '0.75rem', height: 28 }}
+                      disabled={syncScheduleRemove}
+                      onClick={() => setSyncDays(['MON','TUE','WED','THU','FRI','SAT','SUN'])}
+                    >All Days</button>
+                    {syncDays.length > 0 && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-danger px-2 py-0"
+                      style={{ fontSize: '0.75rem', height: 28 }}
+                      disabled={syncScheduleRemove}
+                      onClick={() => setSyncDays([])}
+                    >Clear All</button>
+                    )}
+                  </div>
+                </div>
 
-                    <div className="row g-3 mb-4">
+                    <div className="row g-3 mb-2">
                       <div className="col-sm-4">
                         <label className="vds-zone-form__label d-flex align-items-center gap-2">
                           <i className="bi bi-clock" />
@@ -3800,7 +3796,7 @@ export function ZoneDetailPage() {
               className="modal d-block"
               style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
               onMouseDown={(e) => {
-                if (e.target === e.currentTarget) setAclRuleModal(null);
+                if (e.target === e.currentTarget) closeAclRuleModal();
               }}
             >
               <div className="modal-dialog modal-dialog-centered modal-lg">
@@ -3822,7 +3818,7 @@ export function ZoneDetailPage() {
                     <button
                       type="button"
                       className="btn-close btn-close-white"
-                      onClick={() => setAclRuleModal(null)}
+                      onClick={closeAclRuleModal}
                     />
                   </div>
                   <div className="modal-body p-4">
@@ -4171,9 +4167,9 @@ export function ZoneDetailPage() {
                     <button
                       type="button"
                       className="btn btn-sm btn-outline-secondary"
-                      onClick={() => setAclRuleModal(null)}
+                      onClick={closeAclRuleModal}
                     >
-                      Close
+                      Cancel
                     </button>
                     <button
                       type="button"
@@ -4418,14 +4414,7 @@ export function ZoneDetailPage() {
                           <td className="vds-table-secondary small">
                             {!rule.recordTypes?.length
                               ? "All Types"
-                              : rule.recordTypes.map((t) => (
-                                  <span
-                                    key={t}
-                                    className="vds-record-type-badge me-1"
-                                  >
-                                    {t}
-                                  </span>
-                                ))}
+                              : rule.recordTypes.join(", ")}
                           </td>
                           <td className="vds-table-secondary small vds-table-mono">
                             {rule.recordMask ?? "—"}

@@ -15,14 +15,18 @@
  */
 
 export function formatDateTime(timeStamp: string): string {
-  return new Date(timeStamp).toLocaleString('en-us', {
+  const date = new Date(timeStamp);
+  const datePart = date.toLocaleString('en-us', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+  });
+  const timePart = date.toLocaleString('en-us', {
     hour: 'numeric',
     minute: '2-digit',
-    timeZoneName: 'short',
+    hour12: true,
   });
+  return `${datePart}\n${timePart}`;
 }
 
 /** Convert a JS date string back to the VinylDNS API ISO format (no ms) */

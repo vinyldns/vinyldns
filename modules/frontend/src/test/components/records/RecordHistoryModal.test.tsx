@@ -86,9 +86,7 @@ describe("<RecordHistoryModal /> integration", () => {
     const { container } = renderWithProviders(
       <RecordHistoryModal record={record()} onClose={vi.fn()} />,
     );
-    expect(
-      container.querySelector(".vds-loader-backdrop"),
-    ).toBeInTheDocument();
+    expect(container.querySelector(".vds-loader-backdrop")).toBeInTheDocument();
   });
 
   it("renders the empty state when the server returns zero changes", async () => {

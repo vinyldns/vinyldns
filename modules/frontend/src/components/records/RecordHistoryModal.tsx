@@ -163,9 +163,20 @@ function UserAvatar({ name }: { name: string }) {
   );
 }
 
-/** Formats a timestamp as 'Sun May 12 2019 08:59:49' (day dow mon date year time). */
+/** Formats a timestamp as two lines: 'Jun 25, 2021' and '5:10 AM'. */
 export function formatHistoryTime(ts: string): string {
-  return new Date(ts).toString().split(" ").slice(0, 5).join(" ");
+  const date = new Date(ts);
+  const datePart = date.toLocaleString("en-us", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const timePart = date.toLocaleString("en-us", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  return `${datePart}\n${timePart}`;
 }
 
 /**
@@ -593,10 +604,7 @@ export function RecordHistoryModal({
                           const status = String(change.status ?? "");
                           return (
                             <tr key={idx} className="rhm-row">
-                              <td
-                                className="vds-table-secondary small"
-                                style={{ whiteSpace: "nowrap" }}
-                              >
+                              <td className="vds-table-secondary small vds-date-wrap">
                                 {change.created
                                   ? formatHistoryTime(String(change.created))
                                   : "—"}

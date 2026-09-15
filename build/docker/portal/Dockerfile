@@ -1,4 +1,5 @@
 FROM vinyldns/build:base-build-portal as base-build
+
 ARG VINYLDNS_VERSION
 COPY . /build
 WORKDIR /build

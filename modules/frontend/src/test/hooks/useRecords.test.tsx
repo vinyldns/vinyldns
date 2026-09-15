@@ -91,8 +91,7 @@ describe("useRecords", () => {
       const { result } = renderHook(() => useRecords(), {
         wrapper: makeWrapper(),
       });
-      // Query is disabled until nameFilter.length >= 2, so set it via search
-      act(() => result.current.search({ name: "example" }));
+      act(() => result.current.search({ name: "ho", type: "A" }));
       await waitFor(() => expect(result.current.records).toHaveLength(1));
       expect(result.current.nextPageEnabled).toBe(true);
     });

@@ -2,6 +2,7 @@ ARG VINYLDNS_BASE_VERSION=latest
 
 # Build VinylDNS API if the JAR doesn't already exist
 FROM vinyldns/build:base-build as base-build
+
 ARG DOCKERFILE_PATH="test/api/integration"
 COPY "${DOCKERFILE_PATH}/application.conf" /opt/vinyldns/conf/
 COPY . /build/
@@ -21,6 +22,16 @@ FROM vinyldns/build:base-test-integration-${VINYLDNS_BASE_VERSION}
 SHELL ["/bin/bash","-c"]
 ARG DOCKERFILE_PATH
 COPY --from=base-build /opt/vinyldns /opt/vinyldns
+
+# sbt ';verify' runs in this stage and triggers frontend npmTest.
+# Install modern Node/npm here so vitest/rollup run with a compatible runtime.
+ARG NODE_MAJOR=22
+RUN apt-get update && \
+  curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - && \
+  apt-get install -y nodejs && \
+  npm install -g npm@latest && \
+  node --version && npm --version && \
+  rm -rf /var/lib/apt/lists/*
 
 # Copy the project contents
 COPY . /build/

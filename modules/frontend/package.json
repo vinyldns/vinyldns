@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22 <23"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -10,10 +13,10 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
-    "deploy:portal": "./deploy-to-frondend.sh",
+    "deploy:portal": "./deploy-to-frontend.sh",
     "test:watch": "vitest --watch"
   },
   "dependencies": {
