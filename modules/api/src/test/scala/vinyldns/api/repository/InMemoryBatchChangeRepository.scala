@@ -133,8 +133,8 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
     val userBatchChanges = batches.values.toList
       .filter(b => userId.forall(_ == b.userId))
       .filter(bu => userName.forall(_ == bu.userName))
-      .filter(bdtsi => startInstant.forall(_.isBefore(bdtsi.createdTimestamp)))
-      .filter(bdtei => endInstant.forall(_.isAfter(bdtei.createdTimestamp)))
+      .filter(bdtsi => startInstant.forall(!_.isAfter(bdtsi.createdTimestamp)))
+      .filter(bdtei => endInstant.forall(!_.isBefore(bdtei.createdTimestamp)))
       .filter(as => approvalStatus.forall(_ == as.approvalStatus))
     val batchChangeSummaries = for {
       sc <- userBatchChanges
@@ -199,8 +199,8 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
     val filtered = batches.values.toList
       .filter(b => userId.forall(_ == b.userId))
       .filter(b => userName.forall(_ == b.userName))
-      .filter(b => startInstant.forall(_.isBefore(b.createdTimestamp)))
-      .filter(b => endInstant.forall(_.isAfter(b.createdTimestamp)))
+      .filter(b => startInstant.forall(!_.isAfter(b.createdTimestamp)))
+      .filter(b => endInstant.forall(!_.isBefore(b.createdTimestamp)))
       .filter(b => approvalStatus.forall(_ == b.approvalStatus))
 
     val statuses: List[BatchChangeStatus] = filtered.map { sc =>

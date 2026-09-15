@@ -203,7 +203,7 @@ def test_get_batch_change_count_filters_by_approval_status(shared_zone_test_cont
             rejecter.reject_batch_change(pending_bc["id"], status=200)
 
 
-def test_get_batch_change_count_unrecognized_approval_status_is_ignored(shared_zone_test_context):
+def test_get_batch_change_count_unrecognized_approval_status_is_rejected(shared_zone_test_context):
     """
     Test that an unrecognized approvalStatus query value is rejected with HTTP 400
     """
