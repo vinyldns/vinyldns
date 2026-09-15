@@ -413,6 +413,7 @@ function RecordDataFields({
             })}
           />
           <input
+            type="number"
             className="form-control form-control-sm"
             placeholder="mail.example.com."
             style={inputStyle}
@@ -2277,7 +2278,7 @@ export function DnsChangeForm({
                 </span>
                 <br />
                 <span style={{ fontSize: "0.78rem" }}>
-                  Click <strong>Add Change</strong> to get started
+                  Click <strong>Add Row</strong> to get started
                 </span>
               </div>
             ) : (
