@@ -261,7 +261,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
           val appendQueries = initialQuery.append(appendOpts)
           val finalQuery = appendQueries.append(finalQualifiers)
-          
+
           val results = sql"$finalQuery"
             .map(toRecordSet)
             .list()
@@ -270,7 +270,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val newResults = if (maxPlusOne.contains(results.size)) {
             results.dropRight(1)
           } else { results }
-          
+
           // if size of results is less than the maxItems plus one, we don't have a next id
           // if maxItems is None, we don't have a next id
           val nextId = maxPlusOne
@@ -280,7 +280,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val totalCount: Option[Int] =
             if (zoneId.isEmpty) {
               val countQueryBase = sqls"SELECT COUNT(*) FROM recordset"
-              
+
               val countOpts = (zoneAndNameFilters ++ typeFilter ++ ownerGroupFilter ++ authFilter).toList
 
               val countWhere =
