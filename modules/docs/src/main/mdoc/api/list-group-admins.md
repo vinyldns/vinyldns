@@ -12,6 +12,12 @@ Retrieves a group's admins.
 
 > GET /groups/{groupId}/admins
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /groups/6f8afcda-7529-4cad-9f2d-76903f4b1aca/admins
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |

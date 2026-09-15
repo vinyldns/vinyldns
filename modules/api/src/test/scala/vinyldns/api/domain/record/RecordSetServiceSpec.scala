@@ -2300,12 +2300,13 @@ class RecordSetServiceSpec
 
   "getRecordSetChange" should {
     "return the record set change if it is found" in {
+      doReturn(IO.pure(Some(zoneActive))).when(mockZoneRepo).getZone(zoneActive.id)
       doReturn(IO.pure(Some(pendingCreateAAAA)))
         .when(mockRecordChangeRepo)
-        .getRecordSetChange(okZone.id, pendingCreateAAAA.id)
+        .getRecordSetChange(zoneActive.id, pendingCreateAAAA.id)
 
       val actual: RecordSetChange =
-        underTest.getRecordSetChange(okZone.id, pendingCreateAAAA.id, okAuth).value.unsafeRunSync().toOption.get
+        underTest.getRecordSetChange(zoneActive.id, pendingCreateAAAA.recordSet.id, pendingCreateAAAA.id, okAuth).value.unsafeRunSync().toOption.get
       actual shouldBe pendingCreateAAAA
     }
 
@@ -2315,7 +2316,7 @@ class RecordSetServiceSpec
         .getRecordSetChange(sharedZone.id, pendingCreateSharedRecord.id)
 
       val actual: RecordSetChange =
-          underTest.getRecordSetChange(sharedZone.id, pendingCreateSharedRecord.id, okAuth).value.unsafeRunSync().toOption.get
+          underTest.getRecordSetChange(sharedZone.id, pendingCreateSharedRecord.recordSet.id, pendingCreateSharedRecord.id, okAuth).value.unsafeRunSync().toOption.get
 
       actual shouldBe pendingCreateSharedRecord
     }
@@ -2325,8 +2326,24 @@ class RecordSetServiceSpec
         .when(mockRecordChangeRepo)
         .getRecordSetChange(okZone.id, pendingCreateAAAA.id)
       val error =
-        underTest.getRecordSetChange(okZone.id, pendingCreateAAAA.id, okAuth).value.unsafeRunSync().swap.toOption.get
+        underTest.getRecordSetChange(okZone.id, aaaa.id, pendingCreateAAAA.id, okAuth).value.unsafeRunSync().swap.toOption.get
       error shouldBe a[RecordSetChangeNotFoundError]
+    }
+
+    "return a RecordSetNotFoundError if the change belongs to a different record set" in {
+      val differentRsId = "different-rs-id"
+      doReturn(IO.pure(Some(pendingCreateAAAA)))
+        .when(mockRecordChangeRepo)
+        .getRecordSetChange(okZone.id, pendingCreateAAAA.id)
+      
+      val error = underTest
+        .getRecordSetChange(okZone.id, differentRsId, pendingCreateAAAA.id, okAuth)
+        .value
+        .unsafeRunSync()
+        .swap
+        .toOption
+        .get
+      error shouldBe a[RecordSetNotFoundError]
     }
 
     "return a RecordSets Count" in {
@@ -2341,7 +2358,6 @@ class RecordSetServiceSpec
 
       val result = underTest.getRecordSetCount(okZone.id,authPrincipal = okAuth).value.unsafeRunSync().toOption.get
       result shouldBe RecordSetCount(10)
-
     }
 
     "return a NotAuthorizedError for getRecordSetCount if the user is not authorized to access the zone" in {
@@ -2362,7 +2378,7 @@ class RecordSetServiceSpec
         .getRecordSetChange(zoneActive.id, pendingCreateAAAA.id)
 
       val error =
-        underTest.getRecordSetChange(zoneActive.id, pendingCreateAAAA.id, dummyAuth).value.unsafeRunSync().swap.toOption.get
+        underTest.getRecordSetChange(zoneActive.id, pendingCreateAAAA.recordSet.id, pendingCreateAAAA.id, dummyAuth).value.unsafeRunSync().swap.toOption.get
 
       error shouldBe a[NotAuthorizedError]
     }
@@ -2377,6 +2393,7 @@ class RecordSetServiceSpec
         underTest
           .getRecordSetChange(
             zoneNotAuthorized.id,
+            pendingCreateSharedRecordNotSharedZone.recordSet.id,
             pendingCreateSharedRecordNotSharedZone.id,
             okAuth
           )
