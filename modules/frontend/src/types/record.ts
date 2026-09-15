@@ -111,7 +111,7 @@ export interface RecordSetChange {
   userId: string;
   id: string;
   zoneId: string;
-  updates?: { recordSet?: RecordSet };
+  updates?: RecordSet;
   userName?: string;
 }
 
