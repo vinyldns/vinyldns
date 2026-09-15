@@ -1,4 +1,5 @@
 import datetime
+import re
 from typing import Optional, Union
 
 import pytest
@@ -100,8 +101,18 @@ def assert_change_success(changes_json, zone, index, record_name, input_name, re
 
 
 def assert_error(input_json, error_messages):
+    normalized_actual_errors = [
+        re.sub(r"owned by the \[(.+?)\] group\(/groups/(.+?)\)", r"owned by the \1 group (id: \2)", error)
+        for error in input_json["errors"]
+    ]
+
     for error in error_messages:
-        assert_that(input_json["errors"], has_item(error))
+        normalized_error = re.sub(
+            r"owned by the \[(.+?)\] group\(/groups/(.+?)\)",
+            r"owned by the \1 group (id: \2)",
+            error
+        )
+        assert_that(normalized_actual_errors, has_item(normalized_error))
         assert_that(len(input_json["errors"]), is_(len(error_messages)))
 
 
