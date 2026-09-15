@@ -55,10 +55,14 @@ export function Layout({ children }: LayoutProps) {
     setOldPortalSwitchOn(checked);
     if (checked) {
       document.cookie = "ui_mode=old; Path=/";
-      setTimeout(() => { window.location.href = "/"; }, 120);
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 120);
     } else {
       document.cookie = "ui_mode=new; Path=/";
-      setTimeout(() => { window.location.href = "/"; }, 120);
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 120);
     }
   };
 
@@ -105,7 +109,7 @@ export function Layout({ children }: LayoutProps) {
   };
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `nav-link vds-nav-link d-flex align-items-center px-3 py-2 rounded-2${isActive ? " vds-nav-link--active" : ""}`;
+    `nav-link vds-nav-link d-flex align-items-center px-3 py-2 rounded-2${collapsed ? " vds-nav-link--collapsed flex-column" : ""}${isActive ? " vds-nav-link--active" : ""}`;
 
   return (
     <div className="vds-layout">
@@ -176,55 +180,27 @@ export function Layout({ children }: LayoutProps) {
 
             <ul className="nav flex-column px-2 mb-2 vds-nav-list">
               <li className="nav-item">
-                <NavLink
-                  to="/dnschanges"
-                  className={({ isActive }) =>
-                    `${navLinkClass({ isActive })}${collapsed ? " vds-tip" : ""}`
-                  }
-                  data-vds-tip="DNS Changes"
-                >
+                <NavLink to="/dnschanges" className={navLinkClass}>
                   <i className="bi bi-list-ol vds-nav-icon" />
-                  {!collapsed && (
-                    <span className="vds-nav-text">DNS Changes</span>
-                  )}
+                  <span className="vds-nav-text">DNS Changes</span>
                 </NavLink>
               </li>
               <li className="nav-item">
-                <NavLink
-                  to="/recordsets"
-                  className={({ isActive }) =>
-                    `${navLinkClass({ isActive })}${collapsed ? " vds-tip" : ""}`
-                  }
-                  data-vds-tip="RecordSet Search"
-                >
+                <NavLink to="/recordsets" className={navLinkClass}>
                   <i className="bi bi-search vds-nav-icon" />
-                  {!collapsed && (
-                    <span className="vds-nav-text">RecordSet Search</span>
-                  )}
+                  <span className="vds-nav-text">RecordSet Search</span>
                 </NavLink>
               </li>
               <li className="nav-item">
-                <NavLink
-                  to="/groups"
-                  className={({ isActive }) =>
-                    `${navLinkClass({ isActive })}${collapsed ? " vds-tip" : ""}`
-                  }
-                  data-vds-tip="Groups"
-                >
+                <NavLink to="/groups" className={navLinkClass}>
                   <i className="bi bi-people-fill vds-nav-icon" />
-                  {!collapsed && <span className="vds-nav-text">Groups</span>}
+                  <span className="vds-nav-text">Groups</span>
                 </NavLink>
               </li>
               <li className="nav-item">
-                <NavLink
-                  to="/zones"
-                  className={({ isActive }) =>
-                    `${navLinkClass({ isActive })}${collapsed ? " vds-tip" : ""}`
-                  }
-                  data-vds-tip="Zones"
-                >
+                <NavLink to="/zones" className={navLinkClass}>
                   <i className="bi bi-globe2 vds-nav-icon" />
-                  {!collapsed && <span className="vds-nav-text">Zones</span>}
+                  <span className="vds-nav-text">Zones</span>
                 </NavLink>
               </li>
             </ul>
@@ -242,13 +218,10 @@ export function Layout({ children }: LayoutProps) {
                   href="https://www.vinyldns.io/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`nav-link vds-nav-link d-flex align-items-center px-3 py-2 rounded-2${collapsed ? " vds-tip" : ""}`}
-                  data-vds-tip="User Guide"
+                  className={`nav-link vds-nav-link d-flex align-items-center px-3 py-2 rounded-2${collapsed ? " vds-nav-link--collapsed flex-column" : ""}`}
                 >
                   <i className="bi bi-book-half vds-nav-icon" />
-                  {!collapsed && (
-                    <span className="vds-nav-text">User Guide</span>
-                  )}
+                  <span className="vds-nav-text">User Guide</span>
                 </a>
               </li>
             </ul>
@@ -372,11 +345,16 @@ export function Layout({ children }: LayoutProps) {
             </nav>
 
             {/* Right: theme toggle */}
-            <div className="vds-topbar__actions" aria-label="Portal and theme controls">
+            <div
+              className="vds-topbar__actions"
+              aria-label="Portal and theme controls"
+            >
               <button
                 className="vds-theme-toggle"
                 onClick={() => setDarkMode((d) => !d)}
-                title={darkMode ? "Switch to Light mode" : "Switch to Dark mode"}
+                title={
+                  darkMode ? "Switch to Light mode" : "Switch to Dark mode"
+                }
                 aria-label="Toggle theme"
               >
                 <span
@@ -387,8 +365,8 @@ export function Layout({ children }: LayoutProps) {
                       className={`bi ${darkMode ? "bi-moon-stars-fill" : "bi-sun-fill"}`}
                     />
                   </span>
-                  </span>
-                  <span className="vds-theme-toggle__label">
+                </span>
+                <span className="vds-theme-toggle__label">
                   {darkMode ? "Dark" : "Light"}
                 </span>
               </button>

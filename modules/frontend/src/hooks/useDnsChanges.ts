@@ -82,6 +82,7 @@ export function useDnsChanges(
       );
       return res.data;
     },
+    refetchOnWindowFocus: false, // don't refetch when switching tabs
     staleTime: 30_000, // don't re-fetch within 30 s of a successful load
     placeholderData: keepPreviousData, // show stale rows while new page loads (no empty flash)
   });

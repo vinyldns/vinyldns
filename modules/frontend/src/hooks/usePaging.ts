@@ -17,7 +17,6 @@
 import { useState, useCallback } from "react";
 import type { PagingState } from "../types/common";
 
-/** Mirrors the Angular pagingService behaviour */
 export function usePaging(initialMaxItems = 100, initialState?: PagingState) {
   const [paging, setPaging] = useState<PagingState>(
     initialState ?? {

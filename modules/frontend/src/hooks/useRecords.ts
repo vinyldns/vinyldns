@@ -19,17 +19,32 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { recordsService } from '../services/recordsService';
 import { usePaging } from './usePaging';
 import { useAlerts } from '../contexts/AlertContext';
-import type { RecordSet } from '../types/record';
+import type { RecordSet, RecordSetListResponse } from '../types/record';
 
-function getErrorMessage(error: { response?: { data?: string | { errors?: string[] }; statusText?: string; status?: number } }): string {
+// Stable empty-array reference so consumers that use `records` as an effect/memo
+// dependency don't re-run on every render while the query is disabled/loading.
+const EMPTY_RECORDS: RecordSet[] = [];
+
+function getErrorMessage(error: {
+  response?: {
+    data?: string | { errors?: string[] };
+    statusText?: string;
+    status?: number;
+  };
+}): string {
   const status = error.response?.status ?? 0;
-  const statusText = error.response?.statusText ?? 'Unknown';
+  const statusText = error.response?.statusText ?? "Unknown";
   const data = error.response?.data;
   let msg = `HTTP ${status} (${statusText}): `;
-  if (data && typeof data === 'object' && 'errors' in data && Array.isArray(data.errors)) {
-    msg += data.errors.join('\n');
-  } else if (typeof data === 'string') {
-    msg += data.replace(/^"|"$/g, '');
+  if (
+    data &&
+    typeof data === "object" &&
+    "errors" in data &&
+    Array.isArray(data.errors)
+  ) {
+    msg += data.errors.join("\n");
+  } else if (typeof data === "string") {
+    msg += data.replace(/^"|"$/g, "");
   }
   return msg;
 }
@@ -54,7 +69,7 @@ export function useRecords() {
   const { addAlert } = useAlerts();
   const queryClient = useQueryClient();
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: [
       "recordsets",
       nameFilter,
@@ -176,8 +191,9 @@ export function useRecords() {
   );
 
   return {
-    records: data?.recordSets ?? [],
+    records: data?.recordSets ?? EMPTY_RECORDS,
     isLoading,
+    isFetching,
     nameFilter,
     typeFilter,
     search,
@@ -212,13 +228,35 @@ function normalizeOwnershipStatus(record: RecordSet): RecordSet {
 
 /** Hook for records within a single zone */
 export function useZoneRecords(zoneId: string) {
-  const [nameFilter, setNameFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
-  const { paging, nextPageUpdate, prevPageUpdate, getPrevStartFrom, resetPaging,
-    nextPageEnabled, prevPageEnabled, getPanelTitle } = usePaging(100);
+  const [nameFilter, setNameFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const {
+    paging,
+    nextPageUpdate,
+    prevPageUpdate,
+    getPrevStartFrom,
+    resetPaging,
+    nextPageEnabled,
+    prevPageEnabled,
+    getPanelTitle,
+  } = usePaging(100);
   const { addAlert } = useAlerts();
+  const queryClient = useQueryClient();
 
-  const { data, isLoading, refetch } = useQuery({
+  const patchZoneRecordCache = useCallback((updater: (items: RecordSet[]) => RecordSet[]) => {
+    queryClient.setQueriesData<RecordSetListResponse>(
+      { queryKey: ['zone-recordsets', zoneId] },
+      (previous) => {
+        if (!previous) return previous;
+        return {
+          ...previous,
+          recordSets: updater(previous.recordSets ?? []),
+        };
+      }
+    );
+  }, [queryClient, zoneId]);
+
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['zone-recordsets', zoneId, nameFilter, typeFilter, paging.next],
     queryFn: async () => {
       const res = await recordsService.listRecordSetsByZone(
@@ -226,54 +264,84 @@ export function useZoneRecords(zoneId: string) {
         paging.maxItems,
         paging.next as string | undefined,
         nameFilter,
-        typeFilter
+        typeFilter,
       );
       return res.data;
     },
     enabled: Boolean(zoneId),
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
+
+  const refreshZoneRecords = useCallback(() => {
+    void refetch();
+  }, [refetch]);
 
   const createRecordMutation = useMutation({
     mutationFn: (record: Partial<RecordSet>) =>
       recordsService.createRecordSet(zoneId, record),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      const created = response.data.recordSet;
+      patchZoneRecordCache((items) => {
+        if (items.some((record) => record.id === created.id)) return items;
+        return [created, ...items];
+      });
       addAlert('success', 'Record created successfully');
-      void refetch();
+      refreshZoneRecords();
     },
     onError: (err: unknown) => {
-      addAlert('danger', getErrorMessage(err as Parameters<typeof getErrorMessage>[0]));
+      addAlert(
+        "danger",
+        getErrorMessage(err as Parameters<typeof getErrorMessage>[0]),
+      );
     },
   });
 
   const updateRecordMutation = useMutation({
     mutationFn: ({ recordSetId, record }: { recordSetId: string; record: Partial<RecordSet> }) =>
       recordsService.updateRecordSet(zoneId, recordSetId, record),
-    onSuccess: () => {
+    onSuccess: (response, variables) => {
+      const updated = response.data.recordSet;
+      patchZoneRecordCache((items) =>
+        items.map((item) => (item.id === variables.recordSetId ? updated : item))
+      );
       addAlert('success', 'Record updated successfully');
-      void refetch();
+      refreshZoneRecords();
     },
     onError: (err: unknown) => {
-      addAlert('danger', getErrorMessage(err as Parameters<typeof getErrorMessage>[0]));
+      addAlert(
+        "danger",
+        getErrorMessage(err as Parameters<typeof getErrorMessage>[0]),
+      );
     },
   });
 
   const deleteRecordMutation = useMutation({
     mutationFn: (recordSetId: string) =>
       recordsService.deleteRecordSet(zoneId, recordSetId),
-    onSuccess: () => {
+    onSuccess: (_response, deletedRecordSetId) => {
+      patchZoneRecordCache((items) => items.filter((item) => item.id !== deletedRecordSetId));
       addAlert('success', 'Record deleted successfully');
-      void refetch();
+      refreshZoneRecords();
     },
     onError: (err: unknown) => {
-      addAlert('danger', getErrorMessage(err as Parameters<typeof getErrorMessage>[0]));
+      addAlert(
+        "danger",
+        getErrorMessage(err as Parameters<typeof getErrorMessage>[0]),
+      );
     },
   });
 
-  const search = useCallback((filters: { name?: string; type?: string }) => {
-    setNameFilter(filters.name ?? '');
-    setTypeFilter(filters.type ?? '');
-    resetPaging();
-  }, [resetPaging]);
+  const search = useCallback(
+    (filters: { name?: string; type?: string }) => {
+      setNameFilter(filters.name ?? "");
+      setTypeFilter(filters.type ?? "");
+      resetPaging();
+    },
+    [resetPaging],
+  );
 
   const nextPage = useCallback(() => {
     nextPageUpdate(data?.recordSets?.length ?? 0, data?.nextId);
@@ -286,6 +354,7 @@ export function useZoneRecords(zoneId: string) {
   return {
     records: (data?.recordSets ?? []).map(normalizeOwnershipStatus),
     isLoading,
+    isFetching,
     search,
     refetch,
     nextPage,

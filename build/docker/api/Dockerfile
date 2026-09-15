@@ -1,5 +1,6 @@
 # Build VinylDNS API if the JAR doesn't already exist
 FROM vinyldns/build:base-build as base-build
+
 COPY . /build/
 WORKDIR /build
 

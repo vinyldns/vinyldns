@@ -54,9 +54,9 @@ describe("statusBadgeClass", () => {
 });
 
 describe("formatHistoryTime", () => {
-  it("returns the first five tokens of toString() for a parseable ISO date", () => {
+  it("returns a two-line date and time for a parseable ISO date", () => {
     const out = formatHistoryTime("2019-05-12T08:59:49Z");
-    expect(out.split(" ")).toHaveLength(5);
+    expect(out).toContain("\n");
     expect(out).toMatch(/2019/);
   });
 });

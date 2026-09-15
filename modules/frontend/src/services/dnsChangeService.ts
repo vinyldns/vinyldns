@@ -121,8 +121,6 @@ export const dnsChangeService = {
    */
   exportToCsv(change: DnsChange, options?: { rows?: DnsChange["changes"] }) {
     const changes = options?.rows ?? change.changes ?? [];
-    // Column order matches the legacy AngularJS portal export for backward compatibility:
-    // Change Type, Input Name, Recordset Name, Zone Name, Record Type, Record Data, TTL, Status, Additional Info
     const header =
       "Change Type,Input Name,Recordset Name,Zone Name,Record Type,Record Data,TTL,Status,Additional Info";
     const rows = changes.map((c) => {

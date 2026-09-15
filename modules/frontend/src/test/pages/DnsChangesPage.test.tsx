@@ -184,11 +184,9 @@ describe("<DnsChangesPage />", () => {
       },
     });
     renderWithProviders(<DnsChangesPage />);
-    // The ID cell links to /dnschanges/<full-id>; verify both are rendered.
-    await screen.findByText("11111111-1111-1111-1111-111111111111");
-    expect(
-      screen.getByText("22222222-2222-2222-2222-222222222222"),
-    ).toBeInTheDocument();
+    // The ID cell links to the full ID but displays its shortened form.
+    await screen.findByText("11111111…");
+    expect(screen.getByText("22222222…")).toBeInTheDocument();
     // Comments column renders the description text.
     expect(screen.getByText("first change")).toBeInTheDocument();
     expect(screen.getByText("second change")).toBeInTheDocument();
@@ -199,9 +197,9 @@ describe("<DnsChangesPage /> stat cards", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setProfile({
-      id: "u-alice",
-      userName: "alice",
-      isSuper: false,
+      id: "u-admin",
+      userName: "admin",
+      isSuper: true,
       isSupport: false,
     });
     (
@@ -253,7 +251,7 @@ describe("<DnsChangesPage /> stat cards", () => {
   });
 });
 
-describe("<DnsChangesPage /> New DNS Change modal", () => {
+describe("<DnsChangesPage /> toolbar visibility", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setProfile({
@@ -269,15 +267,24 @@ describe("<DnsChangesPage /> New DNS Change modal", () => {
     });
     (
       dnsChangeService.getBatchChangeCount as ReturnType<typeof vi.fn>
-    ).mockResolvedValue({ data: counts() });
+    ).mockResolvedValue({ data: counts({ total: 12, complete: 8 }) });
   });
 
-  it("opens the modal when the user clicks New DNS Change", async () => {
+  it("hides insight cards and their toggle for regular users", async () => {
     renderWithProviders(<DnsChangesPage />);
-    const btn = await screen.findByRole("button", { name: /New DNS Change/i });
-    await userEvent.click(btn);
-    // The modal renders "New Batch Change" as its title; safe stable text.
-    expect(await screen.findByText("New Batch Change")).toBeInTheDocument();
+
+    expect(await screen.findByText("Open Only")).toBeInTheDocument();
+    expect(screen.queryByText("Hide Cards")).not.toBeInTheDocument();
+    expect(screen.queryByText("Requests")).not.toBeInTheDocument();
+  });
+
+  it("keeps filter controls visible and removes the filter toggle", async () => {
+    renderWithProviders(<DnsChangesPage />);
+
+    expect(await screen.findByText("Open Only")).toBeInTheDocument();
+    expect(screen.getByText("All Time")).toBeInTheDocument();
+    expect(screen.queryByText("Hide Filters")).not.toBeInTheDocument();
+    expect(screen.queryByText("Show Filters")).not.toBeInTheDocument();
   });
 });
 
@@ -361,12 +368,8 @@ describe("<DnsChangesPage /> filters", () => {
 
   it("re-queries with PendingReview when the toggle is enabled", async () => {
     renderWithProviders(<DnsChangesPage />);
-    // The page wires this toggle as "Open Requests Only"; visually labelled
-    // text. The underlying state is the PendingReview approval status.
-    const toggle = await screen.findByLabelText(/Open Requests Only/i);
-    expect(toggle).not.toBeChecked();
+    const toggle = await screen.findByRole("button", { name: /Open Only/i });
     await userEvent.click(toggle);
-    expect(toggle).toBeChecked();
     await waitFor(() => {
       const calls = (
         dnsChangeService.getBatchChanges as ReturnType<typeof vi.fn>

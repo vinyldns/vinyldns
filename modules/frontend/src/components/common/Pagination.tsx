@@ -23,13 +23,14 @@ interface PaginationProps {
   nextEnabled: boolean;
   panelTitle?: string;
   rangeLabel?: string;
-  /** Total count displayed as "X–Y of Z". Shown alongside rangeLabel when provided. */
   totalCount?: number;
 }
 
 interface PaginatedSectionProps extends PaginationProps {
   /** When false the pagination bars are hidden entirely */
   show: boolean;
+  /** When false, hides the bottom pager and keeps only the top pager. */
+  showBottom?: boolean;
   children: React.ReactNode;
 }
 
@@ -39,6 +40,7 @@ interface PaginatedSectionProps extends PaginationProps {
  */
 export function PaginatedSection({
   show,
+  showBottom = true,
   children,
   ...paginationProps
 }: PaginatedSectionProps) {
@@ -46,7 +48,7 @@ export function PaginatedSection({
     <>
       {show && <Pagination {...paginationProps} />}
       {children}
-      {show && <Pagination {...paginationProps} />}
+      {show && showBottom && <Pagination {...paginationProps} />}
     </>
   );
 }

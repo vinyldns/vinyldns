@@ -91,6 +91,7 @@ describe("useRecords", () => {
       const { result } = renderHook(() => useRecords(), {
         wrapper: makeWrapper(),
       });
+      act(() => result.current.search({ name: "ho", type: "A" }));
       await waitFor(() => expect(result.current.records).toHaveLength(1));
       expect(result.current.nextPageEnabled).toBe(true);
     });

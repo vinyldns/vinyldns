@@ -1,5 +1,6 @@
 # Build VinylDNS API if the JAR doesn't already exist
 FROM vinyldns/build:base-build as base-build
+
 ARG DOCKERFILE_PATH="test/api/functional"
 COPY "${DOCKERFILE_PATH}/application.conf" /opt/vinyldns/conf/
 COPY . /build/

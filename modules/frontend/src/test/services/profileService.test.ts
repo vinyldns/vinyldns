@@ -124,10 +124,17 @@ describe('profileService', () => {
   // (credential regeneration is the nearest equivalent to key rotation)
 
   describe('regenerateCredentials', () => {
-    it('calls POST /regenerate-creds with an empty body', () => {
-      mockApi.post.mockResolvedValueOnce({ data: {} });
-      profileService.regenerateCredentials();
-      expect(mockApi.post).toHaveBeenCalledWith('/regenerate-creds', {});
+    it('calls fetch POST /regenerate-creds with credentials included', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await profileService.regenerateCredentials();
+
+      expect(fetchMock).toHaveBeenCalledWith('/regenerate-creds', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      vi.unstubAllGlobals();
     });
   });
 });

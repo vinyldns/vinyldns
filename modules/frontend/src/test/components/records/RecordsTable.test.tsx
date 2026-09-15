@@ -90,7 +90,9 @@ describe("<RecordsTable />", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("Owner Group Name")).toBeInTheDocument();
-    expect(screen.getByText("Ownership Transfer Status")).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: /ownership transfer\s*status/i }),
+    ).toBeInTheDocument();
   });
 
   it("shows an unassigned owner label when the record has no owner group", () => {
