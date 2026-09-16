@@ -145,12 +145,45 @@ class VinylDNS @Inject() (
 
   def setOidcSession(loginId: String): Action[AnyContent] = Action.async { implicit request =>
     logger.info(s"Setting session for LoginId [$loginId]")
+    val expectedNonce = request.session.get("oidc_nonce")
 
     val details = for {
-      code <- EitherT.fromEither[IO](oidcAuthenticator.getCodeFromAuthResponse(request))
-      validToken <- oidcAuthenticator.oidcCallback(code, loginId)
-      userDetails <- EitherT.fromEither[IO](oidcAuthenticator.getUserFromClaims(validToken))
-      userCreate <- EitherT.right[ErrorResponse](processLoginWithDetails(userDetails))
+      expectedState <- EitherT.fromEither[IO](
+        request.session
+          .get("oidc_state")
+          .toRight(ErrorResponse(400, "Missing OIDC state"))
+      )
+
+      actualState <- EitherT.fromEither[IO](
+        request.getQueryString("state")
+          .toRight(ErrorResponse(400, "Missing OIDC state in callback"))
+      )
+
+      _ <- EitherT.fromEither[IO](
+        Either.cond(
+          expectedState == actualState,
+          (),
+          ErrorResponse(400, "Invalid OIDC state")
+        )
+      )
+
+      code <- EitherT.fromEither[IO](
+        oidcAuthenticator.getCodeFromAuthResponse(request, expectedState)
+      )
+
+      validToken <- oidcAuthenticator.oidcCallback(
+        code,
+        loginId,
+        expectedNonce
+      )
+
+      userDetails <- EitherT.fromEither[IO](
+        oidcAuthenticator.getUserFromClaims(validToken)
+      )
+
+      userCreate <- EitherT.right[ErrorResponse](
+        processLoginWithDetails(userDetails)
+      )
     } yield (userCreate, validToken)
 
     details.value
