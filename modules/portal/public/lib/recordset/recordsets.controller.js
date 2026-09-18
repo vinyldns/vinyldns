@@ -52,6 +52,8 @@
             $scope.canReadZone = false;
             $scope.canCreateRecords = false;
             $scope.zoneId = undefined;
+            $scope.recordSetCount = undefined;
+            $scope.isRecordSearchTriggered = false;
             $scope.recordModalState = {
                 CREATE: 0,
                 UPDATE: 1,
@@ -105,16 +107,16 @@
                 $('[data-toggle="tooltip"]').tooltip();
             });
 
-            $( "#record-search-text" ).autocomplete({
+            var recordSearchAutocomplete = $( "#record-search-text" ).autocomplete({
               source: function( request, response ) {
                 $.ajax({
                   url: "/api/recordsets?maxItems=100",
                   dataType: "json",
                   data: {recordNameFilter: request.term, nameSort: $scope.nameSort},
                   success: function( data ) {
-                      const recordSearch =  JSON.parse(JSON.stringify(data));
-                      response($.map(recordSearch.recordSets, function(item) {
-                      return {value: item.fqdn +' | '+ item.type , label: 'name: ' + item.fqdn + ' | type: ' + item.type }}))}
+                    const recordSearch =  JSON.parse(JSON.stringify(data));
+                    response($.map(recordSearch.recordSets, function(item) {
+                    return {value: item.fqdn +' | '+ item.type , label: 'name: ' + item.fqdn + ' | type: ' + item.type }}))}
                 });
               },
               minLength: 2,
@@ -131,12 +133,7 @@
               }
             });
 
-            $.ui.autocomplete.prototype._renderItem = function( ul, item ) {
-                    let recordSet = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
-                    return $("<li></li>")
-                          .data("ui-autocomplete-item", item.value)
-                          .append("<div>" + recordSet + "</div>")
-                          .appendTo(ul); };
+            vinyldnsAutocomplete.applyRenderer(recordSearchAutocomplete);
 
             $scope.viewRecordHistory = function(recordFqdn, recordType, zoneId, recordId) {
                $scope.recordFqdn = recordFqdn;
@@ -148,6 +145,7 @@
             };
 
             $scope.refreshRecords = function() {
+            $scope.isRecordSearchTriggered = true;   
             if($scope.query.includes("|")) {
                 const queryRecord = $scope.query.split('|');
                 recordName = queryRecord[0].trim();
@@ -155,8 +153,11 @@
             else { recordName = $scope.query;
                    recordType = $scope.selectedRecordTypes.toString(); }
 
-              recordsPaging = pagingService.resetPaging(recordsPaging);
+                recordsPaging = pagingService.resetPaging(recordsPaging);
+
                 function success(response) {
+                    $scope.recordSetCount = response.data.totalCount;
+                    recordsPaging.totalCount = response.data.totalCount;
                     recordsPaging.next = response.data.nextId;
                     updateRecordDisplay(response.data['recordSets']);
                     getMembership();

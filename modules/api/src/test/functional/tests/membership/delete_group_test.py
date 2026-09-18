@@ -82,18 +82,7 @@ def test_delete_admin_group(shared_zone_test_context):
             "name": f"one-time{shared_zone_test_context.partition_id}.",
             "email": "test@test.com",
             "adminGroupId": result_group["id"],
-            "connection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            },
-            "transferConnection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            }
+            "backendId": "func-test-backend"
         }
 
         result = client.create_zone(zone, status=202)

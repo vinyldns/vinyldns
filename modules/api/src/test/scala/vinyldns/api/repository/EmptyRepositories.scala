@@ -37,15 +37,16 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
   def apply(db: DB, changeSet: ChangeSet): IO[ChangeSet] = IO.pure(changeSet)
 
   def listRecordSets(
-                      zoneId: Option[String],
-                      startFrom: Option[String],
-                      maxItems: Option[Int],
-                      recordNameFilter: Option[String],
-                      recordTypeFilter: Option[Set[RecordType]],
-                      recordOwnerGroupFilter: Option[String],
-                      nameSort: NameSort,
-                      recordTypeSort: RecordTypeSort
-                    ): IO[ListRecordSetResults] =
+                       zoneId: Option[String],
+                       startFrom: Option[String],
+                       maxItems: Option[Int],
+                       recordNameFilter: Option[String],
+                       recordTypeFilter: Option[Set[RecordType]],
+                       recordOwnerGroupFilter: Option[String],
+                       nameSort: NameSort,
+                       recordTypeSort: RecordTypeSort,
+                       authPrincipal: Option[AuthPrincipal] = None
+                     ): IO[ListRecordSetResults] =
     IO.pure(ListRecordSetResults(nameSort = nameSort,recordTypeSort=recordTypeSort))
 
 
@@ -67,14 +68,15 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
 trait EmptyRecordSetCacheRepo extends RecordSetCacheRepository {
 
   def listRecordSetData(
-                         zoneId: Option[String],
-                         startFrom: Option[String],
-                         maxItems: Option[Int],
-                         recordNameFilter: Option[String],
-                         recordTypeFilter: Option[Set[RecordType]],
-                         recordOwnerGroupFilter: Option[String],
-                         nameSort: NameSort
-                       ): IO[ListRecordSetResults] =
+                          zoneId: Option[String],
+                          startFrom: Option[String],
+                          maxItems: Option[Int],
+                          recordNameFilter: Option[String],
+                          recordTypeFilter: Option[Set[RecordType]],
+                          recordOwnerGroupFilter: Option[String],
+                          nameSort: NameSort,
+                          authPrincipal: Option[AuthPrincipal] = None
+                        ): IO[ListRecordSetResults] =
     IO.pure(ListRecordSetResults(nameSort = nameSort, recordTypeSort = RecordTypeSort.NONE))
 }
 

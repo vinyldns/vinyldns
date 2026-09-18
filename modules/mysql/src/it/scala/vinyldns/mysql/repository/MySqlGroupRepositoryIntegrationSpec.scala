@@ -130,8 +130,35 @@ class MySqlGroupRepositoryIntegrationSpec
       repo.getGroupsByName("*-group-*").unsafeRunSync() shouldBe groups.toSet
     }
 
+    "treats a literal '_' as a character, not a single-char wildcard" in {
+      // '_' would match the '-' in 'test-group-0' if treated as a SQL wildcard;
+      // escaped, it matches literally and no such group exists.
+      repo.getGroupsByName("test_group-0").unsafeRunSync() shouldBe Set()
+    }
+
+    "treats a literal '%' as a character, not a wildcard" in {
+      // '%' would match every 'test-group-*' if treated as a SQL wildcard;
+      // escaped, it matches literally and no such group exists.
+      repo.getGroupsByName("test-group-%").unsafeRunSync() shouldBe Set()
+    }
+
     "returns empty set when group does not exist" in {
       repo.getGroupsByName("no-existo").unsafeRunSync() shouldBe Set()
+    }
+
+    "treats SQL metacharacters in the filter as a literal (no injection)" in {
+      // An injectable filter would short-circuit the WHERE and return every group.
+      repo.getGroupsByName("' OR '1'='1").unsafeRunSync() shouldBe Set()
+    }
+
+    "treats a quote-bearing filter as a literal without erroring" in {
+      repo.getGroupsByName("o'brien").unsafeRunSync() shouldBe Set()
+    }
+
+    "does not execute a stacked statement embedded in the filter" in {
+      repo.getGroupsByName("x'; DROP TABLE `groups`; --").unsafeRunSync() shouldBe Set()
+      // Table is intact and all seed groups remain queryable.
+      repo.getAllGroups().unsafeRunSync() should contain theSameElementsAs groups.toSet
     }
   }
 

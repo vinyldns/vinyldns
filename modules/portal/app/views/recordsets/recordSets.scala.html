@@ -117,6 +117,9 @@
                         <button id="refresh-records-button" class="btn btn-default" ng-click="refreshRecords()"><span class="fa fa-refresh"></span> Refresh</button>
                         <button id="create-record-button" class="btn btn-default" ng-if="canCreateRecords" ng-click="createRecord(defaultTtl)"><span class="fa fa-plus"></span> Create Record Set</button>
                     </div>
+                    <div style="font-size: medium;" class="bolder-font-weight dataTables_paginate" ng-show="isRecordSearchTriggered">
+                        {{recordSetCount}} {{recordSetCount === 1 ? 'match' : 'matches'}} found
+                    </div>
                 </div>
 
                     <!-- PAGINATION -->
