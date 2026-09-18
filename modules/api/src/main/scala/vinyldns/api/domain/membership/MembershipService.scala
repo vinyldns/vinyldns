@@ -359,7 +359,7 @@ class MembershipService(
   def getUser(userIdentifier: String, authPrincipal: AuthPrincipal): Result[User] =
     userRepo
       .getUserByIdOrName(userIdentifier)
-      .orFail(UserNotFoundError(s"User $userIdentifier was not found"))
+      .orFail(UserNotFoundError(UserIsNotFoundErrorMsg.format(userIdentifier)))
       .toResult[User]
 
 
@@ -382,13 +382,13 @@ class MembershipService(
   def getExistingUser(userId: String): Result[User] =
     userRepo
       .getUser(userId)
-      .orFail(UserNotFoundError(s"User with ID $userId was not found"))
+      .orFail(UserNotFoundError(UserNotFoundErrorMsg.format(userId)))
       .toResult[User]
 
   def getExistingGroup(groupId: String): Result[Group] =
     groupRepo
       .getGroup(groupId)
-      .orFail(GroupNotFoundError(s"Group with ID $groupId was not found"))
+      .orFail(GroupNotFoundError(GroupNotFoundErrorMsg.format(groupId)))
       .toResult[Group]
 
   // Validate group details. Group name and email cannot be empty
@@ -414,7 +414,7 @@ class MembershipService(
     else emailDomains
 
     Option(email) match {
-      case Some(value) if (emailRegex.findFirstIn(value) != None && emailSplit.toString.count(_ == '.')>0)=>
+      case Some(value) if (emailRegex.findFirstIn(value).isDefined && emailSplit.toString.count(_ == '.')>0)=>
 
         if ((emailDomains.contains(emailSplit) || emailDomains.isEmpty || wildcardEmailDomains.exists(x => emailSplit.toString.endsWith(x)))&&
               emailSplit.toString.count(_ == '.')<=numberOfDots)
@@ -449,7 +449,7 @@ class MembershipService(
       if (delta.isEmpty)
         ().asRight
       else
-        UserNotFoundError(s"Users [ ${delta.mkString(",")} ] were not found").asLeft
+        UserNotFoundError(UsersNotFoundErrorMsg.format(delta.mkString(","))).asLeft
     }
   }.toResult
 
@@ -469,7 +469,7 @@ class MembershipService(
     zoneRepo
       .getZonesByAdminGroupId(group.id)
       .map { zones =>
-        ensuring(InvalidGroupRequestError(ZoneAdminError.format(group.name)))(
+        ensuring(InvalidGroupRequestError(ZoneAdminErrorMsg.format(group.name)))(
           zones.isEmpty
         )
       }
@@ -481,7 +481,7 @@ class MembershipService(
       .map { rsId =>
         ensuring(
           InvalidGroupRequestError(
-            RecordSetOwnerError.format(group.name, rsId)
+            RecordSetOwnerErrorMsg.format(group.name, rsId)
           )
         )(rsId.isEmpty)
       }
@@ -493,7 +493,7 @@ class MembershipService(
       .map { zId =>
         ensuring(
           InvalidGroupRequestError(
-            ACLRuleError.format(group.name, zId)
+            ACLRuleErrorMsg.format(group.name, zId)
           )
         )(zId.isEmpty)
       }

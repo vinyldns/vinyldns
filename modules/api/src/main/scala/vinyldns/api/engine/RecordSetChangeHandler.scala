@@ -28,6 +28,7 @@ import vinyldns.core.domain.backend.{Backend, BackendResponse}
 import vinyldns.core.domain.batch.{BatchChangeRepository, SingleChange}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.Zone
+import vinyldns.core.Messages._
 import vinyldns.mysql.TransactionProvider
 
 object RecordSetChangeHandler extends TransactionProvider {
@@ -35,11 +36,6 @@ object RecordSetChangeHandler extends TransactionProvider {
   private val logger = LoggerFactory.getLogger("vinyldns.api.engine.RecordSetChangeHandler")
   private implicit val cs: ContextShift[IO] =
     IO.contextShift(scala.concurrent.ExecutionContext.global)
-
-  private val outOfSyncFailureMessage: String = "This record set is out of sync with the DNS backend; sync this zone before attempting to update this record set."
-  private val incompatibleRecordFailureMessage: String = "Incompatible record in DNS."
-  private val syncZoneMessage: String = "This record set is out of sync with the DNS backend. Sync this zone before attempting to update this record set."
-  private val recordConflictMessage: String = "Conflict due to the record having the same name as an NS record in the same zone. Please create the record using the DNS service the NS record has been delegated to (ex. AWS r53), or use a different record name."
 
   final case class Requeue(change: RecordSetChange) extends Throwable
 
@@ -189,7 +185,7 @@ object RecordSetChangeHandler extends TransactionProvider {
           if (existingRecords.isEmpty) ReadyToApply(change)
           else if (isDnsMatch(existingRecords, change.recordSet, change.zone.name))
             AlreadyApplied(change)
-          else Failure(change, incompatibleRecordFailureMessage)
+          else Failure(change, IncompatibleRecordFailureMessage)
 
         case RecordSetChangeType.Update =>
           if (isDnsMatch(existingRecords, change.recordSet, change.zone.name))
@@ -203,7 +199,7 @@ object RecordSetChangeHandler extends TransactionProvider {
             else
               Failure(
                 change,
-                outOfSyncFailureMessage
+                OutOfSyncFailureMessage
               )
           }
 
@@ -215,7 +211,7 @@ object RecordSetChangeHandler extends TransactionProvider {
           if (existingRecords.nonEmpty) {
             Failure(
               change,
-              outOfSyncFailureMessage
+              OutOfSyncFailureMessage
             )
           } else {
             AlreadyApplied(change)
@@ -419,22 +415,22 @@ object RecordSetChangeHandler extends TransactionProvider {
       case AlreadyApplied(_) => Completed(change.successful)
       case ReadyToApply(_) => Validated(change)
       case Failure(_, message) =>
-        if(message == outOfSyncFailureMessage || message == incompatibleRecordFailureMessage){
+        if(message == OutOfSyncFailureMessage || message == IncompatibleRecordFailureMessage){
           Completed(
             change.failed(
-              syncZoneMessage
+              SyncZoneMessage
             )
           )
         } else if (message == "referral") {
           Completed(
             change.failed(
-              recordConflictMessage
+              RecordConflictMessage
             )
           )
         } else {
           Completed(
             change.failed(
-              s"""Failed validating update to DNS for change "${change.id}": "${change.recordSet.name}": """ + message
+              UpdateValidateMsg.format(change.id, change.recordSet.name, message)
             )
           )
         }
@@ -451,7 +447,7 @@ object RecordSetChangeHandler extends TransactionProvider {
       case Left(error) =>
         Completed(
           change.failed(
-            s"Failed applying update to DNS for change ${change.id}:${change.recordSet.name}: ${error.getMessage}"
+            UpdateApplyMsg.format(change.id, change.recordSet.name, error.getMessage)
           )
         )
     }
@@ -475,7 +471,7 @@ object RecordSetChangeHandler extends TransactionProvider {
       case Failure(_, message) =>
         Completed(
           change.failed(
-            s"""Failed verifying update to DNS for change "${change.id}":"${change.recordSet.name}": $message"""
+            UpdateVerifyMsg.format(change.id, change.recordSet.name, message)
           )
         )
       case _ => Retrying(change)

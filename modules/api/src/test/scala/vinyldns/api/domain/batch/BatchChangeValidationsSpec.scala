@@ -1106,7 +1106,7 @@ class BatchChangeValidationsSpec
 
     result(0) should haveInvalid[DomainValidationError](
       UserIsNotAuthorizedError(
-        notAuth.signedInUser.userName,
+        addUpdateA.recordName,
         addUpdateA.zone.adminGroupId,
         OwnerType.Zone,
         Some(addUpdateA.zone.email)
@@ -1115,7 +1115,7 @@ class BatchChangeValidationsSpec
 
     result(1) should haveInvalid[DomainValidationError](
       UserIsNotAuthorizedError(
-        notAuth.signedInUser.userName,
+        deleteUpdateA.recordName,
         deleteUpdateA.zone.adminGroupId,
         OwnerType.Zone,
         Some(deleteUpdateA.zone.email)
@@ -1655,7 +1655,7 @@ class BatchChangeValidationsSpec
 
       result(0) should haveInvalid[DomainValidationError](
         UserIsNotAuthorizedError(
-          notAuth.signedInUser.userName,
+          input.recordName,
           input.zone.adminGroupId,
           OwnerType.Zone,
           Some(input.zone.email)
@@ -1850,7 +1850,7 @@ class BatchChangeValidationsSpec
 
     result(0) should haveInvalid[DomainValidationError](
       UserIsNotAuthorizedError(
-        notAuth.signedInUser.userName,
+        deleteA.recordName,
         deleteA.zone.adminGroupId,
         OwnerType.Zone,
         Some(deleteA.zone.email)
@@ -2451,7 +2451,7 @@ class BatchChangeValidationsSpec
     result(0) should
       haveInvalid[DomainValidationError](
         UserIsNotAuthorizedError(
-          dummyAuth.signedInUser.userName,
+          "shared-delete",
           sharedZoneRecord.ownerGroupId.get,
           OwnerType.Record,
           None
