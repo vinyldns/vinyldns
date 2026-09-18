@@ -105,7 +105,8 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
           settings.oidcTenantId,
           settings.oidcClientId,
           settings.oidcSecret,
-          settings.graphApiUsernameAttribute
+          settings.graphApiUsernameAttribute,
+          settings.graphApiServiceAccountEmployeeType
         )
       case "ldap" =>
         new LdapUserSyncProvider(auth)
