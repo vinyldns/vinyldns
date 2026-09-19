@@ -24,16 +24,24 @@ describe('Controller: RecordSetsController', function () {
         module('recordset')
     });
 
-    beforeEach(inject(function ($rootScope, $controller, $q, recordsService, groupsService) {
+    beforeEach(inject(function ($rootScope, $controller, $q, $timeout, recordsService, groupsService) {
         this.rootScope = $rootScope;
         this.controllerFactory = $controller;
+        this.recordsService = recordsService;
+        this.groupsService = groupsService;
+        this.q = $q;
+        this.timeout = $timeout;
 
         recordsService.listRecordSetData = function() {
             return $q.when({data: {recordSets: []}});
         };
 
-        groupsService.getGroupsAbridged = function() {
+        groupsService.getGroups = function() {
             return $q.when({data: {groups: []}});
+        };
+
+        groupsService.getGroupsStored = function() {
+            return $q.when({groups: []});
         };
     }));
 
@@ -55,6 +63,62 @@ describe('Controller: RecordSetsController', function () {
         expect(rendered.find('div').text()).toBe('<img src=x onerror=alert(1)>Team');
         expect(rendered.find('b').text()).toBe('Team');
 
+        document.body.innerHTML = '';
+    });
+
+    it('getRecordData returns SPF record data from text field', function () {
+        document.body.innerHTML = '<input id="record-search-text" />';
+
+        var scope = this.rootScope.$new();
+        this.controllerFactory('RecordSetsController', {'$scope': scope});
+
+        var spfText = 'v=spf1 include:mail.example.com ~all';
+        var result = scope.getRecordData([{ text: spfText }], 'SPF');
+
+        expect(result).toBe(spfText);
+        document.body.innerHTML = '';
+    });
+
+    it('shouldLoadPrivateZoneOwners returns false when ownerGroupName field is deselected', function () {
+        document.body.innerHTML = '<input id="record-search-text" />';
+
+        var scope = this.rootScope.$new();
+        this.controllerFactory('RecordSetsController', {'$scope': scope});
+
+        scope.selectedFields.ownerGroupName = false;
+
+        expect(scope.shouldLoadPrivateZoneOwners()).toBe(false);
+        document.body.innerHTML = '';
+    });
+
+    it('shouldLoadPrivateZoneOwners returns true when ownerGroupName field is selected', function () {
+        document.body.innerHTML = '<input id="record-search-text" />';
+
+        var scope = this.rootScope.$new();
+        this.controllerFactory('RecordSetsController', {'$scope': scope});
+
+        scope.selectedFields.ownerGroupName = true;
+
+        expect(scope.shouldLoadPrivateZoneOwners()).toBe(true);
+        document.body.innerHTML = '';
+    });
+
+    it('getPrivateZoneIdsToLoad returns only unique unresolved private zone ids', function () {
+        document.body.innerHTML = '<input id="record-search-text" />';
+
+        var scope = this.rootScope.$new();
+        this.controllerFactory('RecordSetsController', {'$scope': scope});
+
+        var zoneIds = scope.getPrivateZoneIdsToLoad([
+            { zoneShared: false, zoneId: 'zone-a' },
+            { zoneShared: false, zoneId: 'zone-a' },
+            { zoneShared: true, zoneId: 'zone-shared' },
+            { zoneShared: false, zoneId: 'unknown' },
+            { zoneShared: false, zoneId: 'zone-owned', ownerGroupName: 'group-x' },
+            { zoneShared: false, zoneId: 'zone-b' }
+        ]);
+
+        expect(zoneIds).toEqual(['zone-a', 'zone-b']);
         document.body.innerHTML = '';
     });
 });
