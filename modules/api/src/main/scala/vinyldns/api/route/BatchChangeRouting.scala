@@ -73,6 +73,7 @@ class BatchChangeRoute(
       (get & monitor("Endpoint.listBatchChangeSummaries")) {
         parameters(
           "userName".as[String].?,
+          "groupName".as[String].?,
           "dateTimeRangeStart".as[String].?,
           "dateTimeRangeEnd".as[String].?,
           "startFrom".as[Int].?,
@@ -82,6 +83,7 @@ class BatchChangeRoute(
         ) {
           (
               userName: Option[String],
+              groupName: Option[String],
               dateTimeRangeStart: Option[String],
               dateTimeRangeEnd: Option[String],
               startFrom: Option[Int],
@@ -91,7 +93,6 @@ class BatchChangeRoute(
           ) =>
             {
               val convertApprovalStatus = approvalStatus.flatMap(BatchChangeApprovalStatus.find)
-              
                 handleRejections(invalidQueryHandler) {
                   validate(
                     0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
@@ -101,6 +102,7 @@ class BatchChangeRoute(
                       batchChangeService.listBatchChangeSummaries(
                         _,
                         userName,
+                        groupName,
                         dateTimeRangeStart,
                         dateTimeRangeEnd,
                         startFrom,

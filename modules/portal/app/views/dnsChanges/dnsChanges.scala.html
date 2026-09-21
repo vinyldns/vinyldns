@@ -47,9 +47,10 @@
                             <form ng-hide="!ignoreAccess" class="input-group full-width remove-bottom-margin" ng-submit="refreshBatchChanges()">
                                 <div class="input-group remove-bottom-margin">
                                     <span class="input-group-btn">
-                                        <button id="user-name-search-button" type="submit" class="btn btn-primary"><span class="fa fa-search"></span></button>
+                                        <button id="search-button" type="submit" class="btn btn-primary"><span class="fa fa-search"></span></button>
                                     </span>
-                                    <input id="user-name-search-text" type="text" ng-model="submitterName" class="form-control" placeholder="Search by submitter">
+                                    <input id="search-text" type="text" ng-model="searchName"
+                                           class="form-control" placeholder="{{!searchByGroup ? 'Search by submitter' : 'Search by group'}}">
                                 </div>
                             </form>
                             <div ng-hide="!ignoreAccess" class="dropdown">
@@ -67,14 +68,20 @@
                                         <button ng-click="resetDateTimeFilter()" type="submit" class="btn btn-primary">Reset</button>
                                     </form>
                                 </div>
+
                             </div>
                             <div class="batch-filter">
+
                                 <form action="">
-                                    <div ng-class="ignoreAccess?'checkbox no-margin':'checkbox float-right'">
-                                        <label>
+                                    <div ng-class="ignoreAccess?'checkbox no-margin':'checkbox'">
+                                        <label ng-hide="!ignoreAccess" style="font-weight: normal;" >
+                                            <input type="checkbox" ng-model="searchByGroup" ng-change="refreshBatchChanges()"> Search by group
+                                        </label>
+                                        <label style="float: right;">
                                             <input type="checkbox" ng-model="approvalStatus" ng-true-value="'PendingReview'" ng-change="refreshBatchChanges()"> View Open Requests Only
                                         </label>
                                     </div>
+
                                 </form>
                             </div>
                         </div>
