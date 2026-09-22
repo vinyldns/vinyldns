@@ -64,68 +64,57 @@ class MySqlRecordSetCacheRepository
 
   def save(db: DB, changeSet: ChangeSet): IO[ChangeSet] = {
     val byStatus = changeSet.changes.groupBy(_.status)
+
+    // Failed creates get their (possibly pending) data removed; failed updates/deletes
+    // are reverted to their previous record data.
     val failedChanges = byStatus.getOrElse(RecordSetChangeStatus.Failed, Seq())
     val (failedCreates, failedUpdatesOrDeletes) =
       failedChanges.partition(_.changeType == RecordSetChangeType.Create)
 
-    val reversionDeletes = failedCreates.map(d => Seq[Any](d.recordSet.id))
-    failedUpdatesOrDeletes.flatMap { change =>
-      change.updates.map { oldRs =>
-        Seq[Any](
-          updateRecordDataList(
-            db,
-            oldRs.id,
-            oldRs.records,
-            oldRs.typ,
-            oldRs.zoneId,
-            toFQDN(change.zone.name, oldRs.name)
-          )
-        )
-      }
-    }
-    // address successful and pending changes
+    // Successful and pending changes
     val completeChanges = byStatus.getOrElse(RecordSetChangeStatus.Complete, Seq())
     val completeChangesByType = completeChanges.groupBy(_.changeType)
     val completeCreates = completeChangesByType.getOrElse(RecordSetChangeType.Create, Seq())
     val completeUpdates = completeChangesByType.getOrElse(RecordSetChangeType.Update, Seq())
     val completeDeletes = completeChangesByType.getOrElse(RecordSetChangeType.Delete, Seq())
-
     val pendingChanges = byStatus.getOrElse(RecordSetChangeStatus.Pending, Seq())
 
-    // all pending changes are saved as if they are creates
-    (completeCreates ++ pendingChanges).map { i =>
-      Seq[Any](
-        insertRecordDataList(
-          db,
-          i.recordSet.id,
-          i.recordSet.records,
-          i.recordSet.typ,
-          i.recordSet.zoneId,
-          toFQDN(i.zone.name, i.recordSet.name)
-        ))
-    }
-    completeUpdates.map { u =>
-      Seq[Any](
-        updateRecordDataList(
-          db,
-          u.recordSet.id,
-          u.recordSet.records,
-          u.recordSet.typ,
-          u.recordSet.zoneId,
-          toFQDN(u.zone.name, u.recordSet.name),
-        )
-      )
-    }
+    // Record ids whose data must be removed: explicit deletes, failed-create reversions, and
+    // the existing rows for anything being (re)written so updates are delete-then-insert.
+    val deleteParams: Seq[Seq[Any]] =
+      (completeDeletes.map(_.recordSet.id) ++
+        failedCreates.map(_.recordSet.id) ++
+        completeUpdates.map(_.recordSet.id) ++
+        failedUpdatesOrDeletes.flatMap(_.updates.map(_.id))).map(id => Seq[Any](id))
 
-    val deletes: Seq[Seq[Any]] = completeDeletes.map(d => Seq[Any](d.recordSet.id))
+    // Rows to insert: creates/pending and updated records use the new record set; failed
+    // update/delete reversions restore the previous record set.
+    val insertParams: Seq[Seq[(Symbol, Any)]] =
+      (completeCreates ++ pendingChanges).flatMap { c =>
+        recordDataRows(c.recordSet.id, c.recordSet.zoneId, toFQDN(c.zone.name, c.recordSet.name),
+          c.recordSet.typ, c.recordSet.records)
+      } ++ completeUpdates.flatMap { u =>
+        recordDataRows(u.recordSet.id, u.recordSet.zoneId, toFQDN(u.zone.name, u.recordSet.name),
+          u.recordSet.typ, u.recordSet.records)
+      } ++ failedUpdatesOrDeletes.flatMap { change =>
+        change.updates.toList.flatMap { oldRs =>
+          recordDataRows(oldRs.id, oldRs.zoneId, toFQDN(change.zone.name, oldRs.name),
+            oldRs.typ, oldRs.records)
+        }
+      }
+
     IO {
       db.withinTx { implicit session =>
-        (deletes ++ reversionDeletes).grouped(1000).foreach { group =>
+        // batch groups kept at 1000 to limit lock contention, matching MySqlRecordSetRepository.
+        // batchByName lets rewriteBatchedStatements collapse the inserts into multi-row statements.
+        deleteParams.grouped(1000).foreach { group =>
           DELETE_RECORDSETDATA.batch(group: _*).apply()
+        }
+        insertParams.grouped(1000).foreach { group =>
+          INSERT_RECORDSETDATA.batchByName(group: _*).apply()
         }
       }
     }.as(changeSet)
-
   }
 
   def deleteRecordSetDataInZone(db: DB, zone_id: String, zoneName: String): IO[Unit] =
@@ -146,83 +135,58 @@ class MySqlRecordSetCacheRepository
       }
     }
 
-  def insertRecordDataList(db: DB,
-                           recordID: String,
-                           recordData: List[RecordData],
-                           recordType: RecordType,
-                           zoneId: String,
-                           fqdn: String): Unit = storeRecordDataList(db, recordID, recordData, recordType, zoneId, fqdn)
-
   def updateRecordDataList(db: DB,
                            recordID: String,
                            recordData: List[RecordData],
                            recordType: RecordType,
                            zoneId: String,
-                           fqdn: String): Unit = {
+                           fqdn: String): Unit =
     db.withinTx { implicit session =>
       DELETE_RECORDSETDATA
         .bind(recordID)
         .update()
         .apply()
-      storeRecordDataList(db, recordID, recordData, recordType, zoneId, fqdn)
+      recordDataRows(recordID, zoneId, fqdn, recordType, recordData).grouped(1000).foreach { group =>
+        INSERT_RECORDSETDATA.batchByName(group: _*).apply()
+      }
     }
-  }
-
-  private def storeRecordDataList(db: DB,
-                                  recordId: String,
-                                  recordData: List[RecordData],
-                                  recordType: RecordType,
-                                  zoneId: String,
-                                  fqdn: String): Unit = {
-    recordData.foreach(record => saveRecordSetData(db, recordId, zoneId, fqdn, recordType, record))
-  }
 
   /**
-   * Inserts data into the RecordSet Data table
-   *
-   * @param db         The database connection
-   * @param recordId   The record identifier
-   * @param zoneId     The zone identifier
-   * @param fqdn       The fully qualified domain name
-   * @param recordType The record type
-   * @param recordData The record data
+   * Builds the batchByName parameter rows for a record set's data (one row per record data).
    */
-  private def saveRecordSetData(db: DB,
-                                recordId: String,
-                                zoneId: String,
-                                fqdn: String,
-                                recordType: RecordType,
-                                recordData: RecordData,
-                               ): Unit = {
-    // We want to get the protobuf string format of the record data. This provides
-    // slightly more information when doing RData searches.
-    // Example:
-    //  An SOA record may contain the following
-    //    mname:"auth.vinyldns.io."  rname:"admin.vinyldns.io."  serial:14  refresh:7200  retry:3600  expire:1209600  minimum:900
-    // This allows us to potentially search for SOA records with "refresh:7200"
-    val recordDataString = raw"""([a-z]+): ("|\d)""".r.replaceAllIn(recordDataToPB(recordData).toString.trim, "$1:$2")
+  private def recordDataRows(recordId: String,
+                             zoneId: String,
+                             fqdn: String,
+                             recordType: RecordType,
+                             recordData: List[RecordData]): Seq[Seq[(Symbol, Any)]] =
+    recordData.map { rd =>
+      // We want the protobuf string format of the record data. This provides slightly more
+      // information when doing RData searches. Example:
+      //  An SOA record may contain the following
+      //    mname:"auth.vinyldns.io."  rname:"admin.vinyldns.io."  serial:14  refresh:7200  ...
+      // This allows us to potentially search for SOA records with "refresh:7200"
+      val recordDataString =
+        raw"""([a-z]+): ("|\d)""".r.replaceAllIn(recordDataToPB(rd).toString.trim, "$1:$2")
 
-    // Extract the IP address from the forward or reverse record
-    val parsedIp = recordType match {
-      case RecordType.PTR => parseIP(fqdn)
-      case RecordType.A | RecordType.AAAA => parseIP(recordDataString)
-      case _ => None
+      // Extract the IP address from the forward or reverse record
+      val parsedIp = recordType match {
+        case RecordType.PTR => parseIP(fqdn)
+        case RecordType.A | RecordType.AAAA => parseIP(recordDataString)
+        case _ => None
+      }
+
+      Seq[(Symbol, Any)](
+        'recordset_id -> recordId,
+        'zone_id -> zoneId,
+        'fqdn -> fqdn,
+        'reverse_fqdn -> fqdn.reverse,
+        'type -> recordType.toString,
+        'record_data -> recordDataString,
+        // bind the Option (not orNull): scalikejdbc's batch binding maps None to SQL NULL,
+        // whereas a raw null is silently dropped from the batch.
+        'ip -> parsedIp
+      )
     }
-
-    db.withinTx { implicit session =>
-      INSERT_RECORDSETDATA
-        .bindByName(
-          'recordset_id -> recordId,
-          'zone_id -> zoneId,
-          'fqdn -> fqdn,
-          'reverse_fqdn -> fqdn.reverse,
-          'type -> recordType.toString,
-          'record_data -> recordDataString,
-          'ip -> parsedIp.orNull
-        )
-        .update()
-        .apply()
-    }}
 
   /**
     * Retrieves recordset data for records with the given {@code recordId} in the recordset
