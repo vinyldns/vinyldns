@@ -191,6 +191,12 @@ object BatchTransformations {
     def getProposedDeletes(recordKey: RecordKey): Set[RecordData] =
       innerMap.get(recordKey).map(_.proposedDeletes).toSet.flatten
 
+    def getRequestedDeleteRecordData(recordKey: RecordKey): Set[RecordData] =
+      innerMap.get(recordKey).map(_.requestedDeleteRecordData).toSet.flatten
+
+    def hasDeleteRequests(recordKey: RecordKey): Boolean =
+      innerMap.get(recordKey).exists(_.hasDeleteRequests)
+
     // The new, net record data factoring in existing records, deletes and adds
     // If record is not edited in batch, will fallback to look up record in existing
     // records
@@ -217,6 +223,23 @@ object BatchTransformations {
 
       val existingRecords = existingRecordSet.toList.flatMap(_.records).toSet
 
+      val hasDeleteRequests = changes.exists {
+        case _: DeleteRRSetChangeForValidation => true
+        case _ => false
+      }
+
+      // Collect explicit delete DNS entries requested by the user.
+      // This intentionally does not intersect with existing records so validation can
+      // distinguish delete intent from effective backend changes.
+      val requestedDeleteRecordData = changes.collect {
+        case DeleteRRSetChangeForValidation(
+            _,
+            _,
+            DeleteRRSetChangeInput(_, _, _, Some(recordData))
+            ) =>
+          recordData
+      }.toSet
+
       // Collect delete DNS entries. This formulates all of the proposed delete entries, including
       // existing DNS entries in the event of DeleteRecordSet
       val deleteChangeSet = changes
@@ -226,7 +249,7 @@ object BatchTransformations {
               _,
               DeleteRRSetChangeInput(_, _, _, Some(recordData))
               ) =>
-            Set(recordData)
+            Set(recordData).intersect(existingRecords)
           case _: DeleteRRSetChangeForValidation =>
             existingRecords
         }
@@ -257,24 +280,29 @@ object BatchTransformations {
             LogicalChangeType.OutOfSync
           }
         case (false, false) =>
-          if(changes.exists {
-            case _: DeleteRRSetChangeForValidation => true
-            case _ => false
-            }
-          ){
+          if (hasDeleteRequests && existingRecords.isEmpty) {
             LogicalChangeType.OutOfSync
           } else {
             LogicalChangeType.NotEditedInBatch
           }
       }
 
-      new ValidationChanges(addChangeRecordDataSet, deleteChangeSet, proposedRecordData, logicalChangeType)
+      new ValidationChanges(
+        addChangeRecordDataSet,
+        deleteChangeSet,
+        requestedDeleteRecordData,
+        hasDeleteRequests,
+        proposedRecordData,
+        logicalChangeType
+      )
     }
   }
 
   final case class ValidationChanges(
       proposedAdds: Set[RecordData],
       proposedDeletes: Set[RecordData],
+      requestedDeleteRecordData: Set[RecordData],
+      hasDeleteRequests: Boolean,
       proposedRecordData: Set[RecordData],
       logicalChangeType: LogicalChangeType
   )
