@@ -149,11 +149,15 @@ class ZoneSyncHandlerSpec
             s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'",
             e
           )
+
+          val systemMessage =
+            Option(e.getMessage).filter(_.nonEmpty).getOrElse("Zone synchronization failed")
+
           // We want to just move back to an active status, do not update latest sync
           zoneChange.copy(
             zone = zoneChange.zone.copy(status = ZoneStatus.Active),
             status = ZoneChangeStatus.Failed,
-            systemMessage = Some("Changes Rolled back. " + e.getMessage)
+            systemMessage = Some(systemMessage)
           )
         case Right(ok) => ok
       }
@@ -433,6 +437,7 @@ class ZoneSyncHandlerSpec
       result.status shouldBe ZoneChangeStatus.Failed
       result.zone.status shouldBe ZoneStatus.Active
       result.zone.latestSync should not be defined
+      result.systemMessage shouldBe Some("Dns Failed")
     }
   }
 
@@ -661,6 +666,7 @@ class ZoneSyncHandlerSpec
       result.status shouldBe ZoneChangeStatus.Failed
       result.zone.status shouldBe ZoneStatus.Active
       result.zone.latestSync shouldBe testZoneChange.zone.latestSync
+      result.systemMessage shouldBe Some("Dns Failed")
     }
 
     "verify transaction by not saving changes to database when exception occurs while saving to RecordSetRepo" in {
@@ -675,12 +681,25 @@ class ZoneSyncHandlerSpec
 
       // Does not save changes to both recordChangeRepo and recordSetRepo as it rollbacks changes made when exception occurred in RecordSetRepo
       // Transaction saves either both record changes and record sets or saves none to database
-      result.systemMessage.get shouldBe "Changes Rolled back. Save Recordset Repo Failed!"
+      result.systemMessage.get shouldBe "Save Recordset Repo Failed!"
 
       // ZoneChangeStatus Fails as exception occurred
       result.status shouldBe ZoneChangeStatus.Failed
       result.zone.status shouldBe ZoneStatus.Active
       result.zone.latestSync should not be defined
+    }
+
+    "uses default message when sync exception has no message" in {
+      doReturn(mockBackend).when(mockBackendResolver).resolve(any[Zone])
+      doReturn(() => IO.raiseError(new RuntimeException()))
+        .when(mockVinylDNSLoader)
+        .load
+
+      val result = runSync.unsafeRunSync()
+
+      result.status shouldBe ZoneChangeStatus.Failed
+      result.zone.status shouldBe ZoneStatus.Active
+      result.systemMessage shouldBe Some("Zone synchronization failed")
     }
 
     "verify transaction by not saving changes to database when exception occurs while saving to RecordChangeRepo" in {
@@ -695,7 +714,7 @@ class ZoneSyncHandlerSpec
 
       // Does not save changes to both recordChangeRepo and recordSetRepo as it rollbacks changes made when exception occurred in RecordChangeRepo
       // Transaction saves either both record changes and record sets or saves none to database
-      result.systemMessage.get shouldBe "Changes Rolled back. Save Record change Repo Failed!"
+      result.systemMessage.get shouldBe "Save Record change Repo Failed!"
 
       // ZoneChangeStatus Fails as exception occurred
       result.status shouldBe ZoneChangeStatus.Failed
