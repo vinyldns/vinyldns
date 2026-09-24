@@ -97,6 +97,66 @@ describe('Controller: RecordsController', function () {
         expect(this.scope.currentRecord.sshfpItems).toEqual([{algorithm: '', type: '', fingerprint: ''}]);
     });
 
+    describe('submitUpdateRecord', function () {
+        function mockSuccessfulUpdateRecordSet(recordsService, sentRecordRef) {
+            spyOn(recordsService, 'updateRecordSet').and.callFake(function (zoneId, recordId, payload) {
+                sentRecordRef.value = payload;
+                return {
+                    then: function (fn) {
+                        fn({ data: { recordSet: {} }, status: 200, statusText: 'OK' });
+                        return this;
+                    },
+                    catch: function () {}
+                };
+            });
+        }
+
+        beforeEach(function () {
+            this.scope.currentRecord = {
+                id: 'record-id-1',
+                zoneId: 'zone-id-1',
+                name: 'test-record',
+                type: 'A',
+                ttl: 300,
+                aRecordData: ['1.2.3.4'],
+                status: 'Active'
+            };
+            this.scope.addRecordForm = {$valid: true, $setPristine: function () {}};
+        });
+
+        it('removes recordSetGroupChange before sending update to backend', function () {
+            this.scope.currentRecord.recordSetGroupChange = {
+                ownershipTransferStatus: 'PendingReview',
+                requestedOwnerGroupId: 'group-id-1'
+            };
+
+            var sentRecord = { value: undefined };
+            mockSuccessfulUpdateRecordSet(this.recordsService, sentRecord);
+
+            this.scope.submitUpdateRecord();
+
+            expect(sentRecord.value.recordSetGroupChange).toBeUndefined();
+            expect(sentRecord.value.name).toBe('test-record');
+            expect(sentRecord.value.ttl).toBe(300);
+        });
+
+        it('does not send ownership transfer payload when owner group is changed via update modal', function () {
+            this.scope.currentRecord.ownerGroupId = 'group-id-2';
+            this.scope.currentRecord.recordSetGroupChange = {
+                ownershipTransferStatus: 'ManuallyApproved',
+                requestedOwnerGroupId: 'group-id-2'
+            };
+
+            var sentRecord = { value: undefined };
+            mockSuccessfulUpdateRecordSet(this.recordsService, sentRecord);
+
+            this.scope.submitUpdateRecord();
+
+            expect(sentRecord.value.recordSetGroupChange).toBeUndefined();
+            expect(sentRecord.value.ownerGroupId).toBe('group-id-2');
+        });
+    });
+
     it('refreshZone updates zoneInfo and isZoneAdmin when user is in admin group', function() {
         mockZone = {
             name: "dummy.",
