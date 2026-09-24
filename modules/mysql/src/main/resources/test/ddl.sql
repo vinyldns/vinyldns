@@ -129,7 +129,8 @@ CREATE TABLE IF NOT EXISTS recordset_data
   reverse_fqdn VARCHAR(255) NOT NULL,
   type VARCHAR(25) NOT NULL,
   record_data VARCHAR(4096) NOT NULL,
-  ip VARBINARY(16)
+  ip VARBINARY(16),
+  record_data_value VARCHAR(1000) NULL
 );
 
 CREATE INDEX IF NOT EXISTS recordset_data_zone_id_index
