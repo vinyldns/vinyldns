@@ -33,6 +33,7 @@ import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain._
 import vinyldns.api.repository.{
   EmptyGroupRepo,
+  EmptyMembershipRepo,
   EmptyRecordSetRepo,
   EmptyUserRepo,
   EmptyZoneRepo,
@@ -42,7 +43,7 @@ import vinyldns.core.TestMembershipData._
 import vinyldns.core.domain._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.batch._
-import vinyldns.core.domain.membership.{Group, ListUsersResults, User}
+import vinyldns.core.domain.membership.{Group, ListUsersResults, MembershipRepository, User}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.{RecordType, _}
 import vinyldns.core.domain.zone.Zone
@@ -325,6 +326,8 @@ class BatchChangeServiceSpec
     }
   }
 
+  object TestMembershipRepo extends EmptyMembershipRepo
+
   object TestGroupRepo extends EmptyGroupRepo {
     override def getGroup(groupId: String): IO[Option[Group]] =
       IO.pure {
@@ -425,6 +428,7 @@ class BatchChangeServiceSpec
     TestUserRepo,
     false,
     TestAuth,
+    TestMembershipRepo,
     mockNotifiers,
     false,
     defaultv6Discovery,
@@ -441,6 +445,7 @@ class BatchChangeServiceSpec
     TestUserRepo,
     true,
     TestAuth,
+    TestMembershipRepo,
     mockNotifiers,
     false,
     defaultv6Discovery,
@@ -457,6 +462,7 @@ class BatchChangeServiceSpec
     TestUserRepo,
     true,
     TestAuth,
+    TestMembershipRepo,
     mockNotifiers,
     true,
     defaultv6Discovery,
@@ -483,6 +489,7 @@ class BatchChangeServiceSpec
         TestUserRepo,
         false,
         TestAuth,
+        TestMembershipRepo,
         mockNotifiers,
         false,
         new V6DiscoveryNibbleBoundaries(16, 17),
@@ -515,6 +522,7 @@ class BatchChangeServiceSpec
         TestUserRepo,
         false,
         TestAuth,
+        TestMembershipRepo,
         mockNotifiers,
         false,
         new V6DiscoveryNibbleBoundaries(16, 16),
@@ -1154,6 +1162,7 @@ class BatchChangeServiceSpec
         TestUserRepo,
         false,
         TestAuth,
+        TestMembershipRepo,
         mockNotifiers,
         false,
         defaultv6Discovery,
@@ -1195,6 +1204,7 @@ class BatchChangeServiceSpec
         TestUserRepo,
         false,
         TestAuth,
+        TestMembershipRepo,
         mockNotifiers,
         false,
         new V6DiscoveryNibbleBoundaries(16, 16),
@@ -1221,6 +1231,7 @@ class BatchChangeServiceSpec
         TestUserRepo,
         false,
         TestAuth,
+        TestMembershipRepo,
         mockNotifiers,
         false,
         defaultv6Discovery,
@@ -2576,6 +2587,108 @@ class BatchChangeServiceSpec
       result.batchStatus shouldBe Some(BatchChangeStatus.PendingReview)
 
       result.batchChanges.length shouldBe 2
+    }
+
+    "return batch changes owned by user's groups when user has group membership" in {
+      val groupId = okGroup.id
+      val batchChangeInGroup = BatchChange(
+        notAuth.userId,
+        notAuth.signedInUser.userName,
+        None,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
+        List(),
+        ownerGroupId = Some(groupId),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
+      batchChangeRepo.save(batchChangeInGroup)
+
+      val batchChangeNotInGroup = BatchChange(
+        notAuth.userId,
+        notAuth.signedInUser.userName,
+        None,
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + 1000),
+        List(),
+        ownerGroupId = Some("some-other-group-id"),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
+      batchChangeRepo.save(batchChangeNotInGroup)
+
+      // underTest with membership repo that returns the user's group
+      val membershipRepoWithGroup = new MembershipRepository {
+        def saveMembers(db: scalikejdbc.DB, gId: String, memberUserIds: Set[String], isAdmin: Boolean): IO[Set[String]] =
+          IO.pure(Set.empty)
+        def removeMembers(db: scalikejdbc.DB, gId: String, memberUserIds: Set[String]): IO[Set[String]] =
+          IO.pure(Set.empty)
+        def getGroupsForUser(userId: String): IO[Set[String]] = IO.pure(Set(groupId))
+      }
+      val underTestWithGroups = new BatchChangeService(
+        TestZoneRepo,
+        TestRecordSetRepo,
+        TestGroupRepo,
+        validations,
+        batchChangeRepo,
+        EmptyBatchConverter,
+        TestUserRepo,
+        false,
+        TestAuth,
+        membershipRepoWithGroup,
+        mockNotifiers,
+        false,
+        defaultv6Discovery,
+        7200L
+      )
+
+      val result = underTestWithGroups
+        .listBatchChangeSummaries(auth, isMyGroupAccess = true, maxItems = 100)
+        .value.unsafeRunSync().toOption.get
+
+      result.isMyGroupAccess shouldBe true
+      result.batchChanges.length shouldBe 1
+      result.batchChanges.head.ownerGroupId shouldBe Some(groupId)
+    }
+
+    "return empty list when user's groups have no owned batch changes" in {
+      val batchChangeNoGroup = BatchChange(
+        notAuth.userId,
+        notAuth.signedInUser.userName,
+        None,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
+        List(),
+        ownerGroupId = Some("unrelated-group"),
+        approvalStatus = BatchChangeApprovalStatus.AutoApproved
+      )
+      batchChangeRepo.save(batchChangeNoGroup)
+
+      val membershipRepoEmptyGroupMatch = new MembershipRepository {
+        def saveMembers(db: scalikejdbc.DB, gId: String, memberUserIds: Set[String], isAdmin: Boolean): IO[Set[String]] =
+          IO.pure(Set.empty)
+        def removeMembers(db: scalikejdbc.DB, gId: String, memberUserIds: Set[String]): IO[Set[String]] =
+          IO.pure(Set.empty)
+        def getGroupsForUser(userId: String): IO[Set[String]] = IO.pure(Set("my-group-with-no-changes"))
+      }
+      val underTestNoMatch = new BatchChangeService(
+        TestZoneRepo,
+        TestRecordSetRepo,
+        TestGroupRepo,
+        validations,
+        batchChangeRepo,
+        EmptyBatchConverter,
+        TestUserRepo,
+        false,
+        TestAuth,
+        membershipRepoEmptyGroupMatch,
+        mockNotifiers,
+        false,
+        defaultv6Discovery,
+        7200L
+      )
+
+      val result = underTestNoMatch
+        .listBatchChangeSummaries(auth, isMyGroupAccess = true, maxItems = 100)
+        .value.unsafeRunSync().toOption.get
+
+      result.isMyGroupAccess shouldBe true
+      result.batchChanges shouldBe empty
     }
   }
 

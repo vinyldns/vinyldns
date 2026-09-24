@@ -132,6 +132,16 @@ trait EmptyGroupRepo extends GroupRepository {
   def getAllGroups(): IO[Set[Group]] = IO.pure(Set())
 }
 
+trait EmptyMembershipRepo extends MembershipRepository {
+  def saveMembers(db: scalikejdbc.DB, groupId: String, memberUserIds: Set[String], isAdmin: Boolean): IO[Set[String]] =
+    IO.pure(Set.empty)
+
+  def removeMembers(db: scalikejdbc.DB, groupId: String, memberUserIds: Set[String]): IO[Set[String]] =
+    IO.pure(Set.empty)
+
+  def getGroupsForUser(userId: String): IO[Set[String]] = IO.pure(Set.empty)
+}
+
 trait EmptyUserRepo extends UserRepository {
   def getUser(userId: String): IO[Option[User]] = IO.pure(None)
 
