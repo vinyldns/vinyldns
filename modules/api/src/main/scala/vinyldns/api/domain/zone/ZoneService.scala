@@ -16,7 +16,7 @@
 
 package vinyldns.api.domain.zone
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.api.Interfaces
@@ -73,6 +73,9 @@ class ZoneService(
     crypto: CryptoAlgebra,
     membershipService:MembershipService
 ) extends ZoneServiceAlgebra {
+
+  private implicit val cs: ContextShift[IO] =
+    IO.contextShift(scala.concurrent.ExecutionContext.global)
 
   import accessValidation._
   import zoneValidations._
@@ -175,7 +178,8 @@ class ZoneService(
       maxItems: Int = 100,
       searchByAdminGroup: Boolean = false,
       ignoreAccess: Boolean = false,
-      includeReverse: Boolean = true
+      includeReverse: Boolean = true,
+      accessFilter: Option[Int] = None
   ): Result[ListZonesResponse] = {
     if(!searchByAdminGroup || nameFilter.isEmpty){
       for {
@@ -185,7 +189,8 @@ class ZoneService(
           startFrom,
           maxItems,
           ignoreAccess,
-          includeReverse
+          includeReverse,
+          accessFilter
       )
       zones = listZonesResult.zones
       groupIds = zones.map(_.adminGroupId).toSet
@@ -209,7 +214,8 @@ class ZoneService(
           maxItems,
           groupIds,
           ignoreAccess,
-          includeReverse
+          includeReverse,
+          accessFilter
         )
         zones = listZonesResult.zones
         groups <- groupRepository.getGroups(groupIds)
@@ -231,7 +237,8 @@ class ZoneService(
                         nameFilter: Option[String] = None,
                         startFrom: Option[String] = None,
                         maxItems: Int = 100,
-                        ignoreAccess: Boolean = false
+                        ignoreAccess: Boolean = false,
+                        accessFilter: Option[Int] = None
                       ): Result[ListDeletedZoneChangesResponse] = {
     for {
       listZonesChangeResult <- zoneChangeRepository.listDeletedZones(
@@ -239,7 +246,8 @@ class ZoneService(
         nameFilter,
         startFrom,
         maxItems,
-        ignoreAccess
+        ignoreAccess,
+        accessFilter
       )
       zoneChanges = listZonesChangeResult.zoneDeleted
       groupIds = zoneChanges.map(_.zone.adminGroupId).toSet
@@ -481,4 +489,45 @@ class ZoneService(
       }
     } yield ZoneACLInfo(ruleInfos.filter(_.displayName.isDefined))
   }
+
+  def countZones(auth: AuthPrincipal): Result[ZoneCount] = {
+    val user = auth.signedInUser
+    val isPrivileged = user.isSuper || user.isSupport
+    (
+      zoneRepository.countAllGlobalZoneStats(),
+      zoneChangeRepository.countAllAbandonedStats(),
+      if (isPrivileged) IO.pure((0, 0, 0, 0)) else zoneRepository.countAllUserZoneStats(auth),
+      if (isPrivileged) IO.pure((0, 0, 0)) else zoneChangeRepository.countAllAbandonedStatsForUser(auth)
+    ).parMapN { (globalZone, globalAbandoned, userZoneStats, userAbandonedStats) =>
+      val (total, shared, ptr, sharedPtr, privatePtr, syncing) = globalZone
+      val (abandoned, abandonedPtr, abandonedShared) = globalAbandoned
+      val (myTotal, myShared, myPtr, mySyncing) =
+        if (isPrivileged) (total, shared, ptr, syncing) else userZoneStats
+      val (myAbandoned, myAbandonedPtr, myAbandonedShared) =
+        if (isPrivileged) (abandoned, abandonedPtr, abandonedShared) else userAbandonedStats
+      ZoneCount(
+        totalCount             = total,
+        myZonesCount           = myTotal,
+        sharedCount            = shared,
+        privateCount           = total - shared,
+        activeCount            = total - syncing,
+        syncingCount           = syncing,
+        abandonedCount         = abandoned,
+        ptrCount               = ptr,
+        sharedPtrCount         = sharedPtr,
+        privatePtrCount        = privatePtr,
+        abandonedPtrCount      = abandonedPtr,
+        abandonedSharedCount   = abandonedShared,
+        myActiveCount          = myTotal - mySyncing,
+        mySyncingCount         = mySyncing,
+        mySharedCount          = myShared,
+        myPrivateCount         = myTotal - myShared,
+        myPtrCount             = myPtr,
+        myAbandonedCount       = myAbandoned,
+        myAbandonedPtrCount    = myAbandonedPtr,
+        myAbandonedSharedCount = myAbandonedShared
+      )
+    }.toResult
+  }
+  
 }

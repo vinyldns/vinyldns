@@ -1407,5 +1407,125 @@ class MembershipServiceSpec
         error shouldBe a[UserNotFoundError]
       }
     }
+
+    "listEmailDomains" should {
+      "return the valid email domains from config" in {
+        val result = underTest.listEmailDomains(okAuth).value.unsafeRunSync().toOption.get
+        result shouldBe List("test.com", "*dummy.com")
+      }
+
+      "return an empty list when no valid domains are configured" in {
+        val result = underTestNew.listEmailDomains(okAuth).value.unsafeRunSync().toOption.get
+        result shouldBe List()
+      }
+    }
+
+    "listMyGroups with roleFilter" should {
+      "return only admin groups when roleFilter is 0" in {
+        val userId = okUser.id
+        val adminGroup    = Group("admin-group",  "test@test.com", id = "adminGroupId",
+          memberIds = Set(userId), adminUserIds = Set(userId))
+        val memberOnlyGrp = Group("member-group", "test@test.com", id = "memberGroupId",
+          memberIds = Set(userId), adminUserIds = Set(dummyUser.id))
+        doReturn(IO.pure(Set(adminGroup, memberOnlyGrp)))
+          .when(mockGroupRepo)
+          .getGroups(any[Set[String]])
+
+        val result = underTest
+          .listMyGroups(None, None, 100, okAuth, ignoreAccess = false, roleFilter = Some(0))
+          .value.unsafeRunSync().toOption.get
+
+        result.groups.map(_.id) should contain only adminGroup.id
+        result.groups.map(_.id) should not contain memberOnlyGrp.id
+      }
+
+      "return only member-only groups when roleFilter is 1" in {
+        val userId = okUser.id
+        val adminGroup    = Group("admin-group",  "test@test.com", id = "adminGroupId",
+          memberIds = Set(userId), adminUserIds = Set(userId))
+        val memberOnlyGrp = Group("member-group", "test@test.com", id = "memberGroupId",
+          memberIds = Set(userId), adminUserIds = Set(dummyUser.id))
+        doReturn(IO.pure(Set(adminGroup, memberOnlyGrp)))
+          .when(mockGroupRepo)
+          .getGroups(any[Set[String]])
+
+        val result = underTest
+          .listMyGroups(None, None, 100, okAuth, ignoreAccess = false, roleFilter = Some(1))
+          .value.unsafeRunSync().toOption.get
+
+        result.groups.map(_.id) should contain only memberOnlyGrp.id
+        result.groups.map(_.id) should not contain adminGroup.id
+      }
+
+      "return only non-member groups and call getAllGroups when roleFilter is 2" in {
+        val userId = okUser.id
+        val memberGroup    = Group("member-group",     "test@test.com", id = "memberGroupId",
+          memberIds = Set(userId), adminUserIds = Set(userId))
+        val nonMemberGroup = Group("non-member-group", "test@test.com", id = "nonMemberGroupId",
+          memberIds = Set(dummyUser.id), adminUserIds = Set(dummyUser.id))
+        doReturn(IO.pure(Set(memberGroup, nonMemberGroup)))
+          .when(mockGroupRepo)
+          .getAllGroups()
+
+        val result = underTest
+          .listMyGroups(None, None, 100, okAuth, ignoreAccess = false, roleFilter = Some(2))
+          .value.unsafeRunSync().toOption.get
+
+        result.groups.map(_.id) should contain only nonMemberGroup.id
+        result.groups.map(_.id) should not contain memberGroup.id
+        verify(mockGroupRepo).getAllGroups()
+      }
+    }
+
+    "countGroups" should {
+      "return correct counts for a system admin" in {
+        val userId      = superUser.id
+        val adminGroup  = Group("g1", "test@test.com", id = "g1Id",
+          memberIds = Set(userId), adminUserIds = Set(userId))
+        val memberOnly  = Group("g2", "test@test.com", id = "g2Id",
+          memberIds = Set(userId), adminUserIds = Set("other"))
+        val noRoleGroup = Group("g3", "test@test.com", id = "g3Id",
+          memberIds = Set("other"), adminUserIds = Set("other"))
+        val deletedGrp  = Group("g4", "test@test.com", id = "g4Id",
+          status = GroupStatus.Deleted)
+        doReturn(IO.pure(Set(adminGroup, memberOnly, noRoleGroup, deletedGrp)))
+          .when(mockGroupRepo)
+          .getAllGroups()
+
+        val result = underTest.countGroups(superUserAuth).value.unsafeRunSync().toOption.get
+        result.totalCount           shouldBe 3
+        result.myGroupCount         shouldBe 3
+        result.adminGroupCount      shouldBe 1
+        result.memberOnlyGroupCount shouldBe 1
+        result.noRoleGroupCount     shouldBe 1
+        result.soleAdminGroupCount  shouldBe 1
+      }
+
+      "return correct counts for a regular (non-system-admin) user" in {
+        val userId      = okUser.id
+        val adminGroup  = Group("g1", "test@test.com", id = "g1Id",
+          memberIds = Set(userId), adminUserIds = Set(userId))
+        val memberOnly  = Group("g2", "test@test.com", id = "g2Id",
+          memberIds = Set(userId), adminUserIds = Set("other"))
+        val noRoleGroup = Group("g3", "test@test.com", id = "g3Id",
+          memberIds = Set("other"), adminUserIds = Set("other"))
+        val deletedGrp  = Group("g4", "test@test.com", id = "g4Id",
+          status = GroupStatus.Deleted)
+        doReturn(IO.pure(Set(adminGroup, memberOnly, noRoleGroup, deletedGrp)))
+          .when(mockGroupRepo)
+          .getAllGroups()
+        doReturn(IO.pure(Set(adminGroup, memberOnly)))
+          .when(mockGroupRepo)
+          .getGroups(any[Set[String]])
+
+        val result = underTest.countGroups(okAuth).value.unsafeRunSync().toOption.get
+        result.totalCount           shouldBe 3
+        result.myGroupCount         shouldBe 2
+        result.adminGroupCount      shouldBe 1
+        result.memberOnlyGroupCount shouldBe 1
+        result.noRoleGroupCount     shouldBe 1
+        result.soleAdminGroupCount  shouldBe 1
+      }
+    }
   }
 }

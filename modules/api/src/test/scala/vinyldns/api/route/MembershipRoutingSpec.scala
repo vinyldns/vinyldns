@@ -205,7 +205,7 @@ class MembershipRoutingSpec
         result(
           ListMyGroupsResponse(Seq(okGroupInfo, twoUserGroupInfo), None, None, None, 100, false)
         )
-      ).when(membershipService).listMyGroups(None, None, 100, okAuth, false, false)
+      ).when(membershipService).listMyGroups(None, None, 100, okAuth, false, false, None)
 
       Get("/groups") ~> Route.seal(membershipRoute) ~> check {
         status shouldBe StatusCodes.OK
@@ -236,7 +236,8 @@ class MembershipRoutingSpec
           maxItems = 100,
           okAuth,
           ignoreAccess = false,
-          abridged = true
+          abridged = true,
+          roleFilter = None
         )
       Get("/groups?startFrom=anyString&maxItems=100&groupNameFilter=ok&abridged=true") ~> Route.seal(
         membershipRoute
@@ -269,9 +270,46 @@ class MembershipRoutingSpec
     "return a 500 response when fails" in {
       doReturn(result(new IllegalArgumentException("fail")))
         .when(membershipService)
-        .listMyGroups(None, None, 100, okAuth, false, abridged = false)
+        .listMyGroups(None, None, 100, okAuth, false, abridged = false, roleFilter = None)
 
       Get("/groups") ~> Route.seal(membershipRoute) ~> check {
+        status shouldBe StatusCodes.InternalServerError
+      }
+    }
+    "return a 200 response when roleFilter is provided" in {
+      doReturn(
+        result(
+          ListMyGroupsResponse(Seq(okGroupInfo), None, None, None, 100, ignoreAccess = false)
+        )
+      ).when(membershipService).listMyGroups(None, None, 100, okAuth, ignoreAccess = false, abridged = false, roleFilter = Some(1))
+
+      Get("/groups?roleFilter=1") ~> Route.seal(membershipRoute) ~> check {
+        status shouldBe StatusCodes.OK
+        val result = responseAs[ListMyGroupsResponse]
+        result.groups shouldBe Seq(okGroupInfo)
+      }
+    }
+  }
+
+  "GET groups count" should {
+    "return 200 with all group count fields" in {
+      doReturn(result(GroupCount(totalCount = 10, myGroupCount = 5, adminGroupCount = 2, memberOnlyGroupCount = 3, noRoleGroupCount = 4, soleAdminGroupCount = 1))).when(membershipService).countGroups(okAuth)
+
+      Get("/groups/count") ~> Route.seal(membershipRoute) ~> check {
+        status shouldBe StatusCodes.OK
+        val result = responseAs[GroupCount]
+        result.totalCount shouldBe 10
+        result.myGroupCount shouldBe 5
+        result.adminGroupCount shouldBe 2
+        result.memberOnlyGroupCount shouldBe 3
+        result.noRoleGroupCount shouldBe 4
+        result.soleAdminGroupCount shouldBe 1
+      }
+    }
+    "return 500 when countGroups fails" in {
+      doReturn(result(new RuntimeException("db error"))).when(membershipService).countGroups(okAuth)
+
+      Get("/groups/count") ~> Route.seal(membershipRoute) ~> check {
         status shouldBe StatusCodes.InternalServerError
       }
     }

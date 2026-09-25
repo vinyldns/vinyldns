@@ -49,7 +49,8 @@ trait MembershipServiceAlgebra {
       maxItems: Int,
       authPrincipal: AuthPrincipal,
       ignoreAccess: Boolean,
-      abridged: Boolean = false
+      abridged: Boolean = false,
+      roleFilter: Option[Int] = None
   ): Result[ListMyGroupsResponse]
 
   def listMembers(
@@ -83,4 +84,6 @@ trait MembershipServiceAlgebra {
                userIdentifier: String,
                authPrincipal: AuthPrincipal
              ): Result[UserResponseInfo]
+
+  def countGroups(auth: AuthPrincipal): Result[GroupCount]
 }

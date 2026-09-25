@@ -150,3 +150,47 @@ def test_list_my_groups_as_support_user_with_ignore_access_true(list_my_groups_c
     assert_that(len(results["groups"]), greater_than(50))
     assert_that(results["maxItems"], is_(100))
     assert_that(results["ignoreAccess"], is_(True))
+
+
+
+def test_list_my_groups_with_role_filter_admin(list_my_groups_context):
+    """
+    Test that groups can be filtered to only admin groups via roleFilter=1
+    """
+    results = list_my_groups_context.client.list_my_groups(role_filter=1, status=200)
+    assert_that(results, has_key("groups"))
+    for group in results["groups"]:
+        assert_that(group, has_key("memberCount"))
+
+
+def test_list_my_groups_with_role_filter_member(list_my_groups_context):
+    """
+    Test that groups can be filtered to member-only groups via roleFilter=2
+    """
+    results = list_my_groups_context.client.list_my_groups(role_filter=2, status=200)
+    assert_that(results, has_key("groups"))
+    assert_that(results, has_key("ignoreAccess"))
+
+
+def test_count_groups_success(list_my_groups_context):
+    """
+    Test that the group count endpoint returns all expected fields
+    """
+    result = list_my_groups_context.client.count_groups(status=200)
+
+    assert_that(result, has_key("totalCount"))
+    assert_that(result, has_key("myGroupCount"))
+    assert_that(result, has_key("adminGroupCount"))
+    assert_that(result, has_key("memberOnlyGroupCount"))
+    assert_that(result, has_key("noRoleGroupCount"))
+    assert_that(result, has_key("soleAdminGroupCount"))
+    assert_that(result["myGroupCount"], greater_than_or_equal_to(0))
+    assert_that(result["totalCount"], greater_than_or_equal_to(result["myGroupCount"]))
+
+
+def test_count_groups_no_authorization(list_my_groups_context):
+    """
+    Test that we cannot retrieve group counts without authorization
+    """
+    list_my_groups_context.client.count_groups(sign_request=False, status=401)
+
