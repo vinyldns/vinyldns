@@ -34,6 +34,7 @@ import vinyldns.core.domain.record.{
   RecordSetCacheRepository,
   RecordSetRepository
 }
+import vinyldns.api.domain.zone.VinylDNSZoneViewLoader
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue}
 
@@ -218,7 +219,8 @@ object CommandHandler {
            batchChangeRepo: BatchChangeRepository,
            notifiers: AllNotifiers,
            backendResolver: BackendResolver,
-           maxZoneSize: Int
+           maxZoneSize: Int,
+           zoneSyncPageSize: Int = 5000
   )(implicit timer: Timer[IO]): IO[Unit] = {
     // Handlers for each type of change request
     val zoneChangeHandler =
@@ -233,7 +235,8 @@ object CommandHandler {
         zoneChangeRepo,
         zoneRepo,
         backendResolver,
-        maxZoneSize
+        maxZoneSize,
+        vinyldnsLoader = (z, rs, rsc) => VinylDNSZoneViewLoader(z, rs, rsc, pageSize = zoneSyncPageSize)
       )
     val batchChangeHandler =
       BatchChangeHandler(batchChangeRepo, notifiers)

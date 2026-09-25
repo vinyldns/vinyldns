@@ -127,7 +127,8 @@ object Boot extends App {
         repositories.batchChangeRepository,
         notifiers,
         backendResolver,
-        vinyldnsConfig.serverConfig.maxZoneSize
+        vinyldnsConfig.serverConfig.maxZoneSize,
+        vinyldnsConfig.serverConfig.zoneSyncPageSize
       ).start
     } yield {
       val batchAccessValidations = new AccessValidations(

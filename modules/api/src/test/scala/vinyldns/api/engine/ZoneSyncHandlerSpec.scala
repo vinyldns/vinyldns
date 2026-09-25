@@ -64,7 +64,7 @@ class ZoneSyncHandlerSpec
                        backendResolver: BackendResolver,
                        maxZoneSize: Int,
                        vinyldnsLoader: (Zone, RecordSetRepository,RecordSetCacheRepository) => VinylDNSZoneViewLoader =
-     VinylDNSZoneViewLoader.apply
+     (z, rs, rsc) => VinylDNSZoneViewLoader(z, rs, rsc)
   ): IO[ZoneChange] =
     monitor("zone.sync") {
       time(s"zone.sync; zoneName='${zoneChange.zone.name}'") {
