@@ -29,6 +29,9 @@ import vinyldns.api.config.ValidEmailConfig
 import vinyldns.api.domain.access.AccessValidations
 import vinyldns.api.domain.membership.{EmailValidationError, MembershipService}
 import vinyldns.core.domain.record.RecordSetRepository
+import vinyldns.core.notifier.{AllNotifiers, Notifier}
+
+import scala.concurrent.ExecutionContext
 //import vinyldns.api.domain.membership.{EmailValidationError, MembershipService}
 import vinyldns.api.repository.TestDataLoader
 import vinyldns.core.domain.auth.AuthPrincipal
@@ -48,6 +51,7 @@ class ZoneServiceSpec
     with BeforeAndAfterEach
     with EitherValues {
 
+  private implicit val contextShift: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   private val mockZoneRepo = mock[ZoneRepository]
   private val mockGroupRepo = mock[GroupRepository]
   private val mockUserRepo = mock[UserRepository]
@@ -66,13 +70,17 @@ class ZoneServiceSpec
   private val mockRecordSetRepo = mock[RecordSetRepository]
   private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com", "*dummy.com"),2)
   private val mockValidEmailConfigNew = ValidEmailConfig(valid_domains = List(),2)
+  private val mockNotifier = mock[Notifier]
+  private val mockNotifiers = AllNotifiers(List(mockNotifier))
+
   private val mockMembershipService = new MembershipService(mockGroupRepo,
     mockUserRepo,
     mockMembershipRepo,
     mockZoneRepo,
     mockGroupChangeRepo,
     mockRecordSetRepo,
-    mockValidEmailConfig)
+    mockValidEmailConfig,
+    mockNotifiers)
 
 
 
@@ -120,7 +128,8 @@ class ZoneServiceSpec
       mockZoneRepo,
       mockGroupChangeRepo,
       mockRecordSetRepo,
-      mockValidEmailConfigNew)
+      mockValidEmailConfigNew,
+      mockNotifiers)
   )
 
   private val createZoneAuthorized = CreateZoneInput(

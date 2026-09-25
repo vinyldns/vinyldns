@@ -26,7 +26,12 @@ class ListZonesTestContext(object):
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "list-zones-user"}],
-            "admins": [{"id": "list-zones-user"}]
+            "admins": [{"id": "list-zones-user"}],
+            "membershipAccessStatus": {
+                "pendingReviewMember": [],
+                "rejectedMember": [],
+                "approvedMember": []
+            }
         }
         self.list_zones_group = self.client.create_group(group, status=200)
 

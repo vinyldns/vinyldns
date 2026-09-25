@@ -16,14 +16,20 @@
 
 package vinyldns.core.domain.membership
 
-import java.util.UUID
+import vinyldns.core.domain.auth.AuthPrincipal
 
+import java.util.UUID
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 object GroupStatus extends Enumeration {
   type GroupStatus = Value
   val Active, Deleted = Value
+}
+
+object MemberStatus extends Enumeration {
+  type MemberStatus = Value
+  val Request, PendingReview, Rejected, Approved = Value
 }
 
 import vinyldns.core.domain.membership.GroupStatus._
@@ -35,10 +41,68 @@ case class Group(
     created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
     status: GroupStatus = GroupStatus.Active,
     memberIds: Set[String] = Set.empty,
-    adminUserIds: Set[String] = Set.empty
+    adminUserIds: Set[String] = Set.empty,
+    membershipAccessStatus: Option[MembershipAccessStatus] = None
+
 ) {
+
   def addMember(user: User): Group =
     this.copy(memberIds = memberIds + user.id)
+
+  def pendingReviewMember(user: User, description: Option[String] = None, authPrincipal: AuthPrincipal): Group = {
+    val updatedMembershipAction = MembershipAccess(
+      userId = user.id,
+      submittedBy = authPrincipal.userId,
+      description = description,
+      status = MemberStatus.PendingReview.toString
+    )
+
+    val updatedMembershipStatus = membershipAccessStatus match {
+      case Some(status) =>
+        status.copy(pendingReviewMember = status.pendingReviewMember + updatedMembershipAction)
+      case None =>
+        MembershipAccessStatus(pendingReviewMember = Set(updatedMembershipAction))
+    }
+
+    this.copy(membershipAccessStatus = Some(updatedMembershipStatus))
+  }
+
+  def approvedMember(user: User, description: Option[String] = None, authPrincipal: AuthPrincipal): Group = {
+    val updatedMembershipAction = MembershipAccess(
+      userId = user.id,
+      submittedBy = authPrincipal.userId,
+      description = description,
+      status = MemberStatus.Approved.toString
+    )
+    val updatedMembershipStatus = membershipAccessStatus match {
+      case Some(status) =>
+        status.copy(
+          pendingReviewMember = status.pendingReviewMember.filterNot(_.userId == user.id),
+          approvedMember = status.approvedMember + updatedMembershipAction)
+      case None =>
+        MembershipAccessStatus(approvedMember = Set(updatedMembershipAction))
+    }
+    this.copy(membershipAccessStatus = Some(updatedMembershipStatus)).addMember(user)
+  }
+
+  def rejectedMember(user: User, description: Option[String] = None, authPrincipal: AuthPrincipal): Group = {
+    val updatedMembershipAction = MembershipAccess(
+      userId = user.id,
+      submittedBy = authPrincipal.userId,
+      description = description,
+      status = MemberStatus.Rejected.toString
+    )
+    val updatedMembershipStatus = membershipAccessStatus match {
+      case Some(status) =>
+        status.copy(
+          pendingReviewMember = status.pendingReviewMember.filterNot(_.userId == user.id),
+          rejectedMember = status.rejectedMember + updatedMembershipAction
+        )
+      case None =>
+        MembershipAccessStatus(rejectedMember = Set(updatedMembershipAction))
+    }
+    this.copy(membershipAccessStatus = Some(updatedMembershipStatus))
+  }
 
   // If the user can be removed remove it, otherwise do nothing
   def removeMember(user: User): Group =
@@ -70,13 +134,29 @@ case class Group(
       emailUpdate: String,
       descriptionUpdate: Option[String],
       memberIdsUpdate: Set[String],
-      adminUserIdsUpdate: Set[String]
+      adminUserIdsUpdate: Set[String],
+      membershipStatusUpdate: Option[MembershipAccessStatus],
   ): Group =
     this.copy(
       name = nameUpdate,
       email = emailUpdate,
       description = descriptionUpdate,
       memberIds = memberIdsUpdate ++ adminUserIdsUpdate,
-      adminUserIds = adminUserIdsUpdate
+      adminUserIds = adminUserIdsUpdate,
+      membershipAccessStatus = membershipStatusUpdate
     )
 }
+case class MembershipAccessStatus(
+                              pendingReviewMember: Set[MembershipAccess] = Set.empty,
+                              rejectedMember: Set[MembershipAccess] = Set.empty,
+                              approvedMember: Set[MembershipAccess] = Set.empty
+                            )
+
+
+case class MembershipAccess(
+                         userId: String,
+                         created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
+                         submittedBy: String = "System",
+                         description: Option[String] = None,
+                         status: String = "System"
+                       )

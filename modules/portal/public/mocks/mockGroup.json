@@ -15,6 +15,12 @@
 
     "kmdkjmnjs"
 
-  ]
+  ],
+
+  "membershipAccessStatus": {
+    "pendingReviewMember": [],
+    "rejectedMember": [],
+    "approvedMember": []
+  }
 
 }
