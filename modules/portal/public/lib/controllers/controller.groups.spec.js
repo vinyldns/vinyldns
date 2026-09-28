@@ -97,7 +97,7 @@ describe('Controller: GroupsController', function () {
         expect(searchUsersByName.calls.mostRecent().args).toEqual(['frodo']);
     });
 
-    it('refresh strips wildcard characters from the query before calling profileService.searchUsersByName', function () {
+    it('refresh sends the query with wildcard characters intact to profileService.searchUsersByName', function () {
         this.scope.isSearchByUser = true;
         this.scope.query = '*frodo*';
 
@@ -108,7 +108,7 @@ describe('Controller: GroupsController', function () {
         this.scope.refresh();
         this.scope.$digest();
 
-        expect(searchUsersByName.calls.mostRecent().args).toEqual(['frodo']);
+        expect(searchUsersByName.calls.mostRecent().args).toEqual(['*frodo*']);
     });
 
     it('refresh does not call profileService.searchUsersByName when not searching by user', function () {

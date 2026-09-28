@@ -62,7 +62,7 @@ GET           /api/users/currentuser             @controllers.VinylDNS.getAuthen
 GET           /api/users/lookupuser/:uname       @controllers.VinylDNS.getUserDataByUsername(uname: String)
 PUT           /api/users/:uid/lock               @controllers.VinylDNS.lockUser(uid: String)
 PUT           /api/users/:uid/unlock             @controllers.VinylDNS.unlockUser(uid: String)
-GET           /api/users/search/:pattern         @controllers.VinylDNS.searchUsers(pattern: String)
+GET           /api/users/search                  @controllers.VinylDNS.searchUsers(pattern: String ?= "")
 GET           /api/users/:uid                    @controllers.VinylDNS.getUser(uid: String)
 
 GET           /api/dnschanges/:id                @controllers.VinylDNS.getBatchChange(id: String)

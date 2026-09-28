@@ -2673,12 +2673,12 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       "return the matched user info when found - Ok(200)" in new WithApplication(app) {
         val searchPattern = "frodo"
         val client = MockWS {
-          case (GET, u) if u == s"http://localhost:9001/users/search/$searchPattern" =>
+          case (GET, u) if u == s"http://localhost:9001/users/search?pattern=$searchPattern" =>
             defaultActionBuilder { Results.Ok(userJson) }
         }
         val underTest = withClient(client)
         val result = underTest.searchUsers(searchPattern)(
-          FakeRequest(GET, s"/api/users/search/$searchPattern")
+          FakeRequest(GET, s"/api/users/search?pattern=$searchPattern")
             .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
         )
 
@@ -2689,7 +2689,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       "return unauthorized (401) when user is not logged in" in new WithApplication(app) {
         val client = mock[WSClient]
         val underTest = withClient(client)
-        val result = underTest.searchUsers("frodo")(FakeRequest(GET, s"/api/users/search/frodo"))
+        val result = underTest.searchUsers("frodo")(FakeRequest(GET, s"/api/users/search?pattern=frodo"))
 
         status(result) mustEqual 401
         contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
@@ -2699,7 +2699,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val client = mock[WSClient]
         val underTest = withLockedClient(client)
         val result = underTest.searchUsers("frodo")(
-          FakeRequest(GET, s"/api/users/search/frodo")
+          FakeRequest(GET, s"/api/users/search?pattern=frodo")
             .withSession(
               "username" -> lockedFrodoUser.userName,
               "accessKey" -> lockedFrodoUser.accessKey
@@ -2712,20 +2712,21 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           s"User account for `${lockedFrodoUser.userName}` is locked."
         )
       }
-      "return not found (404) when no user matches the search pattern" in new WithApplication(app) {
+      "return empty list (200) when no user matches the search pattern" in new WithApplication(app) {
         val searchPattern = "nomatch"
         val client = MockWS {
-          case (GET, u) if u == s"http://localhost:9001/users/search/$searchPattern" =>
-            defaultActionBuilder { Results.NotFound(s"User matching $searchPattern was not found") }
+          case (GET, u) if u == s"http://localhost:9001/users/search?pattern=$searchPattern" =>
+            defaultActionBuilder { Results.Ok(Json.arr()) }
         }
         val underTest = withClient(client)
         val result = underTest.searchUsers(searchPattern)(
-          FakeRequest(GET, s"/api/users/search/$searchPattern")
+          FakeRequest(GET, s"/api/users/search?pattern=$searchPattern")
             .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
         )
 
-        status(result) must beEqualTo(NOT_FOUND)
+        status(result) must beEqualTo(OK)
         hasCacheHeaders(result)
+        contentAsJson(result) must beEqualTo(Json.arr())
       }
     }
 

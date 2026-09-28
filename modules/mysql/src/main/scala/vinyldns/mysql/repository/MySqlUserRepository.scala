@@ -202,17 +202,13 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
 
   def searchUsersByName(pattern: String): IO[List[User]] =
     monitor("repo.User.searchUsersByName") {
-      val searchPattern = if (pattern.endsWith("%") || pattern.endsWith("*"))
-        pattern.dropRight(1)
-      else if (pattern.startsWith("%") || pattern.startsWith("*"))
-        pattern.drop(1)
-      else
-        pattern
-      logger.debug(s"Searching user with pattern: $pattern")
+      // Convert * wildcard to SQL % wildcard
+      val sqlPattern = pattern.replace("*", "%")
+      logger.debug(s"Searching user with pattern: $pattern, using SQL pattern: $sqlPattern")
       IO {
         DB.readOnly { implicit s =>
           SEARCH_USER_BY_NAME
-            .bindByName('userName -> s"%$searchPattern%")
+            .bindByName('userName -> sqlPattern)
             .map(toUser(1))
             .list()
             .apply()

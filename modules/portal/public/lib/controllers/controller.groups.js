@@ -108,7 +108,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
             if ($scope.isSearchByUser) {
                 //USER SEARCH
                 $.ajax({
-                    url: "/api/users/search/" + encodeURIComponent(request.term),
+                    url: "/api/users/search?pattern=" + encodeURIComponent(request.term),
                     dataType: "json",
                     success: function (data) {
                         const matchedUsers = JSON.parse(JSON.stringify(data));
@@ -123,6 +123,10 @@ angular.module('controller.groups', []).controller('GroupsController', function 
                             });
                         });
                         response(suggestions);
+                    },
+                    error: function () {
+                        // Return empty list on error
+                        response([]);
                     }
                 });
             } else {
@@ -273,16 +277,8 @@ $scope.refresh = function () {
                 throw new Error("User name should at least one other character for wildcard search");
             } else if ($scope.query === "") {
                 throw new Error("Please enter a user name to search for groups");
-            } else if (
-                ($scope.query.startsWith("*") && $scope.query.endsWith("*")) ||
-                ($scope.query.startsWith("%") && $scope.query.endsWith("%"))
-            ) {
-                userNameQuery = $scope.query.substring(1, $scope.query.length - 1);
-            } else if ($scope.query.endsWith("%") || $scope.query.endsWith("*")) {
-                userNameQuery = $scope.query.substring(0, $scope.query.length - 1);
-            } else if ($scope.query.startsWith("%") || $scope.query.startsWith("*")) {
-                userNameQuery = $scope.query.substring(1);
             } else {
+                // Send the query as-is so wildcards (* or %) reach the backend intact
                 userNameQuery = $scope.query;
             }
 
@@ -299,19 +295,31 @@ $scope.refresh = function () {
                 $log.debug("getGroupsByUser:groupIds: ", groupIds);
 
                 const groupPromises = groupIds.map((groupId) =>
-                    groupsService.getGroup(groupId).then(result => result.data)
+                    groupsService.getGroup(groupId, false).then(result => result.data)
                 );
 
                 return Promise.all(groupPromises).then((groupsSearchByUser) => {
                     $log.debug('getGroupsByUser:refresh-success', groupsSearchByUser);
                     updateAllGroupDisplay(groupsSearchByUser);
+                    $('#loader').modal('hide');
+                }).catch(function (error) {
+                    $('#loader').modal('hide');
+                    throw error;
                 });
             }
 
+            var loader = $('#loader');
+            loader.modal({
+                backdrop: 'static',
+                keyboard: false,
+                show: true
+            });
+
             return profileService
-                .searchUsersByName(userNameQuery)
+                .searchUsersByName(userNameQuery, false)
                 .then(success)
                 .catch(function (error) {
+                    $('#loader').modal('hide');
                     handleError(error, 'profileService::searchUsersByName-failure');
                 });
 

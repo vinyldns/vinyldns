@@ -51,9 +51,13 @@ angular.module('service.groups', [])
             return $http.post(url, data, {headers: utilityService.getCsrfHeader()});
         };
 
-        this.getGroup = function (id) {
+        this.getGroup = function (id, showLoader) {
             var url = '/api/groups/' + id;
-            return this.withLoader($http.get(url));
+            var httpPromise = $http.get(url);
+            if(showLoader == false){
+                return httpPromise;
+            }
+            return this.withLoader(httpPromise);
         };
         this.listEmailDomains = function () {
                     var url = '/api/groups/valid/domains'

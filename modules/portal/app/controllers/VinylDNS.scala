@@ -251,7 +251,9 @@ class VinylDNS @Inject() (
   }
 
   def searchUsers(pattern: String): Action[AnyContent] = userAction.async { implicit request =>
-    val vinyldnsRequest = VinylDNSRequest("GET", s"$vinyldnsServiceBackend", s"users/search/$pattern")
+    val params = new java.util.HashMap[String, java.util.List[String]]()
+    params.put("pattern", java.util.Arrays.asList(pattern))
+    val vinyldnsRequest = VinylDNSRequest("GET", s"$vinyldnsServiceBackend", "users/search", parameters = params)
     executeRequest(vinyldnsRequest, request.user).map(response => {
       logger.info(s"user search [$pattern] retrieved with status [${response.status}]")
       Status(response.status)(response.body)

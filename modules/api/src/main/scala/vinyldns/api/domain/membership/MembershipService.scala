@@ -382,8 +382,6 @@ class MembershipService(
   def searchUsers(pattern: String, authPrincipal: AuthPrincipal): Result[List[UserResponseInfo]] =
     for {
       users <- userRepo.searchUsersByName(pattern).toResult[List[User]]
-      _ <- users.nonEmpty
-        .failWith(UserNotFoundError(s"User matching $pattern was not found"))
       results <- users.traverse { user =>
         for {
           group <- membershipRepo.getGroupsForUser(user.id).toResult[Set[String]]
