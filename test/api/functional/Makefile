@@ -75,8 +75,11 @@ run-local: prepare-artifact build
 	USE_TTY=""; \
 	test -t 1 && USE_TTY="-t"; \
 	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) -e API_TIMEOUT=$(API_TIMEOUT) \
-		-v "$(ROOT_DIR)/../../modules/api/src/test/functional:/functional_test:ro" \
-		-p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
+	   -v "$(ROOT_DIR)/../../../modules/api/src/test/functional:/functional_test:ro" \
+	   -p 9000:9000 -p 19001-19003:19001-19003 \
+	   -p 19001:19001/udp \
+	   $(IMAGE_NAME) \
+	   $(ARG_SEPARATOR) $(WITH_ARGS)
 
 # Runs the dependencies for the functional test in the background
 # This is useful when running the tests on your host machine against the API in a container
