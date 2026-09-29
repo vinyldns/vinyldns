@@ -76,6 +76,15 @@ The most important configuration is around your system dependencies. Presently, 
 * `AWS SQS`
 * `MySQL`
 
+### Global RecordSet Search visibility
+
+`global-recordset-search-access-all-zones` controls read visibility for the authenticated Global RecordSet Search endpoints.
+It defaults to `true` for backward compatibility: every authenticated user can search records in every zone, including
+private zones. Set it to `false` to return only records in shared zones and zones otherwise accessible to the user. System
+administrators and support users retain access to all zones in restricted mode. This setting does not change authorization
+for creating, updating, or deleting records. It may be overridden with
+`GLOBAL_RECORDSET_SEARCH_ACCESS_ALL_ZONES`.
+
 ## Queue Configuration
 
 VinylDNS supports both SQS and MySQL queue implementations.

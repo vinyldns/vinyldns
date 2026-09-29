@@ -18,8 +18,8 @@ package vinyldns.api.domain.record
 
 import cats.effect._
 import cats.scalatest.EitherMatchers
-import org.mockito.Matchers.any
-import org.mockito.Mockito.doReturn
+import org.mockito.Matchers.{any, eq => mockitoEq}
+import org.mockito.Mockito.{doReturn, verify}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -36,7 +36,7 @@ import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.HighValueDomainError
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
-import vinyldns.core.domain.membership.{GroupRepository, ListUsersResults, UserRepository}
+import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, UserRepository}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.core.queue.MessageQueue
@@ -92,6 +92,7 @@ class RecordSetServiceSpec
     VinylDNSTestHelpers.dottedHostsConfig,
     VinylDNSTestHelpers.approvedNameServers,
     true,
+    true,
     mockNotifiers
   )
 
@@ -112,7 +113,15 @@ class RecordSetServiceSpec
     VinylDNSTestHelpers.dottedHostsConfig,
     VinylDNSTestHelpers.approvedNameServers,
     true,
+    true,
     mockNotifiers
+  )
+
+  val underTestWithRestrictedGlobalSearch = new RecordSetService(
+    mockZoneRepo, mockGroupRepo, mockRecordRepo, mockRecordDataRepo, mockRecordChangeRepo,
+    mockUserRepo, mockMessageQueue, new AccessValidations(sharedApprovedTypes = VinylDNSTestHelpers.sharedApprovedTypes),
+    mockBackendResolver, false, VinylDNSTestHelpers.highValueDomainConfig,
+    VinylDNSTestHelpers.dottedHostsConfig, VinylDNSTestHelpers.approvedNameServers, true, false, mockNotifiers
   )
 
   val underTestWithEmptyDottedHostsConfig = new RecordSetService(
@@ -131,6 +140,7 @@ class RecordSetServiceSpec
     VinylDNSTestHelpers.highValueDomainConfig,
     VinylDNSTestHelpers.emptyDottedHostsConfig,
     VinylDNSTestHelpers.approvedNameServers,
+    true,
     true,
     mockNotifiers
   )
@@ -1835,6 +1845,32 @@ class RecordSetServiceSpec
             Some(okGroup.name)
           )
         )
+      verify(mockRecordRepo).listRecordSets(
+        any[Option[String]], any[Option[String]], any[Option[Int]], any[Option[String]],
+        any[Option[Set[RecordType.RecordType]]], any[Option[String]], any[NameSort.NameSort],
+        any[RecordTypeSort.RecordTypeSort], mockitoEq(None)
+      )
+    }
+
+    "apply authorization filtering when all-zone visibility is disabled" in {
+      doReturn(IO.pure(ListRecordSetResults(List.empty, nameSort = NameSort.ASC, recordTypeSort = RecordTypeSort.ASC)))
+        .when(mockRecordRepo).listRecordSets(
+          any[Option[String]], any[Option[String]], any[Option[Int]], any[Option[String]],
+          any[Option[Set[RecordType.RecordType]]], any[Option[String]], any[NameSort.NameSort],
+          any[RecordTypeSort.RecordTypeSort], any[Option[AuthPrincipal]]
+        )
+      doReturn(IO.pure(Set.empty[Group])).when(mockGroupRepo).getGroups(Set.empty[String])
+      doReturn(IO.pure(Set.empty[Zone])).when(mockZoneRepo).getZones(Set.empty[String])
+
+      underTestWithRestrictedGlobalSearch.listRecordSets(
+        None, None, "aa*", None, None, NameSort.ASC, okAuth, RecordTypeSort.ASC
+      ).value.unsafeRunSync() shouldBe a[Right[_, _]]
+
+      verify(mockRecordRepo).listRecordSets(
+        any[Option[String]], any[Option[String]], any[Option[Int]], any[Option[String]],
+        any[Option[Set[RecordType.RecordType]]], any[Option[String]], any[NameSort.NameSort],
+        any[RecordTypeSort.RecordTypeSort], mockitoEq(Some(okAuth))
+      )
     }
 
     "fail if recordNameFilter is fewer than two characters" in {

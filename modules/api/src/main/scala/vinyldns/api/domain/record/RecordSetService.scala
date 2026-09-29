@@ -53,6 +53,7 @@ object RecordSetService {
              dottedHostsConfig: DottedHostsConfig,
              approvedNameServers: List[Regex],
              useRecordSetCache: Boolean,
+             globalRecordSetSearchAccessAllZones: Boolean,
              notifiers: AllNotifiers
            ): RecordSetService =
     new RecordSetService(
@@ -70,6 +71,7 @@ object RecordSetService {
       dottedHostsConfig,
       approvedNameServers,
       useRecordSetCache,
+      globalRecordSetSearchAccessAllZones,
       notifiers
 
     )
@@ -90,6 +92,7 @@ class RecordSetService(
                         dottedHostsConfig: DottedHostsConfig,
                         approvedNameServers: List[Regex],
                         useRecordSetCache: Boolean,
+                        globalRecordSetSearchAccessAllZones: Boolean,
                         notifiers: AllNotifiers
                       ) extends RecordSetServiceAlgebra {
 
@@ -561,7 +564,7 @@ class RecordSetService(
           recordOwnerGroupFilter,
           nameSort,
           recordTypeSort,
-          Some(authPrincipal)
+          if (globalRecordSetSearchAccessAllZones) None else Some(authPrincipal)
         )
         .toResult[ListRecordSetResults]
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
@@ -615,7 +618,7 @@ class RecordSetService(
           recordTypeFilter,
           recordOwnerGroupFilter,
           nameSort,
-          Some(authPrincipal)
+          if (globalRecordSetSearchAccessAllZones) None else Some(authPrincipal)
         ).toResult[ListRecordSetResults]
       } else {
         // Search the record table directly
@@ -628,7 +631,7 @@ class RecordSetService(
           recordOwnerGroupFilter,
           nameSort,
           recordTypeSort,
-          Some(authPrincipal)
+          if (globalRecordSetSearchAccessAllZones) None else Some(authPrincipal)
         ).toResult[ListRecordSetResults]
       }
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
