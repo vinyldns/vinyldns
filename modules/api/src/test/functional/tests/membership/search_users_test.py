@@ -35,8 +35,10 @@ def test_search_users_returns_every_matching_user(shared_zone_test_context):
 
 def test_search_users_not_found(shared_zone_test_context):
     """
-    Tests that searching for a user whose username does not match any user returns a 404
+    Tests that searching for a user whose username does not match any user returns an empty list
     """
     client = shared_zone_test_context.ok_vinyldns_client
 
-    client.search_users("doesntexistuser", status=404)
+    results = client.search_users("doesntexistuser", status=200)
+
+    assert_that(results, is_([]))

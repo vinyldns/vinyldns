@@ -351,7 +351,7 @@ class VinylDNSClient(object):
         :param pattern: the username search pattern
         :return: the user response info json, including the groups the matched user belongs to
         """
-        url = urljoin(self.index_url, "/users/search/" + pattern)
+        url = urljoin(self.index_url, "/users/search?pattern=" + pattern)
         response, data = self.make_request(url, "GET", self.headers, not_found_ok=True, **kwargs)
 
         return data

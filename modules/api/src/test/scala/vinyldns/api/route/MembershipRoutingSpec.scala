@@ -881,7 +881,7 @@ class MembershipRoutingSpec
       doReturn(result(List(dummyUserResponseInfo)))
         .when(membershipService)
         .searchUsers("dummy", okAuth)
-      Get("/users/search/dummy") ~> membershipRoute ~> check {
+      Get("/users/search?pattern=dummy") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[List[UserResponseInfo]]
         result.map(_.id) shouldBe List(dummyUserResponseInfo.id)
@@ -892,7 +892,7 @@ class MembershipRoutingSpec
       doReturn(result(List(dummyUserResponseInfo, okUserResponseInfo)))
         .when(membershipService)
         .searchUsers("o", okAuth)
-      Get("/users/search/o") ~> membershipRoute ~> check {
+      Get("/users/search?pattern=o") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[List[UserResponseInfo]]
         result.map(_.groupMap) should contain theSameElementsAs List(
@@ -906,12 +906,14 @@ class MembershipRoutingSpec
       }
     }
 
-    "return a 404 Not Found response when no user matches the search pattern" in {
-      doReturn(result(UserNotFoundError("fail")))
+    "return a 200 response with an empty list when no user matches the search pattern" in {
+      doReturn(result(List()))
         .when(membershipService)
         .searchUsers("nomatch", okAuth)
-      Get("/users/search/nomatch") ~> membershipRoute ~> check {
-        status shouldBe StatusCodes.NotFound
+      Get("/users/search?pattern=nomatch") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val result = responseAs[List[UserResponseInfo]]
+        result shouldBe empty
       }
     }
   }
