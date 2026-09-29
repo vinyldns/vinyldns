@@ -316,7 +316,7 @@ $scope.refresh = function () {
             });
 
             return profileService
-                .searchUsersByName(userNameQuery, false)
+                .searchUsersByName(userNameQuery)
                 .then(success)
                 .catch(function (error) {
                     $('#loader').modal('hide');
