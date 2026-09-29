@@ -155,7 +155,8 @@ export function RecordSetViewerModal({
             <div className="px-4 py-3">
               {(recordSet.ownerGroupId ||
                 (recordSet.recordSetGroupChange?.requestedOwnerGroupId &&
-                  recordSet.recordSetGroupChange.requestedOwnerGroupId !== "null") ||
+                  recordSet.recordSetGroupChange.requestedOwnerGroupId !==
+                    "null") ||
                 recordSet.recordSetGroupChange?.ownershipTransferStatus) && (
                 <div className="mb-3 pb-3 vds-view-record--data">
                   <div
@@ -184,7 +185,8 @@ export function RecordSetViewerModal({
                       </div>
                     )}
                     {recordSet.recordSetGroupChange?.requestedOwnerGroupId &&
-                      recordSet.recordSetGroupChange.requestedOwnerGroupId !== "null" && (
+                      recordSet.recordSetGroupChange.requestedOwnerGroupId !==
+                        "null" && (
                         <div>
                           <div
                             className="text-muted"
@@ -197,11 +199,15 @@ export function RecordSetViewerModal({
                             Ownership Transfer Group
                           </div>
                           <div className="fw-semibold small">
-                            {recordSet.recordSetGroupChange.requestedOwnerGroupId}
+                            {
+                              recordSet.recordSetGroupChange
+                                .requestedOwnerGroupId
+                            }
                           </div>
                         </div>
                       )}
-                    {recordSet.recordSetGroupChange?.ownershipTransferStatus && (
+                    {recordSet.recordSetGroupChange
+                      ?.ownershipTransferStatus && (
                       <div>
                         <div
                           className="text-muted"
@@ -214,7 +220,10 @@ export function RecordSetViewerModal({
                           Ownership Transfer Status
                         </div>
                         <div className="fw-semibold small">
-                          {recordSet.recordSetGroupChange.ownershipTransferStatus}
+                          {
+                            recordSet.recordSetGroupChange
+                              .ownershipTransferStatus
+                          }
                         </div>
                       </div>
                     )}
@@ -253,7 +262,10 @@ export function RecordSetViewerModal({
                             </tr>
                           )}
                           {Object.entries(rec)
-                            .filter(([, v]) => v !== undefined && v !== null && v !== "")
+                            .filter(
+                              ([, v]) =>
+                                v !== undefined && v !== null && v !== "",
+                            )
                             .map(([k, v]) => (
                               <tr key={k}>
                                 <td
@@ -286,13 +298,19 @@ export function RecordSetViewerModal({
               )}
             </div>
           </div>
-          <div className="modal-footer">
-            <button
-              className="btn btn-outline-secondary btn-sm"
-              onClick={onClose}
-            >
-              Close
-            </button>
+          <div className="modal-footer d-flex justify-content-between align-items-center w-100">
+            <div className="d-flex align-items-center gap-2" />
+
+            <div className="d-flex align-items-center gap-2">
+              <button
+                type="button"
+                className="vds-modal__btn vds-modal__btn--secondary"
+                onClick={onClose}
+              >
+                <i className="bi bi-x-circle me-1" />
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </div>

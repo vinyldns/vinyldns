@@ -41,10 +41,12 @@ vi.mock("../../components/dnsChanges/DnsChangeForm", () => ({
     onSubmit,
     onCancel,
     serverRowErrors,
+    onUnsavedChange,
   }: {
     onSubmit: (data: unknown, allowReview: boolean) => void;
     onCancel: () => void;
     serverRowErrors?: string[][];
+    onUnsavedChange?: (hasUnsaved: boolean) => void;
   }) => (
     <div data-testid="mock-dns-change-form">
       <button
@@ -58,6 +60,13 @@ vi.mock("../../components/dnsChanges/DnsChangeForm", () => ({
       </button>
       <button type="button" data-testid="mock-cancel" onClick={onCancel}>
         cancel
+      </button>
+      <button
+        type="button"
+        data-testid="mock-mark-dirty"
+        onClick={() => onUnsavedChange?.(true)}
+      >
+        mark dirty
       </button>
       {serverRowErrors && serverRowErrors.some((e) => e.length > 0) && (
         <div data-testid="mock-row-errors">
@@ -115,6 +124,21 @@ describe("<DnsChangeNewPage />", () => {
       await screen.findByRole("button", { name: /Back to DNS Changes/i }),
     );
     expect(navigateMock).toHaveBeenCalledWith("/dnschanges");
+  });
+
+  it("shows the discard confirmation modal when leaving with unsaved changes", async () => {
+    renderWithProviders(<DnsChangeNewPage />);
+    await userEvent.click(await screen.findByTestId("mock-mark-dirty"));
+    await userEvent.click(
+      await screen.findByRole("button", { name: /Back to DNS Changes/i }),
+    );
+
+    expect(
+      await screen.findByText("Discard batch change?"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Discard changes/i }),
+    ).toBeInTheDocument();
   });
 
   it("navigates back when the form requests cancel", async () => {

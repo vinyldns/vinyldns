@@ -43,8 +43,8 @@ export function CancelDnsChangeModal({
       cancelLabel="Keep DNS Change"
       confirmLabel="Cancel DNS Change"
       confirmIcon="bi-x-circle-fill"
-      cancelButtonClassName="vds-confirm-modal__btn vds-confirm-modal__btn--secondary"
-      confirmButtonClassName="vds-confirm-modal__btn vds-confirm-modal__btn--danger"
+      cancelButtonClassName="vds-modal__btn vds-modal__btn--secondary"
+      confirmButtonClassName="vds-modal__btn vds-modal__btn--danger"
       onClose={onClose}
       onConfirm={onConfirm}
     >

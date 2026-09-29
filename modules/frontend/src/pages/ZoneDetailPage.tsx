@@ -1331,11 +1331,6 @@ export function ZoneDetailPage() {
                                   )
                                 }
                                 className="col-date"
-                                // style={{
-                                //   cursor: "pointer",
-                                //   userSelect: "none",
-                                //   whiteSpace: "nowrap",
-                                // }}
                               >
                                 Date <SortArrow dir={recentRcDateSort} />
                               </th>

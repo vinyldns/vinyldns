@@ -103,40 +103,46 @@ export function GroupForm({
         />
       </div>
 
-      <div className="d-flex gap-2">
-        <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <>
-              <span className="spinner-border spinner-border-sm me-1" />
-              Saving…
-            </>
-          ) : mode === "create" ? (
-            "Create Group"
-          ) : (
-            "Update Group"
+      <div className="d-flex justify-content-between align-items-center w-100 gap-2">
+        <div className="d-flex align-items-center gap-2">
+          {mode === "create" && (
+            <button
+              type="button"
+              className="vds-modal__btn vds-modal__btn--utility"
+              onClick={() => reset({ name: "", email: "", description: "" })}
+            >
+              <i className="bi bi-x-circle me-1" />
+              Clear
+            </button>
           )}
-        </button>
-        {mode === "create" && (
+        </div>
+
+        <div className="d-flex align-items-center gap-2">
           <button
             type="button"
-            className="btn btn-outline-secondary"
-            onClick={() => reset({ name: "", email: "", description: "" })}
+            className="vds-modal__btn vds-modal__btn--secondary"
+            onClick={onCancel}
           >
             <i className="bi bi-x-circle me-1" />
-            Clear
+            Cancel
           </button>
-        )}
-        <button
-          type="button"
-          className="btn btn-outline-secondary"
-          onClick={onCancel}
-        >
-          Cancel
-        </button>
+          <button
+            type="submit"
+            className="vds-modal__btn vds-modal__btn--primary"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-1" />
+                Saving…
+              </>
+            ) : mode === "create" ? (
+              "Create Group"
+            ) : (
+              "Update Group"
+            )}
+          </button>
+        </div>
       </div>
     </form>
   );

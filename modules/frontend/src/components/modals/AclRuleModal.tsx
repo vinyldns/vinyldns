@@ -65,7 +65,9 @@ export function AclRuleModal({
                 <div className="min-w-0">
                   <h5 className="m-0 fw-semibold text-white d-flex align-items-center gap-2">
                     <i className="bi bi-shield-plus" />
-                    {modal.mode === "create" ? "Create ACL Rule" : "Update ACL Rule"}
+                    {modal.mode === "create"
+                      ? "Create ACL Rule"
+                      : "Update ACL Rule"}
                   </h5>
                 </div>
               </div>
@@ -128,7 +130,9 @@ export function AclRuleModal({
                   className="text-muted mb-0 mt-1"
                   style={{ fontSize: "0.78rem" }}
                 >
-                  The more specific a rule is the more precedence it has. User rules will have a higher priority than Group, which will have a higher priority than All.
+                  The more specific a rule is the more precedence it has. User
+                  rules will have a higher priority than Group, which will have
+                  a higher priority than All.
                 </p>
               </div>
 
@@ -236,13 +240,17 @@ export function AclRuleModal({
                   className="text-muted mb-0 mt-1"
                   style={{ fontSize: "0.78rem" }}
                 >
-                  The access level that the selected user or group will be given within this zone.
+                  The access level that the selected user or group will be given
+                  within this zone.
                 </p>
               </div>
 
               <div className="col-12">
                 <label className="vds-zone-form__label">
-                  Record Type(s) <span className="text-muted fw-normal">(empty = all types)</span>
+                  Record Type(s){" "}
+                  <span className="text-muted fw-normal">
+                    (empty = all types)
+                  </span>
                 </label>
                 <div className="d-flex flex-wrap gap-2 mb-1">
                   {[
@@ -306,17 +314,17 @@ export function AclRuleModal({
                     Clear
                   </button>
                 </div>
-                <p
-                  className="text-muted mb-0"
-                  style={{ fontSize: "0.78rem" }}
-                >
-                  This rule will apply only to the selected record types. If no types are selected then the rule will apply to all record types.
+                <p className="text-muted mb-0" style={{ fontSize: "0.78rem" }}>
+                  This rule will apply only to the selected record types. If no
+                  types are selected then the rule will apply to all record
+                  types.
                 </p>
               </div>
 
               <div className="col-md-6">
                 <label className="vds-zone-form__label">
-                  Record Mask <span className="text-muted fw-normal">(optional)</span>
+                  Record Mask{" "}
+                  <span className="text-muted fw-normal">(optional)</span>
                 </label>
                 <input
                   type="text"
@@ -338,13 +346,17 @@ export function AclRuleModal({
                   className="text-muted mb-0 mt-1"
                   style={{ fontSize: "0.78rem" }}
                 >
-                  Record masks further refine the types of records this record applies to. For non-PTR records, any valid regex will be accepted. For PTR records, please input a CIDR rule. If no mask is entered, the rule will apply to all.
+                  Record masks further refine the types of records this record
+                  applies to. For non-PTR records, any valid regex will be
+                  accepted. For PTR records, please input a CIDR rule. If no
+                  mask is entered, the rule will apply to all.
                 </p>
               </div>
 
               <div className="col-md-6">
                 <label className="vds-zone-form__label">
-                  Description <span className="text-muted fw-normal">(optional)</span>
+                  Description{" "}
+                  <span className="text-muted fw-normal">(optional)</span>
                 </label>
                 <textarea
                   className="form-control vds-zone-form__input"
@@ -364,61 +376,68 @@ export function AclRuleModal({
               </div>
             </div>
           </div>
-          <div className="modal-footer">
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-secondary me-auto"
-              onClick={() =>
-                onChange((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        rule: {
-                          priority: "User",
-                          accessLevel: "Read",
-                          recordTypes: [],
-                          userName: undefined,
-                          groupId: undefined,
-                          recordMask: undefined,
-                          description: undefined,
-                        },
-                      }
-                    : null,
-                )
-              }
-            >
-              <i className="bi bi-arrow-counterclockwise me-1" />
-              Clear Form
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-secondary"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm vds-btn-nav d-flex align-items-center gap-1"
-              disabled={
-                isSaving ||
-                (modal.rule.priority === "User" && !modal.rule.userName?.trim()) ||
-                (modal.rule.priority === "Group" && !modal.rule.groupId)
-              }
-              onClick={onSave}
-            >
-              {isSaving ? (
-                <>
-                  <i className="bi bi-hourglass-split vds-spin" />
-                  Saving…
-                </>
-              ) : (
-                <>
-                  <i className="bi bi-check-circle" />
-                  Save Rule
-                </>
-              )}
-            </button>
+          <div className="modal-footer d-flex justify-content-between align-items-center w-100">
+            <div className="d-flex align-items-center gap-2">
+              <button
+                type="button"
+                className="vds-modal__btn vds-modal__btn--utility"
+                onClick={() =>
+                  onChange((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          rule: {
+                            priority: "User",
+                            accessLevel: "Read",
+                            recordTypes: [],
+                            userName: undefined,
+                            groupId: undefined,
+                            recordMask: undefined,
+                            description: undefined,
+                          },
+                        }
+                      : null,
+                  )
+                }
+              >
+                <i className="bi bi-arrow-counterclockwise me-1" />
+                Clear Form
+              </button>
+            </div>
+
+            <div className="d-flex align-items-center gap-2">
+              <button
+                type="button"
+                className="vds-modal__btn vds-modal__btn--secondary"
+                onClick={onClose}
+              >
+                <i className="bi bi-x-circle me-1" />
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="vds-modal__btn vds-modal__btn--primary d-flex align-items-center gap-1"
+                disabled={
+                  isSaving ||
+                  (modal.rule.priority === "User" &&
+                    !modal.rule.userName?.trim()) ||
+                  (modal.rule.priority === "Group" && !modal.rule.groupId)
+                }
+                onClick={onSave}
+              >
+                {isSaving ? (
+                  <>
+                    <i className="bi bi-hourglass-split vds-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-check-circle" />
+                    Save Rule
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -111,7 +111,9 @@ export function OwnershipTransferModal({
                       style={{ fontSize: "0.7rem" }}
                     >
                       <i className="bi bi-people-fill" />
-                      Current: {modal.record.ownerGroupName ?? modal.record.ownerGroupId.slice(0, 10) + "…"}
+                      Current:{" "}
+                      {modal.record.ownerGroupName ??
+                        modal.record.ownerGroupId.slice(0, 10) + "…"}
                     </span>
                   )}
                 </div>
@@ -153,43 +155,46 @@ export function OwnershipTransferModal({
             </div>
           </div>
 
-          <div className="modal-footer vds-record--footer">
-            <button
-              className="btn btn-outline-secondary"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button
-              className="btn text-white fw-semibold"
-              disabled={!ownershipGroupId || isPending}
-              onClick={onSubmit}
-              style={{
-                background:
+          <div className="modal-footer d-flex justify-content-between align-items-center w-100 vds-record--footer">
+            <div className="d-flex align-items-center gap-2" />
+
+            <div className="d-flex align-items-center gap-2">
+              <button
+                type="button"
+                className="vds-modal__btn vds-modal__btn--secondary"
+                onClick={onClose}
+              >
+                <i className="bi bi-x-circle me-1" />
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={`vds-modal__btn ${
                   modal.mode === "claim"
-                    ? "linear-gradient(135deg,#0d9488,#14b8a6)"
-                    : "linear-gradient(135deg,#4f46e5,#6366f1)",
-                border: "none",
-                borderRadius: "0.6rem",
-              }}
-            >
-              {isPending ? (
-                <>
-                  <i className="bi bi-hourglass-split me-1 vds-spin" />
-                  Processing…
-                </>
-              ) : modal.mode === "claim" ? (
-                <>
-                  <i className="bi bi-person-plus-fill me-1" />
-                  Claim Ownership
-                </>
-              ) : (
-                <>
-                  <i className="bi bi-arrow-left-right me-1" />
-                  Request Transfer
-                </>
-              )}
-            </button>
+                    ? "vds-modal__btn--ownership-claim"
+                    : "vds-modal__btn--ownership-request"
+                }`}
+                disabled={!ownershipGroupId || isPending}
+                onClick={onSubmit}
+              >
+                {isPending ? (
+                  <>
+                    <i className="bi bi-hourglass-split me-1 vds-spin" />
+                    Processing…
+                  </>
+                ) : modal.mode === "claim" ? (
+                  <>
+                    <i className="bi bi-person-plus-fill me-1" />
+                    Claim Ownership
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-arrow-left-right me-1" />
+                    Request Transfer
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

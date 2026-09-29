@@ -24,11 +24,7 @@ export interface AclRulesModalProps {
   onClose: () => void;
 }
 
-export function AclRulesModal({
-  isOpen,
-  rules,
-  onClose,
-}: AclRulesModalProps) {
+export function AclRulesModal({ isOpen, rules, onClose }: AclRulesModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -126,13 +122,19 @@ export function AclRulesModal({
               </table>
             </div>
           </div>
-          <div className="modal-footer">
-            <button
-              className="btn btn-outline-secondary btn-sm"
-              onClick={onClose}
-            >
-              Close
-            </button>
+          <div className="modal-footer d-flex justify-content-between align-items-center w-100">
+            <div className="d-flex align-items-center gap-2" />
+
+            <div className="d-flex align-items-center gap-2">
+              <button
+                type="button"
+                className="vds-modal__btn vds-modal__btn--secondary"
+                onClick={onClose}
+              >
+                <i className="bi bi-x-circle me-1" />
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </div>

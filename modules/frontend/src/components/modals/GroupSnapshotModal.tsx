@@ -125,13 +125,19 @@ export function GroupSnapshotModal({
                 </div>
               ))}
           </div>
-          <div className="modal-footer px-4 py-2 vds-group-modal-footer">
-            <button
-              className="btn btn-sm btn-outline-secondary"
-              onClick={onClose}
-            >
-              Close
-            </button>
+          <div className="modal-footer d-flex justify-content-between align-items-center w-100">
+            <div className="d-flex align-items-center gap-2" />
+
+            <div className="d-flex align-items-center gap-2">
+              <button
+                type="button"
+                className="vds-modal__btn vds-modal__btn--secondary"
+                onClick={onClose}
+              >
+                <i className="bi bi-x-circle me-1" />
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </div>

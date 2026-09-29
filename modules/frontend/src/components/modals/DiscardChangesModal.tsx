@@ -37,8 +37,8 @@ export function DiscardChangesModal({
   cancelLabel = "Keep editing",
   confirmLabel = "Discard changes",
   confirmIcon = "bi-trash3-fill",
-  cancelButtonClassName = "vds-confirm-modal__btn vds-confirm-modal__btn--secondary",
-  confirmButtonClassName = "vds-confirm-modal__btn vds-confirm-modal__btn--danger",
+  cancelButtonClassName = "vds-modal__btn vds-modal__btn--secondary",
+  confirmButtonClassName = "vds-modal__btn vds-modal__btn--danger",
   children,
   onClose,
   onConfirm,
@@ -96,22 +96,27 @@ export function DiscardChangesModal({
           {children}
         </div>
 
-        <div className="vds-confirm-modal__footer">
-          <button
-            type="button"
-            onClick={onClose}
-            className={cancelButtonClassName}
-          >
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className={confirmButtonClassName}
-          >
-            <i className={`bi ${confirmIcon} me-1`} />
-            {confirmLabel}
-          </button>
+        <div className="modal-footer d-flex justify-content-between align-items-center w-100 vds-confirm-modal__footer">
+          <div className="d-flex align-items-center gap-2" />
+
+          <div className="d-flex align-items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className={cancelButtonClassName}
+            >
+              <i className="bi bi-x-circle me-1" />
+              {cancelLabel}
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              className={confirmButtonClassName}
+            >
+              <i className={`bi ${confirmIcon} me-1`} />
+              {confirmLabel}
+            </button>
+          </div>
         </div>
       </div>
     </div>

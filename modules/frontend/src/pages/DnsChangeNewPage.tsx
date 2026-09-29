@@ -20,6 +20,7 @@ import { DnsChangeForm } from "../components/dnsChanges/DnsChangeForm";
 import { useDnsChanges } from "../hooks/useDnsChanges";
 import { useAlerts } from "../contexts/AlertContext";
 import { useBreadcrumbs } from "../contexts/BreadcrumbContext";
+import { DiscardChangesModal } from "../components/modals/DiscardChangesModal";
 import type { CreateDnsChangeRequest } from "../types/dnsChange";
 
 /**
@@ -120,6 +121,11 @@ export function DnsChangeNewPage() {
     }
   };
 
+  const confirmLeave = () => {
+    setShowLeaveConfirm(false);
+    navigate("/dnschanges");
+  };
+
   const handleSubmit = (
     data: CreateDnsChangeRequest,
     allowManualReview: boolean,
@@ -189,6 +195,16 @@ export function DnsChangeNewPage() {
         isSubmitting={isSubmitting}
         serverRowErrors={serverRowErrors}
         onUnsavedChange={setHasUnsaved}
+      />
+
+      <DiscardChangesModal
+        isOpen={showLeaveConfirm}
+        title="Discard batch change?"
+        description="All changes entered so far will be lost. This action cannot be undone."
+        cancelLabel="Keep editing"
+        confirmLabel="Discard changes"
+        onClose={() => setShowLeaveConfirm(false)}
+        onConfirm={confirmLeave}
       />
     </div>
   );
