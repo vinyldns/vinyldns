@@ -2673,7 +2673,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       "return the matched user info when found - Ok(200)" in new WithApplication(app) {
         val searchPattern = "frodo"
         val client = MockWS {
-          case (GET, u) if u == s"http://localhost:9001/users/search?pattern=$searchPattern" =>
+          case (GET, u) if u == "http://localhost:9001/users/search" =>
             defaultActionBuilder { Results.Ok(userJson) }
         }
         val underTest = withClient(client)
@@ -2715,7 +2715,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       "return empty list (200) when no user matches the search pattern" in new WithApplication(app) {
         val searchPattern = "nomatch"
         val client = MockWS {
-          case (GET, u) if u == s"http://localhost:9001/users/search?pattern=$searchPattern" =>
+          case (GET, u) if u == "http://localhost:9001/users/search" =>
             defaultActionBuilder { Results.Ok(Json.arr()) }
         }
         val underTest = withClient(client)
