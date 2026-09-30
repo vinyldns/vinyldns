@@ -115,6 +115,8 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
   def getBatchChangeSummaries(
       userId: Option[String],
       userName: Option[String] = None,
+      groupId: Option[String] = None,
+      isSearchByGroup: Boolean = false,
       dateTimeStartRange: Option[String] = None,
       dateTimeEndRange: Option[String] = None,
       startFrom: Option[Int] = None,
@@ -133,6 +135,10 @@ class InMemoryBatchChangeRepository extends BatchChangeRepository {
     val userBatchChanges = batches.values.toList
       .filter(b => userId.forall(_ == b.userId))
       .filter(bu => userName.forall(_ == bu.userName))
+      .filter { b =>
+        if (isSearchByGroup) groupId.exists(id => b.ownerGroupId.contains(id))
+        else groupId.forall(id => b.ownerGroupId.contains(id))
+      }
       .filter(bdtsi => startInstant.forall(_.isBefore(bdtsi.createdTimestamp)))
       .filter(bdtei => endInstant.forall(_.isAfter(bdtei.createdTimestamp)))
       .filter(as => approvalStatus.forall(_ == as.approvalStatus))

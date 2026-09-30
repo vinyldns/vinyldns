@@ -583,11 +583,13 @@ class BatchChangeService(
   def listBatchChangeSummaries(
       auth: AuthPrincipal,
       userName: Option[String] = None,
+      groupName: Option[String] = None,
       dateTimeStartRange: Option[String] = None,
       dateTimeEndRange: Option[String] = None,
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
       ignoreAccess: Boolean = false,
+      isSearchByGroup: Boolean = false,
       batchStatus: Option[BatchChangeStatus] = None,
       approvalStatus: Option[BatchChangeApprovalStatus] = None
   ): BatchResult[BatchChangeSummaryList] = {
@@ -596,8 +598,15 @@ class BatchChangeService(
     val startDateTime = if(dateTimeStartRange.isDefined && dateTimeStartRange.get.isEmpty) None else dateTimeStartRange
     val endDateTime = if(dateTimeEndRange.isDefined && dateTimeEndRange.get.isEmpty) None else dateTimeEndRange
     for {
+      groupID <-
+        groupName match {
+          case Some(groupName) if groupName.nonEmpty =>
+            groupRepository.getGroupByName(groupName).map{group => group.map(_.id)}.toBatchResult
+          case _ => None.toRightBatchResult
+        }
       listResults <- batchChangeRepo
-        .getBatchChangeSummaries(userId, submitterUserName, startDateTime, endDateTime, startFrom, maxItems, batchStatus, approvalStatus)
+        .getBatchChangeSummaries(userId, submitterUserName, groupID, isSearchByGroup,
+          startDateTime, endDateTime, startFrom, maxItems, batchStatus, approvalStatus)
         .toBatchResult
       rsOwnerGroupIds = listResults.batchChanges.flatMap(_.ownerGroupId).toSet
       rsOwnerGroups <- groupRepository.getGroups(rsOwnerGroupIds).toBatchResult

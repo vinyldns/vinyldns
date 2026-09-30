@@ -49,6 +49,63 @@ def test_list_batch_change_summaries_with_start_from(list_fixture):
     list_fixture.check_batch_change_summaries_page_accuracy(batch_change_summaries_result, size=len(all_changes) - 1, start_from=1)
 
 
+def test_list_batch_change_summaries_with_group_name_filter(shared_zone_test_context):
+    """
+    Test listing all-group batch change summaries by group name when searching by group
+    """
+    client = shared_zone_test_context.shared_zone_vinyldns_client
+    super_client = shared_zone_test_context.super_user_client
+    group = shared_zone_test_context.shared_record_group
+    shared_zone_name = shared_zone_test_context.shared_zone["name"]
+
+    batch_change_input = {
+        "comments": "group-name-filter",
+        "changes": [
+            get_change_A_AAAA_json(f"list-by-group-name.{shared_zone_name}", address="1.1.1.1")
+        ],
+        "ownerGroupId": group["id"]
+    }
+
+    record_to_delete = []
+    try:
+        created_batch = client.create_batch_change(batch_change_input, status=202)
+        completed_batch = client.wait_until_batch_change_completed(created_batch)
+
+        record_set_list = [(change["zoneId"], change["recordSetId"]) for change in completed_batch["changes"]]
+        record_to_delete = set(record_set_list)
+
+        summaries = super_client.list_batch_change_summaries(
+            status=200,
+            ignore_access=True,
+            group_name=group["name"],
+            is_search_by_group=True
+        )["batchChanges"]
+
+        matching = [item for item in summaries if item["id"] == completed_batch["id"]]
+        assert_that(matching, has_length(1))
+        assert_that(matching[0]["ownerGroupId"], is_(group["id"]))
+    finally:
+        for result_rs in record_to_delete:
+            delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=202)
+            client.wait_until_recordset_change_status(delete_result, "Complete")
+
+
+def test_list_batch_change_summaries_with_missing_group_name_and_search_by_group_returns_empty(shared_zone_test_context):
+    """
+    Test listing all-group summaries with an unknown group name returns no summaries when searching by group
+    """
+    client = shared_zone_test_context.super_user_client
+
+    batch_change_summaries_result = client.list_batch_change_summaries(
+        status=200,
+        ignore_access=True,
+        group_name="missing-group-name",
+        is_search_by_group=True
+    )
+
+    assert_that(batch_change_summaries_result["batchChanges"], has_length(0))
+
+
 def test_list_batch_change_summaries_with_next_id(list_fixture):
     """
     Test getting user's batch change summaries with index of next batch change summary.
