@@ -89,8 +89,8 @@ class MySqlBatchChangeRepository
     """
       |SELECT batch_change_page.id, user_id, user_name, created_time, comments, owner_group_id, approval_status, batch_status, reviewer_id,
       |       review_comment, review_timestamp, scheduled_time, cancelled_timestamp,
-      |       SUM(CASE WHEN sc.status LIKE 'Failed' OR sc.status LIKE 'Rejected' THEN 1 ELSE 0 END) AS fail_count,
-      |       SUM(CASE WHEN sc.status LIKE 'Pending' OR sc.status LIKE 'NeedsReview' THEN 1 ELSE 0 END) AS pending_count,
+      |       SUM(CASE WHEN sc.status = 'Failed' OR sc.status = 'Rejected' THEN 1 ELSE 0 END) AS fail_count,
+      |       SUM(CASE WHEN sc.status = 'Pending' OR sc.status = 'NeedsReview' THEN 1 ELSE 0 END) AS pending_count,
       |       SUM(CASE sc.status WHEN 'Complete' THEN 1 ELSE 0 END) AS complete_count,
       |       SUM(CASE sc.status WHEN 'Cancelled' THEN 1 ELSE 0 END) AS cancelled_count
       |              FROM (SELECT bc.id, bc.user_id, bc.user_name, bc.created_time, bc.comments, bc.owner_group_id, bc.approval_status, bc.batch_status,
@@ -280,8 +280,15 @@ class MySqlBatchChangeRepository
           val bs = batchStatus.map(b => s"bc.batch_status = '${fromBatchStatus(b)}'")
           val uname = userName.map(uname => s"bc.user_name = '$uname'")
           val ownerGroup =
-            if (isSearchByGroup) Some(ownerGroupId.map(id => s"bc.owner_group_id = '$id'").getOrElse("1 = 0"))
-            else ownerGroupId.map(id => s"bc.owner_group_id = '$id'")
+            if (isSearchByGroup) {
+              ownerGroupId match {
+                case Some(id) => Some(s"bc.owner_group_id = '$id'")
+                case None     => Some("1 = 0")
+              }
+            } else {
+              ownerGroupId.map(id => s"bc.owner_group_id = '$id'")
+            }
+
           val dtRange =
             if (dateTimeStartRange.isDefined && dateTimeEndRange.isDefined)
               Some(s"(bc.created_time >= '${dateTimeStartRange.get}' " +
@@ -294,6 +301,7 @@ class MySqlBatchChangeRepository
           sb.append(GET_BATCH_CHANGE_SUMMARY_END)
 
           val query = sb.toString()
+
           val queryResult =
             SQL(query)
               .bindByName('startFrom -> startValue, 'maxItems -> (maxItems + 1))
