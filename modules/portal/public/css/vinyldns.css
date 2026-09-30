@@ -585,6 +585,14 @@ input[type="file"] {
     margin-bottom: 0px;
 }
 
+.record-tag{
+    width: 50rem;
+}
+
+.searchbar{
+    width: 32rem;
+}
+
 .reduce-font-weight {
     font-weight: 400;
 }
