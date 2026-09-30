@@ -147,7 +147,7 @@ describe('Controller: GroupsController', function () {
 
         setTimeout(function () {
             expect(getGroup.calls.count()).toBe(2);
-            expect(getGroup.calls.allArgs()).toEqual([['group-1'], ['group-2']]);
+            expect(getGroup.calls.allArgs()).toEqual([['group-1', false], ['group-2', false]]);
             done();
         }, 0);
     });
