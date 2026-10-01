@@ -21,10 +21,30 @@
         .controller('DnsChangeDetailController', function($scope, $log, $location, $timeout, dnsChangeService, utilityService){
 
             $scope.batch = {};
+            $scope.txtRecordGroups = {};
             $scope.alerts = [];
             $scope.reviewComment;
             $scope.reviewConfirmationMsg;
             $scope.reviewType;
+
+            function getTxtGroupKey(change) {
+                return [change.zoneId, change.recordName, change.type, change.changeType].join('||');
+            }
+
+            function buildTxtRecordGroups(changes) {
+                var groups = {};
+                angular.forEach(changes, function(change) {
+                    if (change && change.type === 'TXT' && change.record && change.record.text) {
+                        var key = getTxtGroupKey(change);
+                        if (!groups[key]) {
+                            groups[key] = [];
+                        }
+                        groups[key].push(change.record.text);
+                    }
+                });
+                return groups;
+            }
+            $scope.getTxtGroupKey = getTxtGroupKey;
 
             // Initialize Bootstrap tooltips
             $(document).ready(function() {
@@ -42,6 +62,7 @@
             $scope.getBatchChange = function(batchChangeId) {
                 function success(response) {
                     $scope.batch = response.data;
+                    $scope.txtRecordGroups = buildTxtRecordGroups($scope.batch.changes || []);
                     $scope.batch.createdTimestamp = utilityService.formatDateTime(response.data.createdTimestamp);
                     if (response.data.scheduledTime) {
                         $scope.batch.scheduledTime = utilityService.formatDateTime(response.data.scheduledTime);

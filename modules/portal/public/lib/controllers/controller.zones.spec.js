@@ -26,6 +26,8 @@ describe('Controller: ZonesController', function () {
         module('controller.zones')
     });
     beforeEach(inject(function ($rootScope, $controller, $q, groupsService, profileService, recordsService, zonesService, utilityService, pagingService) {
+        this.rootScope = $rootScope;
+        this.controllerFactory = $controller;
         this.scope = $rootScope.$new();
         this.groupsService = groupsService;
         this.zonesService = zonesService;
@@ -186,5 +188,28 @@ describe('Controller: ZonesController', function () {
         expect(getDeletedZoneSets.calls.mostRecent().args).toEqual(
             [expectedMaxItems, expectedStartFrom, expectedQuery, expectedIgnoreAccess]);
 
+    });
+
+    it('renders group search autocomplete labels as text while preserving highlights', function () {
+        document.body.innerHTML = '<input class="zone-search-text" /><input class="isGroupSearch" type="checkbox" />';
+
+        var scope = this.rootScope.$new();
+        this.controllerFactory('ZonesController', {'$scope': scope});
+
+        $('.isGroupSearch').prop('checked', true).trigger('change');
+
+        var instance = $('.zone-search-text').autocomplete('instance');
+        instance.term = 'Team';
+
+        var rendered = instance._renderItem($('<ul></ul>'), {
+            label: '<img src=x onerror=alert(1)>Team',
+            value: '<img src=x onerror=alert(1)>Team'
+        });
+
+        expect(rendered.find('img').length).toBe(0);
+        expect(rendered.find('div').text()).toBe('<img src=x onerror=alert(1)>Team');
+        expect(rendered.find('b').text()).toBe('Team');
+
+        document.body.innerHTML = '';
     });
 });
