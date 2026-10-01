@@ -77,6 +77,8 @@ lazy val apiAssemblySettings = Seq(
     case "simulacrum/op.class" | "simulacrum/op$.class" | "simulacrum/typeclass$.class"
          | "simulacrum/typeclass.class" | "simulacrum/noop.class" =>
       MergeStrategy.discard
+    case PathList("org", "apache", "commons", "logging", _*) =>
+      MergeStrategy.first
     case x if x.endsWith("module-info.class") => MergeStrategy.discard
     case x =>
       val oldStrategy = (assemblyMergeStrategy in assembly).value

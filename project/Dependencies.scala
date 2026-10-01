@@ -32,7 +32,8 @@ object Dependencies {
     "dnsjava"                   %  "dnsjava"                        % "3.4.2",
     "org.apache.commons"        %  "commons-lang3"                  % "3.4",
     "org.apache.commons"        %  "commons-text"                   % "1.4",
-    "org.flywaydb"              %  "flyway-core"                    % "5.2.4",
+    "org.flywaydb"              %  "flyway-core"                    % "9.22.3",
+    "org.flywaydb"              %  "flyway-mysql"                   % "9.22.3",
     "org.json4s"                %% "json4s-ext"                     % "3.6.1",
     "org.json4s"                %% "json4s-jackson"                 % "3.5.3",
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
@@ -82,8 +83,9 @@ object Dependencies {
   )
 
   lazy val mysqlDependencies = Seq(
-    "org.flywaydb"              %  "flyway-core"                    % "5.2.4",
-    "org.mariadb.jdbc"          %  "mariadb-java-client"            % "2.7.13",
+    "org.flywaydb"              %  "flyway-core"                    % "9.22.3",
+    "org.flywaydb"              %  "flyway-mysql"                   % "9.22.3",
+    "org.mariadb.jdbc"          %  "mariadb-java-client"            % "3.5.1",
     "org.scalikejdbc"           %% "scalikejdbc"                    % scalikejdbcV,
     "org.scalikejdbc"           %% "scalikejdbc-config"             % scalikejdbcV,
     "com.zaxxer"                %  "HikariCP"                       % "3.2.0",
