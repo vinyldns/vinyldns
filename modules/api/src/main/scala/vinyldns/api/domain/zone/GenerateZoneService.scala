@@ -16,7 +16,7 @@
 
 package vinyldns.api.domain.zone
 
-import cats.effect.IO
+import cats.effect.{Blocker, ContextShift, IO}
 import cats.implicits._
 import vinyldns.api.Interfaces
 import vinyldns.api.domain.access.AccessValidationsAlgebra
@@ -42,6 +42,8 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.{Executors, ThreadFactory}
+import java.util.concurrent.atomic.AtomicInteger
 import scala.io.Source
 import scala.jdk.CollectionConverters._
 import scala.util.Try
@@ -53,8 +55,9 @@ object GenerateZoneService {
       accessValidation: AccessValidationsAlgebra,
       crypto: CryptoAlgebra,
       membershipService: MembershipService,
-      dnsProviderApiConnection: DnsProviderApiConnection
-  ): GenerateZoneService =
+      dnsProviderApiConnection: DnsProviderApiConnection,
+      blocker: Blocker
+  )(implicit cs: ContextShift[IO]): GenerateZoneService =
     new GenerateZoneService(
       dataAccessor.zoneRepository,
       dataAccessor.groupRepository,
@@ -63,8 +66,24 @@ object GenerateZoneService {
       accessValidation,
       crypto,
       membershipService,
-      dnsProviderApiConnection
+      dnsProviderApiConnection,
+      blocker
     )
+
+  private final case class ProviderResponse(code: Int, status: String, body: String)
+
+  // Bounded so a slow provider queues provider calls instead of spawning unbounded threads.
+  val ProviderPoolSize = 16
+
+  def providerBlocker(): Blocker = {
+    val count = new AtomicInteger(0)
+    val factory: ThreadFactory = (r: Runnable) => {
+      val t = new Thread(r, s"generate-zone-provider-${count.incrementAndGet()}")
+      t.setDaemon(true)
+      t
+    }
+    Blocker.liftExecutorService(Executors.newFixedThreadPool(ProviderPoolSize, factory))
+  }
 }
 
 class GenerateZoneService(
@@ -75,12 +94,14 @@ class GenerateZoneService(
     accessValidation: AccessValidationsAlgebra,
     crypto: CryptoAlgebra,
     membershipService: MembershipService,
-    dnsProviderApiConnection: DnsProviderApiConnection
-) extends GenerateZoneServiceAlgebra {
+    dnsProviderApiConnection: DnsProviderApiConnection,
+    blocker: Blocker
+)(implicit cs: ContextShift[IO]) extends GenerateZoneServiceAlgebra {
 
   import accessValidation._
   import zoneValidations._
   import Interfaces._
+  import GenerateZoneService.ProviderResponse
 
   private val logger = LoggerFactory.getLogger(classOf[GenerateZoneService])
 
@@ -106,6 +127,50 @@ class GenerateZoneService(
     connection.setConnectTimeout(dnsProviderConnectTimeoutMs)
     connection.setReadTimeout(dnsProviderReadTimeoutMs)
     connection
+  }
+
+  // Runs the provider round trip on the blocking pool so a slow provider can't tie up
+  // request threads, then fails on any non-2xx response.
+  private def callProvider(
+      providerConfig: DnsProviderConfig,
+      operation: String,
+      endpoint: String,
+      requestJson: Option[String],
+      changeType: GenerateZoneChangeType.GenerateZoneChangeType
+  ): Result[ZoneGenerationResponse] =
+    for {
+      response <- blocker
+        .blockOn(IO(sendProviderRequest(providerConfig, operation, endpoint, requestJson)))
+        .toResult[ProviderResponse]
+      _ <- logger.info(s"response code: ${response.code}").toResult
+      _ <- isValidGenerateZoneConn(response.code, response.body).toResult
+    } yield ZoneGenerationResponse(
+      responseCode = Some(response.code),
+      status = Some(response.status),
+      message = Some(if (response.body.nonEmpty) parse(response.body) else JNothing),
+      changeType = changeType
+    )
+
+  private def sendProviderRequest(
+      providerConfig: DnsProviderConfig,
+      operation: String,
+      endpoint: String,
+      requestJson: Option[String]
+  ): ProviderResponse = {
+    val connection = createDnsZoneService(
+      Encryption.decrypt(crypto, providerConfig.apiKey),
+      operation,
+      requestJson,
+      createConnection(endpoint)
+    ).fold(e => throw e, identity)
+    val code = connection.getResponseCode
+    // getErrorStream is null when the provider sends no error body
+    val stream = if (code >= 400) connection.getErrorStream else connection.getInputStream
+    val body = Option(stream).fold("") { in =>
+      try Source.fromInputStream(in, "UTF-8").mkString
+      finally in.close()
+    }
+    ProviderResponse(code, connection.getResponseMessage, body)
   }
 
   private def schemaValidationResult(
@@ -157,23 +222,8 @@ class GenerateZoneService(
 
       // Send request
       _ <- logger.info(s"Request: provider=${request.provider}, path=$endpoint, request=$requestJsonOpt").toResult
-      dnsProviderConn <- createConnection(endpoint).toResult
-      dnsConnResponse <- createDnsZoneService(Encryption.decrypt(crypto, providerConfig.apiKey), "create-zone", requestJsonOpt, dnsProviderConn).toResult
-
-      // Process response
-      responseCode = dnsConnResponse.getResponseCode
-      _ <- logger.info(s"response code: $responseCode").toResult
-      inputStream = if (responseCode >= 400) dnsConnResponse.getErrorStream else dnsConnResponse.getInputStream
-      responseMessage: String = Source.fromInputStream(inputStream, "UTF-8").mkString
-      _ <- isValidGenerateZoneConn(responseCode, responseMessage).toResult
-
-      // Only parse JSON if the response is non-empty
-      responseJson = if (responseMessage.nonEmpty) parse(responseMessage) else JNothing
-      zoneGenerateResponse = ZoneGenerationResponse(
-        responseCode = Some(responseCode),
-        status = Some(dnsConnResponse.getResponseMessage),
-        message = Some(responseJson),
-        changeType = GenerateZoneChangeType.Create
+      zoneGenerateResponse <- callProvider(
+        providerConfig, "create-zone", endpoint, requestJsonOpt, GenerateZoneChangeType.Create
       )
       zoneToGenerate = GenerateZone(request).copy(response = Some(zoneGenerateResponse))
       _ <- logger.info(s"zone generation response: Create: $zoneToGenerate").toResult
@@ -220,24 +270,8 @@ class GenerateZoneService(
 
       // Send request
       _ <- logger.info(s"Request: provider=${request.provider}, path=$endpoint, request=$requestJsonOpt").toResult
-      dnsProviderConn <- createConnection(endpoint).toResult
-      dnsConnResponse <- createDnsZoneService(Encryption.decrypt(crypto, providerConfig.apiKey), "update-zone", requestJsonOpt, dnsProviderConn).toResult
-
-      // Process response
-      responseCode = dnsConnResponse.getResponseCode
-      _ <- logger.info(s"response code: $responseCode").toResult
-      inputStream = if (responseCode >= 400) dnsConnResponse.getErrorStream else dnsConnResponse.getInputStream
-      responseMessage: String = Source.fromInputStream(inputStream, "UTF-8").mkString
-      _ <- isValidGenerateZoneConn(responseCode, responseMessage).toResult
-
-      // Only parse JSON if the response is non-empty
-      responseJson = if (responseMessage.nonEmpty) parse(responseMessage) else JNothing
-
-      zoneGenerateResponse = ZoneGenerationResponse(
-        responseCode = Some(responseCode),
-        status = Some(dnsConnResponse.getResponseMessage),
-        message = Some(responseJson),
-        changeType = GenerateZoneChangeType.Update
+      zoneGenerateResponse <- callProvider(
+        providerConfig, "update-zone", endpoint, requestJsonOpt, GenerateZoneChangeType.Update
       )
       zoneToUpdate = existingGeneratedZone.copy(
         email = request.email,
@@ -272,23 +306,8 @@ class GenerateZoneService(
       deleteEndpointUrl <- requireEndpoint(providerConfig, "delete-zone").toResult
       endpoint <- buildGenerateZoneEndpoint(deleteEndpointUrl, request).toResult
 
-      dnsProviderConn <- createConnection(endpoint).toResult
-      dnsConnResponse <- createDnsZoneService(Encryption.decrypt(crypto, providerConfig.apiKey), "delete-zone", None, dnsProviderConn).toResult
-
-      // Process response
-      responseCode = dnsConnResponse.getResponseCode
-      _ <- logger.info(s"response code: $responseCode").toResult
-      inputStream = if (responseCode >= 400) dnsConnResponse.getErrorStream else dnsConnResponse.getInputStream
-      responseMessage: String = Source.fromInputStream(inputStream, "UTF-8").mkString
-      _ <- isValidGenerateZoneConn(responseCode, responseMessage).toResult
-
-      // Only parse JSON if the response is non-empty
-      responseJson = if (responseMessage.nonEmpty) parse(responseMessage) else JNothing
-      zoneGenerateResponse = ZoneGenerationResponse(
-        responseCode = Some(responseCode),
-        status = Some(dnsConnResponse.getResponseMessage),
-        message = Some(responseJson),
-        changeType = GenerateZoneChangeType.Delete
+      zoneGenerateResponse <- callProvider(
+        providerConfig, "delete-zone", endpoint, None, GenerateZoneChangeType.Delete
       )
       // Preserve the stored zone's server-owned fields (created/updated, id, etc.) and only
       // attach the delete response, rather than rebuilding from the request.

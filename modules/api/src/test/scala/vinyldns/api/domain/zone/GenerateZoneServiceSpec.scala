@@ -38,7 +38,9 @@ import vinyldns.core.TestZoneData._
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.Encrypted
 
-import java.net.HttpURLConnection
+import java.net.{HttpURLConnection, URL}
+import java.util.concurrent.atomic.AtomicReference
+import scala.concurrent.ExecutionContext
 
 class GenerateZoneServiceSpec
     extends AnyWordSpec
@@ -55,6 +57,8 @@ class GenerateZoneServiceSpec
   private val mockRecordSetRepo = mock[RecordSetRepository]
   private val mockGenerateZoneRepository = mock[GenerateZoneRepository]
   private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com", "*dummy.com"), 2)
+  private implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  private val testBlocker = Blocker.liftExecutionContext(ExecutionContext.global)
   private val abcGeneratedZoneSummary = GenerateZoneSummaryInfo(abcGenerateZone, abcGroup.name, AccessLevel.Delete)
   private val xyzGeneratedZoneSummary = GenerateZoneSummaryInfo(xyzGenerateZone, xyzGroup.name, AccessLevel.NoAccess)
 
@@ -76,7 +80,8 @@ class GenerateZoneServiceSpec
     new AccessValidations(),
     NoOpCrypto.instance,
     mockMembershipService,
-    mockPowerDNSProviderApiConnection
+    mockPowerDNSProviderApiConnection,
+    testBlocker
   ) {
     override def createConnection(endpoint: String): HttpURLConnection = mockConnection
   }
@@ -90,7 +95,8 @@ class GenerateZoneServiceSpec
     new AccessValidations(),
     NoOpCrypto.instance,
     mockMembershipService,
-    mockPowerDNSProviderApiConnection
+    mockPowerDNSProviderApiConnection,
+    testBlocker
   )
 
   // Builds a GenerateZoneService backed by a specific provider connection, with createConnection
@@ -104,7 +110,8 @@ class GenerateZoneServiceSpec
       new AccessValidations(),
       NoOpCrypto.instance,
       mockMembershipService,
-      conn
+      conn,
+      testBlocker
     ) {
       override def createConnection(endpoint: String): HttpURLConnection = mockConnection
     }
@@ -345,6 +352,62 @@ class GenerateZoneServiceSpec
       result.zoneName shouldBe updateBindZoneAuthorized.zoneName
       result.providerParams shouldBe updateBindZoneAuthorized.providerParams
       result.provider shouldBe updateBindZoneAuthorized.provider
+    }
+  }
+
+  "Provider calls" should {
+    "run on the dedicated provider pool, not the calling thread" in {
+      val callThread = new AtomicReference[String]()
+      val service = new GenerateZoneService(
+        mockZoneRepo,
+        mockGroupRepo,
+        mockGenerateZoneRepository,
+        new ZoneValidations(1000),
+        new AccessValidations(),
+        NoOpCrypto.instance,
+        mockMembershipService,
+        mockPowerDNSProviderApiConnection,
+        GenerateZoneService.providerBlocker()
+      ) {
+        override def createConnection(endpoint: String): HttpURLConnection = {
+          callThread.set(Thread.currentThread.getName)
+          mockConnection
+        }
+      }
+      doReturn(IO.pure(Some(generatePdnsZone))).when(mockGenerateZoneRepository).getGenerateZoneById(anyString)
+      doReturn(IO.pure(generatePdnsZone)).when(mockGenerateZoneRepository).delete(any[GenerateZone])
+
+      service.handleDeleteGeneratedZoneRequest(generatePdnsZone.id, okAuth).value.unsafeRunSync().isRight shouldBe true
+      callThread.get should startWith("generate-zone-provider-")
+    }
+
+    "return the provider error instead of failing when the error response has no body" in {
+      val noBodyErrorConnection = new HttpURLConnection(new URL("http://no-body")) {
+        override def disconnect(): Unit = {}
+        override def usingProxy(): Boolean = false
+        override def connect(): Unit = {}
+        override def getResponseCode: Int = 503
+        override def getResponseMessage: String = "Service Unavailable"
+        override def getErrorStream: java.io.InputStream = null
+      }
+      val service = new GenerateZoneService(
+        mockZoneRepo,
+        mockGroupRepo,
+        mockGenerateZoneRepository,
+        new ZoneValidations(1000),
+        new AccessValidations(),
+        NoOpCrypto.instance,
+        mockMembershipService,
+        mockPowerDNSProviderApiConnection,
+        testBlocker
+      ) {
+        override def createConnection(endpoint: String): HttpURLConnection = noBodyErrorConnection
+      }
+      doReturn(IO.pure(Some(generatePdnsZone))).when(mockGenerateZoneRepository).getGenerateZoneById(anyString)
+
+      val error =
+        service.handleDeleteGeneratedZoneRequest(generatePdnsZone.id, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe InvalidRequest("")
     }
   }
 
