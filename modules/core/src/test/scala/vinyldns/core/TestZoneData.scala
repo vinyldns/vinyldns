@@ -180,7 +180,6 @@ object TestZoneData {
           "negative_cache_ttl": "{{negative_cache_ttl}}"
         }
         """,
-          "delete-zone" -> """{ "zoneName": "{{zoneName}}" }""",
           "update-zone" -> """
         {
           "zoneName": "{{zoneName}}",
@@ -225,12 +224,6 @@ object TestZoneData {
                       "expire": { "type": "integer", "minimum": 0 },
                       "negative_cache_ttl": { "type": "integer", "minimum": 0 }
                     },
-                    "additionalProperties": false
-                  }""",
-          "delete-zone" -> """{
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "title": "BIND Delete Zone Request",
-                    "type": "object",
                     "additionalProperties": false
                   }"""
         ),

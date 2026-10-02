@@ -129,7 +129,6 @@ class ZoneServiceIntegrationSpec
           "admin_email": "{{admin_email}}"
         }
         """,
-          "delete-zone" -> """{ "zoneName": "{{zoneName}}" }""",
           "update-zone" -> """
         {
           "zoneName": "{{zoneName}}",
@@ -140,8 +139,7 @@ class ZoneServiceIntegrationSpec
         ),
         schemas = Map(
           "create-zone" -> """{ "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "BIND Create Zone Request", "type": "object", "required": ["nameservers", "admin_email"], "properties": { "nameservers": { "type": "array", "items": { "type": "string" }, "minItems": 1 }, "admin_email": { "type": "string", "format": "email" } }, "additionalProperties": false }""",
-          "update-zone" -> """{ "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "BIND Update Zone Request", "type": "object", "required": ["nameservers", "admin_email"], "properties": { "nameservers": { "type": "array", "items": { "type": "string" }, "minItems": 1 }, "admin_email": { "type": "string", "format": "email" } }, "additionalProperties": false }""",
-          "delete-zone" -> """{ "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "BIND Delete Zone Request", "type": "object", "additionalProperties": false }"""
+          "update-zone" -> """{ "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "BIND Update Zone Request", "type": "object", "required": ["nameservers", "admin_email"], "properties": { "nameservers": { "type": "array", "items": { "type": "string" }, "minItems": 1 }, "admin_email": { "type": "string", "format": "email" } }, "additionalProperties": false }"""
         ),
         apiKey = Encrypted("bind-api-key")
       )
