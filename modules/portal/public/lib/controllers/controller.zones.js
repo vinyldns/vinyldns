@@ -96,7 +96,7 @@ angular.module('controller.zones', [])
 
     $.zoneAutocompleteSearch = function() {
         // Autocomplete for zone search
-        $(".zone-search-text").autocomplete({
+        var zoneSearch = $(".zone-search-text").autocomplete({
           source: function( request, response ) {
             $.ajax({
               url: "/api/zones?maxItems=100",
@@ -123,6 +123,8 @@ angular.module('controller.zones', [])
             $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
           }
         });
+
+        vinyldnsAutocomplete.applyRenderer(zoneSearch);
     };
 
     // Should be the default autocomplete search result option
@@ -131,7 +133,7 @@ angular.module('controller.zones', [])
     $('.isGroupSearch').change(function() {
         if(this.checked) {
             // Autocomplete for search by admin group
-            $(".zone-search-text").autocomplete({
+            var zoneSearch = $(".zone-search-text").autocomplete({
               source: function( request, response ) {
                 $.ajax({
                   url: "/api/groups?maxItems=100&abridged=true",
@@ -158,19 +160,12 @@ angular.module('controller.zones', [])
                 $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
               }
             });
+
+            vinyldnsAutocomplete.applyRenderer(zoneSearch);
         } else {
             $.zoneAutocompleteSearch();
         }
     });
-
-    // Autocomplete text-highlight
-    $.ui.autocomplete.prototype._renderItem = function(ul, item) {
-            let txt = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
-            return $("<li></li>")
-                  .data("ui-autocomplete-item", item.value)
-                  .append("<div>" + txt + "</div>")
-                  .appendTo(ul);
-    };
 
     /* Refreshes zone data set and then re-displays */
     $scope.refreshZones = function () {

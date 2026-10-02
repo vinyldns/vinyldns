@@ -272,25 +272,45 @@ class MySqlBatchChangeRepository
           val sb = new StringBuilder
           sb.append(GET_BATCH_CHANGE_SUMMARY_BASE)
 
-          val uid = userId.map(u => s"bc.user_id = '$u'")
-          val as = approvalStatus.map(a => s"bc.approval_status = '${fromApprovalStatus(a)}'")
-          val bs = batchStatus.map(b => s"bc.batch_status = '${fromBatchStatus(b)}'")
-          val uname = userName.map(uname => s"bc.user_name = '$uname'")
-          val dtRange = if(dateTimeStartRange.isDefined && dateTimeEndRange.isDefined) {
-            Some(s"(bc.created_time >= '${dateTimeStartRange.get}' AND bc.created_time <= '${dateTimeEndRange.get}')")
-          } else {
-            None
-          }
-          val opts = uid ++ as ++ bs ++ uname ++ dtRange
+          // Build the optional WHERE clause with named placeholders, accumulating
+          // a binding per fragment so all request-derived values are bound, never
+          // interpolated into the SQL text.
+          val conditions = scala.collection.mutable.ListBuffer[String]()
+          val params = scala.collection.mutable.ListBuffer[(Symbol, Any)](
+            'startFrom -> startValue,
+            'maxItems -> (maxItems + 1)
+          )
 
-          if (opts.nonEmpty) sb.append("WHERE ").append(opts.mkString(" AND "))
+          userId.foreach { u =>
+            conditions += "bc.user_id = {userId}"
+            params += 'userId -> u
+          }
+          approvalStatus.foreach { a =>
+            conditions += "bc.approval_status = {approvalStatus}"
+            params += 'approvalStatus -> fromApprovalStatus(a)
+          }
+          batchStatus.foreach { b =>
+            conditions += "bc.batch_status = {batchStatus}"
+            params += 'batchStatus -> fromBatchStatus(b)
+          }
+          userName.foreach { uname =>
+            conditions += "bc.user_name = {userName}"
+            params += 'userName -> uname
+          }
+          if (dateTimeStartRange.isDefined && dateTimeEndRange.isDefined) {
+            conditions += "(bc.created_time >= {dtStart} AND bc.created_time <= {dtEnd})"
+            params += 'dtStart -> dateTimeStartRange.get
+            params += 'dtEnd -> dateTimeEndRange.get
+          }
+
+          if (conditions.nonEmpty) sb.append("WHERE ").append(conditions.mkString(" AND "))
 
           sb.append(GET_BATCH_CHANGE_SUMMARY_END)
           val query = sb.toString()
 
           val queryResult =
             SQL(query)
-              .bindByName('startFrom -> startValue, 'maxItems -> (maxItems + 1))
+              .bindByName(params.toList: _*)
               .map { res =>
                 val pending = res.int("pending_count")
                 val failed = res.int("fail_count")

@@ -12,15 +12,27 @@ The Ownership Transfer feature allows a user to transfer a RecordSet in a [share
 - Approvers can view pending Ownership Transfer requests in the Manage Records tab of the Zone page, then either approve or reject the request.
 
 ## Requesting Ownership Transfer
-To request Ownership Transfer of an unowned RecordSet in a shared zone, go to the *Zone* page in the VinylDNS Portal and select the *Request* button that corresponds with the records for which you want to request ownership. 
+To request Ownership Transfer of an unowned RecordSet in a shared zone:
+1. Navigate to the *Zone* page in the VinylDNS Portal.
+2. Search for and select the relevant zone.
+3. Open the *Records* section and locate the unowned record.
+4. Select the *Request* button for that record.
 
 [![Request Ownership transfer Records screenshot](../img/portal/ownership-transfer-request.png){: .screenshot}](../img/portal/ownership-transfer-request.png)
 
-Select your owner group and submit the request.
+5. Select your owner group.
+6. Submit the request.
 
 [![Request Ownership transfer screenshot](../img/portal/ownership-transfer-request-page.png){: .screenshot}](../img/portal/ownership-transfer-request-page.png)
 
-To request Ownership Transfer for a RecordSet with an existing owner group in a shared zone, go to the *Zone* page in the VinylDNS Portal and select the *Request* button that corresponds with the records for which you want to request ownership. Select your group in the Record Owner Group Request dropdown, select Requested in the Record Owner Group Status dropdown, then submit the request.
+To request Ownership Transfer for a RecordSet with an existing owner group in a shared zone:
+1. Navigate to the *Zone* page in the VinylDNS Portal.
+2. Search for and select the relevant zone.
+3. Open the *Records* section and locate the owned record.
+4. Select the *Request* button for that record.
+5. Select your group in the Record Owner Group Request dropdown.
+6. Select *Requested* in the Record Owner Group Status dropdown.
+7. Submit the request.
 
 [![Request Ownership transfer screenshot](../img/portal/owned-ownership-request-page.png){: .screenshot}](../img/portal/owned-ownership-request-page.png)
 
@@ -32,3 +44,28 @@ An approver can approve or reject the requested Ownership Transfer in a shared z
 Select either Approve or Reject in the Record Owner Group Status, then submit.
 
 [![Ownership Transfer Approver page screenshot](../img/portal/ownership-transfer-approver-page.png){: .screenshot}](../img/portal/ownership-transfer-approver-page.png)
+
+## Cancelling an Ownership Transfer Request
+
+If you have submitted an ownership transfer request that is pending review, you can cancel it before the current owner group approves or rejects it.
+
+To cancel a pending request:
+1. Navigate to the *Zone* page in the VinylDNS Portal.
+2. Search for and select the relevant zone.
+3. Open the *Records* section and locate the record with the pending ownership transfer request.
+4. Select the *Request* button for that record.
+5. Select *Cancel*.
+6. Submit the change.
+
+Note: You can only cancel requests that are in "Pending Review" status. Once a request has been approved or rejected, it cannot be cancelled.
+
+## Email Notifications
+
+VinylDNS automatically sends email notifications for ownership transfer requests:
+
+- **When a transfer is requested**: Members of both the current owner group and the requesting group receive an email notifying them that a transfer request is pending review. The email includes a link to review the request in VinylDNS.
+- **When a transfer is approved**: Members of both the previous owner group and the new owner group receive an email confirming the approval.
+- **When a transfer is rejected**: Members of the requesting group receive an email notifying them that the request was rejected.
+- **When a transfer is cancelled**: Members of the current owner group receive an email notifying them that the pending request was cancelled.
+
+Note: Email notifications are not sent for auto-approved transfers (when claiming unowned records).

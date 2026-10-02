@@ -35,7 +35,6 @@ import scala.concurrent.duration._
 class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with Monitored {
 
   private final val logger = LoggerFactory.getLogger(classOf[MySqlZoneRepository])
-  private final val MAX_ACCESSORS = 30
   private final val INITIAL_RETRY_DELAY = 1.millis
   final val MAX_RETRIES = 10
   private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
@@ -281,35 +280,38 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
-          val noReverseRegex =
-            if (!includeReverse)
-              """(in-addr\.arpa\.)|(ip6\.arpa\.)$"""
-            else None
+          // Bound parameters for the dynamic WHERE clause, in the order their
+          // placeholders appear in the query (after the accessor join params).
+          val filterParams = scala.collection.mutable.ListBuffer[Any]()
 
-          if(adminGroupIds.nonEmpty) {
-            val groupIds = adminGroupIds.map(x => "'" + x + "'").mkString(",")
-            sb.append(s" WHERE admin_group_id IN ($groupIds) ")
+          if (adminGroupIds.nonEmpty) {
+            val ids = adminGroupIds.toList
+            val placeholders = List.fill(ids.size)("?").mkString(",")
+            sb.append(s" WHERE admin_group_id IN ($placeholders) ")
+            filterParams ++= ids
           } else {
-            sb.append(s" WHERE admin_group_id IN ('') ")
+            sb.append(" WHERE admin_group_id IN ('') ")
           }
 
           if (!includeReverse) {
-            sb.append(" AND ")
-            sb.append(s"z.name NOT RLIKE '$noReverseRegex'")
+            sb.append(" AND z.name NOT RLIKE ?")
+            filterParams += """(in-addr\.arpa\.)|(ip6\.arpa\.)$"""
           }
-          
-          if(startFrom.isDefined){
-            sb.append(" AND ")
-            sb.append(s"z.name > '${startFrom.get}'")
+
+          if (startFrom.isDefined) {
+            sb.append(" AND z.name > ?")
+            filterParams += startFrom.get
           }
 
           sb.append(s" GROUP BY z.name ")
-          sb.append(s" LIMIT ${maxItems + 1}")
+          sb.append(s" ORDER BY z.name ASC ")
+          sb.append(" LIMIT ?")
+          filterParams += (maxItems + 1)
 
           val query = sb.toString
 
           val results: List[Zone] = SQL(query)
-            .bind(accessors: _*)
+            .bind(accessors ++ filterParams.toList: _*)
             .map(extractZone(1))
             .list()
             .apply()
@@ -358,21 +360,26 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
-          val noReverseRegex =
-            if (!includeReverse)
-              """(in-addr\.arpa\.)|(ip6\.arpa\.)$"""
-            else None
+          // Bound parameters for the dynamic WHERE clause, in the order their
+          // placeholders appear in the query (after the accessor join params).
+          val filterParams = scala.collection.mutable.ListBuffer[Any]()
+          val filters = scala.collection.mutable.ListBuffer[String]()
 
-          val filters = if (zoneNameFilter.isDefined && (zoneNameFilter.get.takeRight(1) == "." || zoneNameFilter.get.contains("*"))) {
-            List(
-              zoneNameFilter.map(flt => s"z.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
-              startFrom.map(os => s"z.name > '$os'")
-            ).flatten
-          } else {
-            List(
-              zoneNameFilter.map(flt => s"z.name LIKE '${flt.concat("%")}'"),
-              startFrom.map(os => s"z.name > '$os'")
-            ).flatten
+          // '*' is the only user-facing wildcard; literal LIKE metacharacters are
+          // escaped and the pattern is bound, never interpolated into SQL.
+          // A trailing '.' or a '*' yields a fully-qualified LIKE; otherwise prefix match.
+          zoneNameFilter.foreach { flt =>
+            val pattern =
+              if (flt.takeRight(1) == "." || flt.contains("*")) ensureTrailingDot(LikePattern.escape(flt))
+              else LikePattern.escape(flt) + "%"
+            // '\\\\' in this plain string literal is two backslashes at runtime,
+            // which MySQL parses to the single backslash escape char.
+            filters += "z.name LIKE ? ESCAPE '\\\\'"
+            filterParams += pattern
+          }
+          startFrom.foreach { os =>
+            filters += "z.name > ?"
+            filterParams += os
           }
 
           if (filters.nonEmpty) {
@@ -381,23 +388,20 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           }
 
           if (!includeReverse) {
-            if (filters.nonEmpty) {
-              sb.append(" AND ")
-              sb.append(s"z.name NOT RLIKE '$noReverseRegex'")
-            }
-            else {
-              sb.append(" WHERE ")
-              sb.append(s"z.name NOT RLIKE '$noReverseRegex'")
-            }
+            sb.append(if (filters.nonEmpty) " AND " else " WHERE ")
+            sb.append("z.name NOT RLIKE ?")
+            filterParams += """(in-addr\.arpa\.)|(ip6\.arpa\.)$"""
           }
 
           sb.append(s" GROUP BY z.name ")
-          sb.append(s" LIMIT ${maxItems + 1}")
+          sb.append(s" ORDER BY z.name ASC ")
+          sb.append(" LIMIT ?")
+          filterParams += (maxItems + 1)
 
           val query = sb.toString
 
           val results: List[Zone] = SQL(query)
-            .bind(accessors: _*)
+            .bind(accessors ++ filterParams.toList: _*)
             .map(extractZone(1))
             .list()
             .apply()
@@ -453,7 +457,7 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     } else {
       // User is not super or support,
       // let's join across to the zone access table so we return only zones a user has access to
-      val accessors = buildZoneSearchAccessorList(user, groupIds)
+      val accessors = MySqlAccessors.buildZoneSearchAccessorList(user, groupIds, logger)
       val questionMarks = List.fill(accessors.size)("?").mkString(",")
       val withAccessorCheck = BASE_ZONE_SEARCH_SQL +
         s"""
@@ -462,20 +466,6 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
     """.stripMargin
       (withAccessorCheck, accessors)
     }
-
-  /* Limit the accessors so that we don't have boundless parameterized queries */
-  private def buildZoneSearchAccessorList(user: User, groupIds: Seq[String]): Seq[String] = {
-    val allAccessors = user.id +: groupIds
-
-    if (allAccessors.length > MAX_ACCESSORS) {
-      logger.warn(
-        s"User ${user.userName} with id ${user.id} is in more than $MAX_ACCESSORS groups, no all zones maybe returned!"
-      )
-    }
-
-    // Take the top 30 accessors, but add "EVERYONE" to the list so that we include zones that have everyone access
-    allAccessors.take(MAX_ACCESSORS) :+ "EVERYONE"
-  }
 
   private def putZone(zone: Zone)(implicit session: DBSession): Zone = {
     PUT_ZONE
