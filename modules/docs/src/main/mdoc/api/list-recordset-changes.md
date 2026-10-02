@@ -403,13 +403,13 @@ status        | string        | The status of the change (Pending, Complete, Fai
             "primaryServer": "127.0.0.1:5301",
             "keyName": "vinyl.",
             "name": "system-test-history.",
-            "key": "OBF:1:YVgGogd/Y+oAABAAIp4s3z7FAn92uvfOci9v0jMjihQ+uV3bOCyNwpMPh78tL4q/A8dR7A=="
+            "key": "********"
           },
           "transferConnection": {
             "primaryServer": "127.0.0.1:5301",
             "keyName": "vinyl.",
             "name": "system-test-history.",
-            "key": "OBF:1:Pq3UqxiceV4AABAAdu90et1pkNn2ZO3MuYstki5BkQVm3T50RQLarpVhIgaoOKLi2CdL6Q=="
+            "key": "********"
           },
           "shared": true,
           "acl": {

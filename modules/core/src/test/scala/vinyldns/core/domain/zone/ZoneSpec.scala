@@ -19,6 +19,7 @@ package vinyldns.core.domain.zone
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import vinyldns.core.TestZoneData._
+import vinyldns.core.domain.{Encrypted, Encryption}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -68,6 +69,38 @@ class ZoneSpec extends AnyWordSpec with Matchers {
       val result = zone2.deleteACLRule(groupAclRule)
 
       (result.acl.rules should contain).only(userAclRule)
+    }
+    "preserve the stored connection key when update sends the redacted sentinel" in {
+      val existing = zoneActive
+      val redacted = existing.connection.get.copy(key = Encrypted(Encryption.RedactedKey))
+      val input = UpdateZoneInput(
+        id = existing.id,
+        name = existing.name,
+        email = existing.email,
+        connection = Some(redacted),
+        transferConnection = None,
+        adminGroupId = existing.adminGroupId
+      )
+
+      val result = Zone(input, existing)
+
+      result.connection.get.key shouldBe existing.connection.get.key
+    }
+    "apply a new connection key when update sends a real key" in {
+      val existing = zoneActive
+      val rotated = existing.connection.get.copy(key = Encrypted("rotated-key"))
+      val input = UpdateZoneInput(
+        id = existing.id,
+        name = existing.name,
+        email = existing.email,
+        connection = Some(rotated),
+        transferConnection = None,
+        adminGroupId = existing.adminGroupId
+      )
+
+      val result = Zone(input, existing)
+
+      result.connection.get.key shouldBe Encrypted("rotated-key")
     }
   }
 }

@@ -112,8 +112,9 @@ object Zone {
     currentZone.copy(
       name = name,
       email = email,
-      connection = connection,
-      transferConnection = transferConnection,
+      connection = reconcileRedactedKey(connection, currentZone.connection),
+      transferConnection =
+        reconcileRedactedKey(transferConnection, currentZone.transferConnection),
       shared = shared,
       acl = acl,
       adminGroupId = adminGroupId,
@@ -122,6 +123,17 @@ object Zone {
       scheduleRequestor = scheduleRequestor
     )
   }
+
+  // A redacted key sent back on update keeps the stored key
+  private def reconcileRedactedKey(
+      incoming: Option[ZoneConnection],
+      existing: Option[ZoneConnection]
+  ): Option[ZoneConnection] =
+    incoming.map { conn =>
+      if (Encryption.isRedacted(conn.key))
+        conn.copy(key = existing.map(_.key).getOrElse(conn.key))
+      else conn
+    }
 }
 
 final case class CreateZoneInput(
