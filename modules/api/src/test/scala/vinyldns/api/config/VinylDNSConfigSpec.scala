@@ -82,5 +82,12 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAndAfterAl
       config.backends.head.zoneConnection.decrypted(underTest.crypto) shouldBe zc
       config.backends.head.transferConnection.get.decrypted(underTest.crypto) shouldBe tc
     }
+
+    "load the generated-zone DNS provider config separately from the zone connections" in {
+      val providers = underTest.dnsProviderApiConnection
+      providers.allowedProviders shouldBe List("bind")
+      providers.nameServers shouldBe List("ns1.parent.com.")
+      providers.providers("bind").endpoints("create-zone") shouldBe "http://localhost:19000/api/zones/generate"
+    }
   }
 }

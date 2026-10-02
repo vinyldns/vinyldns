@@ -27,7 +27,6 @@ import pureconfig.error.CannotConvert
 import pureconfig.generic.auto._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.{Encrypted, Encryption}
-import vinyldns.core.domain.zone.generate.DnsProviderApiConnection
 
 import scala.collection.JavaConverters._
 
@@ -231,8 +230,7 @@ final case class LegacyDnsBackend(
 final case class ConfiguredDnsConnections(
     defaultZoneConnection: ZoneConnection,
     defaultTransferConnection: ZoneConnection,
-    dnsBackends: List[LegacyDnsBackend],
-    dnsProviderApiConnection : DnsProviderApiConnection
+    dnsBackends: List[LegacyDnsBackend]
 )
 object ConfiguredDnsConnections {
   def load(config: Config, cryptoConfig: Config): IO[ConfiguredDnsConnections] =
@@ -276,8 +274,6 @@ object ConfiguredDnsConnections {
         } else List.empty
       }
 
-      val dnsProviderApiConfig = DnsProviderApiConnection.load(config, crypto)
-
-      ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends, dnsProviderApiConfig)
+      ConfiguredDnsConnections(defaultZoneConnection, defaultTransferConnection, dnsBackends)
 }
 }

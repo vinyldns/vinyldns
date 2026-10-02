@@ -183,7 +183,7 @@ object Boot extends App {
         recordAccessValidations,
         vinyldnsConfig.crypto,
         membershipService,
-        vinyldnsConfig.configuredDnsConnections.dnsProviderApiConnection,
+        vinyldnsConfig.dnsProviderApiConnection,
         GenerateZoneService.providerBlocker()
       )
       //limits configured in reference.conf passing here

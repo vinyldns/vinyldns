@@ -36,9 +36,8 @@ case class DnsProviderApiConnection(
   )
 
 object DnsProviderApiConnection {
-  // Parse the dns-provider-api backend-provider block into a DnsProviderApiConnection. Moved
-  // verbatim out of ConfiguredDnsConnections.load; no pureconfig conversion so error/missing-key
-  // semantics are unchanged.
+  // Parses the dns-provider-api backend-provider block. Loaded on its own (see VinylDNSConfig)
+  // so the core zone connection config doesn't depend on generated zones.
   def load(config: Config, crypto: CryptoAlgebra): DnsProviderApiConnection =
     if (config.hasPath("vinyldns.backend.backend-providers")) {
       val providersConfig = config
