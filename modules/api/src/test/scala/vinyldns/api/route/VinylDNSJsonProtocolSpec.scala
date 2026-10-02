@@ -331,6 +331,28 @@ class VinylDNSJsonProtocolSpec
     }
   }
 
+  "ZoneConnectionSerializer" should {
+    val conn = ZoneConnection(
+      "primaryConnection",
+      "primaryConnectionKeyName",
+      Encrypted("super-secret-tsig-key"),
+      "10.1.1.1"
+    )
+
+    "redact the key when serializing" in {
+      val js = ZoneConnectionSerializer.toJson(conn)
+      (js \ "key").extract[String] shouldBe "********"
+      (js \ "name").extract[String] shouldBe "primaryConnection"
+      (js \ "keyName").extract[String] shouldBe "primaryConnectionKeyName"
+      (js \ "primaryServer").extract[String] shouldBe "10.1.1.1"
+    }
+
+    "never emit the stored key value in output" in {
+      val js = ZoneConnectionSerializer.toJson(conn)
+      (js \ "key").extract[String] should not be "super-secret-tsig-key"
+    }
+  }
+
   "RecordSetSerializer" should {
     "parse a record set with an absolute CNAME record passes" in {
       val recordSetJValue: JValue =

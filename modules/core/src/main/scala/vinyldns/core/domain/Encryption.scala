@@ -18,9 +18,17 @@ package vinyldns.core.domain
 
 import vinyldns.core.crypto.CryptoAlgebra
 
-final case class Encrypted private (value: String) extends AnyVal
+// Keep key material out of logs and error messages; use `.value` explicitly
+final case class Encrypted private (value: String) extends AnyVal {
+  override def toString: String = Encryption.RedactedKey
+}
 
 object Encryption {
+  // Returned in place of keys; on update it means "keep the stored key"
+  val RedactedKey: String = "********"
+
+  def isRedacted(x: Encrypted): Boolean = x.value == RedactedKey
+
   def apply(crypto: CryptoAlgebra, value: String): Encrypted = Encrypted(crypto.encrypt(value))
   def decrypt(crypto: CryptoAlgebra, x: Encrypted): String = crypto.decrypt(x.value)
 }

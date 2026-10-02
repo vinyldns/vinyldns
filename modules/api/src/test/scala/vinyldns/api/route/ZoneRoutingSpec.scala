@@ -33,7 +33,7 @@ import vinyldns.api.domain.zone.{ZoneServiceAlgebra, _}
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.crypto.{JavaCrypto, NoOpCrypto}
-import vinyldns.core.domain.Encrypted
+import vinyldns.core.domain.{Encrypted, Encryption}
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone._
@@ -177,10 +177,16 @@ class ZoneRoutingSpec
     new ZoneRoute(TestZoneService,testLimitConfig, new TestVinylDNSAuthenticator(okAuth), crypto).getRoutes
 
   object TestZoneService extends ZoneServiceAlgebra {
+    // Responses redact connection keys, so assert on what the route handed the
+    // service instead — that is where encryption has to have already happened.
+    @volatile var lastCreateInput: Option[CreateZoneInput] = None
+    @volatile var lastUpdateInput: Option[UpdateZoneInput] = None
+
     def connectToZone(
         createZoneInput: CreateZoneInput,
         auth: AuthPrincipal
     ): Result[ZoneCommandResult] = {
+      lastCreateInput = Some(createZoneInput)
       val outcome = createZoneInput.email match {
         case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$createZoneInput"))
         case notFound.email => Left(ZoneNotFoundError(s"$createZoneInput"))
@@ -207,6 +213,7 @@ class ZoneRoutingSpec
         updateZoneInput: UpdateZoneInput,
         auth: AuthPrincipal
     ): Result[ZoneCommandResult] = {
+      lastUpdateInput = Some(updateZoneInput)
       val outcome = updateZoneInput.email match {
         case alreadyExists.email => Left(ZoneAlreadyExistsError(s"$updateZoneInput"))
         case notFound.email => Left(ZoneNotFoundError(s"$updateZoneInput"))
@@ -588,6 +595,20 @@ class ZoneRoutingSpec
 
   def zoneJson(zone: Zone): String = compact(render(Extraction.decompose(zone)))
 
+  // Extraction.decompose redacts connection keys, so a request built from a Zone
+  // carries the sentinel. Put the real key material back to mimic a client that is
+  // actually supplying a TSIG key.
+  def zoneJsonWithKeys(zone: Zone): String = {
+    val withKeys = Extraction.decompose(zone).transformField {
+      case ("connection", c: JObject) =>
+        ("connection", c.replace("key" :: Nil, JString(zone.connection.get.key.value)))
+      case ("transferConnection", c: JObject) =>
+        ("transferConnection",
+          c.replace("key" :: Nil, JString(zone.transferConnection.get.key.value)))
+    }
+    compact(render(withKeys))
+  }
+
   def post(zone: Zone): HttpRequest =
     Post("/zones").withEntity(HttpEntity(ContentTypes.`application/json`, zoneJson(zone)))
 
@@ -832,16 +853,36 @@ class ZoneRoutingSpec
     }
 
     "encrypt the connection and transfer connection keys" in {
-      post(connectionOk) ~> zoneRoute ~> check {
-        status shouldBe Accepted
-        val result = responseAs[ZoneChange]
-        val resultKey = result.zone.connection.get.key
-        val resultTCKey = result.zone.transferConnection.get.key
+      val req = Post("/zones")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, zoneJsonWithKeys(connectionOk)))
 
-        val decrypted = crypto.decrypt(resultKey.value)
-        val decryptedTC = crypto.decrypt(resultTCKey.value)
+      req ~> zoneRoute ~> check {
+        status shouldBe Accepted
+        val received = TestZoneService.lastCreateInput.get
+        val decrypted = crypto.decrypt(received.connection.get.key.value)
+        val decryptedTC = crypto.decrypt(received.transferConnection.get.key.value)
         decrypted shouldBe connectionOk.connection.get.key.value
         decryptedTC shouldBe connectionOk.transferConnection.get.key.value
+      }
+    }
+
+    "redact the connection keys in the response" in {
+      val req = Post("/zones")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, zoneJsonWithKeys(connectionOk)))
+
+      req ~> zoneRoute ~> check {
+        status shouldBe Accepted
+        val result = responseAs[ZoneChange]
+        result.zone.connection.get.key.value shouldBe Encryption.RedactedKey
+        result.zone.transferConnection.get.key.value shouldBe Encryption.RedactedKey
+      }
+    }
+
+    "pass the redaction sentinel through to the service without encrypting it" in {
+      post(connectionOk) ~> zoneRoute ~> check {
+        val received = TestZoneService.lastCreateInput.get
+        received.connection.get.key.value shouldBe Encryption.RedactedKey
+        received.transferConnection.get.key.value shouldBe Encryption.RedactedKey
       }
     }
 

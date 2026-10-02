@@ -54,13 +54,13 @@ accessLevel   | string      | Access level of the user requesting the zone. Curr
     "primaryServer": "127.0.0.1:5301",
     "keyName": "vinyl.",
     "name": "ok.",
-    "key": "OBF:1:W1FXgpOjjrQAABAARrZmyLjFSOuFYTAw81mhvNEmNAc4RnYzPjJQMEjVQWWLRohu7gRAVw=="
+    "key": "********"
   },
   "transferConnection": {
     "primaryServer": "127.0.0.1:5301",
     "keyName": "vinyl.",
     "name": "ok.",
-    "key": "OBF:1:W1FXgpOjjrQAABAARrZmyLjFSOuFYTAw81mhvNEmNAc4RnYzPjJQMEjVQWWLRohu7gRAVw=="
+    "key": "********"
   },
   "shared": false,
   "acl": {
@@ -246,7 +246,7 @@ Zone Connection specifies the connection information to the backend DNS server.
 | primaryServer | string | The IP address or host that is connected to.  This can take a port as well `127.0.0.1:5300`.  If no port is specified, 53 will be assumed.                                                                                                                   |
 | keyName       | string | The name of the DNS key that has access to the DNS server and zone.  **Note:** For the transfer connection, the key must be given *allow-transfer* access to the zone.  For the primary connection, the key must be given *allow-update* access to the zone. |
 | name          | string | A user identifier for the connection.                                                                                                                                                                                                                        |
-| key           | string | The TSIG secret key used to sign requests when communicating with the primary server.  **Note:** After creating the zone, the key value itself is hashed and obfuscated, so it will be unusable from a client perspective.                                   |
+| key           | string | The TSIG secret key used to sign requests when communicating with the primary server.  **Note:** The key is never returned by the API; responses show `********`. When updating a zone, send `********` to keep the stored key, or a new value to replace it. |
 
 #### ZONE CONNECTION EXAMPLE <a id="zone-conn-example"></a>
 
@@ -255,7 +255,7 @@ Zone Connection specifies the connection information to the backend DNS server.
   "primaryServer": "127.0.0.1:5301",
   "keyName": "vinyl.",
   "name": "ok.",
-  "key": "OBF:1:W1FXgpOjjrQAABAARrZmyLjFSOuFYTAw81mhvNEmNAc4RnYzPjJQMEjVQWWLRohu7gRAVw=="
+  "key": "********"
 }
 ```
 

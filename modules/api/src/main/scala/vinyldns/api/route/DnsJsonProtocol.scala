@@ -27,7 +27,7 @@ import scodec.bits.{Bases, ByteVector}
 import vinyldns.api.domain.zone.{RecordSetGlobalInfo, RecordSetInfo, RecordSetListInfo}
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.DomainHelpers.removeWhitespace
-import vinyldns.core.domain.{EncryptFromJson, Encrypted, Fqdn}
+import vinyldns.core.domain.{EncryptFromJson, Encrypted, Encryption, Fqdn}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone._
 import vinyldns.core.Messages._
@@ -171,6 +171,14 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "primaryServer").required[String]("Missing ZoneConnection.primaryServer"),
         (js \ "algorithm").default[Algorithm](Algorithm.HMAC_MD5)
         ).mapN(ZoneConnection.apply)
+
+    // Never return key material in responses
+    override def toJson(a: ZoneConnection): JValue =
+      ("name" -> a.name) ~
+        ("keyName" -> a.keyName) ~
+        ("key" -> Encryption.RedactedKey) ~
+        ("primaryServer" -> a.primaryServer) ~
+        ("algorithm" -> Extraction.decompose(a.algorithm))
   }
 
   def checkDomainNameLen(s: String): Boolean = s.length <= 255
