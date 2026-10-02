@@ -44,3 +44,7 @@ trait GenerateZoneRepository extends Repository {
                                          adminGroupIds: Set[String]
                                        ): IO[ListGeneratedZonesResults]
 }
+
+// Raised by save when another generated zone already has this name.
+final case class DuplicateGenerateZoneNameError(zoneName: String)
+    extends Throwable(s"A generated zone named $zoneName already exists")

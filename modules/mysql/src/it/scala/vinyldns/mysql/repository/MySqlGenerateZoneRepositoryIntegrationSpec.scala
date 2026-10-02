@@ -22,7 +22,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scalikejdbc.DB
 import vinyldns.core.TestMembershipData.{dummyAuth, okAuth, okGroup, superUserAuth}
-import vinyldns.core.TestZoneData.{generateBindZone, generatePdnsZone}
+import vinyldns.core.TestZoneData.{generateBindZone, generatePdnsZone => basePdnsZone}
 import vinyldns.core.domain.zone.ZoneStatus
 import vinyldns.core.domain.zone.generate._
 import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
@@ -42,6 +42,10 @@ class MySqlGenerateZoneRepositoryIntegrationSpec
 
 
   repo = TestMySqlInstance.generateZoneRepository
+
+  // The shared fixtures both use okZone.name; names must be unique in generate_zone.
+  private val generatePdnsZone =
+    basePdnsZone.copy(zoneName = "pdns." + generateBindZone.zoneName)
 
   private val testZones = (1 until 10).map { num =>
       generateBindZone.copy(
@@ -84,6 +88,17 @@ class MySqlGenerateZoneRepositoryIntegrationSpec
     }
     "return the generate powerDNS zone response" in {
       repo.save(generatePdnsZone).unsafeRunSync() shouldBe generatePdnsZone
+    }
+    "update an existing zone in place when saved with the same id" in {
+      val updated = generateBindZone.copy(email = "updated@test.com")
+      repo.save(updated).unsafeRunSync() shouldBe updated
+      repo.getGenerateZoneById(generateBindZone.id).unsafeRunSync() shouldBe Some(updated)
+    }
+    "reject a second zone with the same name and leave the existing zone untouched" in {
+      val duplicate = generateBindZone.copy(id = UUID.randomUUID().toString, groupId = "foo")
+      a[DuplicateGenerateZoneNameError] shouldBe thrownBy(repo.save(duplicate).unsafeRunSync())
+      repo.getGenerateZoneByName(generateBindZone.zoneName).unsafeRunSync() shouldBe Some(generateBindZone)
+      repo.getGenerateZoneById(duplicate.id).unsafeRunSync() shouldBe None
     }
   }
   "MySqlGenerateZoneRepository.delete" should {

@@ -21,10 +21,12 @@ import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.zone.generate.{GenerateZone, GenerateZoneRepository, ListGeneratedZonesResults}
+import vinyldns.core.domain.zone.generate.{DuplicateGenerateZoneNameError, GenerateZone, GenerateZoneRepository, ListGeneratedZonesResults}
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
+
+import java.sql.SQLException
 
 
 class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufConversions with Monitored {
@@ -37,19 +39,26 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
   // an unbounded parameterized query (mirrors MySqlZoneRepository.buildZoneSearchAccessorList).
   final val MAX_ACCESSORS = 30
 
-  /**
-    * use INSERT INTO ON DUPLICATE KEY UPDATE for the generate zone, which will update the values if the zone already exists
-    * similar to a PUT in a KV store
-    */
-  private final val PUT_GENERATE_ZONE: SQL[Nothing, NoExtractor] =
+  // MySQL ER_DUP_ENTRY
+  private final val DUPLICATE_KEY_ERROR_CODE = 1062
+
+  // Not an upsert: ON DUPLICATE KEY UPDATE would also fire on the unique name index and
+  // silently overwrite another zone's row. save() updates by id, then inserts if new.
+  private final val INSERT_GENERATE_ZONE: SQL[Nothing, NoExtractor] =
     sql"""
          |INSERT INTO generate_zone(id, name, provider, admin_group_id, response, data)
-         |     VALUES ({id}, {name}, {provider}, {adminGroupId}, {response}, {data}) ON DUPLICATE KEY
-         |     UPDATE name=VALUES(name),
-         |            provider=VALUES(provider),
-         |            admin_group_id=VALUES(admin_group_id),
-         |            response=VALUES(response),
-         |            data=VALUES(data);
+         |     VALUES ({id}, {name}, {provider}, {adminGroupId}, {response}, {data})
+        """.stripMargin
+
+  private final val UPDATE_GENERATE_ZONE: SQL[Nothing, NoExtractor] =
+    sql"""
+         |UPDATE generate_zone
+         |   SET name = {name},
+         |       provider = {provider},
+         |       admin_group_id = {adminGroupId},
+         |       response = {response},
+         |       data = {data}
+         | WHERE id = {id}
         """.stripMargin
 
   private final val DELETE_GENERATED_ZONE: SQLSyntax =
@@ -88,25 +97,28 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
       }
     }
 
-   def save(generateZone: GenerateZone): IO[GenerateZone] = {
-      monitor("repo.generateZone.save") {
-        IO {
-            DB.localTx { implicit s =>
-              PUT_GENERATE_ZONE
-              .bindByName(
-                  'id -> generateZone.id,
-                  'name -> generateZone.zoneName,
-                  'provider -> generateZone.provider,
-                  'adminGroupId -> generateZone.groupId,
-                  'response -> generateZone.response.map(r => toPB(r).toByteArray).orNull,
-                  'data -> toPB(generateZone).toByteArray
-              )
-              .update()
-              .apply()
-            }
-            generateZone
-          }
-      }}
+  def save(generateZone: GenerateZone): IO[GenerateZone] =
+    monitor("repo.generateZone.save") {
+      IO {
+        DB.localTx { implicit s =>
+          val params = Seq(
+            'id -> generateZone.id,
+            'name -> generateZone.zoneName,
+            'provider -> generateZone.provider,
+            'adminGroupId -> generateZone.groupId,
+            'response -> generateZone.response.map(r => toPB(r).toByteArray).orNull,
+            'data -> toPB(generateZone).toByteArray
+          )
+          val updated = UPDATE_GENERATE_ZONE.bindByName(params: _*).update().apply()
+          if (updated == 0) INSERT_GENERATE_ZONE.bindByName(params: _*).update().apply()
+        }
+        generateZone
+      }.handleErrorWith {
+        case e: SQLException if e.getErrorCode == DUPLICATE_KEY_ERROR_CODE =>
+          IO.raiseError(DuplicateGenerateZoneNameError(generateZone.zoneName))
+        case e => IO.raiseError(e)
+      }
+    }
 
 
   private def deleteGeneratedZone(generateZone: GenerateZone)(implicit session: DBSession): GenerateZone = {

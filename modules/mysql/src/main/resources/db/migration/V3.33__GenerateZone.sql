@@ -13,6 +13,6 @@ CREATE TABLE generate_zone (
   response BLOB NOT NULL,
   data BLOB NOT NULL,
   PRIMARY KEY (id),
-  INDEX generate_zone_name_index (name),
+  UNIQUE INDEX generate_zone_name_index (name),
   INDEX generate_zone_admin_group_id_index (admin_group_id)
 );

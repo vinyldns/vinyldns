@@ -177,7 +177,16 @@ class GenerateZoneService(
       )
       zoneToGenerate = GenerateZone(request).copy(response = Some(zoneGenerateResponse))
       _ <- logger.info(s"zone generation response: Create: $zoneToGenerate").toResult
-      _ <- generateZoneRepository.save(zoneToGenerate).toResult[GenerateZone]
+      // A concurrent create can get past generateZoneDoesNotExist; the unique name index rejects
+      // this save. Don't roll back at the provider: that zone belongs to the winning request.
+      _ <- generateZoneRepository
+        .save(zoneToGenerate)
+        .handleErrorWith {
+          case DuplicateGenerateZoneNameError(zoneName) =>
+            IO.raiseError(ZoneAlreadyExistsError(s"Zone with name $zoneName already exists."))
+          case e => IO.raiseError(e)
+        }
+        .toResult[GenerateZone]
 
     } yield zoneToGenerate
 

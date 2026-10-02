@@ -238,6 +238,18 @@ class GenerateZoneServiceSpec
       result shouldBe a[ZoneAlreadyExistsError]
     }
 
+    "return ZoneAlreadyExistsError when a concurrent create wins the unique name index" in {
+      doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+      doReturn(IO.raiseError(DuplicateGenerateZoneNameError(generatePdnsZoneAuthorized.zoneName)))
+        .when(mockGenerateZoneRepository)
+        .save(any[GenerateZone])
+
+      val result =
+        underTest.handleGenerateZoneRequest(generatePdnsZoneAuthorized, okAuth).value.unsafeRunSync().swap.toOption.get
+      result shouldBe a[ZoneAlreadyExistsError]
+    }
+
     "return an error response for invalid request" in {
       doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
       doReturn(IO.pure(generatePdnsZone))
