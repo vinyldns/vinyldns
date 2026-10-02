@@ -16,7 +16,7 @@
 
 package vinyldns.mysql.repository
 
-import cats.effect.IO
+import cats.effect.{IO, Timer}
 import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
@@ -27,6 +27,9 @@ import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 
 import java.sql.SQLException
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 
 class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufConversions with Monitored {
@@ -39,8 +42,15 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
   // an unbounded parameterized query (mirrors MySqlZoneRepository.buildZoneSearchAccessorList).
   final val MAX_ACCESSORS = 30
 
+  private final val INITIAL_RETRY_DELAY = 1.millis
+
+  private implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
+
   // MySQL ER_DUP_ENTRY
   private final val DUPLICATE_KEY_ERROR_CODE = 1062
+
+  // ER_LOCK_DEADLOCK and ER_LOCK_WAIT_TIMEOUT
+  private final val TRANSIENT_ERROR_CODES = Set(1213, 1205)
 
   // Not an upsert: ON DUPLICATE KEY UPDATE would also fire on the unique name index and
   // silently overwrite another zone's row. save() updates by id, then inserts if new.
@@ -99,25 +109,44 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
 
   def save(generateZone: GenerateZone): IO[GenerateZone] =
     monitor("repo.generateZone.save") {
-      IO {
-        DB.localTx { implicit s =>
-          val params = Seq(
-            'id -> generateZone.id,
-            'name -> generateZone.zoneName,
-            'provider -> generateZone.provider,
-            'adminGroupId -> generateZone.groupId,
-            'response -> generateZone.response.map(r => toPB(r).toByteArray).orNull,
-            'data -> toPB(generateZone).toByteArray
-          )
-          val updated = UPDATE_GENERATE_ZONE.bindByName(params: _*).update().apply()
-          if (updated == 0) INSERT_GENERATE_ZONE.bindByName(params: _*).update().apply()
-        }
-        generateZone
-      }.handleErrorWith {
-        case e: SQLException if e.getErrorCode == DUPLICATE_KEY_ERROR_CODE =>
-          IO.raiseError(DuplicateGenerateZoneNameError(generateZone.zoneName))
-        case e => IO.raiseError(e)
+      retryOnTransient(saveTx(generateZone), INITIAL_RETRY_DELAY, MAX_RETRIES)
+    }
+
+  private def saveTx(generateZone: GenerateZone): IO[GenerateZone] =
+    IO {
+      DB.localTx { implicit s =>
+        val params = Seq(
+          'id -> generateZone.id,
+          'name -> generateZone.zoneName,
+          'provider -> generateZone.provider,
+          'adminGroupId -> generateZone.groupId,
+          'response -> generateZone.response.map(r => toPB(r).toByteArray).orNull,
+          'data -> toPB(generateZone).toByteArray
+        )
+        val updated = UPDATE_GENERATE_ZONE.bindByName(params: _*).update().apply()
+        if (updated == 0) INSERT_GENERATE_ZONE.bindByName(params: _*).update().apply()
       }
+      generateZone
+    }.handleErrorWith {
+      case e: SQLException if e.getErrorCode == DUPLICATE_KEY_ERROR_CODE =>
+        IO.raiseError(DuplicateGenerateZoneNameError(generateZone.zoneName))
+      case e => IO.raiseError(e)
+    }
+
+  // The unique name index means concurrent saves contend on it, so a transaction can come back a
+  // deadlock victim or hit a lock wait timeout. Both are transient, so retry with backoff as
+  // MySqlZoneRepository does for the zone table's unique name. A duplicate name is not retried:
+  // it's a real conflict and will fail the same way every time.
+  private def retryOnTransient(
+      save: IO[GenerateZone],
+      delay: FiniteDuration,
+      maxRetries: Int
+  ): IO[GenerateZone] =
+    save.handleErrorWith {
+      case e: SQLException if TRANSIENT_ERROR_CODES.contains(e.getErrorCode) && maxRetries > 0 =>
+        logger.warn(s"Transient error saving generated zone, retrying in $delay: ${e.getMessage}")
+        IO.sleep(delay) *> retryOnTransient(save, delay * 2, maxRetries - 1)
+      case e => IO.raiseError(e)
     }
 
 

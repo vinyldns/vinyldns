@@ -16,7 +16,8 @@
 
 package vinyldns.mysql.repository
 
-import cats.effect.IO
+import cats.effect.{ContextShift, IO}
+import cats.implicits._
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -28,6 +29,8 @@ import vinyldns.core.domain.zone.generate._
 import vinyldns.mysql.{TestMySqlInstance, TransactionProvider}
 
 import java.util.UUID
+
+import scala.concurrent.ExecutionContext
 
 
 class MySqlGenerateZoneRepositoryIntegrationSpec
@@ -99,6 +102,22 @@ class MySqlGenerateZoneRepositoryIntegrationSpec
       a[DuplicateGenerateZoneNameError] shouldBe thrownBy(repo.save(duplicate).unsafeRunSync())
       repo.getGenerateZoneByName(generateBindZone.zoneName).unsafeRunSync() shouldBe Some(generateBindZone)
       repo.getGenerateZoneById(duplicate.id).unsafeRunSync() shouldBe None
+    }
+    // The functional tests create a dozen generated zones at once during fixture setup, which
+    // contends on the unique name index; transient lock failures must be retried, not surfaced.
+    "save concurrent zones with distinct names without a transient failure" in {
+      implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+      val concurrent = (1 to 12).map { n =>
+        generateBindZone.copy(
+          zoneName = s"concurrent-$n.",
+          id = UUID.randomUUID().toString
+        )
+      }.toList
+
+      concurrent.parTraverse(repo.save).unsafeRunSync() should contain theSameElementsAs concurrent
+      concurrent.foreach { z =>
+        repo.getGenerateZoneByName(z.zoneName).unsafeRunSync() shouldBe Some(z)
+      }
     }
   }
   "MySqlGenerateZoneRepository.delete" should {

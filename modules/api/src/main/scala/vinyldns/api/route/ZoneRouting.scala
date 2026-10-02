@@ -54,6 +54,10 @@ class ZoneRoute(
 
   def handleErrors(errors: Throwable): PartialFunction[Throwable, Route] = {
     case ZoneAlreadyExistsError(msg) => complete(StatusCodes.Conflict, msg)
+    // Safety net for the generated-zone unique name index: a conflict reaching the route from
+    // any path (not just create) is a 409, never an unhandled 500.
+    case DuplicateGenerateZoneNameError(zoneName) =>
+      complete(StatusCodes.Conflict, s"Zone with name $zoneName already exists.")
     case ConnectionFailed(_, msg) => complete(StatusCodes.BadRequest, msg)
     case ZoneValidationFailed(zone, errorList, _) =>
       complete(StatusCodes.BadRequest, ZoneRejected(zone, errorList))
