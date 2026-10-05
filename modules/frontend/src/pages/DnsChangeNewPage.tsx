@@ -20,6 +20,7 @@ import { DnsChangeForm } from "../components/dnsChanges/DnsChangeForm";
 import { useDnsChanges } from "../hooks/useDnsChanges";
 import { useAlerts } from "../contexts/AlertContext";
 import { useBreadcrumbs } from "../contexts/BreadcrumbContext";
+import { DiscardChangesModal } from "../components/modals/DiscardChangesModal";
 import type { CreateDnsChangeRequest } from "../types/dnsChange";
 
 /**
@@ -120,6 +121,11 @@ export function DnsChangeNewPage() {
     }
   };
 
+  const confirmLeave = () => {
+    setShowLeaveConfirm(false);
+    navigate("/dnschanges");
+  };
+
   const handleSubmit = (
     data: CreateDnsChangeRequest,
     allowManualReview: boolean,
@@ -191,138 +197,15 @@ export function DnsChangeNewPage() {
         onUnsavedChange={setHasUnsaved}
       />
 
-      {showLeaveConfirm && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="leave-confirm-title"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowLeaveConfirm(false);
-          }}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(15,23,42,0.65)",
-            backdropFilter: "blur(3px)",
-            zIndex: 1080,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1.5rem",
-          }}
-        >
-          <div
-            style={{
-              background: isDark ? "#1e293b" : "#ffffff",
-              border: `1px solid ${isDark ? "#2d4163" : "#e8ecf0"}`,
-              borderRadius: "0.85rem",
-              boxShadow: "0 25px 60px rgba(0,0,0,0.4)",
-              width: "min(440px, 100%)",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.85rem",
-                padding: "1.1rem 1.4rem",
-                borderBottom: `1px solid ${isDark ? "#2d4163" : "#e8ecf0"}`,
-                background: isDark
-                  ? "linear-gradient(90deg,#1e293b,#162035)"
-                  : "linear-gradient(90deg,#ffffff,#f8fafd)",
-              }}
-            >
-              <span
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: "50%",
-                  background: "#fff7e0",
-                  color: "#d97706",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "1.05rem",
-                  flexShrink: 0,
-                }}
-              >
-                <i className="bi bi-exclamation-triangle-fill" />
-              </span>
-              <div style={{ flex: 1 }}>
-                <h6
-                  id="leave-confirm-title"
-                  style={{
-                    margin: 0,
-                    fontSize: "1rem",
-                    fontWeight: 700,
-                    color: isDark ? "#e2e8f0" : "#0d1b3e",
-                  }}
-                >
-                  Discard batch change?
-                </h6>
-                <div
-                  style={{
-                    marginTop: 2,
-                    fontSize: "0.75rem",
-                    color: isDark ? "#94a3b8" : "#64748b",
-                  }}
-                >
-                  Any changes you have entered will be lost
-                </div>
-              </div>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "0.6rem",
-                padding: "0.9rem 1.4rem",
-                borderTop: `1px solid ${isDark ? "#2d4163" : "#e8ecf0"}`,
-                background: isDark ? "#162032" : "#f8fafd",
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setShowLeaveConfirm(false)}
-                style={{
-                  padding: "0.5rem 1.1rem",
-                  background: "transparent",
-                  border: `1px solid ${isDark ? "#2d4163" : "#d4dbe8"}`,
-                  color: isDark ? "#94a3b8" : "#334155",
-                  borderRadius: "0.5rem",
-                  cursor: "pointer",
-                  fontSize: "0.85rem",
-                  fontWeight: 500,
-                }}
-              >
-                Keep editing
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate("/dnschanges")}
-                style={{
-                  padding: "0.5rem 1.25rem",
-                  background: "linear-gradient(135deg,#ef4444,#dc2626)",
-                  border: "none",
-                  color: "#fff",
-                  borderRadius: "0.5rem",
-                  cursor: "pointer",
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                  boxShadow: "0 4px 12px rgba(220,38,38,0.35)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                <i className="bi bi-trash3-fill" />
-                Discard changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DiscardChangesModal
+        isOpen={showLeaveConfirm}
+        title="Discard batch change?"
+        description="All changes entered so far will be lost. This action cannot be undone."
+        cancelLabel="Keep editing"
+        confirmLabel="Discard changes"
+        onClose={() => setShowLeaveConfirm(false)}
+        onConfirm={confirmLeave}
+      />
     </div>
   );
 }

@@ -23,11 +23,12 @@ import { GroupMemberList } from "../components/groups/GroupMemberList";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { Pagination } from "../components/common/Pagination";
 import { TimeFilterDropdown } from "../components/common/TimeFilterDropdown";
+import { GroupSnapshotModal } from "../components/modals/GroupSnapshotModal";
 import { useAlerts } from "../contexts/AlertContext";
 import { useProfile } from "../contexts/ProfileContext";
 import { useBreadcrumbs } from "../contexts/BreadcrumbContext";
 import { usePaging } from "../hooks/usePaging";
-import type { Group, GroupChange, GroupMember } from "../types/group";
+import type { Group, GroupChange } from "../types/group";
 
 type SortDir = "asc" | "desc" | null;
 function SortArrow({ dir }: { dir: SortDir }) {
@@ -70,10 +71,15 @@ export function GroupDetailPage() {
   const [newMemberIsAdmin, setNewMemberIsAdmin] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
-  const [groupModal, setGroupModal] = useState<{ title: string; group: Group } | null>(null);
-  const [chTimeRange, setChTimeRange] = useState<'all' | '1d' | '7d' | '30d' | '90d' | 'custom'>('all');
-  const [chDateFrom, setChDateFrom] = useState('');
-  const [chDateTo, setChDateTo] = useState('');
+  const [groupModal, setGroupModal] = useState<{
+    title: string;
+    group: Group;
+  } | null>(null);
+  const [chTimeRange, setChTimeRange] = useState<
+    "all" | "1d" | "7d" | "30d" | "90d" | "custom"
+  >("all");
+  const [chDateFrom, setChDateFrom] = useState("");
+  const [chDateTo, setChDateTo] = useState("");
   const [chTimeSort, setChTimeSort] = useState<SortDir>(null);
 
   const { data: group, isLoading } = useQuery({
@@ -363,7 +369,7 @@ export function GroupDetailPage() {
         </div>
         <button
           type="button"
-          className="btn btn-sm d-flex align-items-center gap-1 vds-btn-nav"
+          className="btn btn-sm d-flex align-items-center gap-1 vds-btn-flat"
           onClick={() => navigate(-1)}
         >
           <i className="bi bi-arrow-left" />
@@ -457,8 +463,8 @@ export function GroupDetailPage() {
             <span className="vds-member-badge ms-1">
               {membersLoading ? "…" : (memberListData?.length ?? 0)}
             </span>
-            {isGroupAdmin && (
-              showAddForm ? (
+            {isGroupAdmin &&
+              (showAddForm ? (
                 <div className="ms-auto d-flex align-items-center gap-2 flex-wrap vds-add-member-inline">
                   <span className="vds-add-member-inline__title">
                     <i className="bi bi-person-plus-fill" />
@@ -470,7 +476,7 @@ export function GroupDetailPage() {
                     </span>
                     <input
                       type="text"
-                      className="form-control form-control-sm vds-add-member-inline__input"
+                      className="form-control form-control-sm form-control--add vds-add-member-inline__input"
                       placeholder="e.g. john"
                       value={newMemberLogin}
                       autoFocus
@@ -498,33 +504,52 @@ export function GroupDetailPage() {
                       checked={newMemberIsAdmin}
                       onChange={(e) => setNewMemberIsAdmin(e.target.checked)}
                     />
-                    <span className="vds-add-member-inline__switch-label">Group Manager</span>
+                    <span className="vds-add-member-inline__switch-label">
+                      Group Manager
+                    </span>
                   </label>
                   <button
                     className="btn btn-sm d-flex align-items-center gap-1 vds-add-member-inline__submit"
-                    disabled={!newMemberLogin.trim() || addMemberMutation.isPending}
-                    onClick={() => addMemberMutation.mutate({ login: newMemberLogin.trim(), makeAdmin: newMemberIsAdmin })}
+                    disabled={
+                      !newMemberLogin.trim() || addMemberMutation.isPending
+                    }
+                    onClick={() =>
+                      addMemberMutation.mutate({
+                        login: newMemberLogin.trim(),
+                        makeAdmin: newMemberIsAdmin,
+                      })
+                    }
                   >
-                    {addMemberMutation.isPending
-                      ? <><span className="spinner-border spinner-border-sm vds-spinner-xs" /> Adding...</>
-                      : <><i className="bi bi-person-check-fill" /> Add</>}
+                    {addMemberMutation.isPending ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm vds-spinner-xs" />{" "}
+                        Adding...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-person-check-fill" /> Add
+                      </>
+                    )}
                   </button>
                   <button
                     className="btn btn-sm d-flex align-items-center gap-1 vds-btn-flat"
-                    onClick={() => { setShowAddForm(false); setNewMemberLogin(''); setNewMemberIsAdmin(false); }}
+                    onClick={() => {
+                      setShowAddForm(false);
+                      setNewMemberLogin("");
+                      setNewMemberIsAdmin(false);
+                    }}
                   >
                     <i className="bi bi-x-lg" /> Cancel
                   </button>
                 </div>
               ) : (
                 <button
-                  className="btn btn-sm ms-auto d-flex align-items-center gap-1 vds-member-toggle-btn vds-btn-nav"
+                  className="btn btn-sm ms-auto d-flex align-items-center gap-1 vds-member-toggle-btn vds-btn-nav--add-member"
                   onClick={() => setShowAddForm(true)}
                 >
                   <i className="bi bi-person-plus-fill" /> Add Member
                 </button>
-              )
-            )}
+              ))}
           </div>
           <div className="p-3">
             {membersLoading ? (
@@ -686,52 +711,80 @@ export function GroupDetailPage() {
                       .map((change: GroupChange) => {
                         const ts = formatChangeTime(change.created);
                         return (
-                        <tr key={change.id}>
-                          <td className="vds-table-secondary">
-                            <div className="vds-change-time-date">{ts.date},</div>
-                            <div className="vds-change-time-clock">{ts.time}</div>
-                          </td>
-                          <td className="vds-table-muted vds-table-mono">
-                            {change.id}
-                          </td>
-                          <td>
-                            <span
-                              className={`badge vds-change-badge vds-change-badge--${(change.changeType ?? "").toLowerCase()}`}
-                            >
-                              {change.changeType}
-                            </span>
-                          </td>
-                        <td className="vds-table-secondary">
-                          {change.groupChangeMessage
-                            ? change.groupChangeMessage.split('. ').filter(Boolean).map((sentence, i) => (
-                                <div key={i}>{sentence}{sentence.endsWith('.') ? '' : '.'}</div>
-                              ))
-                            : '—'}
-                        </td>
-                        <td>
-                          <div className="d-flex flex-column gap-1">
-                            {change.newGroup && (
-                              <button
-                                className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                onClick={() => setGroupModal({ title: change.changeType === 'Create' ? 'Created Group' : 'New Group', group: change.newGroup! })}
+                          <tr key={change.id}>
+                            <td className="vds-table-secondary">
+                              <div className="vds-change-time-date">
+                                {ts.date},
+                              </div>
+                              <div className="vds-change-time-clock">
+                                {ts.time}
+                              </div>
+                            </td>
+                            <td className="vds-table-muted vds-table-mono">
+                              {change.id}
+                            </td>
+                            <td>
+                              <span
+                                className={`badge vds-change-badge vds-change-badge--${(change.changeType ?? "").toLowerCase()}`}
                               >
-                                <i className="bi bi-eye" />
-                                {change.changeType === 'Create' ? 'View created group' : 'View new group'}
-                              </button>
-                            )}
-                            {change.changeType === 'Update' && change.oldGroup && (
-                              <button
-                                className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                onClick={() => setGroupModal({ title: 'Old Group', group: change.oldGroup! })}
-                              >
-                                <i className="bi bi-clock-history" />
-                                View old group
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                        <td className="vds-table-secondary">{change.userName ?? change.userId}</td>
-                      </tr>
+                                {change.changeType}
+                              </span>
+                            </td>
+                            <td className="vds-table-secondary">
+                              {change.groupChangeMessage
+                                ? change.groupChangeMessage
+                                    .split(". ")
+                                    .filter(Boolean)
+                                    .map((sentence, i) => (
+                                      <div key={i}>
+                                        {sentence}
+                                        {sentence.endsWith(".") ? "" : "."}
+                                      </div>
+                                    ))
+                                : "—"}
+                            </td>
+                            <td>
+                              <div className="d-flex flex-column gap-1">
+                                {change.newGroup && (
+                                  <button
+                                    className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                    onClick={() =>
+                                      setGroupModal({
+                                        title:
+                                          change.changeType === "Create"
+                                            ? "Created Group"
+                                            : "New Group",
+                                        group: change.newGroup!,
+                                      })
+                                    }
+                                  >
+                                    <i className="bi bi-eye" />
+                                    {change.changeType === "Create"
+                                      ? "View created group"
+                                      : "View new group"}
+                                  </button>
+                                )}
+                                {change.changeType === "Update" &&
+                                  change.oldGroup && (
+                                    <button
+                                      className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                      onClick={() =>
+                                        setGroupModal({
+                                          title: "Old Group",
+                                          group: change.oldGroup!,
+                                        })
+                                      }
+                                    >
+                                      <i className="bi bi-clock-history" />
+                                      View old group
+                                    </button>
+                                  )}
+                              </div>
+                            </td>
+                            <td className="vds-table-secondary">
+                              {change.userName ?? change.userId}
+                            </td>
+                          </tr>
                         );
                       })}
                   </tbody>
@@ -751,96 +804,12 @@ export function GroupDetailPage() {
       )}
 
       {/* ── Group Snapshot Modal (rendered at page level, outside tabs) ── */}
-      {groupModal && (
-        <div
-          className="modal d-block vds-group-modal-backdrop"
-          onClick={() => setGroupModal(null)}
-        >
-          <div
-            className="modal-dialog modal-dialog-centered"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-content vds-group-modal-content">
-              <div className="vds-group-modal-header">
-                <i className="bi bi-info-circle-fill text-primary" />
-                <h6 className="modal-title vds-group-modal-title">
-                  {groupModal.title}
-                </h6>
-                <button
-                  className="btn-close ms-auto"
-                  onClick={() => setGroupModal(null)}
-                />
-              </div>
-              <div className="modal-body px-4 py-3">
-                {(
-                  [
-                    { label: "Group ID", value: groupModal.group.id },
-                    { label: "Group Name", value: groupModal.group.name },
-                    { label: "Email", value: groupModal.group.email },
-                    {
-                      label: "Description",
-                      value: groupModal.group.description ?? null,
-                    },
-                    { label: "Status", value: groupModal.group.status ?? null },
-                    {
-                      label: "Created",
-                      value: groupModal.group.created
-                        ? new Date(groupModal.group.created).toLocaleString()
-                        : null,
-                    },
-                    {
-                      label: "Member IDs",
-                      value:
-                        groupModal.group.members
-                          ?.map((m: GroupMember) => m.id)
-                          .join("\n") ?? null,
-                      mono: true,
-                    },
-                    {
-                      label: "Admin IDs",
-                      value:
-                        groupModal.group.admins
-                          ?.map((a: GroupMember) => a.id)
-                          .join("\n") ?? null,
-                      mono: true,
-                    },
-                  ] as Array<{
-                    label: string;
-                    value: string | null;
-                    mono?: boolean;
-                  }>
-                )
-                  .filter((row) => row.value)
-                  .map((row) => (
-                    <div key={row.label} className="mb-3">
-                      <div className="vds-group-modal-label">{row.label}</div>
-                      {row.mono ? (
-                        <textarea
-                          readOnly
-                          className="form-control form-control-sm vds-group-modal-textarea"
-                          rows={Math.min(row.value!.split("\n").length, 4)}
-                          value={row.value!}
-                        />
-                      ) : (
-                        <div className="fw-semibold vds-group-modal-value">
-                          {row.value}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
-              <div className="modal-footer px-4 py-2 vds-group-modal-footer">
-                <button
-                  className="btn btn-sm btn-outline-secondary"
-                  onClick={() => setGroupModal(null)}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <GroupSnapshotModal
+        isOpen={Boolean(groupModal)}
+        title={groupModal?.title ?? ""}
+        group={groupModal?.group ?? group}
+        onClose={() => setGroupModal(null)}
+      />
     </div>
   );
 }

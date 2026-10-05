@@ -14,27 +14,69 @@
  * limitations under the License.
  */
 
-import React, { useEffect } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
-import type { RecordSet, RecordType, RecordData } from '../../types/record';
-import type { Group } from '../../types/group';
+import React, { useEffect } from "react";
+import { useForm, useFieldArray } from "react-hook-form";
+import type { RecordSet, RecordType, RecordData } from "../../types/record";
+import type { Group } from "../../types/group";
 
 const ALL_RECORD_TYPES: RecordType[] = [
-  'A', 'AAAA', 'CNAME', 'DS', 'MX', 'NAPTR', 'NS', 'PTR', 'SSHFP', 'SRV', 'TXT',
+  "A",
+  "AAAA",
+  "CNAME",
+  "DS",
+  "MX",
+  "NAPTR",
+  "NS",
+  "PTR",
+  "SSHFP",
+  "SRV",
+  "TXT",
 ];
 
-const SINGLE_RECORD_TYPES: RecordType[] = ['A', 'AAAA', 'CNAME', 'PTR', 'TXT'];
+const SINGLE_RECORD_TYPES: RecordType[] = ["A", "AAAA", "CNAME", "PTR", "TXT"];
 
 const emptyRecord = (type: RecordType): RecordData => {
   switch (type) {
-    case 'MX':     return { preference: 10, exchange: '' };
-    case 'SRV':    return { priority: 0, weight: 0, port: 0, target: '' };
-    case 'SOA':    return { mname: '', rname: '', serial: 1, refresh: 28800, retry: 7200, expire: 604800, minimum: 86400 };
-    case 'DS':     return { keytag: 0, algorithm: undefined as unknown as number, digesttype: undefined as unknown as number, digest: '' };
-    case 'CAA':    return { flags: 0, tag: '', value: '' };
-    case 'SSHFP':  return { algorithm: undefined as unknown as number, fingerprintType: undefined as unknown as number, fingerprint: '' };
-    case 'NAPTR':  return { order: 0, preference: 0, flags: '', service: '', regexp: '', replacement: '' };
-    default:       return {};
+    case "MX":
+      return { preference: 10, exchange: "" };
+    case "SRV":
+      return { priority: 0, weight: 0, port: 0, target: "" };
+    case "SOA":
+      return {
+        mname: "",
+        rname: "",
+        serial: 1,
+        refresh: 28800,
+        retry: 7200,
+        expire: 604800,
+        minimum: 86400,
+      };
+    case "DS":
+      return {
+        keytag: 0,
+        algorithm: undefined as unknown as number,
+        digesttype: undefined as unknown as number,
+        digest: "",
+      };
+    case "CAA":
+      return { flags: 0, tag: "", value: "" };
+    case "SSHFP":
+      return {
+        algorithm: undefined as unknown as number,
+        fingerprintType: undefined as unknown as number,
+        fingerprint: "",
+      };
+    case "NAPTR":
+      return {
+        order: 0,
+        preference: 0,
+        flags: "",
+        service: "",
+        regexp: "",
+        replacement: "",
+      };
+    default:
+      return {};
   }
 };
 
@@ -54,58 +96,92 @@ interface RecordFormProps {
   initialData?: RecordSet;
   onSubmit: (data: Partial<RecordSet>) => void;
   onCancel: () => void;
-  mode: 'create' | 'edit';
+  mode: "create" | "edit";
   isSharedZone?: boolean;
   isReverseZone?: boolean;
   isLoading?: boolean;
   allGroups?: Group[];
 }
 
-export function RecordForm({ zoneId, zoneName, initialData, onSubmit, onCancel, mode, isSharedZone = false, isReverseZone = false, isLoading = false, allGroups = [] }: RecordFormProps) {
-  const allowedTypes = ALL_RECORD_TYPES;  const { register, control, handleSubmit, watch, reset, setValue,
-    formState: { errors, isSubmitting } } = useForm<RecordFormValues>({
+export function RecordForm({
+  zoneId,
+  zoneName,
+  initialData,
+  onSubmit,
+  onCancel,
+  mode,
+  isSharedZone = false,
+  isReverseZone = false,
+  isLoading = false,
+  allGroups = [],
+}: RecordFormProps) {
+  const allowedTypes = ALL_RECORD_TYPES;
+  const {
+    register,
+    control,
+    handleSubmit,
+    watch,
+    reset,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<RecordFormValues>({
     defaultValues: {
-      name: initialData?.name ?? '',
-      type: initialData?.type ?? (isReverseZone ? 'PTR' : 'A'),
-      ttl:  initialData?.ttl ?? 300,
-      records: initialData?.records?.length ? initialData.records : [emptyRecord(initialData?.type ?? 'A')],
-      ownerGroupId: initialData?.ownerGroupId ?? '',
-      nsText: initialData?.type === 'NS'
-        ? (initialData.records ?? []).map((r) => ((r as { nsdname: string }).nsdname ?? '')).join('\n')
-        : '',
-      ptrText: initialData?.type === 'PTR'
-        ? (initialData.records ?? []).map((r) => ((r as { ptrdname: string }).ptrdname ?? '')).join('\n')
-        : '',
+      name: initialData?.name ?? "",
+      type: initialData?.type ?? (isReverseZone ? "PTR" : "A"),
+      ttl: initialData?.ttl ?? 300,
+      records: initialData?.records?.length
+        ? initialData.records
+        : [emptyRecord(initialData?.type ?? "A")],
+      ownerGroupId: initialData?.ownerGroupId ?? "",
+      nsText:
+        initialData?.type === "NS"
+          ? (initialData.records ?? [])
+              .map((r) => (r as { nsdname: string }).nsdname ?? "")
+              .join("\n")
+          : "",
+      ptrText:
+        initialData?.type === "PTR"
+          ? (initialData.records ?? [])
+              .map((r) => (r as { ptrdname: string }).ptrdname ?? "")
+              .join("\n")
+          : "",
     },
   });
 
-  const selectedType = watch('type');
-  const { fields, append, remove, replace, update } = useFieldArray({ control, name: 'records' });
+  const selectedType = watch("type");
+  const { fields, append, remove, replace, update } = useFieldArray({
+    control,
+    name: "records",
+  });
 
   useEffect(() => {
-    if (mode === 'create') {
+    if (mode === "create") {
       replace([emptyRecord(selectedType)]);
-      setValue('nsText', '');
-      setValue('ptrText', '');
+      setValue("nsText", "");
+      setValue("ptrText", "");
     }
   }, [selectedType, mode, replace, setValue]);
 
   const handleFormSubmit = (values: RecordFormValues) => {
     let records: RecordData[] = values.records;
-    if (values.type === 'NS') {
-      records = (values.nsText ?? '')
-        .split('\n').map((l) => l.trim()).filter(Boolean)
+    if (values.type === "NS") {
+      records = (values.nsText ?? "")
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean)
         .map((nsdname) => ({ nsdname }));
-    } else if (values.type === 'PTR') {
-      records = (values.ptrText ?? '')
-        .split('\n').map((l) => l.trim()).filter(Boolean)
+    } else if (values.type === "PTR") {
+      records = (values.ptrText ?? "")
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean)
         .map((ptrdname) => ({ ptrdname }));
     }
     onSubmit({
       zoneId,
-      name:       values.name,
-      type:       values.type,
-      ttl:        Number(values.ttl),
+      name: values.name,
+      type: values.type,
+      ttl: Number(values.ttl),
       records,
       ownerGroupId: values.ownerGroupId || undefined,
     });
@@ -113,9 +189,13 @@ export function RecordForm({ zoneId, zoneName, initialData, onSubmit, onCancel, 
 
   const handleClear = () => {
     reset({
-      name: '', type: 'A', ttl: 300,
-      records: [emptyRecord('A')], ownerGroupId: '',
-      nsText: '', ptrText: '',
+      name: "",
+      type: "A",
+      ttl: 300,
+      records: [emptyRecord("A")],
+      ownerGroupId: "",
+      nsText: "",
+      ptrText: "",
     });
   };
   const isSingle = SINGLE_RECORD_TYPES.includes(selectedType);
@@ -126,37 +206,53 @@ export function RecordForm({ zoneId, zoneName, initialData, onSubmit, onCancel, 
         {/* Name */}
         <div className="col-md-4">
           <label className="form-label fw-semibold small">
-            <i className="bi bi-fonts me-1 text-primary" />Record Name
+            <i className="bi bi-fonts me-1 text-primary" />
+            Record Name
             <span className="text-danger ms-1">*</span>
           </label>
           <div className="input-group input-group-sm">
             <input
-              {...register('name', { required: 'Name is required' })}
-              className={`form-control${errors.name ? ' is-invalid' : ''}`}
-              placeholder={selectedType === 'PTR' ? 'e.g. 192.168.1.10 or 2001:db8::1' : 'e.g. www'}
-              disabled={mode === 'edit'}
+              {...register("name", { required: "Name is required" })}
+              className={`form-control${errors.name ? " is-invalid" : ""}`}
+              placeholder={
+                selectedType === "PTR"
+                  ? "e.g. 192.168.1.10 or 2001:db8::1"
+                  : "e.g. www"
+              }
+              disabled={mode === "edit"}
             />
-            <span className="input-group-text text-muted small">.{zoneName}</span>
+            <span className="input-group-text text-muted small">
+              .{zoneName}
+            </span>
           </div>
-          {errors.name && <div className="invalid-feedback d-block">{errors.name.message}</div>}
-          {mode === 'create' && (
-            <div className="form-text">Use <code>@</code> for the zone apex.</div>
+          {errors.name && (
+            <div className="invalid-feedback d-block">
+              {errors.name.message}
+            </div>
+          )}
+          {mode === "create" && (
+            <div className="form-text">
+              Use <code>@</code> for the zone apex.
+            </div>
           )}
         </div>
 
         {/* Type */}
         <div className="col-md-2">
           <label className="form-label fw-semibold small">
-            <i className="bi bi-tag me-1 text-primary" />Type
+            <i className="bi bi-tag me-1 text-primary" />
+            Type
             <span className="text-danger ms-1">*</span>
           </label>
           <select
-            {...register('type', { required: true })}
+            {...register("type", { required: true })}
             className="form-select form-select-sm"
-            disabled={mode === 'edit'}
+            disabled={mode === "edit"}
           >
             {allowedTypes.map((t) => (
-              <option key={t} value={t}>{t}</option>
+              <option key={t} value={t}>
+                {t}
+              </option>
             ))}
           </select>
         </div>
@@ -164,13 +260,14 @@ export function RecordForm({ zoneId, zoneName, initialData, onSubmit, onCancel, 
         {/* TTL */}
         <div className="col-md-2">
           <label className="form-label fw-semibold small">
-            <i className="bi bi-clock me-1 text-primary" />TTL (seconds)
+            <i className="bi bi-clock me-1 text-primary" />
+            TTL (seconds)
             <span className="text-danger ms-1">*</span>
           </label>
           <input
             type="number"
-            {...register('ttl', { required: true, min: 0 })}
-            className={`form-control form-control-sm${errors.ttl ? ' is-invalid' : ''}`}
+            {...register("ttl", { required: true, min: 0 })}
+            className={`form-control form-control-sm${errors.ttl ? " is-invalid" : ""}`}
             placeholder="300"
           />
         </div>
@@ -179,57 +276,77 @@ export function RecordForm({ zoneId, zoneName, initialData, onSubmit, onCancel, 
         {isSharedZone && (
           <div className="col-md-4">
             <label className="form-label fw-semibold small">
-              <i className="bi bi-people me-1 text-primary" />Owner Group
+              <i className="bi bi-people me-1 text-primary" />
+              Owner Group
               <span className="text-danger ms-1">*</span>
             </label>
             <select
-              {...register('ownerGroupId', { required: 'Owner Group is required for shared zones' })}
-              className={`form-select form-select-sm${errors.ownerGroupId ? ' is-invalid' : ''}`}
+              {...register("ownerGroupId", {
+                required: "Owner Group is required for shared zones",
+              })}
+              className={`form-select form-select-sm${errors.ownerGroupId ? " is-invalid" : ""}`}
             >
               <option value="">-- Select --</option>
-              {allGroups.slice().sort((a, b) => a.name.localeCompare(b.name)).map((g) => (
-                <option key={g.id} value={g.id}>{g.name}</option>
-              ))}
+              {allGroups
+                .slice()
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
             </select>
             {errors.ownerGroupId && (
-              <div className="invalid-feedback">{errors.ownerGroupId.message}</div>
+              <div className="invalid-feedback">
+                {errors.ownerGroupId.message}
+              </div>
             )}
           </div>
         )}
 
         {/* Ownership Transfer fields — read-only, shown in edit mode when present */}
-        {mode === 'edit' && isSharedZone && initialData?.recordSetGroupChange?.requestedOwnerGroupId &&
-          initialData.recordSetGroupChange.requestedOwnerGroupId !== 'null' && (
-          <div className="col-md-4">
-            <label className="form-label fw-semibold small">
-              <i className="bi bi-arrow-left-right me-1 text-primary" />Ownership Transfer Group
-            </label>
-            <input
-              type="text"
-              className="form-control form-control-sm"
-              readOnly
-              value={
-                allGroups.find(g => g.id === initialData.recordSetGroupChange!.requestedOwnerGroupId)?.name
-                ?? initialData.ownerGroupName
-                ?? initialData.recordSetGroupChange.requestedOwnerGroupId
-              }
-            />
-          </div>
-        )}
+        {mode === "edit" &&
+          isSharedZone &&
+          initialData?.recordSetGroupChange?.requestedOwnerGroupId &&
+          initialData.recordSetGroupChange.requestedOwnerGroupId !== "null" && (
+            <div className="col-md-4">
+              <label className="form-label fw-semibold small">
+                <i className="bi bi-arrow-left-right me-1 text-primary" />
+                Ownership Transfer Group
+              </label>
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                readOnly
+                value={
+                  allGroups.find(
+                    (g) =>
+                      g.id ===
+                      initialData.recordSetGroupChange!.requestedOwnerGroupId,
+                  )?.name ??
+                  initialData.ownerGroupName ??
+                  initialData.recordSetGroupChange.requestedOwnerGroupId
+                }
+              />
+            </div>
+          )}
 
-        {mode === 'edit' && isSharedZone && initialData?.recordSetGroupChange?.ownershipTransferStatus && (
-          <div className="col-md-4">
-            <label className="form-label fw-semibold small">
-              <i className="bi bi-info-circle me-1 text-primary" />Ownership Transfer Status
-            </label>
-            <input
-              type="text"
-              className="form-control form-control-sm"
-              readOnly
-              value={initialData.recordSetGroupChange.ownershipTransferStatus}
-            />
-          </div>
-        )}
+        {mode === "edit" &&
+          isSharedZone &&
+          initialData?.recordSetGroupChange?.ownershipTransferStatus && (
+            <div className="col-md-4">
+              <label className="form-label fw-semibold small">
+                <i className="bi bi-info-circle me-1 text-primary" />
+                Ownership Transfer Status
+              </label>
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                readOnly
+                value={initialData.recordSetGroupChange.ownershipTransferStatus}
+              />
+            </div>
+          )}
       </div>
 
       {/* ── Record data rows ── */}
@@ -246,27 +363,31 @@ export function RecordForm({ zoneId, zoneName, initialData, onSubmit, onCancel, 
           </div>
         </div>
 
-        {selectedType === 'NS' ? (
+        {selectedType === "NS" ? (
           <div className="vds-record-data-row">
             <div className="flex-grow-1">
-              <label className="form-label small mb-1">NS Target FQDNs (one per line)</label>
+              <label className="form-label small mb-1">
+                NS Target FQDNs (one per line)
+              </label>
               <textarea
-                {...register('nsText')}
+                {...register("nsText")}
                 className="form-control form-control-sm"
                 rows={4}
-                placeholder={'ns1.example.com.\nns2.example.com.'}
+                placeholder={"ns1.example.com.\nns2.example.com."}
               />
             </div>
           </div>
-        ) : selectedType === 'PTR' ? (
+        ) : selectedType === "PTR" ? (
           <div className="vds-record-data-row">
             <div className="flex-grow-1">
-              <label className="form-label small mb-1">FQDN (one per line)</label>
+              <label className="form-label small mb-1">
+                FQDN (one per line)
+              </label>
               <textarea
-                {...register('ptrText')}
+                {...register("ptrText")}
                 className="form-control form-control-sm"
                 rows={4}
-                placeholder={'host1.example.com.\nhost2.example.com.'}
+                placeholder={"host1.example.com.\nhost2.example.com."}
               />
             </div>
           </div>
@@ -299,8 +420,12 @@ export function RecordForm({ zoneId, zoneName, initialData, onSubmit, onCancel, 
                       <button
                         type="button"
                         className="btn btn-sm btn-outline-danger vds-remove-record-btn"
-                        onClick={() => fields.length > 1 ? remove(idx) : replace([emptyRecord(selectedType)])}
-                        title={fields.length > 1 ? 'Remove row' : 'Clear row'}
+                        onClick={() =>
+                          fields.length > 1
+                            ? remove(idx)
+                            : replace([emptyRecord(selectedType)])
+                        }
+                        title={fields.length > 1 ? "Remove row" : "Clear row"}
                       >
                         <i className="bi bi-dash-circle" />
                       </button>
@@ -310,10 +435,13 @@ export function RecordForm({ zoneId, zoneName, initialData, onSubmit, onCancel, 
               ))}
             </div>
             {!isSingle && (
-              <button type="button"
+              <button
+                type="button"
                 className="btn btn-sm vds-add-record-btn mt-2 d-flex align-items-center gap-1"
-                onClick={() => append(emptyRecord(selectedType))}>
-                <i className="bi bi-plus-circle-fill" />Add Another
+                onClick={() => append(emptyRecord(selectedType))}
+              >
+                <i className="bi bi-plus-circle-fill" />
+                Add Another
               </button>
             )}
           </>
@@ -321,167 +449,287 @@ export function RecordForm({ zoneId, zoneName, initialData, onSubmit, onCancel, 
       </div>
 
       {/* Actions */}
-      <div className="vds-zone-form__actions d-flex justify-content-end gap-2 pt-2">
-        {mode === 'create' && (
-          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={handleClear}>
-            <i className="bi bi-eraser me-1" />Clear
+      <div className="vds-zone-form__actions d-flex justify-content-between align-items-center w-100 pt-2">
+        <div className="d-flex align-items-center gap-2">
+          {mode === "create" && (
+            <button
+              type="button"
+              className="vds-modal__btn vds-modal__btn--utility"
+              onClick={handleClear}
+            >
+              <i className="bi bi-eraser me-1" />
+              Clear
+            </button>
+          )}
+        </div>
+
+        <div className="d-flex align-items-center gap-2">
+          <button
+            type="button"
+            className="vds-modal__btn vds-modal__btn--secondary"
+            onClick={onCancel}
+          >
+            <i className="bi bi-x-circle me-1" />
+            Cancel
           </button>
-        )}
-        <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onCancel}>
-          <i className="bi bi-x-circle me-1" />Cancel
-        </button>
-        <button type="submit" className="btn btn-sm d-flex align-items-center gap-1 vds-btn-nav" disabled={isSubmitting || isLoading}>
-          {isLoading
-            ? <><span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />{mode === 'edit' ? 'Saving…' : 'Adding…'}</>
-            : <><i className={`bi bi-${mode === 'edit' ? 'save' : 'plus-circle-fill'} me-1`} />{mode === 'edit' ? 'Save Changes' : 'Add Record'}</>}
-        </button>
+          <button
+            type="submit"
+            className="vds-modal__btn vds-modal__btn--primary d-flex align-items-center gap-1"
+            disabled={isSubmitting || isLoading}
+          >
+            {isLoading ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-1"
+                  role="status"
+                  aria-hidden="true"
+                />
+                {mode === "edit" ? "Saving…" : "Adding…"}
+              </>
+            ) : (
+              <>
+                <i
+                  className={`bi bi-${mode === "edit" ? "save" : "plus-circle-fill"} me-1`}
+                />
+                {mode === "edit" ? "Save Changes" : "Add Record"}
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </form>
   );
 }
 
-
-function RecordDataFields({ type, index, register, errors }: {
+function RecordDataFields({
+  type,
+  index,
+  register,
+  errors,
+}: {
   type: RecordType;
   index: number;
-  register: ReturnType<typeof useForm<RecordFormValues>>['register'];
-  errors: ReturnType<typeof useForm<RecordFormValues>>['formState']['errors'];
+  register: ReturnType<typeof useForm<RecordFormValues>>["register"];
+  errors: ReturnType<typeof useForm<RecordFormValues>>["formState"]["errors"];
 }) {
   const p = `records.${index}` as const;
-  const err = (errors.records as Record<number, Record<string, { message?: string }>> | undefined)?.[index];
-  const cls = (field: string) => `form-control form-control-sm${err?.[field] ? ' is-invalid' : ''}`;
+  const err = (
+    errors.records as
+      Record<number, Record<string, { message?: string }>> | undefined
+  )?.[index];
+  const cls = (field: string) =>
+    `form-control form-control-sm${err?.[field] ? " is-invalid" : ""}`;
 
   switch (type) {
-    case 'A':
-    case 'AAAA':
+    case "A":
+    case "AAAA":
       return (
         <div className="flex-grow-1">
           <label className="form-label small mb-1">IP Address</label>
-          <input {...register(`${p}.address` as never, { required: 'Required' })}
-            className={cls('address')}
-            placeholder={type === 'A' ? '192.168.1.1' : '2001:db8::1'} />
+          <input
+            {...register(`${p}.address` as never, { required: "Required" })}
+            className={cls("address")}
+            placeholder={type === "A" ? "192.168.1.1" : "2001:db8::1"}
+          />
         </div>
       );
 
-    case 'CNAME':
+    case "CNAME":
       return (
         <div className="flex-grow-1">
           <label className="form-label small mb-1">CNAME Target FQDN</label>
-          <input {...register(`${p}.cname` as never, { required: 'Required' })}
-            className={cls('cname')} placeholder="target.example.com." />
+          <input
+            {...register(`${p}.cname` as never, { required: "Required" })}
+            className={cls("cname")}
+            placeholder="target.example.com."
+          />
         </div>
       );
 
-    case 'PTR':
+    case "PTR":
       return (
         <div className="flex-grow-1">
           <label className="form-label small mb-1">PTR Domain Name</label>
-          <input {...register(`${p}.ptrdname` as never, { required: 'Required' })}
-            className={cls('ptrdname')} placeholder="host.example.com." />
+          <input
+            {...register(`${p}.ptrdname` as never, { required: "Required" })}
+            className={cls("ptrdname")}
+            placeholder="host.example.com."
+          />
         </div>
       );
 
-    case 'NS':
+    case "NS":
       return (
         <div className="flex-grow-1">
           <label className="form-label small mb-1">Name Server</label>
-          <input {...register(`${p}.nsdname` as never, { required: 'Required' })}
-            className={cls('nsdname')} placeholder="ns1.example.com." />
+          <input
+            {...register(`${p}.nsdname` as never, { required: "Required" })}
+            className={cls("nsdname")}
+            placeholder="ns1.example.com."
+          />
         </div>
       );
 
-    case 'MX':
+    case "MX":
       return (
         <>
           <div style={{ width: 100 }}>
             <label className="form-label small mb-1">Preference</label>
-            <input type="number" {...register(`${p}.preference` as never, { required: true, min: 0 })}
-              className={cls('preference')} placeholder="10" />
+            <input
+              type="number"
+              {...register(`${p}.preference` as never, {
+                required: true,
+                min: 0,
+              })}
+              className={cls("preference")}
+              placeholder="10"
+            />
           </div>
           <div className="flex-grow-1">
             <label className="form-label small mb-1">Exchange</label>
-            <input {...register(`${p}.exchange` as never, { required: 'Required' })}
-              className={cls('exchange')} placeholder="mail.example.com." />
+            <input
+              {...register(`${p}.exchange` as never, { required: "Required" })}
+              className={cls("exchange")}
+              placeholder="mail.example.com."
+            />
           </div>
         </>
       );
 
-    case 'TXT':
+    case "TXT":
       return (
         <div className="flex-grow-1">
           <label className="form-label small mb-1">Text</label>
-          <textarea {...register(`${p}.text` as never, { required: 'Required' })}
-            className={cls('text')} rows={2} placeholder="v=spf1 include:example.com ~all" />
+          <textarea
+            {...register(`${p}.text` as never, { required: "Required" })}
+            className={cls("text")}
+            rows={2}
+            placeholder="v=spf1 include:example.com ~all"
+          />
         </div>
       );
 
-    case 'SRV':
+    case "SRV":
       return (
         <>
           <div style={{ width: 90 }}>
             <label className="form-label small mb-1">Priority</label>
-            <input type="number" {...register(`${p}.priority` as never)} className={cls('priority')} placeholder="0" />
+            <input
+              type="number"
+              {...register(`${p}.priority` as never)}
+              className={cls("priority")}
+              placeholder="0"
+            />
           </div>
           <div style={{ width: 90 }}>
             <label className="form-label small mb-1">Weight</label>
-            <input type="number" {...register(`${p}.weight` as never)} className={cls('weight')} placeholder="0" />
+            <input
+              type="number"
+              {...register(`${p}.weight` as never)}
+              className={cls("weight")}
+              placeholder="0"
+            />
           </div>
           <div style={{ width: 90 }}>
             <label className="form-label small mb-1">Port</label>
-            <input type="number" {...register(`${p}.port` as never)} className={cls('port')} placeholder="443" />
+            <input
+              type="number"
+              {...register(`${p}.port` as never)}
+              className={cls("port")}
+              placeholder="443"
+            />
           </div>
           <div className="flex-grow-1">
             <label className="form-label small mb-1">Target</label>
-            <input {...register(`${p}.target` as never, { required: 'Required' })}
-              className={cls('target')} placeholder="service.example.com." />
+            <input
+              {...register(`${p}.target` as never, { required: "Required" })}
+              className={cls("target")}
+              placeholder="service.example.com."
+            />
           </div>
         </>
       );
 
-    case 'SOA':
+    case "SOA":
       return (
         <div className="row g-2 flex-grow-1">
           <div className="col-md-4">
             <label className="form-label small mb-1">Primary NS (mname)</label>
-            <input {...register(`${p}.mname` as never)} className={cls('mname')} placeholder="ns1.example.com." />
+            <input
+              {...register(`${p}.mname` as never)}
+              className={cls("mname")}
+              placeholder="ns1.example.com."
+            />
           </div>
           <div className="col-md-4">
             <label className="form-label small mb-1">Responsible (rname)</label>
-            <input {...register(`${p}.rname` as never)} className={cls('rname')} placeholder="admin.example.com." />
+            <input
+              {...register(`${p}.rname` as never)}
+              className={cls("rname")}
+              placeholder="admin.example.com."
+            />
           </div>
           <div className="col-md-2">
             <label className="form-label small mb-1">Serial</label>
-            <input type="number" {...register(`${p}.serial` as never)} className={cls('serial')} />
+            <input
+              type="number"
+              {...register(`${p}.serial` as never)}
+              className={cls("serial")}
+            />
           </div>
           <div className="col-md-2">
             <label className="form-label small mb-1">Refresh</label>
-            <input type="number" {...register(`${p}.refresh` as never)} className={cls('refresh')} />
+            <input
+              type="number"
+              {...register(`${p}.refresh` as never)}
+              className={cls("refresh")}
+            />
           </div>
           <div className="col-md-2">
             <label className="form-label small mb-1">Retry</label>
-            <input type="number" {...register(`${p}.retry` as never)} className={cls('retry')} />
+            <input
+              type="number"
+              {...register(`${p}.retry` as never)}
+              className={cls("retry")}
+            />
           </div>
           <div className="col-md-2">
             <label className="form-label small mb-1">Expire</label>
-            <input type="number" {...register(`${p}.expire` as never)} className={cls('expire')} />
+            <input
+              type="number"
+              {...register(`${p}.expire` as never)}
+              className={cls("expire")}
+            />
           </div>
           <div className="col-md-2">
             <label className="form-label small mb-1">Minimum TTL</label>
-            <input type="number" {...register(`${p}.minimum` as never)} className={cls('minimum')} />
+            <input
+              type="number"
+              {...register(`${p}.minimum` as never)}
+              className={cls("minimum")}
+            />
           </div>
         </div>
       );
 
-    case 'CAA':
+    case "CAA":
       return (
         <>
           <div style={{ width: 80 }}>
             <label className="form-label small mb-1">Flags</label>
-            <input type="number" {...register(`${p}.flags` as never)} className={cls('flags')} placeholder="0" />
+            <input
+              type="number"
+              {...register(`${p}.flags` as never)}
+              className={cls("flags")}
+              placeholder="0"
+            />
           </div>
           <div style={{ minWidth: 120 }}>
             <label className="form-label small mb-1">Tag</label>
-            <select {...register(`${p}.tag` as never)} className={`form-select form-select-sm${err?.['tag'] ? ' is-invalid' : ''}`}>
+            <select
+              {...register(`${p}.tag` as never)}
+              className={`form-select form-select-sm${err?.["tag"] ? " is-invalid" : ""}`}
+            >
               <option value="">-- Select --</option>
               <option value="issue">issue</option>
               <option value="issuewild">issuewild</option>
@@ -490,17 +738,24 @@ function RecordDataFields({ type, index, register, errors }: {
           </div>
           <div className="flex-grow-1">
             <label className="form-label small mb-1">Value</label>
-            <input {...register(`${p}.value` as never)} className={cls('value')} placeholder="ca.example.com" />
+            <input
+              {...register(`${p}.value` as never)}
+              className={cls("value")}
+              placeholder="ca.example.com"
+            />
           </div>
         </>
       );
 
-    case 'SSHFP':
+    case "SSHFP":
       return (
         <>
           <div style={{ width: 110 }}>
             <label className="form-label small mb-1">Algorithm</label>
-            <select {...register(`${p}.algorithm` as never)} className="form-select form-select-sm">
+            <select
+              {...register(`${p}.algorithm` as never)}
+              className="form-select form-select-sm"
+            >
               <option value="">-- Select --</option>
               <option value={1}>1 – RSA</option>
               <option value={2}>2 – DSA</option>
@@ -510,7 +765,10 @@ function RecordDataFields({ type, index, register, errors }: {
           </div>
           <div style={{ width: 130 }}>
             <label className="form-label small mb-1">FP Type</label>
-            <select {...register(`${p}.fingerprintType` as never)} className="form-select form-select-sm">
+            <select
+              {...register(`${p}.fingerprintType` as never)}
+              className="form-select form-select-sm"
+            >
               <option value="">-- Select --</option>
               <option value={1}>1 – SHA-1</option>
               <option value={2}>2 – SHA-256</option>
@@ -518,21 +776,32 @@ function RecordDataFields({ type, index, register, errors }: {
           </div>
           <div className="flex-grow-1">
             <label className="form-label small mb-1">Fingerprint</label>
-            <input {...register(`${p}.fingerprint` as never)} className={cls('fingerprint')} placeholder="abc123..." />
+            <input
+              {...register(`${p}.fingerprint` as never)}
+              className={cls("fingerprint")}
+              placeholder="abc123..."
+            />
           </div>
         </>
       );
 
-    case 'DS':
+    case "DS":
       return (
         <>
           <div style={{ width: 90 }}>
             <label className="form-label small mb-1">Key Tag</label>
-            <input type="number" {...register(`${p}.keytag` as never)} className={cls('keytag')} />
+            <input
+              type="number"
+              {...register(`${p}.keytag` as never)}
+              className={cls("keytag")}
+            />
           </div>
           <div style={{ width: 210 }}>
             <label className="form-label small mb-1">Algorithm</label>
-            <select {...register(`${p}.algorithm` as never)} className="form-select form-select-sm">
+            <select
+              {...register(`${p}.algorithm` as never)}
+              className="form-select form-select-sm"
+            >
               <option value="">-- Select --</option>
               <option value={3}>(3) DSA</option>
               <option value={5}>(5) RSASHA1</option>
@@ -551,7 +820,10 @@ function RecordDataFields({ type, index, register, errors }: {
           </div>
           <div style={{ width: 180 }}>
             <label className="form-label small mb-1">Digest Type</label>
-            <select {...register(`${p}.digesttype` as never)} className="form-select form-select-sm">
+            <select
+              {...register(`${p}.digesttype` as never)}
+              className="form-select form-select-sm"
+            >
               <option value="">-- Select --</option>
               <option value={1}>(1) SHA1</option>
               <option value={2}>(2) SHA256</option>
@@ -561,25 +833,40 @@ function RecordDataFields({ type, index, register, errors }: {
           </div>
           <div className="flex-grow-1">
             <label className="form-label small mb-1">Digest</label>
-            <input {...register(`${p}.digest` as never)} className={cls('digest')} placeholder="hex digest" />
+            <input
+              {...register(`${p}.digest` as never)}
+              className={cls("digest")}
+              placeholder="hex digest"
+            />
           </div>
         </>
       );
 
-    case 'NAPTR':
+    case "NAPTR":
       return (
         <div className="row g-2 flex-grow-1">
           <div className="col-2">
             <label className="form-label small mb-1">Order</label>
-            <input type="number" {...register(`${p}.order` as never)} className={cls('order')} />
+            <input
+              type="number"
+              {...register(`${p}.order` as never)}
+              className={cls("order")}
+            />
           </div>
           <div className="col-2">
             <label className="form-label small mb-1">Preference</label>
-            <input type="number" {...register(`${p}.preference` as never)} className={cls('preference')} />
+            <input
+              type="number"
+              {...register(`${p}.preference` as never)}
+              className={cls("preference")}
+            />
           </div>
           <div className="col-2">
             <label className="form-label small mb-1">Flags</label>
-            <select {...register(`${p}.flags` as never)} className={`form-select form-select-sm${err?.['flags'] ? ' is-invalid' : ''}`}>
+            <select
+              {...register(`${p}.flags` as never)}
+              className={`form-select form-select-sm${err?.["flags"] ? " is-invalid" : ""}`}
+            >
               <option value="">-- Select --</option>
               <option value="u">U</option>
               <option value="s">S</option>
@@ -589,20 +876,34 @@ function RecordDataFields({ type, index, register, errors }: {
           </div>
           <div className="col-3">
             <label className="form-label small mb-1">Service</label>
-            <input {...register(`${p}.service` as never)} className={cls('service')} placeholder="E2U+sip" />
+            <input
+              {...register(`${p}.service` as never)}
+              className={cls("service")}
+              placeholder="E2U+sip"
+            />
           </div>
           <div className="col-3">
             <label className="form-label small mb-1">Regexp</label>
-            <input {...register(`${p}.regexp` as never)} className={cls('regexp')} />
+            <input
+              {...register(`${p}.regexp` as never)}
+              className={cls("regexp")}
+            />
           </div>
           <div className="col-6">
             <label className="form-label small mb-1">Replacement</label>
-            <input {...register(`${p}.replacement` as never)} className={cls('replacement')} />
+            <input
+              {...register(`${p}.replacement` as never)}
+              className={cls("replacement")}
+            />
           </div>
         </div>
       );
 
     default:
-      return <div className="text-muted small">Record data fields for {type} are not yet supported.</div>;
+      return (
+        <div className="text-muted small">
+          Record data fields for {type} are not yet supported.
+        </div>
+      );
   }
 }

@@ -26,7 +26,16 @@ import { groupsService } from "../services/groupsService";
 import { profileService } from "../services/profileService";
 import api from "../services/api";
 import { RecordsTable } from "../components/records/RecordsTable";
-import { RecordForm } from "../components/records/RecordForm";
+import { DeleteConfirmationModal } from "../components/modals/DeleteConfirmationModal";
+import { RecordFormModal } from "../components/modals/RecordFormModal";
+import { OwnershipTransferModal } from "../components/modals/OwnershipTransferModal";
+import {
+  AclRuleModal,
+  type AclRuleForm,
+} from "../components/modals/AclRuleModal";
+import { AbandonZoneModal } from "../components/modals/AbandonZoneModal";
+import { AclRulesModal } from "../components/modals/AclRulesModal";
+import { RecordSetViewerModal } from "../components/modals/RecordSetViewerModal";
 import { Pagination } from "../components/common/Pagination";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { TimeFilterDropdown } from "../components/common/TimeFilterDropdown";
@@ -35,7 +44,7 @@ import { useZoneRecords } from "../hooks/useRecords";
 import { usePaging } from "../hooks/usePaging";
 import { formatDateTime } from "../utils/dateUtils";
 import type { Zone, AclRule } from "../types/zone";
-import type { RecordSet } from "../types/record";
+import type { RecordSet, RecordSetGroupChange } from "../types/record";
 
 type DetailTab = "records" | "recordChanges" | "zoneChanges" | "zone";
 
@@ -89,20 +98,6 @@ function SortArrow({ dir }: { dir: SortDir }) {
   );
 }
 
-type AclRuleForm = {
-  mode: "create" | "edit";
-  ruleIndex?: number;
-  rule: {
-    priority: "User" | "Group";
-    userName?: string;
-    groupId?: string;
-    accessLevel: string;
-    recordTypes: string[];
-    recordMask?: string;
-    description?: string;
-  };
-};
-
 const statusClass = (status: string) => {
   if (status === "Active") return "vds-zone-status-badge--active";
   if (status === "Deleted") return "vds-zone-status-badge--deleted";
@@ -148,11 +143,11 @@ export function ZoneDetailPage() {
 
   const [activeTab, setActiveTab] = useState<DetailTab>("records");
   const [showRecordForm, setShowRecordForm] = useState(false);
-  const [editRecord, setEditRecord]        = useState<RecordSet | null>(null);
+  const [editRecord, setEditRecord] = useState<RecordSet | null>(null);
   const recordFormRef = useRef<HTMLDivElement>(null);
-  const recordSnapshotRef = useRef('');
+  const recordSnapshotRef = useRef("");
   const [recordFormDirty, setRecordFormDirty] = useState(false);
-  const aclRuleSnapshotRef = useRef('');
+  const aclRuleSnapshotRef = useRef("");
   const [aclRuleDirty, setAclRuleDirty] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState<RecordSet | null>(null);
   const [nameFilter, setNameFilter] = useState("");
@@ -242,24 +237,33 @@ export function ZoneDetailPage() {
   const ttlDropdownRef = useRef<HTMLDivElement>(null);
 
   const serializeFormState = useCallback((root: HTMLElement | null) => {
-    if (!root) return '';
-    const fields = Array.from(root.querySelectorAll('input, textarea, select')) as Array<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
+    if (!root) return "";
+    const fields = Array.from(
+      root.querySelectorAll("input, textarea, select"),
+    ) as Array<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
 
     return fields
       .map((field, index) => {
-        const key = field.getAttribute('name') ?? field.getAttribute('id') ?? `${field.tagName.toLowerCase()}-${index}`;
+        const key =
+          field.getAttribute("name") ??
+          field.getAttribute("id") ??
+          `${field.tagName.toLowerCase()}-${index}`;
         if (field instanceof HTMLInputElement) {
-          if (field.type === 'checkbox' || field.type === 'radio') return `${key}:${field.checked}`;
-          if (field.type === 'file') return `${key}:${field.files?.length ?? 0}`;
+          if (field.type === "checkbox" || field.type === "radio")
+            return `${key}:${field.checked}`;
+          if (field.type === "file")
+            return `${key}:${field.files?.length ?? 0}`;
         }
         return `${key}:${field.value}`;
       })
-      .join('|');
+      .join("|");
   }, []);
 
   const confirmDiscardRecordChanges = useCallback(() => {
     if (!recordFormDirty) return true;
-    return window.confirm('You have unsaved changes. Do you want to close this form and discard them?');
+    return window.confirm(
+      "You have unsaved changes. Do you want to close this form and discard them?",
+    );
   }, [recordFormDirty]);
 
   const closeRecordForm = useCallback(() => {
@@ -271,7 +275,9 @@ export function ZoneDetailPage() {
 
   const confirmDiscardAclRuleChanges = useCallback(() => {
     if (!aclRuleDirty) return true;
-    return window.confirm('You have unsaved changes. Do you want to close this form and discard them?');
+    return window.confirm(
+      "You have unsaved changes. Do you want to close this form and discard them?",
+    );
   }, [aclRuleDirty]);
 
   const closeAclRuleModal = useCallback(() => {
@@ -280,18 +286,25 @@ export function ZoneDetailPage() {
     }
   }, [confirmDiscardAclRuleChanges]);
 
-  const runWithRecordFormGuard = useCallback((action: () => void) => {
-    const formOpen = showRecordForm || !!editRecord;
-    if (formOpen && !confirmDiscardRecordChanges()) return;
-    if (formOpen) {
-      setShowRecordForm(false);
-      setEditRecord(null);
-    }
-    action();
-  }, [showRecordForm, editRecord, confirmDiscardRecordChanges]);
+  const runWithRecordFormGuard = useCallback(
+    (action: () => void) => {
+      const formOpen = showRecordForm || !!editRecord;
+      if (formOpen && !confirmDiscardRecordChanges()) return;
+      if (formOpen) {
+        setShowRecordForm(false);
+        setEditRecord(null);
+      }
+      action();
+    },
+    [showRecordForm, editRecord, confirmDiscardRecordChanges],
+  );
 
-  const { data: zoneData, isLoading: zoneLoading, isFetching: zoneFetching, } = useQuery({
-    queryKey: ['zone', id],
+  const {
+    data: zoneData,
+    isLoading: zoneLoading,
+    isFetching: zoneFetching,
+  } = useQuery({
+    queryKey: ["zone", id],
     queryFn: async () => {
       const res = await zonesService.getZone(id);
       return res.data.zone;
@@ -901,7 +914,7 @@ export function ZoneDetailPage() {
 
   useEffect(() => {
     if (!(showRecordForm || editRecord)) {
-      recordSnapshotRef.current = '';
+      recordSnapshotRef.current = "";
       setRecordFormDirty(false);
       return;
     }
@@ -910,18 +923,20 @@ export function ZoneDetailPage() {
     if (!node) return;
 
     const updateDirty = () => {
-      setRecordFormDirty(serializeFormState(node) !== recordSnapshotRef.current);
+      setRecordFormDirty(
+        serializeFormState(node) !== recordSnapshotRef.current,
+      );
     };
 
     recordSnapshotRef.current = serializeFormState(node);
     updateDirty();
 
-    node.addEventListener('input', updateDirty);
-    node.addEventListener('change', updateDirty);
+    node.addEventListener("input", updateDirty);
+    node.addEventListener("change", updateDirty);
 
     return () => {
-      node.removeEventListener('input', updateDirty);
-      node.removeEventListener('change', updateDirty);
+      node.removeEventListener("input", updateDirty);
+      node.removeEventListener("change", updateDirty);
     };
   }, [showRecordForm, editRecord, serializeFormState]);
 
@@ -930,16 +945,16 @@ export function ZoneDetailPage() {
 
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
-      event.returnValue = '';
+      event.returnValue = "";
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [showRecordForm, editRecord, recordFormDirty]);
 
   useEffect(() => {
     if (!aclRuleModal) {
-      aclRuleSnapshotRef.current = '';
+      aclRuleSnapshotRef.current = "";
       setAclRuleDirty(false);
       return;
     }
@@ -959,11 +974,11 @@ export function ZoneDetailPage() {
 
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
-      event.returnValue = '';
+      event.returnValue = "";
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [aclRuleModal, aclRuleDirty]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
@@ -972,7 +987,7 @@ export function ZoneDetailPage() {
       ? {
           ...data,
           recordSetGroupChange: data.recordSetGroupChange ?? {
-            ownershipTransferStatus: 'AutoApproved',
+            ownershipTransferStatus: "AutoApproved",
           },
         }
       : data;
@@ -984,7 +999,10 @@ export function ZoneDetailPage() {
     const recordSetGroupChange: RecordSetGroupChange | undefined =
       editRecord.recordSetGroupChange ??
       (editRecord.ownerGroupId
-        ? { requestedOwnerGroupId: editRecord.ownerGroupId, ownershipTransferStatus: 'AutoApproved' }
+        ? {
+            requestedOwnerGroupId: editRecord.ownerGroupId,
+            ownershipTransferStatus: "AutoApproved",
+          }
         : undefined);
     updateRecord(
       {
@@ -1089,7 +1107,7 @@ export function ZoneDetailPage() {
         </div>
         <button
           type="button"
-          className="btn btn-sm d-flex align-items-center gap-1 vds-btn-nav"
+          className="btn btn-sm d-flex align-items-center gap-1 vds-btn-flat"
           onClick={() => navigate(-1)}
         >
           <i className="bi bi-arrow-left" />
@@ -1145,7 +1163,9 @@ export function ZoneDetailPage() {
           </div>
           <div>
             <div className="vds-zone-meta-label">Created</div>
-            <div className="vds-zone-meta-value vds-date-wrap">{zoneData.created ? formatDateTime(zoneData.created) : '—'}</div>
+            <div className="vds-zone-meta-value vds-date-wrap">
+              {zoneData.created ? formatDateTime(zoneData.created) : "—"}
+            </div>
           </div>
         </div>
         <div className="vds-zone-meta-item">
@@ -1154,7 +1174,9 @@ export function ZoneDetailPage() {
           </div>
           <div>
             <div className="vds-zone-meta-label">Last Sync</div>
-            <div className="vds-zone-meta-value vds-date-wrap">{zoneData.latestSync ? formatDateTime(zoneData.latestSync) : '—'}</div>
+            <div className="vds-zone-meta-value vds-date-wrap">
+              {zoneData.latestSync ? formatDateTime(zoneData.latestSync) : "—"}
+            </div>
           </div>
         </div>
         {zoneData.backendId && (
@@ -1215,69 +1237,24 @@ export function ZoneDetailPage() {
         <>
           {/* ── Record form modal ── */}
           {(showRecordForm || editRecord) && (
-            <>
-              <div
-                className="modal fade show d-block"
-                tabIndex={-1}
-                role="dialog"
-                onClick={(e) => { if (e.target === e.currentTarget) closeRecordForm(); }}
-              >
-                <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
-                  <div className="modal-content" ref={recordFormRef}>
-                    <div
-                      className="modal-header"
-                      style={{
-                        background: editRecord
-                          ? "linear-gradient(90deg, #3a6db5, #1e3a6e)"
-                          : "linear-gradient(90deg, #1e5fa8, #0d1b3e)",
-                        color: "#fff",
-                      }}
-                    >
-                      <h5 className="modal-title d-flex align-items-center gap-2">
-                        <i
-                          className={`bi ${editRecord ? "bi-pencil-square" : "bi-plus-circle"}`}
-                        />
-                        {editRecord
-                          ? `Edit: ${editRecord.name} (${editRecord.type})`
-                          : "Add DNS Record"}
-                      </h5>
-                      <button
-                        type="button"
-                        className="btn-close btn-close-white"
-                        onClick={closeRecordForm}
-                      />
-                    </div>
-                    <div className="modal-body">
-                      <RecordForm
-                        zoneId={id}
-                        zoneName={zoneData.name}
-                        initialData={editRecord ?? undefined}
-                        onSubmit={editRecord ? handleUpdateRecord : handleCreateRecord}
-                        onCancel={closeRecordForm}
-                        mode={editRecord ? 'edit' : 'create'}
-                        isSharedZone={zoneData?.shared ?? false}
-                        isReverseZone={
-                          zoneData.name.endsWith("in-addr.arpa.") ||
-                          zoneData.name.endsWith("ip6.arpa.")
-                        }
-                        isLoading={
-                          editRecord ? isUpdatePending : isCreatePending
-                        }
-                        allGroups={groupsData ?? []}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div
-                className="modal-backdrop fade show"
-                style={{
-                  backdropFilter: "blur(4px)",
-                  WebkitBackdropFilter: "blur(4px)",
-                  opacity: 0.7,
-                }}
-              />
-            </>
+            <RecordFormModal
+              isOpen={true}
+              editRecord={editRecord}
+              zoneId={id}
+              zoneName={zoneData.name}
+              isSharedZone={zoneData?.shared ?? false}
+              isReverseZone={
+                zoneData.name.endsWith("in-addr.arpa.") ||
+                zoneData.name.endsWith("ip6.arpa.")
+              }
+              groupsData={groupsData ?? []}
+              recordFormRef={recordFormRef}
+              onClose={closeRecordForm}
+              onCreate={handleCreateRecord}
+              onUpdate={handleUpdateRecord}
+              isCreatePending={isCreatePending}
+              isUpdatePending={isUpdatePending}
+            />
           )}
 
           {recordsLoading || recordsFetching ? (
@@ -1301,7 +1278,14 @@ export function ZoneDetailPage() {
                       />
                       <button
                         className="btn btn-sm vds-btn-flat d-flex align-items-center gap-1"
-                        onClick={() => runWithRecordFormGuard(() => void queryClient.invalidateQueries({ queryKey: ['record-changes-recent', id] }))}
+                        onClick={() =>
+                          runWithRecordFormGuard(
+                            () =>
+                              void queryClient.invalidateQueries({
+                                queryKey: ["record-changes-recent", id],
+                              }),
+                          )
+                        }
                         title="Refresh recent changes"
                       >
                         <i className="bi bi-arrow-clockwise" />
@@ -1333,80 +1317,156 @@ export function ZoneDetailPage() {
                     <>
                       <div className="vds-zones-table-wrap">
                         <table className="vds-zones-table">
-                        <thead>
-                          <tr>
-                            <th>Record</th>
-                            <th>Type</th>
-                            <th>Change</th>
-                            <th>Status</th>
-                            <th>User</th>
-                            <th
-                              onClick={() => setRecentRcDateSort((d) => d === 'asc' ? 'desc' : 'asc')}
-                              style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
-                            >Date <SortArrow dir={recentRcDateSort} /></th>
-                            <th>Additional Info</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {[...(recentRcData.recordSetChanges)]
-                            .filter((c) => inRange(c.created, recentRcTimeRange, recentRcDateFrom, recentRcDateTo))
-                            .sort((a, b) => recentRcDateSort
-                              ? (recentRcDateSort === 'asc' ? 1 : -1) * (new Date(a.created).getTime() - new Date(b.created).getTime())
-                              : 0)
-                            .map((c) => (
-                            <tr key={c.id}>
-                              <td className="fw-semibold vds-table-primary">{c.recordSet.name}</td>
-                              <td className="vds-table-secondary fw-semibold">{c.recordSet.type}</td>
-                              <td><span className={`vds-change-badge vds-change-badge--${c.changeType.toLowerCase()}`}>{c.changeType}</span></td>
-                              <td><span className={`vds-zone-status-badge ${changeStatusClass(c.status)}`}>{c.status}</span></td>
-                              <td className="vds-table-secondary vds-table-nowrap small">{c.userName ?? c.userId}</td>
-                              <td className="vds-table-secondary small vds-date-wrap">{formatDateTimeStack(c.created)}</td>
-                              <td className="small">
-                                {/* systemMessage always shown (e.g. "Change applied via zone sync") */}
-                                {c.systemMessage && <div className="vds-table-secondary mb-1">{c.systemMessage}</div>}
-                                {c.status !== 'Failed' && (
-                                  <div className="d-flex flex-column gap-1">
-                                    {c.changeType === 'Create' && (
-                                      <button
-                                        className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                        onClick={() => setViewingRecordSet({ label: 'Created Record Set', rs: c.recordSet })}>
-                                        <i className="bi bi-eye" />View created recordset
-                                      </button>
-                                    )}
-                                    {c.changeType === 'Update' && (<>
-                                      <button
-                                        className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                        onClick={() => setViewingRecordSet({ label: 'New Record Set', rs: c.recordSet })}>
-                                        <i className="bi bi-eye" />View new recordset
-                                      </button>
-                                      {c.updates && (
-                                        <button
-                                          className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                          onClick={() => setViewingRecordSet({ label: 'Old Record Set', rs: c.updates! })}>
-                                          <i className="bi bi-clock-history" />View old recordset
-                                        </button>
-                                      )}
-                                    </>)}
-                                    {c.changeType === 'Delete' && (
-                                      <button
-                                        className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                        onClick={() => setViewingRecordSet({ label: 'Deleted Record Set', rs: c.recordSet })}>
-                                        <i className="bi bi-clock-history" />View deleted recordset
-                                      </button>
-                                    )}
-                                  </div>
-                                )}
-                              </td>
+                          <thead>
+                            <tr>
+                              <th>Record</th>
+                              <th>Type</th>
+                              <th>Change</th>
+                              <th>Status</th>
+                              <th>User</th>
+                              <th
+                                onClick={() =>
+                                  setRecentRcDateSort((d) =>
+                                    d === "asc" ? "desc" : "asc",
+                                  )
+                                }
+                                className="col-date"
+                              >
+                                Date <SortArrow dir={recentRcDateSort} />
+                              </th>
+                              <th className="col-info">Additional Info</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    {false && (recentRcNextEnabled || recentRcPrevEnabled) && (
-                      <Pagination onPrev={recentRcPrevPage} onNext={recentRcNextPage}
-                        prevEnabled={recentRcPrevEnabled} nextEnabled={recentRcNextEnabled}
-                        panelTitle={recentRcPanelTitle()} />
-                    )}
+                          </thead>
+                          <tbody>
+                            {[...recentRcData.recordSetChanges]
+                              .filter((c) =>
+                                inRange(
+                                  c.created,
+                                  recentRcTimeRange,
+                                  recentRcDateFrom,
+                                  recentRcDateTo,
+                                ),
+                              )
+                              .sort((a, b) =>
+                                recentRcDateSort
+                                  ? (recentRcDateSort === "asc" ? 1 : -1) *
+                                    (new Date(a.created).getTime() -
+                                      new Date(b.created).getTime())
+                                  : 0,
+                              )
+                              .map((c) => (
+                                <tr key={c.id}>
+                                  <td className="fw-semibold vds-table-primary">
+                                    {c.recordSet.name}
+                                  </td>
+                                  <td className="vds-table-secondary fw-semibold">
+                                    {c.recordSet.type}
+                                  </td>
+                                  <td>
+                                    <span
+                                      className={`vds-change-badge vds-change-badge--${c.changeType.toLowerCase()}`}
+                                    >
+                                      {c.changeType}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <span
+                                      className={`vds-zone-status-badge ${changeStatusClass(c.status)}`}
+                                    >
+                                      {c.status}
+                                    </span>
+                                  </td>
+                                  <td className="vds-table-secondary vds-table-nowrap small">
+                                    {c.userName ?? c.userId}
+                                  </td>
+                                  <td className="vds-table-secondary small vds-date-wrap col-date">
+                                    {formatDateTimeStack(c.created)}
+                                  </td>
+
+                                  <td className="small col-info">
+                                    {c.systemMessage && (
+                                      <div className="vds-table-secondary mb-1">
+                                        {c.systemMessage}
+                                      </div>
+                                    )}
+                                    {c.status !== "Failed" && (
+                                      <div className="d-flex flex-column gap-1">
+                                        {c.changeType === "Create" && (
+                                          <button
+                                            className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                            onClick={() =>
+                                              setViewingRecordSet({
+                                                label: "Created Record Set",
+                                                rs: c.recordSet,
+                                              })
+                                            }
+                                          >
+                                            <i className="bi bi-eye" />
+                                            View created recordset
+                                          </button>
+                                        )}
+                                        {c.changeType === "Update" && (
+                                          <>
+                                            <button
+                                              className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                              onClick={() =>
+                                                setViewingRecordSet({
+                                                  label: "New Record Set",
+                                                  rs: c.recordSet,
+                                                })
+                                              }
+                                            >
+                                              <i className="bi bi-eye" />
+                                              View new recordset
+                                            </button>
+                                            {c.updates && (
+                                              <button
+                                                className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                                onClick={() =>
+                                                  setViewingRecordSet({
+                                                    label: "Old Record Set",
+                                                    rs: c.updates!,
+                                                  })
+                                                }
+                                              >
+                                                <i className="bi bi-clock-history" />
+                                                View old recordset
+                                              </button>
+                                            )}
+                                          </>
+                                        )}
+                                        {c.changeType === "Delete" && (
+                                          <button
+                                            className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                            onClick={() =>
+                                              setViewingRecordSet({
+                                                label: "Deleted Record Set",
+                                                rs: c.recordSet,
+                                              })
+                                            }
+                                          >
+                                            <i className="bi bi-clock-history" />
+                                            View deleted recordset
+                                          </button>
+                                        )}
+                                      </div>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {false &&
+                        (recentRcNextEnabled || recentRcPrevEnabled) && (
+                          <Pagination
+                            onPrev={recentRcPrevPage}
+                            onNext={recentRcNextPage}
+                            prevEnabled={recentRcPrevEnabled}
+                            nextEnabled={recentRcNextEnabled}
+                            panelTitle={recentRcPanelTitle()}
+                          />
+                        )}
                     </>
                   )}
                 </div>
@@ -1622,7 +1682,10 @@ export function ZoneDetailPage() {
                     <div className="ms-auto d-flex align-items-center gap-2 flex-wrap justify-content-end">
                       <button
                         className="btn btn-sm d-flex align-items-center gap-1 vds-btn-nav vds-create-record-btn"
-                        onClick={() => { setShowRecordForm(true); setEditRecord(null); }}
+                        onClick={() => {
+                          setShowRecordForm(true);
+                          setEditRecord(null);
+                        }}
                       >
                         <i className="bi bi-plus-circle-fill" />
                         Create New Record
@@ -1643,17 +1706,23 @@ export function ZoneDetailPage() {
                       <button
                         className="btn btn-sm d-flex align-items-center gap-1 vds-btn-flat"
                         disabled={recordsFetching}
-                        onClick={() => runWithRecordFormGuard(() => {
-                          setNameFilter('');
-                          setTypeFilter('');
-                          setStatusFilter('');
-                          setTtlFilter(null);
-                          searchRecords({ name: "", type: "" });
-                          void refetchRecords();
-                        })}
+                        onClick={() =>
+                          runWithRecordFormGuard(() => {
+                            setNameFilter("");
+                            setTypeFilter("");
+                            setStatusFilter("");
+                            setTtlFilter(null);
+                            searchRecords({ name: "", type: "" });
+                            void refetchRecords();
+                          })
+                        }
                       >
-                        <i className={`bi bi-arrow-clockwise${recordsFetching ? ' vds-spin' : ''}`} />
-                        <span className="vds-btn-flat__label">{recordsFetching ? 'Refreshing...' : 'Refresh'}</span>
+                        <i
+                          className={`bi bi-arrow-clockwise${recordsFetching ? " vds-spin" : ""}`}
+                        />
+                        <span className="vds-btn-flat__label">
+                          {recordsFetching ? "Refreshing..." : "Refresh"}
+                        </span>
                       </button>
                     </div>
                   </div>
@@ -1746,9 +1815,17 @@ export function ZoneDetailPage() {
 
               <div className="position-relative">
                 {recordsFetching && (
-                  <div className="vds-table-fetch-overlay" role="status" aria-live="polite" aria-label="Refreshing records">
+                  <div
+                    className="vds-table-fetch-overlay"
+                    role="status"
+                    aria-live="polite"
+                    aria-label="Refreshing records"
+                  >
                     <div className="vds-table-fetch-spinner">
-                      <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+                      <span
+                        className="spinner-border spinner-border-sm"
+                        aria-hidden="true"
+                      />
                       Refreshing records...
                     </div>
                   </div>
@@ -1780,77 +1857,42 @@ export function ZoneDetailPage() {
                   onApproveOwnership={(rec) =>
                     approveOwnershipMutation.mutate(rec)
                   }
-                  onRejectOwnership={(rec) => rejectOwnershipMutation.mutate(rec)}
+                  onRejectOwnership={(rec) =>
+                    rejectOwnershipMutation.mutate(rec)
+                  }
                 />
               </div>
-                {false && (recNextEnabled || recPrevEnabled) && (
-                  <Pagination
-                    onPrev={recordsPrev}
-                    onNext={recordsNext}
-                    prevEnabled={recPrevEnabled}
-                    nextEnabled={recNextEnabled}
-                    panelTitle={recPanelTitle()}
-                  />
-                )}
-              </>
+              {false && (recNextEnabled || recPrevEnabled) && (
+                <Pagination
+                  onPrev={recordsPrev}
+                  onNext={recordsNext}
+                  prevEnabled={recPrevEnabled}
+                  nextEnabled={recNextEnabled}
+                  panelTitle={recPanelTitle()}
+                />
+              )}
+            </>
           )}
 
           {/* Delete modal */}
           {recordToDelete && (
-            <div
-              className="modal d-block"
-              style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-              onMouseDown={(e) => {
-                if (e.target === e.currentTarget) setRecordToDelete(null);
-              }}
-            >
-              <div className="modal-dialog modal-dialog-centered">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <h5 className="modal-title fw-semibold">Delete Record</h5>
-                    <button
-                      type="button"
-                      className="btn-close"
-                      onClick={() => setRecordToDelete(null)}
-                    />
-                  </div>
-                  <div className="modal-body">
-                    Delete <strong>{recordToDelete.name}</strong> (
-                    {recordToDelete.type})? This cannot be undone.
-                  </div>
-                  <div className="modal-footer">
-                    <button
-                      className="btn btn-outline-secondary"
-                      onClick={() => setRecordToDelete(null)}
-                      disabled={isDeletePending}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className="btn btn-danger"
-                      onClick={handleDeleteConfirm}
-                      disabled={isDeletePending}
-                    >
-                      {isDeletePending ? (
-                        <>
-                          <span
-                            className="spinner-border spinner-border-sm me-1"
-                            role="status"
-                            aria-hidden="true"
-                          />
-                          Deleting…
-                        </>
-                      ) : (
-                        <>
-                          <i className="bi bi-trash me-1" />
-                          Delete
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <DeleteConfirmationModal
+              isOpen={Boolean(recordToDelete)}
+              title="Delete Record"
+              description={
+                <>
+                  Delete <strong>{recordToDelete.name}</strong> (
+                  {recordToDelete.type})? This cannot be undone.
+                </>
+              }
+              cancelLabel="Cancel"
+              confirmLabel={isDeletePending ? "Deleting…" : "Delete"}
+              confirmIcon={isDeletePending ? "bi-hourglass-split" : "bi-trash"}
+              cancelDisabled={isDeletePending}
+              confirmDisabled={isDeletePending}
+              onClose={() => setRecordToDelete(null)}
+              onConfirm={handleDeleteConfirm}
+            />
           )}
 
           {/* ── Ownership toast notification ── */}
@@ -1892,182 +1934,25 @@ export function ZoneDetailPage() {
 
           {/* ── Ownership Claim / Request Transfer Modal ── */}
           {ownershipModal && (
-            <div
-              className="modal d-block"
-              style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-              onMouseDown={(e) => {
-                if (e.target === e.currentTarget) {
-                  setOwnershipModal(null);
-                  setOwnershipGroupId("");
+            <OwnershipTransferModal
+              modal={ownershipModal}
+              myGroupsData={myGroupsData ?? []}
+              ownershipGroupId={ownershipGroupId}
+              setOwnershipGroupId={setOwnershipGroupId}
+              onClose={() => {
+                setOwnershipModal(null);
+                setOwnershipGroupId("");
+              }}
+              onSubmit={() => {
+                if (ownershipGroupId) {
+                  claimOrRequestOwnershipMutation.mutate({
+                    record: ownershipModal.record,
+                    groupId: ownershipGroupId,
+                  });
                 }
               }}
-            >
-              <div className="modal-dialog modal-dialog-centered">
-                <div
-                  className="modal-content"
-                  style={{ borderRadius: "1rem", overflow: "hidden" }}
-                >
-                  <div
-                    className="modal-header pb-3"
-                    style={{
-                      background:
-                        ownershipModal.mode === "claim"
-                          ? "linear-gradient(135deg,#0d9488,#14b8a6)"
-                          : "linear-gradient(135deg,#4f46e5,#6366f1)",
-                      color: "#fff",
-                      border: "none",
-                    }}
-                  >
-                    <div className="d-flex align-items-center gap-2">
-                      <i
-                        className={`bi ${ownershipModal.mode === "claim" ? "bi-person-plus-fill" : "bi-arrow-left-right"} fs-5`}
-                      />
-                      <h5 className="modal-title fw-bold mb-0">
-                        {ownershipModal.mode === "claim"
-                          ? "Claim Record Ownership"
-                          : "Request Ownership Transfer"}
-                      </h5>
-                    </div>
-                    <button
-                      type="button"
-                      className="btn-close btn-close-white"
-                      onClick={() => {
-                        setOwnershipModal(null);
-                        setOwnershipGroupId("");
-                      }}
-                    />
-                  </div>
-
-                  <div className="modal-body px-4 py-3">
-                    {/* Record info */}
-                    <div
-                      className="d-flex align-items-center gap-3 mb-4 p-3 rounded-3"
-                      style={{
-                        background: "linear-gradient(135deg,#f8faff,#eff6ff)",
-                        border: "1px solid #dbeafe",
-                      }}
-                    >
-                      <div>
-                        <div
-                          className="fw-bold text-primary"
-                          style={{ fontSize: "1rem" }}
-                        >
-                          {ownershipModal.record.name}
-                        </div>
-                        <div className="d-flex align-items-center gap-2 mt-1">
-                          <span className="vds-record-type-badge">
-                            {ownershipModal.record.type}
-                          </span>
-                          {ownershipModal.record.ownerGroupId && (
-                            <span
-                              className="vds-owner-group-chip"
-                              style={{ fontSize: "0.7rem" }}
-                            >
-                              <i className="bi bi-people-fill" />
-                              Current:{" "}
-                              {ownershipModal.record.ownerGroupName ??
-                                ownershipModal.record.ownerGroupId.slice(
-                                  0,
-                                  10,
-                                ) + "…"}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mb-3">
-                      <label className="form-label fw-semibold">
-                        {ownershipModal.mode === "claim"
-                          ? "Assign ownership to"
-                          : "Request transfer to"}
-                        <span className="text-danger ms-1">*</span>
-                      </label>
-                      <select
-                        className="form-select"
-                        value={ownershipGroupId}
-                        onChange={(e) => setOwnershipGroupId(e.target.value)}
-                        style={{ borderRadius: "0.6rem" }}
-                      >
-                        <option value="">— Select your group —</option>
-                        {(myGroupsData ?? [])
-                          .filter(
-                            (g) =>
-                              ownershipModal.mode === "claim" ||
-                              g.id !== ownershipModal.record.ownerGroupId,
-                          )
-                          .map((g) => (
-                            <option key={g.id} value={g.id}>
-                              {g.name}
-                            </option>
-                          ))}
-                      </select>
-                      <div className="form-text">
-                        <i className="bi bi-info-circle me-1" />
-                        {ownershipModal.mode === "claim"
-                          ? "The selected group will become the owner of this record."
-                          : "A transfer request will be sent to the current owner group for approval."}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    className="modal-footer"
-                    style={{ borderTop: "1px solid #e2e8f0" }}
-                  >
-                    <button
-                      className="btn btn-outline-secondary"
-                      onClick={() => {
-                        setOwnershipModal(null);
-                        setOwnershipGroupId("");
-                      }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className="btn text-white fw-semibold"
-                      disabled={
-                        !ownershipGroupId ||
-                        claimOrRequestOwnershipMutation.isPending
-                      }
-                      onClick={() => {
-                        if (ownershipGroupId) {
-                          claimOrRequestOwnershipMutation.mutate({
-                            record: ownershipModal.record,
-                            groupId: ownershipGroupId,
-                          });
-                        }
-                      }}
-                      style={{
-                        background:
-                          ownershipModal.mode === "claim"
-                            ? "linear-gradient(135deg,#0d9488,#14b8a6)"
-                            : "linear-gradient(135deg,#4f46e5,#6366f1)",
-                        border: "none",
-                        borderRadius: "0.6rem",
-                      }}
-                    >
-                      {claimOrRequestOwnershipMutation.isPending ? (
-                        <>
-                          <i className="bi bi-hourglass-split me-1 vds-spin" />
-                          Processing…
-                        </>
-                      ) : ownershipModal.mode === "claim" ? (
-                        <>
-                          <i className="bi bi-person-plus-fill me-1" />
-                          Claim Ownership
-                        </>
-                      ) : (
-                        <>
-                          <i className="bi bi-arrow-left-right me-1" />
-                          Request Transfer
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+              isPending={claimOrRequestOwnershipMutation.isPending}
+            />
           )}
         </>
       )}
@@ -2120,7 +2005,10 @@ export function ZoneDetailPage() {
                       Date & Time <SortArrow dir={rcTimeSort} />
                     </th>
                     <th>Recordset Name</th>
-                    <th>Recordset <br />Type</th>
+                    <th>
+                      Recordset <br />
+                      Type
+                    </th>
                     <th>Change Type</th>
                     <th>User</th>
                     <th>Status</th>
@@ -2249,13 +2137,13 @@ export function ZoneDetailPage() {
                                       <i className="bi bi-eye" />
                                       View new recordset
                                     </button>
-                                    {c.updates?.recordSet && (
+                                    {c.updates && (
                                       <button
                                         className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
                                         onClick={() =>
                                           setViewingRecordSet({
                                             label: "Old Record Set",
-                                            rs: c.updates!.recordSet!,
+                                            rs: c.updates!,
                                           })
                                         }
                                       >
@@ -2275,8 +2163,13 @@ export function ZoneDetailPage() {
               </table>
             </div>
             {false && (rcNextEnabled || rcPrevEnabled) && (
-              <Pagination onPrev={rcPrevPage} onNext={rcNextPage}
-                prevEnabled={rcPrevEnabled} nextEnabled={rcNextEnabled} panelTitle={rcPanelTitle()} />
+              <Pagination
+                onPrev={rcPrevPage}
+                onNext={rcNextPage}
+                prevEnabled={rcPrevEnabled}
+                nextEnabled={rcNextEnabled}
+                panelTitle={rcPanelTitle()}
+              />
             )}
           </div>
         ))}
@@ -2301,7 +2194,14 @@ export function ZoneDetailPage() {
                 />
                 <button
                   className="btn btn-sm vds-btn-flat d-flex align-items-center gap-1"
-                  onClick={() => runWithRecordFormGuard(() => void queryClient.invalidateQueries({ queryKey: ['zone-changes', id] }))}
+                  onClick={() =>
+                    runWithRecordFormGuard(
+                      () =>
+                        void queryClient.invalidateQueries({
+                          queryKey: ["zone-changes", id],
+                        }),
+                    )
+                  }
                 >
                   <i className="bi bi-arrow-clockwise" />
                   <span className="vds-btn-flat__label">Refresh</span>
@@ -2486,8 +2386,13 @@ export function ZoneDetailPage() {
               </table>
             </div>
             {false && (zcNextEnabled || zcPrevEnabled) && (
-              <Pagination onPrev={zcPrevPage} onNext={zcNextPage}
-                prevEnabled={zcPrevEnabled} nextEnabled={zcNextEnabled} panelTitle={zcPanelTitle()} />
+              <Pagination
+                onPrev={zcPrevPage}
+                onNext={zcNextPage}
+                prevEnabled={zcPrevEnabled}
+                nextEnabled={zcNextEnabled}
+                panelTitle={zcPanelTitle()}
+              />
             )}
           </div>
         ))}
@@ -2876,10 +2781,7 @@ export function ZoneDetailPage() {
                         <span className="text-muted fw-normal">(optional)</span>
                       </button>
                       {zoneConnOpen && (
-                        <div
-                          className="p-2 rounded-3 border"
-                          style={{ background: "#f8fafc" }}
-                        >
+                        <div className="p-2 rounded-3 border vds-zone-connection-form">
                           <div className="row g-3">
                             <div className="col-md-6">
                               <label className="vds-zone-form__label">
@@ -3022,10 +2924,7 @@ export function ZoneDetailPage() {
                         <span className="text-muted fw-normal">(optional)</span>
                       </button>
                       {zoneTransferOpen && (
-                        <div
-                          className="p-3 rounded-3 border"
-                          style={{ background: "#f8fafc" }}
-                        >
+                        <div className="p-3 rounded-3 border vds-zone-connection-form">
                           <div className="row g-3">
                             <div className="col-md-6">
                               <label className="vds-zone-form__label">
@@ -3456,24 +3355,39 @@ export function ZoneDetailPage() {
                   </button>
                 </div>
               </div>
-              {zoneSyncOpen && (              <>
-              <div className="p-2">
-                <div className="mb-2">
-                  <label className="vds-zone-form__label d-flex align-items-center gap-2">
-                    <i className="bi bi-calendar-week" />Run on Days
-                  </label>
-                  <div className="d-flex gap-2 flex-wrap mt-2">
-                    {[
-                      { short: 'MON', label: 'Mon' },
-                      { short: 'TUE', label: 'Tue' },
-                      { short: 'WED', label: 'Wed' },
-                      { short: 'THU', label: 'Thu' },
-                      { short: 'FRI', label: 'Fri' },
-                      { short: 'SAT', label: 'Sat' },
-                      { short: 'SUN', label: 'Sun' },
-                    ].map(({ short, label }) => {
-                      const active = syncDays.includes(short);
-                      return (
+              {zoneSyncOpen && (
+                <>
+                  <div className="p-2">
+                    <div className="mb-2">
+                      <label className="vds-zone-form__label d-flex align-items-center gap-2">
+                        <i className="bi bi-calendar-week" />
+                        Run on Days
+                      </label>
+                      <div className="d-flex gap-2 flex-wrap mt-2">
+                        {[
+                          { short: "MON", label: "Mon" },
+                          { short: "TUE", label: "Tue" },
+                          { short: "WED", label: "Wed" },
+                          { short: "THU", label: "Thu" },
+                          { short: "FRI", label: "Fri" },
+                          { short: "SAT", label: "Sat" },
+                          { short: "SUN", label: "Sun" },
+                        ].map(({ short, label }) => {
+                          const active = syncDays.includes(short);
+                          return (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-secondary px-2 py-0"
+                              style={{ fontSize: "0.75rem", height: 28 }}
+                              disabled={syncScheduleRemove}
+                              onClick={() =>
+                                setSyncDays(["MON", "TUE", "WED", "THU", "FRI"])
+                              }
+                            >
+                              Weekdays
+                            </button>
+                          );
+                        })}
                         <button
                           type="button"
                           className="btn btn-sm btn-outline-secondary px-2 py-0"
@@ -3485,33 +3399,38 @@ export function ZoneDetailPage() {
                         >
                           Weekdays
                         </button>
-                      );
-                    })}
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-secondary px-2 py-0"
-                      style={{ fontSize: '0.75rem', height: 28 }}
-                      disabled={syncScheduleRemove}
-                      onClick={() => setSyncDays(['MON','TUE','WED','THU','FRI'])}
-                    >Weekdays</button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-secondary px-2 py-0"
-                      style={{ fontSize: '0.75rem', height: 28 }}
-                      disabled={syncScheduleRemove}
-                      onClick={() => setSyncDays(['MON','TUE','WED','THU','FRI','SAT','SUN'])}
-                    >All Days</button>
-                    {syncDays.length > 0 && (
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-danger px-2 py-0"
-                      style={{ fontSize: '0.75rem', height: 28 }}
-                      disabled={syncScheduleRemove}
-                      onClick={() => setSyncDays([])}
-                    >Clear All</button>
-                    )}
-                  </div>
-                </div>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-secondary px-2 py-0"
+                          style={{ fontSize: "0.75rem", height: 28 }}
+                          disabled={syncScheduleRemove}
+                          onClick={() =>
+                            setSyncDays([
+                              "MON",
+                              "TUE",
+                              "WED",
+                              "THU",
+                              "FRI",
+                              "SAT",
+                              "SUN",
+                            ])
+                          }
+                        >
+                          All Days
+                        </button>
+                        {syncDays.length > 0 && (
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger px-2 py-0"
+                            style={{ fontSize: "0.75rem", height: 28 }}
+                            disabled={syncScheduleRemove}
+                            onClick={() => setSyncDays([])}
+                          >
+                            Clear All
+                          </button>
+                        )}
+                      </div>
+                    </div>
 
                     <div className="row g-3 mb-2">
                       <div className="col-sm-4">
@@ -3817,894 +3736,87 @@ export function ZoneDetailPage() {
 
           {/* ── ACL Rule Create / Edit Modal ── */}
           {aclRuleModal && (
-            <div
-              className="modal d-block"
-              style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
-              onMouseDown={(e) => {
-                if (e.target === e.currentTarget) closeAclRuleModal();
+            <AclRuleModal
+              modal={aclRuleModal}
+              groupsData={groupsData ?? []}
+              onClose={closeAclRuleModal}
+              onChange={setAclRuleModal}
+              onSave={() => {
+                if (zoneData)
+                  saveAclRuleMutation.mutate({
+                    zone: zoneData,
+                    modal: aclRuleModal,
+                  });
               }}
-            >
-              <div className="modal-dialog modal-dialog-centered modal-lg">
-                <div className="modal-content">
-                  <div
-                    className="modal-header"
-                    style={{
-                      background:
-                        "linear-gradient(90deg,#1e3a5f 0%,#2a4d7f 100%)",
-                      color: "#fff",
-                    }}
-                  >
-                    <h5 className="modal-title fw-semibold d-flex align-items-center gap-2">
-                      <i className="bi bi-shield-plus" />
-                      {aclRuleModal.mode === "create"
-                        ? "Create ACL Rule"
-                        : "Update ACL Rule"}
-                    </h5>
-                    <button
-                      type="button"
-                      className="btn-close btn-close-white"
-                      onClick={closeAclRuleModal}
-                    />
-                  </div>
-                  <div className="modal-body p-4">
-                    <div className="row g-3">
-                      {/* Apply Rule to */}
-                      <div className="col-12">
-                        <label className="vds-zone-form__label">
-                          Apply Rule to
-                        </label>
-                        <div className="d-flex gap-4">
-                          {(["User", "Group"] as const).map((p) => (
-                            <div key={p} className="form-check">
-                              <input
-                                type="radio"
-                                className="form-check-input"
-                                id={`acl-priority-${p}`}
-                                name="aclPriority"
-                                checked={aclRuleModal.rule.priority === p}
-                                onChange={() =>
-                                  setAclRuleModal((prev) =>
-                                    prev
-                                      ? {
-                                          ...prev,
-                                          rule: {
-                                            ...prev.rule,
-                                            priority: p,
-                                            userName: undefined,
-                                            groupId: undefined,
-                                          },
-                                        }
-                                      : null,
-                                  )
-                                }
-                              />
-                              <label
-                                className="form-check-label fw-semibold"
-                                htmlFor={`acl-priority-${p}`}
-                              >
-                                {p}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                        <p
-                          className="text-muted mb-0 mt-1"
-                          style={{ fontSize: "0.78rem" }}
-                        >
-                          The more specific a rule is the more precedence it
-                          has. User rules will have a higher priority than
-                          Group, which will have a higher priority than All.
-                        </p>
-                      </div>
-
-                      {/* User NTID or Group select */}
-                      {aclRuleModal.rule.priority === "User" ? (
-                        <div className="col-md-6">
-                          <label className="vds-zone-form__label">
-                            User NTID <span className="text-danger">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            className="form-control vds-zone-form__input"
-                            placeholder="Enter username / NTID"
-                            value={aclRuleModal.rule.userName ?? ""}
-                            onChange={(e) =>
-                              setAclRuleModal((prev) =>
-                                prev
-                                  ? {
-                                      ...prev,
-                                      rule: {
-                                        ...prev.rule,
-                                        userName: e.target.value,
-                                      },
-                                    }
-                                  : null,
-                              )
-                            }
-                          />
-                          <p
-                            className="text-muted mb-0 mt-1"
-                            style={{ fontSize: "0.78rem" }}
-                          >
-                            NTID of the user this rule applies to.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="col-md-6">
-                          <label className="vds-zone-form__label">
-                            Group <span className="text-danger">*</span>
-                          </label>
-                          <select
-                            className="form-select vds-zone-form__input"
-                            value={aclRuleModal.rule.groupId ?? ""}
-                            onChange={(e) =>
-                              setAclRuleModal((prev) =>
-                                prev
-                                  ? {
-                                      ...prev,
-                                      rule: {
-                                        ...prev.rule,
-                                        groupId: e.target.value,
-                                      },
-                                    }
-                                  : null,
-                              )
-                            }
-                          >
-                            <option value="">— Select a group —</option>
-                            {(groupsData ?? [])
-                              .slice()
-                              .sort((a, b) => a.name.localeCompare(b.name))
-                              .map((g) => (
-                                <option key={g.id} value={g.id}>
-                                  {g.name}
-                                  {g.description ? ` (${g.description})` : ""}
-                                </option>
-                              ))}
-                          </select>
-                          <p
-                            className="text-muted mb-0 mt-1"
-                            style={{ fontSize: "0.78rem" }}
-                          >
-                            Group this rule applies to.
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Access Level */}
-                      <div className="col-md-6">
-                        <label className="vds-zone-form__label">
-                          Access Level
-                        </label>
-                        <select
-                          className="form-select vds-zone-form__input"
-                          value={aclRuleModal.rule.accessLevel}
-                          onChange={(e) =>
-                            setAclRuleModal((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    rule: {
-                                      ...prev.rule,
-                                      accessLevel: e.target.value,
-                                    },
-                                  }
-                                : null,
-                            )
-                          }
-                        >
-                          {[
-                            { label: "Read", value: "Read" },
-                            { label: "Write", value: "Write" },
-                            { label: "Delete", value: "Delete" },
-                            { label: "No Access", value: "NoAccess" },
-                          ].map(({ label, value }) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
-                        <p
-                          className="text-muted mb-0 mt-1"
-                          style={{ fontSize: "0.78rem" }}
-                        >
-                          The access level that the selected user or group will
-                          be given within this zone.
-                        </p>
-                      </div>
-
-                      {/* Record Types */}
-                      <div className="col-12">
-                        <label className="vds-zone-form__label">
-                          Record Type(s){" "}
-                          <span className="text-muted fw-normal">
-                            (empty = all types)
-                          </span>
-                        </label>
-                        <div className="d-flex flex-wrap gap-2 mb-1">
-                          {[
-                            "A",
-                            "AAAA",
-                            "CNAME",
-                            "DS",
-                            "MX",
-                            "NS",
-                            "PTR",
-                            "SRV",
-                            "NAPTR",
-                            "SSHFP",
-                            "TXT",
-                          ].map((t) => {
-                            const checked = (
-                              aclRuleModal.rule.recordTypes ?? []
-                            ).includes(t);
-                            return (
-                              <label
-                                key={t}
-                                className={`vds-acl-type-chip${checked ? " vds-acl-type-chip--active" : ""}`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  className="visually-hidden"
-                                  checked={checked}
-                                  onChange={(e) =>
-                                    setAclRuleModal((prev) => {
-                                      if (!prev) return null;
-                                      const types = prev.rule.recordTypes ?? [];
-                                      return {
-                                        ...prev,
-                                        rule: {
-                                          ...prev.rule,
-                                          recordTypes: e.target.checked
-                                            ? [...types, t]
-                                            : types.filter((x) => x !== t),
-                                        },
-                                      };
-                                    })
-                                  }
-                                />
-                                {t}
-                              </label>
-                            );
-                          })}
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-secondary px-2 py-0"
-                            style={{ fontSize: "0.75rem", height: 28 }}
-                            onClick={() =>
-                              setAclRuleModal((prev) =>
-                                prev
-                                  ? {
-                                      ...prev,
-                                      rule: { ...prev.rule, recordTypes: [] },
-                                    }
-                                  : null,
-                              )
-                            }
-                          >
-                            Clear
-                          </button>
-                        </div>
-                        <p
-                          className="text-muted mb-0"
-                          style={{ fontSize: "0.78rem" }}
-                        >
-                          This rule will apply only to the selected record
-                          types. If no types are selected then the rule will
-                          apply to all record types.
-                        </p>
-                      </div>
-
-                      {/* Record Mask */}
-                      <div className="col-md-6">
-                        <label className="vds-zone-form__label">
-                          Record Mask{" "}
-                          <span className="text-muted fw-normal">
-                            (optional)
-                          </span>
-                        </label>
-                        <input
-                          type="text"
-                          className="form-control vds-zone-form__input"
-                          placeholder="e.g. .* or 192.168.0.0/24"
-                          value={aclRuleModal.rule.recordMask ?? ""}
-                          onChange={(e) =>
-                            setAclRuleModal((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    rule: {
-                                      ...prev.rule,
-                                      recordMask: e.target.value,
-                                    },
-                                  }
-                                : null,
-                            )
-                          }
-                        />
-                        <p
-                          className="text-muted mb-0 mt-1"
-                          style={{ fontSize: "0.78rem" }}
-                        >
-                          Record masks further refine the types of records this
-                          record applies to. For non-PTR records, any valid
-                          regex will be accepted. For PTR records, please input
-                          a CIDR rule. If no mask is entered, the rule will
-                          apply to all.
-                        </p>
-                      </div>
-
-                      {/* Description */}
-                      <div className="col-md-6">
-                        <label className="vds-zone-form__label">
-                          Description{" "}
-                          <span className="text-muted fw-normal">
-                            (optional)
-                          </span>
-                        </label>
-                        <textarea
-                          className="form-control vds-zone-form__input"
-                          rows={3}
-                          value={aclRuleModal.rule.description ?? ""}
-                          onChange={(e) =>
-                            setAclRuleModal((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    rule: {
-                                      ...prev.rule,
-                                      description: e.target.value,
-                                    },
-                                  }
-                                : null,
-                            )
-                          }
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="modal-footer">
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-secondary me-auto"
-                      onClick={() =>
-                        setAclRuleModal((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                rule: {
-                                  priority: "User",
-                                  accessLevel: "Read",
-                                  recordTypes: [],
-                                  userName: undefined,
-                                  groupId: undefined,
-                                  recordMask: undefined,
-                                  description: undefined,
-                                },
-                              }
-                            : null,
-                        )
-                      }
-                    >
-                      <i className="bi bi-arrow-counterclockwise me-1" />
-                      Clear Form
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-secondary"
-                      onClick={closeAclRuleModal}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm vds-btn-nav d-flex align-items-center gap-1"
-                      disabled={
-                        saveAclRuleMutation.isPending ||
-                        (aclRuleModal.rule.priority === "User" &&
-                          !aclRuleModal.rule.userName?.trim()) ||
-                        (aclRuleModal.rule.priority === "Group" &&
-                          !aclRuleModal.rule.groupId)
-                      }
-                      onClick={() => {
-                        if (zoneData)
-                          saveAclRuleMutation.mutate({
-                            zone: zoneData,
-                            modal: aclRuleModal!,
-                          });
-                      }}
-                    >
-                      {saveAclRuleMutation.isPending ? (
-                        <>
-                          <i className="bi bi-hourglass-split vds-spin" />
-                          Saving…
-                        </>
-                      ) : (
-                        <>
-                          <i className="bi bi-check-circle" />
-                          Save Rule
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+              isSaving={saveAclRuleMutation.isPending}
+            />
           )}
 
           {/* ── ACL Delete Confirmation Modal ── */}
           {aclDeleteModal && (
-            <div
-              className="modal d-block"
-              style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-              onMouseDown={(e) => {
-                if (e.target === e.currentTarget) setAclDeleteModal(null);
+            <DeleteConfirmationModal
+              isOpen={Boolean(aclDeleteModal)}
+              title="Delete ACL Rule"
+              description={
+                <>
+                  Are you sure you want to delete ACL rule #
+                  {aclDeleteModal.index + 1}? This cannot be undone.
+                </>
+              }
+              cancelLabel="No"
+              confirmLabel={
+                deleteAclRuleMutation.isPending ? "Deleting…" : "Yes, Delete"
+              }
+              confirmIcon={
+                deleteAclRuleMutation.isPending
+                  ? "bi-hourglass-split"
+                  : "bi-trash"
+              }
+              cancelDisabled={deleteAclRuleMutation.isPending}
+              confirmDisabled={deleteAclRuleMutation.isPending}
+              onClose={() => setAclDeleteModal(null)}
+              onConfirm={() => {
+                if (zoneData)
+                  deleteAclRuleMutation.mutate({
+                    zone: zoneData,
+                    index: aclDeleteModal.index,
+                  });
               }}
-            >
-              <div className="modal-dialog modal-dialog-centered">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <h5 className="modal-title fw-semibold d-flex align-items-center gap-2 text-danger">
-                      <i className="bi bi-exclamation-triangle-fill" />
-                      Delete ACL Rule
-                    </h5>
-                    <button
-                      type="button"
-                      className="btn-close"
-                      onClick={() => setAclDeleteModal(null)}
-                    />
-                  </div>
-                  <div className="modal-body">
-                    Are you sure you want to delete ACL rule #
-                    {aclDeleteModal.index + 1}? This cannot be undone.
-                  </div>
-                  <div className="modal-footer">
-                    <button
-                      className="btn btn-outline-secondary"
-                      onClick={() => setAclDeleteModal(null)}
-                    >
-                      No
-                    </button>
-                    <button
-                      className="btn btn-danger d-flex align-items-center gap-1"
-                      disabled={deleteAclRuleMutation.isPending}
-                      onClick={() => {
-                        if (zoneData)
-                          deleteAclRuleMutation.mutate({
-                            zone: zoneData,
-                            index: aclDeleteModal.index,
-                          });
-                      }}
-                    >
-                      {deleteAclRuleMutation.isPending ? (
-                        <>
-                          <i className="bi bi-hourglass-split vds-spin" />
-                          Deleting…
-                        </>
-                      ) : (
-                        <>
-                          <i className="bi bi-trash" />
-                          Yes, Delete
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            />
           )}
 
           {/* ── Abandon Zone Modal ── */}
           {abandonZoneModal && (
-            <div
-              className="modal d-block"
-              style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-              onMouseDown={(e) => {
-                if (e.target === e.currentTarget) setAbandonZoneModal(false);
-              }}
-            >
-              <div className="modal-dialog modal-dialog-centered">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <h5 className="modal-title fw-semibold d-flex align-items-center gap-2">
-                      <i className="bi bi-exclamation-triangle-fill text-danger" />
-                      Abandon Zone?
-                    </h5>
-                    <button
-                      type="button"
-                      className="btn-close"
-                      onClick={() => setAbandonZoneModal(false)}
-                    />
-                  </div>
-                  <div className="modal-body">
-                    <p className="mb-0">
-                      Are you sure you want to abandon{" "}
-                      <strong>{zoneData?.name}</strong>? This disconnects the
-                      zone from VinylDNS but DNS records will still exist unless
-                      deleted from{" "}
-                      <Link
-                        to={`/zones/${id}`}
-                        onClick={() => {
-                          setAbandonZoneModal(false);
-                          setActiveTab("records");
-                        }}
-                        className="fw-semibold"
-                      >
-                        Manage Records
-                      </Link>
-                      .
-                    </p>
-                  </div>
-                  <div className="modal-footer">
-                    <button
-                      className="btn btn-outline-secondary"
-                      onClick={() => setAbandonZoneModal(false)}
-                    >
-                      Close
-                    </button>
-                    <button
-                      className="btn btn-danger d-flex align-items-center gap-1"
-                      disabled={abandonZoneMutation.isPending}
-                      onClick={() => abandonZoneMutation.mutate()}
-                    >
-                      {abandonZoneMutation.isPending ? (
-                        <>
-                          <i className="bi bi-hourglass-split vds-spin" />
-                          Abandoning…
-                        </>
-                      ) : (
-                        <>
-                          <i className="bi bi-box-arrow-left" />
-                          Abandon
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <AbandonZoneModal
+              isOpen={abandonZoneModal}
+              zoneName={zoneData?.name ?? ""}
+              zoneId={id}
+              isPending={abandonZoneMutation.isPending}
+              onClose={() => setAbandonZoneModal(false)}
+              onConfirm={() => abandonZoneMutation.mutate()}
+              onNavigateToRecords={() => setActiveTab("records")}
+            />
           )}
         </>
       )}
 
       {/* ── ACL Rules Modal ── */}
       {aclModal && (
-        <div
-          className="modal d-block"
-          style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setAclModal(null);
-          }}
-        >
-          <div
-            className="modal-dialog modal-dialog-centered modal-lg"
-            style={{ maxWidth: "820px" }}
-          >
-            <div className="modal-content">
-              <div
-                className="modal-header"
-                style={{
-                  background: "linear-gradient(90deg,#1e3a5f 0%,#2a4d7f 100%)",
-                  color: "#fff",
-                }}
-              >
-                <h5 className="modal-title fw-semibold d-flex align-items-center gap-2">
-                  <i className="bi bi-shield-lock" />
-                  ACL Rules
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close btn-close-white"
-                  onClick={() => setAclModal(null)}
-                />
-              </div>
-              <div className="modal-body p-0">
-                <div className="vds-zones-table-wrap">
-                  <table className="vds-zones-table">
-                    <thead>
-                      <tr>
-                        <th>User / Group</th>
-                        <th>Access Level</th>
-                        <th>Record Types</th>
-                        <th>Record Mask</th>
-                        <th>Description</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {aclModal.rules.map((rule, i) => (
-                        <tr key={i}>
-                          <td className="vds-table-primary">
-                            {rule.groupId ? (
-                              <Link
-                                to={`/groups/${rule.groupId}`}
-                                className="vds-table-link"
-                              >
-                                <i className="bi bi-people me-1" />
-                                {rule.displayName ?? rule.groupId}
-                              </Link>
-                            ) : (
-                              <span>
-                                <i className="bi bi-person me-1" />
-                                {rule.userName ?? rule.userId ?? "—"}
-                              </span>
-                            )}
-                          </td>
-                          <td>
-                            <span
-                              className={`vds-access-badge vds-access-badge--${(rule.accessLevel ?? "").toLowerCase().replace(" ", "-")}`}
-                            >
-                              {rule.accessLevel}
-                            </span>
-                          </td>
-                          <td className="vds-table-secondary small">
-                            {!rule.recordTypes?.length
-                              ? "All Types"
-                              : rule.recordTypes.join(", ")}
-                          </td>
-                          <td className="vds-table-secondary small vds-table-mono">
-                            {rule.recordMask ?? "—"}
-                          </td>
-                          <td className="vds-table-secondary small">
-                            {rule.description ?? "—"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  className="btn btn-outline-secondary btn-sm"
-                  onClick={() => setAclModal(null)}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <AclRulesModal
+          isOpen={Boolean(aclModal)}
+          rules={aclModal.rules}
+          onClose={() => setAclModal(null)}
+        />
       )}
       {/* ── Record Set Viewer Modal ── */}
       {viewingRecordSet && (
-        <div
-          className="modal d-block"
-          style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setViewingRecordSet(null);
-          }}
-        >
-          <div className="modal-dialog modal-dialog-centered modal-lg">
-            <div className="modal-content">
-              <div
-                className="modal-header"
-                style={{
-                  background: "linear-gradient(90deg,#1e3a5f 0%,#2a4d7f 100%)",
-                  color: "#fff",
-                }}
-              >
-                <h5 className="modal-title fw-semibold d-flex align-items-center gap-2">
-                  <i className="bi bi-file-earmark-text" />
-                  {viewingRecordSet.label}
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close btn-close-white"
-                  onClick={() => setViewingRecordSet(null)}
-                />
-              </div>
-              <div className="modal-body p-0">
-                {/* Summary row */}
-                <div
-                  className="d-flex gap-3 flex-wrap px-4 py-3 vds-modal-summary-row"
-                  style={{
-                    background: "#f4f7fb",
-                    borderBottom: "1px solid #e3eaf4",
-                  }}
-                >
-                  <div>
-                    <div
-                      className="text-muted"
-                      style={{
-                        fontSize: "0.72rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                      }}
-                    >
-                      Name
-                    </div>
-                    <div className="fw-semibold">
-                      {viewingRecordSet.rs.name}
-                    </div>
-                  </div>
-                  <div>
-                    <div
-                      className="text-muted"
-                      style={{
-                        fontSize: "0.72rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                      }}
-                    >
-                      Type
-                    </div>
-                    <span className="vds-record-type-badge">
-                      {viewingRecordSet.rs.type}
-                    </span>
-                  </div>
-                  <div>
-                    <div
-                      className="text-muted"
-                      style={{
-                        fontSize: "0.72rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                      }}
-                    >
-                      TTL
-                    </div>
-                    <div className="fw-semibold">
-                      {viewingRecordSet.rs.ttl}s
-                    </div>
-                  </div>
-                  <div>
-                    <div
-                      className="text-muted"
-                      style={{
-                        fontSize: "0.72rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                      }}
-                    >
-                      Status
-                    </div>
-                    <span
-                      className={`vds-zone-status-badge ${statusClass(viewingRecordSet.rs.status)}`}
-                    >
-                      {viewingRecordSet.rs.status}
-                    </span>
-                  </div>
-                  {viewingRecordSet.rs.id && (
-                    <div>
-                      <div
-                        className="text-muted"
-                        style={{
-                          fontSize: "0.72rem",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.06em",
-                        }}
-                      >
-                        ID
-                      </div>
-                      <code style={{ fontSize: "0.78rem" }}>
-                        {viewingRecordSet.rs.id}
-                      </code>
-                    </div>
-                  )}
-                </div>
-                {/* Record data */}
-                <div className="px-4 py-3">
-                  {(viewingRecordSet.rs.ownerGroupId ||
-                    (viewingRecordSet.rs.recordSetGroupChange?.requestedOwnerGroupId &&
-                      viewingRecordSet.rs.recordSetGroupChange.requestedOwnerGroupId !== 'null') ||
-                    (viewingRecordSet.rs.recordSetGroupChange?.ownershipTransferStatus)) && (
-                    <div className="mb-3 pb-3" style={{ borderBottom: '1px solid #e3eaf4' }}>
-                      <div className="fw-semibold mb-2" style={{ fontSize: '0.85rem', color: '#3a5c8c' }}>
-                        <i className="bi bi-people-fill me-1" />Ownership
-                      </div>
-                      <div className="d-flex flex-wrap gap-3">
-                        {viewingRecordSet.rs.ownerGroupId && (
-                          <div>
-                            <div className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Record Owner Group</div>
-                            <div className="fw-semibold small">
-                              {viewingRecordSet.rs.ownerGroupName ?? viewingRecordSet.rs.ownerGroupId}
-                            </div>
-                          </div>
-                        )}
-                        {viewingRecordSet.rs.recordSetGroupChange?.requestedOwnerGroupId &&
-                          viewingRecordSet.rs.recordSetGroupChange.requestedOwnerGroupId !== 'null' && (
-                          <div>
-                            <div className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Ownership Transfer Group</div>
-                            <div className="fw-semibold small">
-                              {viewingRecordSet.rs.recordSetGroupChange.requestedOwnerGroupId}
-                            </div>
-                          </div>
-                        )}
-                        {viewingRecordSet.rs.recordSetGroupChange?.ownershipTransferStatus && (
-                          <div>
-                            <div className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Ownership Transfer Status</div>
-                            <div className="fw-semibold small">
-                              {viewingRecordSet.rs.recordSetGroupChange.ownershipTransferStatus}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  <div className="fw-semibold mb-2" style={{ fontSize: '0.85rem', color: '#3a5c8c' }}>
-                    <i className="bi bi-list-ul me-1" />Record Data ({viewingRecordSet.rs.records.length})
-                  </div>
-                  {viewingRecordSet.rs.records.length === 0 ? (
-                    <div className="text-muted small">No records</div>
-                  ) : (
-                    <div
-                      className="vds-zones-table-wrap"
-                      style={{ maxHeight: 320, overflowY: "auto" }}
-                    >
-                      <table className="vds-zones-table">
-                        <thead>
-                          <tr>
-                            <th>Field</th>
-                            <th>Value</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {viewingRecordSet.rs.records.map((rec, i) => (
-                            <React.Fragment key={i}>
-                              {i > 0 && (
-                                <tr>
-                                  <td
-                                    colSpan={2}
-                                    style={{
-                                      background: "#f0f4fa",
-                                      fontSize: "0.72rem",
-                                      color: "#7a9cc4",
-                                      fontStyle: "italic",
-                                      padding: "3px 12px",
-                                    }}
-                                  >
-                                    — record {i + 1} —
-                                  </td>
-                                </tr>
-                              )}
-                              {Object.entries(rec)
-                                .filter(
-                                  ([, v]) =>
-                                    v !== undefined && v !== null && v !== "",
-                                )
-                                .map(([k, v]) => (
-                                  <tr key={k}>
-                                    <td
-                                      className="vds-table-secondary"
-                                      style={{
-                                        fontWeight: 600,
-                                        width: "30%",
-                                        fontSize: "0.82rem",
-                                      }}
-                                    >
-                                      {k}
-                                    </td>
-                                    <td
-                                      className="vds-table-primary"
-                                      style={{
-                                        fontFamily: "monospace",
-                                        fontSize: "0.82rem",
-                                        wordBreak: "break-all",
-                                      }}
-                                    >
-                                      {String(v)}
-                                    </td>
-                                  </tr>
-                                ))}
-                            </React.Fragment>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  className="btn btn-outline-secondary btn-sm"
-                  onClick={() => setViewingRecordSet(null)}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <RecordSetViewerModal
+          isOpen={Boolean(viewingRecordSet)}
+          label={viewingRecordSet.label}
+          recordSet={viewingRecordSet.rs}
+          statusClass={statusClass}
+          onClose={() => setViewingRecordSet(null)}
+        />
       )}
     </div>
   );

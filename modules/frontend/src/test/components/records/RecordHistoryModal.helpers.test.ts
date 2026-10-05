@@ -20,7 +20,7 @@ import {
   statusBadgeClass,
   formatHistoryTime,
   formatRecordValues,
-} from "../../../components/records/RecordHistoryModal";
+} from "../../../components/modals/RecordHistoryModal";
 
 describe("changeTypeBadgeClass", () => {
   it.each([
@@ -42,14 +42,14 @@ describe("changeTypeBadgeClass", () => {
 
 describe("statusBadgeClass", () => {
   it("maps Complete → success", () => {
-    expect(statusBadgeClass("Complete")).toBe("vds-status-badge--success");
+    expect(statusBadgeClass("Complete")).toBe("vds-status-text--success");
   });
   it("maps Failed → danger", () => {
-    expect(statusBadgeClass("Failed")).toBe("vds-status-badge--danger");
+    expect(statusBadgeClass("Failed")).toBe("vds-status-text--danger");
   });
   it("defaults to warning for everything else", () => {
-    expect(statusBadgeClass("Pending")).toBe("vds-status-badge--warning");
-    expect(statusBadgeClass("Anything")).toBe("vds-status-badge--warning");
+    expect(statusBadgeClass("Pending")).toBe("vds-status-text--warning");
+    expect(statusBadgeClass("Anything")).toBe("vds-status-text--warning");
   });
 });
 
