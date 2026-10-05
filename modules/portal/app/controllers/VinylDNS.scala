@@ -187,7 +187,7 @@ class VinylDNS @Inject() (
     val userForm = Form(
       tuple(
         "username" -> text,
-        "password" -> text
+        "password" -> nonEmptyText
       )
     )
     val (username, password) = userForm.bindFromRequest.get
