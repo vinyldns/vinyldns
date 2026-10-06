@@ -363,7 +363,7 @@ export function GroupDetailPage() {
         </div>
         <button
           type="button"
-          className="btn btn-sm d-flex align-items-center gap-1 vds-btn-nav"
+          className="btn btn-sm d-flex align-items-center gap-1 vds-btn-flat"
           onClick={() => navigate(-1)}
         >
           <i className="bi bi-arrow-left" />
@@ -470,7 +470,7 @@ export function GroupDetailPage() {
                     </span>
                     <input
                       type="text"
-                      className="form-control form-control-sm vds-add-member-inline__input"
+                      className="form-control form-control-sm form-control--add vds-add-member-inline__input"
                       placeholder="e.g. john"
                       value={newMemberLogin}
                       autoFocus
@@ -518,7 +518,7 @@ export function GroupDetailPage() {
                 </div>
               ) : (
                 <button
-                  className="btn btn-sm ms-auto d-flex align-items-center gap-1 vds-member-toggle-btn vds-btn-nav"
+                  className="btn btn-sm ms-auto d-flex align-items-center gap-1 vds-member-toggle-btn vds-btn-nav--add-member"
                   onClick={() => setShowAddForm(true)}
                 >
                   <i className="bi bi-person-plus-fill" /> Add Member

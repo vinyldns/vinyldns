@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { DnsChangesTable } from "../components/dnsChanges/DnsChangesTable";
@@ -29,14 +29,6 @@ import { dnsChangeService } from "../services/dnsChangeService";
 import { formatDateTime } from "../utils/dateUtils";
 import type { BatchChangeCount, DnsChangeSummary } from "../types/dnsChange";
 import type { PagingState } from "../types/common";
-
-/** Returns true when the document is currently using the dark VDS theme. */
-function isDarkTheme(): boolean {
-  return (
-    document.documentElement.getAttribute("data-vds-theme") === "dark" ||
-    window.matchMedia("(prefers-color-scheme: dark)").matches
-  );
-}
 
 /**
  * DNS Changes page — lists batch change requests submitted to VinylDNS.
@@ -169,7 +161,6 @@ export function DnsChangesPage() {
 
   const isCardsLoading = isCountLoading;
 
-  // ── Client-side time filter (same logic as ZonesPage) ───────────────────────
   const isWithinRange = (
     dateStr: string | undefined,
     range: TimeRange,
@@ -177,7 +168,7 @@ export function DnsChangesPage() {
     to: string,
   ): boolean => {
     if (range === "all") return true;
-    if (!dateStr) return false;  // Exclude entries with no date when filtering by date range
+    if (!dateStr) return false; // Exclude entries with no date when filtering by date range
     const ts = new Date(dateStr).getTime();
     const now = Date.now();
     if (range === "1d") return ts >= now - 86400000;
@@ -217,7 +208,7 @@ export function DnsChangesPage() {
 
   return (
     <div>
-      <div className="rounded-3 mb-4 d-flex justify-content-between align-items-center vds-page-header">
+      <div className="rounded-3 mb-2 d-flex justify-content-between align-items-center vds-page-header">
         <div className="d-flex align-items-center gap-3">
           <div className="rounded-3 d-flex align-items-center justify-content-center vds-page-header__icon">
             <i className="bi bi-list-ol text-white fs-5" />
@@ -229,14 +220,25 @@ export function DnsChangesPage() {
             </small>
           </div>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary d-flex align-items-center gap-2 vds-btn-primary-shadow vds-btn-nav"
-          onClick={() => void navigate("/dnschanges/new")}
-        >
-          <i className="bi bi-plus-circle-fill" />
-          New DNS Change
-        </button>
+        <div className="d-flex align-items-center gap-2">
+          <button
+            type="button"
+            className="btn btn-primary d-flex align-items-center gap-2 vds-btn-primary-shadow vds-btn-nav"
+            onClick={() => void navigate("/dnschanges/new")}
+          >
+            <i className="bi bi-plus-circle-fill" />
+            New DNS Change
+          </button>
+          <button
+            type="button"
+            id="refresh-group-button"
+            className="btn btn-sm d-flex align-items-center vds-btn-flat "
+            title="Refresh"
+            onClick={() => void refetch()}
+          >
+            <i className="bi bi-arrow-clockwise"/>
+          </button>
+        </div>
       </div>
 
       <div className="card mb-3 vds-toolbar-card">
@@ -313,7 +315,7 @@ export function DnsChangesPage() {
                 }
                 style={{ flex: "0 0 auto", whiteSpace: "nowrap" }}
               >
-                <i className="bi bi-hourglass-split" />
+                <i className="bi bi-hourglass-split" />{" "}
                 <span className="vds-btn-flat__label">Open Only</span>
                 {approvalStatus === "PendingReview" && (
                   <span className="vds-filter-chip--accent">On</span>
@@ -347,24 +349,6 @@ export function DnsChangesPage() {
                   />
                 </button>
               )}
-              <button
-                type="button"
-                className="btn btn-sm vds-btn-flat d-flex align-items-center justify-content-center"
-                style={{
-                  width: 32,
-                  height: 32,
-                  padding: 0,
-                  flexShrink: 0,
-                  borderRadius: "50%",
-                }}
-                title="Refresh"
-                onClick={() => void refetch()}
-              >
-                <i
-                  className="bi bi-arrow-clockwise"
-                  style={{ fontSize: "1rem" }}
-                />
-              </button>
             </div>
           </div>
         </div>
@@ -587,7 +571,7 @@ export function DnsChangesPage() {
           nextEnabled={nextPageEnabled}
           rangeLabel={
             dnsChanges.length > 0
-              ? `${(currentPage - 1) * pageSize + 1}–${(currentPage - 1) * pageSize + dnsChanges.length} of ${cardTotal > 0 ? cardTotal : (currentPage - 1) * pageSize + dnsChanges.length}`
+              ? `${(currentPage - 1) * pageSize + 1}-${(currentPage - 1) * pageSize + dnsChanges.length} of ${cardTotal > 0 ? cardTotal : (currentPage - 1) * pageSize + dnsChanges.length}`
               : undefined
           }
         >
@@ -601,6 +585,8 @@ export function DnsChangesPage() {
           />
         </PaginatedSection>
       )}
+
+      {/* Extracted Cancel Modal */}
       {cancelTarget && (
         <div
           role="dialog"
@@ -609,77 +595,19 @@ export function DnsChangesPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setCancelTarget(null);
           }}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(15,23,42,0.65)",
-            backdropFilter: "blur(3px)",
-            zIndex: 1080,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1.5rem",
-          }}
+          className="vds-cancel-modal-overlay"
         >
-          <div
-            style={{
-              background: isDarkTheme() ? "#1e293b" : "#ffffff",
-              border: `1px solid ${isDarkTheme() ? "#2d4163" : "#e8ecf0"}`,
-              borderRadius: "0.85rem",
-              boxShadow: "0 25px 60px rgba(0,0,0,0.45)",
-              width: "min(460px, 100%)",
-              overflow: "hidden",
-            }}
-          >
+          <div className="vds-cancel-modal-container">
             {/* Header */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.85rem",
-                padding: "1.1rem 1.4rem",
-                borderTop: `2px solid ${isDarkTheme() ? "#475569" : "#cbd5e1"}`,
-                borderBottom: `1px solid ${isDarkTheme() ? "#2d4163" : "#e8ecf0"}`,
-                background: isDarkTheme()
-                  ? "linear-gradient(90deg,#1e293b,#162032)"
-                  : "linear-gradient(90deg,#ffffff,#f8fafd)",
-              }}
-            >
-              <span
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: "50%",
-                  background: isDarkTheme() ? "#3b2f0d" : "#fff7e0",
-                  color: "#d97706",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "1.05rem",
-                  flexShrink: 0,
-                }}
-              >
+            <div className="vds-cancel-modal-header">
+              <span className="vds-cancel-modal-icon-wrap">
                 <i className="bi bi-exclamation-triangle-fill" />
               </span>
               <div style={{ flex: 1 }}>
-                <h6
-                  id="list-cancel-modal-title"
-                  style={{
-                    margin: 0,
-                    fontSize: "1rem",
-                    fontWeight: 700,
-                    color: isDarkTheme() ? "#e2e8f0" : "#0d1b3e",
-                  }}
-                >
+                <h6 id="list-cancel-modal-title" className="vds-cancel-modal-title">
                   Cancel DNS Change
                 </h6>
-                <div
-                  style={{
-                    marginTop: 2,
-                    fontSize: "0.75rem",
-                    color: isDarkTheme() ? "#94a3b8" : "#64748b",
-                  }}
-                >
+                <div className="vds-cancel-modal-subtitle">
                   This action cannot be undone
                 </div>
               </div>
@@ -687,66 +615,24 @@ export function DnsChangesPage() {
                 type="button"
                 onClick={() => setCancelTarget(null)}
                 aria-label="Close"
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: isDarkTheme() ? "#94a3b8" : "#64748b",
-                  fontSize: "1rem",
-                  cursor: "pointer",
-                  padding: "0.25rem 0.5rem",
-                  borderRadius: "0.4rem",
-                }}
+                className="vds-cancel-modal-close-btn"
               >
                 <i className="bi bi-x-lg" />
               </button>
             </div>
 
             {/* Body */}
-            <div
-              style={{
-                padding: "1.25rem 1.4rem",
-                fontSize: "0.9rem",
-                color: isDarkTheme() ? "#cbd5e1" : "#334155",
-                lineHeight: 1.6,
-              }}
-            >
+            <div className="vds-cancel-modal-body">
               Are you sure you want to cancel this DNS Change?
-              <div
-                style={{
-                  marginTop: "0.75rem",
-                  padding: "0.6rem 0.85rem",
-                  background: isDarkTheme() ? "#0f172a" : "#f8fafd",
-                  border: `1px solid ${isDarkTheme() ? "#2d4163" : "#e2e8f0"}`,
-                  borderRadius: "0.5rem",
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: "ui-monospace,SFMono-Regular,Menlo,monospace",
-                    fontSize: "0.78rem",
-                    color: isDarkTheme() ? "#7fa8d8" : "#1e5fa8",
-                    wordBreak: "break-all",
-                  }}
-                >
+              <div className="vds-cancel-modal-info-box">
+                <div className="vds-cancel-modal-info-id">
                   {cancelTarget.id}
                 </div>
-                <div
-                  style={{
-                    marginTop: "0.4rem",
-                    fontSize: "0.78rem",
-                    color: isDarkTheme() ? "#94a3b8" : "#64748b",
-                  }}
-                >
+                <div className="vds-cancel-modal-info-text">
                   Submitted {formatDateTime(cancelTarget.createdTimestamp)}
                 </div>
                 {cancelTarget.comments && (
-                  <div
-                    style={{
-                      marginTop: "0.25rem",
-                      fontSize: "0.78rem",
-                      color: isDarkTheme() ? "#94a3b8" : "#64748b",
-                    }}
-                  >
+                  <div className="vds-cancel-modal-info-text vds-cancel-modal-info-text--sm">
                     {cancelTarget.comments}
                   </div>
                 )}
@@ -754,75 +640,18 @@ export function DnsChangesPage() {
             </div>
 
             {/* Footer */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "0.6rem",
-                padding: "0.9rem 1.4rem",
-                borderTop: `1px solid ${isDarkTheme() ? "#2d4163" : "#e8ecf0"}`,
-                background: isDarkTheme() ? "#162032" : "#f8fafd",
-              }}
-            >
+            <div className="vds-cancel-modal-footer">
               <button
                 type="button"
                 onClick={() => setCancelTarget(null)}
-                style={{
-                  padding: "0.5rem 1.1rem",
-                  background: "transparent",
-                  border: isDarkTheme()
-                    ? "1px solid #4a6fa5"
-                    : "1px solid #d4dbe8",
-                  color: isDarkTheme() ? "#93c5fd" : "#334155",
-                  borderRadius: "0.5rem",
-                  cursor: "pointer",
-                  fontSize: "0.85rem",
-                  fontWeight: 500,
-                  transition: "all 0.15s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = isDarkTheme()
-                    ? "#1e3a5f"
-                    : "#f0f4f9";
-                  e.currentTarget.style.borderColor = isDarkTheme()
-                    ? "#5a82bb"
-                    : "#c2c9d3";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "transparent";
-                  e.currentTarget.style.borderColor = isDarkTheme()
-                    ? "#4a6fa5"
-                    : "#d4dbe8";
-                }}
+                className="vds-cancel-modal-btn-secondary"
               >
                 Keep DNS Change
               </button>
               <button
                 type="button"
                 onClick={handleConfirmCancel}
-                style={{
-                  padding: "0.5rem 1.25rem",
-                  background: "linear-gradient(135deg,#ef4444,#dc2626)",
-                  border: "none",
-                  color: "#fff",
-                  borderRadius: "0.5rem",
-                  cursor: "pointer",
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                  boxShadow: "0 4px 12px rgba(220,38,38,0.35)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  transition: "all 0.15s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow =
-                    "0 6px 20px rgba(220,38,38,0.45)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow =
-                    "0 4px 12px rgba(220,38,38,0.35)";
-                }}
+                className="vds-cancel-modal-btn-danger"
               >
                 <i className="bi bi-x-circle-fill" />
                 Cancel DNS Change

@@ -308,9 +308,9 @@ function RecordDataFields({
     ];
 
   const inputStyle: React.CSSProperties = {
-    background: isDark ? "#1a2640" : "#fff",
-    color: isDark ? "#cdd9ed" : "#212529",
-    borderColor: isDark ? "rgba(127,168,216,0.2)" : "#dde3ec",
+    background: isDark ? "#1a1a1a" : "#fff",
+    color: isDark ? "#f5f5f5" : "#212529",
+    borderColor: isDark ? "rgba(255,255,255,0.15)" : "#dde3ec",
     boxShadow: "none",
     borderRadius: "0.35rem",
     minWidth: 0,
@@ -358,7 +358,7 @@ function RecordDataFields({
             ...inputStyle,
             background: !isAdd
               ? isDark
-                ? "#0f1825"
+                ? "#1a1a1a"
                 : "#e9ecef"
               : inputStyle.background,
           }}
@@ -636,9 +636,9 @@ function ChangeRow({
   };
 
   const inputStyle: React.CSSProperties = {
-    background: isDark ? "#1a2640" : "#fff",
-    color: isDark ? "#cdd9ed" : "#212529",
-    borderColor: isDark ? "rgba(127,168,216,0.2)" : "#dde3ec",
+    background: isDark ? "#1a1a1a" : "#fff",
+    color: isDark ? "#f5f5f5" : "#212529",
+    borderColor: isDark ? "rgba(255,255,255,0.15)" : "#dde3ec",
     boxShadow: "none",
     borderRadius: "0.35rem",
     fontSize: "0.82rem",
@@ -758,7 +758,7 @@ function ChangeRow({
             ...inputStyle,
             background: !isAdd
               ? isDark
-                ? "#0f1825"
+                ? "#1a1a1a"
                 : "#f1f5f9"
               : inputStyle.background,
           }}
@@ -840,10 +840,10 @@ function ChangeRow({
             border: `1px solid ${disabled ? (isDark ? "#475569" : "#cbd5e1") : isDark ? "#7f1d1d" : "#f1aeb5"}`,
             background: disabled
               ? isDark
-                ? "#1e293b"
+                ? "#161618"
                 : "#f8fafc"
               : isDark
-                ? "rgba(127,29,29,0.25)"
+                ? "hsla(0, 63%, 31%, 0.25)"
                 : "#fff5f5",
             color: disabled ? (isDark ? "#94a3b8" : "#64748b") : "#dc3545",
             borderRadius: "0.35rem",
@@ -889,7 +889,7 @@ function ScheduledTimeField({
         style={{
           fontSize: "0.8rem",
           fontWeight: 600,
-          color: isDark ? "#cbd5e1" : "#1f2a44",
+          color: isDark ? "#f5f5f5" : "#1f2a44",
         }}
       >
         Request Date/Time
@@ -926,9 +926,9 @@ function ScheduledTimeField({
             type="datetime-local"
             className="form-control form-control-sm"
             style={{
-              background: isDark ? "#1a2640" : "#fff",
-              color: isDark ? "#cdd9ed" : "#212529",
-              borderColor: isDark ? "rgba(127,168,216,0.2)" : "#dde3ec",
+              background: isDark ? "#1a1a1a" : "#fff",
+              color: isDark ? "#f5f5f5" : "#212529",
+              borderColor: isDark ? "rgba(255,255,255,0.15)" : "#dde3ec",
               boxShadow: "none",
               borderRadius: "0.45rem",
             }}
@@ -1065,14 +1065,14 @@ function DuplicateReviewModal({
     };
   }, []);
 
-  const panelBg = isDark ? "#1e293b" : "#ffffff";
-  const panelBorder = isDark ? "#2d4163" : "#e8ecf0";
-  const headerText = isDark ? "#e2e8f0" : "#0d1b3e";
-  const subText = isDark ? "#94a3b8" : "#64748b";
-  const cardBg = isDark ? "#162032" : "#f8fafd";
-  const cardBorder = isDark ? "#2d4163" : "#e2e8f0";
-  const rowBg = isDark ? "#1e293b" : "#ffffff";
-  const rowBorder = isDark ? "#334155" : "#e8ecf0";
+  const panelBg = isDark ? "#161618" : "#ffffff";
+  const panelBorder = isDark ? "#2a2a2c" : "#e8ecf0";
+  const headerText = isDark ? "#ffffff" : "#0d1b3e";
+  const subText = isDark ? "#a1a1aa" : "#64748b";
+  const cardBg = isDark ? "#1a1a1a" : "#f8fafd";
+  const cardBorder = isDark ? "#2a2a2c" : "#e2e8f0";
+  const rowBg = isDark ? "#111111" : "#ffffff";
+  const rowBorder = isDark ? "#2a2a2c" : "#e8ecf0";
   const removeBg = isDark ? "#3f1d1d" : "#fef2f2";
   const removeBorder = isDark ? "#7f1d1d" : "#fecaca";
 
@@ -1087,7 +1087,7 @@ function DuplicateReviewModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(15, 23, 42, 0.65)",
+        background: "rgba(21, 22, 24, 0.9)",
         backdropFilter: "blur(2px)",
         zIndex: 1080,
         display: "flex",
@@ -1100,8 +1100,8 @@ function DuplicateReviewModal({
         style={{
           background: panelBg,
           color: headerText,
-          border: `1px solid ${panelBorder}`,
-          borderRadius: "0.85rem",
+          // border: `1px solid ${panelBorder}`,
+          borderRadius: "12px",
           boxShadow: "0 25px 60px rgba(0, 0, 0, 0.45)",
           width: "min(900px, 100%)",
           maxHeight: "90vh",
@@ -1112,15 +1112,12 @@ function DuplicateReviewModal({
       >
         {/* Header */}
         <div
+          className="rhm-header"
           style={{
             display: "flex",
             alignItems: "center",
             gap: "0.85rem",
             padding: "1.1rem 1.4rem",
-            borderBottom: `1px solid ${panelBorder}`,
-            background: isDark
-              ? "linear-gradient(90deg, #1e293b, #162032)"
-              : "linear-gradient(90deg, #ffffff, #f8fafd)",
           }}
         >
           <span
@@ -1128,8 +1125,8 @@ function DuplicateReviewModal({
               width: 38,
               height: 38,
               borderRadius: "50%",
-              background: isDark ? "#3b2f0d" : "#fff7e0",
-              color: "#d97706",
+              background: "#fff",
+              color: "#1e5fa8",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
@@ -1156,18 +1153,9 @@ function DuplicateReviewModal({
             type="button"
             onClick={onCancel}
             aria-label="Close"
-            style={{
-              background: "transparent",
-              border: "none",
-              color: subText,
-              fontSize: "1.1rem",
-              cursor: "pointer",
-              padding: "0.25rem 0.5rem",
-              borderRadius: "0.4rem",
-              transition: "background 0.15s",
-            }}
+            className="rhm-header-btn"
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = isDark ? "#2d4163" : "#e8ecf0";
+              e.currentTarget.style.background = isDark ? "#2a2a2c" : "#e8ecf0";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = "transparent";
@@ -1323,7 +1311,7 @@ function DuplicateReviewModal({
                               ? "#0f2f1a"
                               : "#f0fdf4"
                             : isDark
-                              ? "#1e293b"
+                              ? "#161618"
                               : "#f8fafc",
                           border: `1px solid ${
                             checked
@@ -1331,7 +1319,7 @@ function DuplicateReviewModal({
                                 ? "#16a34a"
                                 : "#86efac"
                               : isDark
-                                ? "#2d3d52"
+                                ? "#2a2a2c"
                                 : "#e2e8f0"
                           }`,
                           borderRadius: "0.5rem",
@@ -1364,7 +1352,7 @@ function DuplicateReviewModal({
                         <span
                           style={{
                             background: isDark ? "#1e3a5f" : "#dbeafe",
-                            color: isDark ? "#93c5fd" : "#1e5fa8",
+                            color: isDark ? "#ffffff" : "#1e5fa8",
                             fontSize: "0.72rem",
                             fontWeight: 600,
                             padding: "0.1rem 0.5rem",
@@ -1412,7 +1400,7 @@ function DuplicateReviewModal({
             alignItems: "center",
             justifyContent: "space-between",
             gap: "0.75rem",
-            background: isDark ? "#162032" : "#f8fafd",
+            background: isDark ? "#161618" : "#f8fafd",
             flexWrap: "wrap",
           }}
         >
@@ -1454,7 +1442,7 @@ function DuplicateReviewModal({
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = isDark
-                  ? "#2d4163"
+                  ? "#2a2a2c"
                   : "#e8ecf0";
               }}
               onMouseLeave={(e) => {
@@ -1472,9 +1460,11 @@ function DuplicateReviewModal({
                 background:
                   willKeep === 0
                     ? isDark
-                      ? "#334155"
+                      ? "#333333"
                       : "#cbd5e1"
-                    : "linear-gradient(90deg, #1e5fa8, #0d1b3e)",
+                    : isDark
+                      ? "#3b82f6"
+                      : "#1e5fa8",
                 border: "none",
                 color: "#fff",
                 borderRadius: "0.5rem",
@@ -1775,7 +1765,7 @@ export function DnsChangeForm({
 
     // Stage the payload for user confirmation rather than submitting immediately.
     // The confirmation panel will display the change count and let the user
-    // back out before the API call is made. 
+    // back out before the API call is made.
     setPendingSubmitData({
       data: {
         comments: data.comments || undefined,
@@ -1898,9 +1888,9 @@ export function DnsChangeForm({
         <div
           className="rounded-3 mb-3"
           style={{
-            border: `1px solid ${isDark ? "#2d4163" : "#e2e8f0"}`,
+            border: `1px solid ${isDark ? "#2a2a2c" : "#e2e8f0"}`,
             overflow: "hidden",
-            background: isDark ? "#131c2e" : "#ffffff",
+            background: isDark ? "#111111" : "#ffffff",
             boxShadow: isDark
               ? "0 1px 3px rgba(0,0,0,0.3)"
               : "0 1px 3px rgba(15,23,42,0.06)",
@@ -1909,9 +1899,9 @@ export function DnsChangeForm({
           <div
             className="px-3 py-2 d-flex align-items-center gap-2"
             style={{
-              background: isDark ? "#1a2536" : "#f8fafc",
-              color: isDark ? "#cbd5e1" : "#1f2a44",
-              borderBottom: `1px solid ${isDark ? "#2d3d52" : "#e2e8f0"}`,
+              background: isDark ? "#161618" : "#f8fafc",
+              color: isDark ? "#f5f5f5" : "#1f2a44",
+              borderBottom: `1px solid ${isDark ? "#2a2a2c" : "#e2e8f0"}`,
             }}
           >
             <i
@@ -1921,7 +1911,7 @@ export function DnsChangeForm({
             <span
               className="fw-semibold"
               style={{
-                color: isDark ? "#e2e8f0" : "#1f2a44",
+                color: isDark ? "#ffffff" : "#1f2a44",
                 fontSize: "0.9rem",
               }}
             >
@@ -1936,7 +1926,7 @@ export function DnsChangeForm({
                   style={{
                     fontSize: "0.8rem",
                     fontWeight: 600,
-                    color: isDark ? "#cbd5e1" : "#1f2a44",
+                    color: isDark ? "#f5f5f5" : "#1f2a44",
                   }}
                 >
                   Description
@@ -1951,9 +1941,9 @@ export function DnsChangeForm({
                   rows={2}
                   placeholder="Brief description of this batch change"
                   style={{
-                    background: isDark ? "#1a2640" : "#fff",
-                    color: isDark ? "#cdd9ed" : "#212529",
-                    borderColor: isDark ? "rgba(127,168,216,0.2)" : "#dde3ec",
+                    background: isDark ? "#1a1a1a" : "#fff",
+                    color: isDark ? "#f5f5f5" : "#212529",
+                    borderColor: isDark ? "rgba(255,255,255,0.15)" : "#dde3ec",
                     boxShadow: "none",
                     borderRadius: "0.45rem",
                     resize: "none",
@@ -1967,7 +1957,7 @@ export function DnsChangeForm({
                   style={{
                     fontSize: "0.8rem",
                     fontWeight: 600,
-                    color: isDark ? "#cbd5e1" : "#1f2a44",
+                    color: isDark ? "#f5f5f5" : "#1f2a44",
                   }}
                 >
                   Owner Group
@@ -1981,9 +1971,11 @@ export function DnsChangeForm({
                   <div
                     className="form-control form-control-sm"
                     style={{
-                      background: isDark ? "#1a2640" : "#fff",
-                      color: isDark ? "#cdd9ed" : "#212529",
-                      borderColor: isDark ? "rgba(127,168,216,0.2)" : "#dde3ec",
+                      background: isDark ? "#1a1a1a" : "#fff",
+                      color: isDark ? "#f5f5f5" : "#212529",
+                      borderColor: isDark
+                        ? "rgba(255,255,255,0.15)"
+                        : "#dde3ec",
                       boxShadow: "none",
                       borderRadius: "0.45rem",
                       opacity: 0.8,
@@ -1996,12 +1988,12 @@ export function DnsChangeForm({
                     <select
                       className={`form-select form-select-sm${ownerGroupError ? " is-invalid" : ""}`}
                       style={{
-                        background: isDark ? "#1a2640" : "#fff",
-                        color: isDark ? "#cdd9ed" : "#212529",
+                        background: isDark ? "#1a1a1a" : "#fff",
+                        color: isDark ? "#f5f5f5" : "#212529",
                         borderColor: ownerGroupError
                           ? "#dc3545"
                           : isDark
-                            ? "rgba(127,168,216,0.2)"
+                            ? "rgba(255,255,255,0.15)"
                             : "#dde3ec",
                         boxShadow: "none",
                         borderRadius: "0.45rem",
@@ -2033,7 +2025,7 @@ export function DnsChangeForm({
                         transform: "translateY(-50%)",
                         pointerEvents: "none",
                         fontSize: "0.72rem",
-                        color: isDark ? "#cbd5e1" : "#64748b",
+                        color: isDark ? "#f5f5f5" : "#64748b",
                       }}
                     />
                   </div>
@@ -2042,12 +2034,12 @@ export function DnsChangeForm({
                     className={`form-control form-control-sm${ownerGroupError ? " is-invalid" : ""}`}
                     placeholder="Required for shared zone records"
                     style={{
-                      background: isDark ? "#1a2640" : "#fff",
-                      color: isDark ? "#cdd9ed" : "#212529",
+                      background: isDark ? "#1a1a1a" : "#fff",
+                      color: isDark ? "#f5f5f5" : "#212529",
                       borderColor: ownerGroupError
                         ? "#dc3545"
                         : isDark
-                          ? "rgba(127,168,216,0.2)"
+                          ? "rgba(255,255,255,0.15)"
                           : "#dde3ec",
                       boxShadow: "none",
                       borderRadius: "0.45rem",
@@ -2097,9 +2089,9 @@ export function DnsChangeForm({
         <div
           className="rounded-3 mb-3"
           style={{
-            border: `1px solid ${isDark ? "#2d4163" : "#e2e8f0"}`,
+            border: `1px solid ${isDark ? "#2a2a2c" : "#e2e8f0"}`,
             overflow: "hidden",
-            background: isDark ? "#131c2e" : "#ffffff",
+            background: isDark ? "#111111" : "#ffffff",
             boxShadow: isDark
               ? "0 3px 6px rgba(0,0,0,0.3)"
               : "0 3px 6px rgba(15,23,42,0.06)",
@@ -2108,9 +2100,9 @@ export function DnsChangeForm({
           <div
             className="px-3 py-2 d-flex align-items-center justify-content-between flex-wrap gap-2"
             style={{
-              background: isDark ? "#1a2536" : "#f8fafc",
-              color: isDark ? "#cbd5e1" : "#1f2a44",
-              borderBottom: `1px solid ${isDark ? "#2d3d52" : "#e2e8f0"}`,
+              background: isDark ? "#161618" : "#f8fafc",
+              color: isDark ? "#f5f5f5" : "#1f2a44",
+              borderBottom: `1px solid ${isDark ? "#2a2a2c" : "#e2e8f0"}`,
             }}
           >
             <div className="d-flex align-items-center gap-2">
@@ -2121,7 +2113,7 @@ export function DnsChangeForm({
               <span
                 className="fw-semibold"
                 style={{
-                  color: isDark ? "#e2e8f0" : "#1f2a44",
+                  color: isDark ? "#ffffff" : "#1f2a44",
                   fontSize: "0.9rem",
                 }}
               >
@@ -2133,7 +2125,7 @@ export function DnsChangeForm({
                     background: isDark
                       ? "rgba(30,95,168,0.25)"
                       : "rgba(30,95,168,0.1)",
-                    color: isDark ? "#93c5fd" : "#1e5fa8",
+                    color: isDark ? "#ffffff" : "#1e5fa8",
                     fontSize: "0.72rem",
                     fontWeight: 700,
                     borderRadius: "999px",
@@ -2148,7 +2140,7 @@ export function DnsChangeForm({
             <div className="d-flex align-items-start gap-2">
               <button
                 type="button"
-                className="vds-ubtn vds-ubtn--secondary"
+                className="vds-ubtn vds-ubtn--add-change"
                 disabled={
                   fields.length >= BATCH_CHANGE_LIMIT ||
                   Boolean(pendingSubmitData)
@@ -2170,7 +2162,7 @@ export function DnsChangeForm({
               <div className="d-flex flex-column align-items-center gap-1">
                 <label
                   htmlFor="batchChangeCsv"
-                  className="vds-ubtn vds-ubtn--secondary mb-0"
+                  className="vds-ubtn vds-ubtn--import-csv mb-0"
                   style={{
                     cursor: pendingSubmitData ? "not-allowed" : "pointer",
                     opacity: pendingSubmitData ? 0.55 : 1,
@@ -2186,7 +2178,7 @@ export function DnsChangeForm({
                   rel="noopener noreferrer"
                   style={{
                     fontSize: "0.72rem",
-                    color: isDark ? "#7fb8f0" : "#1e5fa8",
+                    color: isDark ? "#ffffff" : "#1e5fa8",
                     textDecoration: "none",
                     whiteSpace: "nowrap",
                   }}
@@ -2257,12 +2249,12 @@ export function DnsChangeForm({
             {fields.length === 0 ? (
               <div
                 style={{
-                  border: `2px dashed ${isDark ? "#3d5273" : "#94a3b8"}`,
+                  border: `2px dashed ${isDark ? "#2a2a2c" : "#94a3b8"}`,
                   borderRadius: "0.65rem",
                   padding: "2rem 1rem",
                   textAlign: "center",
                   color: isDark ? "#64748b" : "#475569",
-                  background: isDark ? "#1e293b" : "#f8fafc",
+                  background: isDark ? "#161618" : "#f8fafc",
                 }}
               >
                 <i
@@ -2316,7 +2308,7 @@ export function DnsChangeForm({
                             textTransform: "uppercase",
                             letterSpacing: "0.04em",
                             color: isDark ? "#64748b" : "#64748b",
-                            background: isDark ? "#1a2536" : "#f8fafd",
+                            background: isDark ? "#161618" : "#f8fafd",
                             whiteSpace: "nowrap",
                           }}
                         >
@@ -2349,7 +2341,7 @@ export function DnsChangeForm({
             paddingBottom: "0",
             position: "sticky",
             bottom: 0,
-            backgroundColor: isDark ? "#0f172a" : "#ffffff",
+            backgroundColor: isDark ? "#000000" : "#ffffff",
             zIndex: 10,
           }}
         >
@@ -2398,7 +2390,7 @@ export function DnsChangeForm({
                   style={
                     isDark
                       ? {
-                          backgroundColor: "#2563eb",
+                          backgroundColor: "#3b82f6",
                           color: "#f8fafc",
                           borderColor: "#3b82f6",
                           boxShadow: "0 1px 3px rgba(37, 99, 235, 0.25)",
@@ -2441,7 +2433,7 @@ export function DnsChangeForm({
                 style={
                   isDark
                     ? {
-                        backgroundColor: "#2563eb",
+                        backgroundColor: "#3b82f6",
                         color: "#f8fafc",
                         borderColor: "#3b82f6",
                         boxShadow: "0 1px 3px rgba(37, 99, 235, 0.25)",
@@ -2463,7 +2455,7 @@ export function DnsChangeForm({
               </button>
               <button
                 type="button"
-                className="vds-ubtn vds-ubtn--secondary"
+                className="vds-ubtn vds-ubtn--danger"
                 onClick={() => {
                   if (hasMeaningfulDiscardData(allChanges)) {
                     setShowCancelConfirm(true);
@@ -2512,8 +2504,8 @@ export function DnsChangeForm({
         >
           <div
             style={{
-              background: isDark ? "#1e293b" : "#ffffff",
-              border: `1px solid ${isDark ? "#2d4163" : "#e8ecf0"}`,
+              background: isDark ? "#161618" : "#ffffff",
+              border: `1px solid ${isDark ? "#2a2a2c" : "#e8ecf0"}`,
               borderRadius: "0.85rem",
               boxShadow: "0 20px 50px rgba(0,0,0,0.4)",
               width: "min(420px, 100%)",
@@ -2526,7 +2518,7 @@ export function DnsChangeForm({
                 alignItems: "center",
                 gap: "0.85rem",
                 padding: "1rem 1.25rem",
-                borderBottom: `1px solid ${isDark ? "#2d4163" : "#e8ecf0"}`,
+                borderBottom: `1px solid ${isDark ? "#2a2a2c" : "#e8ecf0"}`,
               }}
             >
               <span
@@ -2551,7 +2543,7 @@ export function DnsChangeForm({
                   margin: 0,
                   fontWeight: 600,
                   fontSize: "1rem",
-                  color: isDark ? "#e2e8f0" : "#0d1b3e",
+                  color: isDark ? "#ffffff" : "#0d1b3e",
                 }}
               >
                 Discard batch change?
@@ -2575,8 +2567,8 @@ export function DnsChangeForm({
                 justifyContent: "flex-end",
                 gap: "0.5rem",
                 padding: "0.75rem 1.25rem",
-                borderTop: `1px solid ${isDark ? "#2d4163" : "#e8ecf0"}`,
-                background: isDark ? "#162032" : "#f8fafd",
+                borderTop: `1px solid ${isDark ? "#2a2a2c" : "#e8ecf0"}`,
+                background: isDark ? "#161618" : "#f8fafd",
               }}
             >
               <button
@@ -2585,7 +2577,7 @@ export function DnsChangeForm({
                 style={{
                   padding: "0.45rem 1rem",
                   background: "transparent",
-                  border: `1px solid ${isDark ? "#2d4163" : "#d4dae3"}`,
+                  border: `1px solid ${isDark ? "#2a2a2c" : "#d4dae3"}`,
                   color: isDark ? "#94a3b8" : "#5a6a85",
                   borderRadius: "0.45rem",
                   cursor: "pointer",

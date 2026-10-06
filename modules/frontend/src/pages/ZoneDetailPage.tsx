@@ -35,7 +35,7 @@ import { useZoneRecords } from "../hooks/useRecords";
 import { usePaging } from "../hooks/usePaging";
 import { formatDateTime } from "../utils/dateUtils";
 import type { Zone, AclRule } from "../types/zone";
-import type { RecordSet } from "../types/record";
+import type { RecordSet, RecordSetGroupChange } from "../types/record";
 
 type DetailTab = "records" | "recordChanges" | "zoneChanges" | "zone";
 
@@ -148,11 +148,11 @@ export function ZoneDetailPage() {
 
   const [activeTab, setActiveTab] = useState<DetailTab>("records");
   const [showRecordForm, setShowRecordForm] = useState(false);
-  const [editRecord, setEditRecord]        = useState<RecordSet | null>(null);
+  const [editRecord, setEditRecord] = useState<RecordSet | null>(null);
   const recordFormRef = useRef<HTMLDivElement>(null);
-  const recordSnapshotRef = useRef('');
+  const recordSnapshotRef = useRef("");
   const [recordFormDirty, setRecordFormDirty] = useState(false);
-  const aclRuleSnapshotRef = useRef('');
+  const aclRuleSnapshotRef = useRef("");
   const [aclRuleDirty, setAclRuleDirty] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState<RecordSet | null>(null);
   const [nameFilter, setNameFilter] = useState("");
@@ -242,24 +242,33 @@ export function ZoneDetailPage() {
   const ttlDropdownRef = useRef<HTMLDivElement>(null);
 
   const serializeFormState = useCallback((root: HTMLElement | null) => {
-    if (!root) return '';
-    const fields = Array.from(root.querySelectorAll('input, textarea, select')) as Array<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
+    if (!root) return "";
+    const fields = Array.from(
+      root.querySelectorAll("input, textarea, select"),
+    ) as Array<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
 
     return fields
       .map((field, index) => {
-        const key = field.getAttribute('name') ?? field.getAttribute('id') ?? `${field.tagName.toLowerCase()}-${index}`;
+        const key =
+          field.getAttribute("name") ??
+          field.getAttribute("id") ??
+          `${field.tagName.toLowerCase()}-${index}`;
         if (field instanceof HTMLInputElement) {
-          if (field.type === 'checkbox' || field.type === 'radio') return `${key}:${field.checked}`;
-          if (field.type === 'file') return `${key}:${field.files?.length ?? 0}`;
+          if (field.type === "checkbox" || field.type === "radio")
+            return `${key}:${field.checked}`;
+          if (field.type === "file")
+            return `${key}:${field.files?.length ?? 0}`;
         }
         return `${key}:${field.value}`;
       })
-      .join('|');
+      .join("|");
   }, []);
 
   const confirmDiscardRecordChanges = useCallback(() => {
     if (!recordFormDirty) return true;
-    return window.confirm('You have unsaved changes. Do you want to close this form and discard them?');
+    return window.confirm(
+      "You have unsaved changes. Do you want to close this form and discard them?",
+    );
   }, [recordFormDirty]);
 
   const closeRecordForm = useCallback(() => {
@@ -271,7 +280,9 @@ export function ZoneDetailPage() {
 
   const confirmDiscardAclRuleChanges = useCallback(() => {
     if (!aclRuleDirty) return true;
-    return window.confirm('You have unsaved changes. Do you want to close this form and discard them?');
+    return window.confirm(
+      "You have unsaved changes. Do you want to close this form and discard them?",
+    );
   }, [aclRuleDirty]);
 
   const closeAclRuleModal = useCallback(() => {
@@ -280,18 +291,25 @@ export function ZoneDetailPage() {
     }
   }, [confirmDiscardAclRuleChanges]);
 
-  const runWithRecordFormGuard = useCallback((action: () => void) => {
-    const formOpen = showRecordForm || !!editRecord;
-    if (formOpen && !confirmDiscardRecordChanges()) return;
-    if (formOpen) {
-      setShowRecordForm(false);
-      setEditRecord(null);
-    }
-    action();
-  }, [showRecordForm, editRecord, confirmDiscardRecordChanges]);
+  const runWithRecordFormGuard = useCallback(
+    (action: () => void) => {
+      const formOpen = showRecordForm || !!editRecord;
+      if (formOpen && !confirmDiscardRecordChanges()) return;
+      if (formOpen) {
+        setShowRecordForm(false);
+        setEditRecord(null);
+      }
+      action();
+    },
+    [showRecordForm, editRecord, confirmDiscardRecordChanges],
+  );
 
-  const { data: zoneData, isLoading: zoneLoading, isFetching: zoneFetching, } = useQuery({
-    queryKey: ['zone', id],
+  const {
+    data: zoneData,
+    isLoading: zoneLoading,
+    isFetching: zoneFetching,
+  } = useQuery({
+    queryKey: ["zone", id],
     queryFn: async () => {
       const res = await zonesService.getZone(id);
       return res.data.zone;
@@ -901,7 +919,7 @@ export function ZoneDetailPage() {
 
   useEffect(() => {
     if (!(showRecordForm || editRecord)) {
-      recordSnapshotRef.current = '';
+      recordSnapshotRef.current = "";
       setRecordFormDirty(false);
       return;
     }
@@ -910,18 +928,20 @@ export function ZoneDetailPage() {
     if (!node) return;
 
     const updateDirty = () => {
-      setRecordFormDirty(serializeFormState(node) !== recordSnapshotRef.current);
+      setRecordFormDirty(
+        serializeFormState(node) !== recordSnapshotRef.current,
+      );
     };
 
     recordSnapshotRef.current = serializeFormState(node);
     updateDirty();
 
-    node.addEventListener('input', updateDirty);
-    node.addEventListener('change', updateDirty);
+    node.addEventListener("input", updateDirty);
+    node.addEventListener("change", updateDirty);
 
     return () => {
-      node.removeEventListener('input', updateDirty);
-      node.removeEventListener('change', updateDirty);
+      node.removeEventListener("input", updateDirty);
+      node.removeEventListener("change", updateDirty);
     };
   }, [showRecordForm, editRecord, serializeFormState]);
 
@@ -930,16 +950,16 @@ export function ZoneDetailPage() {
 
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
-      event.returnValue = '';
+      event.returnValue = "";
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [showRecordForm, editRecord, recordFormDirty]);
 
   useEffect(() => {
     if (!aclRuleModal) {
-      aclRuleSnapshotRef.current = '';
+      aclRuleSnapshotRef.current = "";
       setAclRuleDirty(false);
       return;
     }
@@ -959,11 +979,11 @@ export function ZoneDetailPage() {
 
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
-      event.returnValue = '';
+      event.returnValue = "";
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [aclRuleModal, aclRuleDirty]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
@@ -972,7 +992,7 @@ export function ZoneDetailPage() {
       ? {
           ...data,
           recordSetGroupChange: data.recordSetGroupChange ?? {
-            ownershipTransferStatus: 'AutoApproved',
+            ownershipTransferStatus: "AutoApproved",
           },
         }
       : data;
@@ -984,7 +1004,10 @@ export function ZoneDetailPage() {
     const recordSetGroupChange: RecordSetGroupChange | undefined =
       editRecord.recordSetGroupChange ??
       (editRecord.ownerGroupId
-        ? { requestedOwnerGroupId: editRecord.ownerGroupId, ownershipTransferStatus: 'AutoApproved' }
+        ? {
+            requestedOwnerGroupId: editRecord.ownerGroupId,
+            ownershipTransferStatus: "AutoApproved",
+          }
         : undefined);
     updateRecord(
       {
@@ -1089,7 +1112,7 @@ export function ZoneDetailPage() {
         </div>
         <button
           type="button"
-          className="btn btn-sm d-flex align-items-center gap-1 vds-btn-nav"
+          className="btn btn-sm d-flex align-items-center gap-1 vds-btn-flat"
           onClick={() => navigate(-1)}
         >
           <i className="bi bi-arrow-left" />
@@ -1145,7 +1168,9 @@ export function ZoneDetailPage() {
           </div>
           <div>
             <div className="vds-zone-meta-label">Created</div>
-            <div className="vds-zone-meta-value vds-date-wrap">{zoneData.created ? formatDateTime(zoneData.created) : '—'}</div>
+            <div className="vds-zone-meta-value vds-date-wrap">
+              {zoneData.created ? formatDateTime(zoneData.created) : "—"}
+            </div>
           </div>
         </div>
         <div className="vds-zone-meta-item">
@@ -1154,7 +1179,9 @@ export function ZoneDetailPage() {
           </div>
           <div>
             <div className="vds-zone-meta-label">Last Sync</div>
-            <div className="vds-zone-meta-value vds-date-wrap">{zoneData.latestSync ? formatDateTime(zoneData.latestSync) : '—'}</div>
+            <div className="vds-zone-meta-value vds-date-wrap">
+              {zoneData.latestSync ? formatDateTime(zoneData.latestSync) : "—"}
+            </div>
           </div>
         </div>
         {zoneData.backendId && (
@@ -1220,9 +1247,14 @@ export function ZoneDetailPage() {
                 className="modal fade show d-block"
                 tabIndex={-1}
                 role="dialog"
-                onClick={(e) => { if (e.target === e.currentTarget) closeRecordForm(); }}
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) closeRecordForm();
+                }}
               >
-                <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+                <div
+                  className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable"
+                  role="document"
+                >
                   <div className="modal-content" ref={recordFormRef}>
                     <div
                       className="modal-header"
@@ -1252,9 +1284,11 @@ export function ZoneDetailPage() {
                         zoneId={id}
                         zoneName={zoneData.name}
                         initialData={editRecord ?? undefined}
-                        onSubmit={editRecord ? handleUpdateRecord : handleCreateRecord}
+                        onSubmit={
+                          editRecord ? handleUpdateRecord : handleCreateRecord
+                        }
                         onCancel={closeRecordForm}
-                        mode={editRecord ? 'edit' : 'create'}
+                        mode={editRecord ? "edit" : "create"}
                         isSharedZone={zoneData?.shared ?? false}
                         isReverseZone={
                           zoneData.name.endsWith("in-addr.arpa.") ||
@@ -1301,7 +1335,14 @@ export function ZoneDetailPage() {
                       />
                       <button
                         className="btn btn-sm vds-btn-flat d-flex align-items-center gap-1"
-                        onClick={() => runWithRecordFormGuard(() => void queryClient.invalidateQueries({ queryKey: ['record-changes-recent', id] }))}
+                        onClick={() =>
+                          runWithRecordFormGuard(
+                            () =>
+                              void queryClient.invalidateQueries({
+                                queryKey: ["record-changes-recent", id],
+                              }),
+                          )
+                        }
                         title="Refresh recent changes"
                       >
                         <i className="bi bi-arrow-clockwise" />
@@ -1333,80 +1374,161 @@ export function ZoneDetailPage() {
                     <>
                       <div className="vds-zones-table-wrap">
                         <table className="vds-zones-table">
-                        <thead>
-                          <tr>
-                            <th>Record</th>
-                            <th>Type</th>
-                            <th>Change</th>
-                            <th>Status</th>
-                            <th>User</th>
-                            <th
-                              onClick={() => setRecentRcDateSort((d) => d === 'asc' ? 'desc' : 'asc')}
-                              style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
-                            >Date <SortArrow dir={recentRcDateSort} /></th>
-                            <th>Additional Info</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {[...(recentRcData.recordSetChanges)]
-                            .filter((c) => inRange(c.created, recentRcTimeRange, recentRcDateFrom, recentRcDateTo))
-                            .sort((a, b) => recentRcDateSort
-                              ? (recentRcDateSort === 'asc' ? 1 : -1) * (new Date(a.created).getTime() - new Date(b.created).getTime())
-                              : 0)
-                            .map((c) => (
-                            <tr key={c.id}>
-                              <td className="fw-semibold vds-table-primary">{c.recordSet.name}</td>
-                              <td className="vds-table-secondary fw-semibold">{c.recordSet.type}</td>
-                              <td><span className={`vds-change-badge vds-change-badge--${c.changeType.toLowerCase()}`}>{c.changeType}</span></td>
-                              <td><span className={`vds-zone-status-badge ${changeStatusClass(c.status)}`}>{c.status}</span></td>
-                              <td className="vds-table-secondary vds-table-nowrap small">{c.userName ?? c.userId}</td>
-                              <td className="vds-table-secondary small vds-date-wrap">{formatDateTimeStack(c.created)}</td>
-                              <td className="small">
-                                {/* systemMessage always shown (e.g. "Change applied via zone sync") */}
-                                {c.systemMessage && <div className="vds-table-secondary mb-1">{c.systemMessage}</div>}
-                                {c.status !== 'Failed' && (
-                                  <div className="d-flex flex-column gap-1">
-                                    {c.changeType === 'Create' && (
-                                      <button
-                                        className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                        onClick={() => setViewingRecordSet({ label: 'Created Record Set', rs: c.recordSet })}>
-                                        <i className="bi bi-eye" />View created recordset
-                                      </button>
-                                    )}
-                                    {c.changeType === 'Update' && (<>
-                                      <button
-                                        className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                        onClick={() => setViewingRecordSet({ label: 'New Record Set', rs: c.recordSet })}>
-                                        <i className="bi bi-eye" />View new recordset
-                                      </button>
-                                      {c.updates && (
-                                        <button
-                                          className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                          onClick={() => setViewingRecordSet({ label: 'Old Record Set', rs: c.updates! })}>
-                                          <i className="bi bi-clock-history" />View old recordset
-                                        </button>
-                                      )}
-                                    </>)}
-                                    {c.changeType === 'Delete' && (
-                                      <button
-                                        className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
-                                        onClick={() => setViewingRecordSet({ label: 'Deleted Record Set', rs: c.recordSet })}>
-                                        <i className="bi bi-clock-history" />View deleted recordset
-                                      </button>
-                                    )}
-                                  </div>
-                                )}
-                              </td>
+                          <thead>
+                            <tr>
+                              <th>Record</th>
+                              <th>Type</th>
+                              <th>Change</th>
+                              <th>Status</th>
+                              <th>User</th>
+                              <th
+                                onClick={() =>
+                                  setRecentRcDateSort((d) =>
+                                    d === "asc" ? "desc" : "asc",
+                                  )
+                                }
+                                className="col-date"
+                                // style={{
+                                //   cursor: "pointer",
+                                //   userSelect: "none",
+                                //   whiteSpace: "nowrap",
+                                // }}
+                              >
+                                Date <SortArrow dir={recentRcDateSort} />
+                              </th>
+                              <th className="col-info">Additional Info</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    {false && (recentRcNextEnabled || recentRcPrevEnabled) && (
-                      <Pagination onPrev={recentRcPrevPage} onNext={recentRcNextPage}
-                        prevEnabled={recentRcPrevEnabled} nextEnabled={recentRcNextEnabled}
-                        panelTitle={recentRcPanelTitle()} />
-                    )}
+                          </thead>
+                          <tbody>
+                            {[...recentRcData.recordSetChanges]
+                              .filter((c) =>
+                                inRange(
+                                  c.created,
+                                  recentRcTimeRange,
+                                  recentRcDateFrom,
+                                  recentRcDateTo,
+                                ),
+                              )
+                              .sort((a, b) =>
+                                recentRcDateSort
+                                  ? (recentRcDateSort === "asc" ? 1 : -1) *
+                                    (new Date(a.created).getTime() -
+                                      new Date(b.created).getTime())
+                                  : 0,
+                              )
+                              .map((c) => (
+                                <tr key={c.id}>
+                                  <td className="fw-semibold vds-table-primary">
+                                    {c.recordSet.name}
+                                  </td>
+                                  <td className="vds-table-secondary fw-semibold">
+                                    {c.recordSet.type}
+                                  </td>
+                                  <td>
+                                    <span
+                                      className={`vds-change-badge vds-change-badge--${c.changeType.toLowerCase()}`}
+                                    >
+                                      {c.changeType}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <span
+                                      className={`vds-zone-status-badge ${changeStatusClass(c.status)}`}
+                                    >
+                                      {c.status}
+                                    </span>
+                                  </td>
+                                  <td className="vds-table-secondary vds-table-nowrap small">
+                                    {c.userName ?? c.userId}
+                                  </td>
+                                  <td className="vds-table-secondary small vds-date-wrap col-date">
+                                    {formatDateTimeStack(c.created)}
+                                  </td>
+
+                                  <td className="small col-info">
+                                    {c.systemMessage && (
+                                      <div className="vds-table-secondary mb-1">
+                                        {c.systemMessage}
+                                      </div>
+                                    )}
+                                    {c.status !== "Failed" && (
+                                      <div className="d-flex flex-column gap-1">
+                                        {c.changeType === "Create" && (
+                                          <button
+                                            className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                            onClick={() =>
+                                              setViewingRecordSet({
+                                                label: "Created Record Set",
+                                                rs: c.recordSet,
+                                              })
+                                            }
+                                          >
+                                            <i className="bi bi-eye" />
+                                            View created recordset
+                                          </button>
+                                        )}
+                                        {c.changeType === "Update" && (
+                                          <>
+                                            <button
+                                              className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                              onClick={() =>
+                                                setViewingRecordSet({
+                                                  label: "New Record Set",
+                                                  rs: c.recordSet,
+                                                })
+                                              }
+                                            >
+                                              <i className="bi bi-eye" />
+                                              View new recordset
+                                            </button>
+                                            {c.updates && (
+                                              <button
+                                                className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                                onClick={() =>
+                                                  setViewingRecordSet({
+                                                    label: "Old Record Set",
+                                                    rs: c.updates!,
+                                                  })
+                                                }
+                                              >
+                                                <i className="bi bi-clock-history" />
+                                                View old recordset
+                                              </button>
+                                            )}
+                                          </>
+                                        )}
+                                        {c.changeType === "Delete" && (
+                                          <button
+                                            className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
+                                            onClick={() =>
+                                              setViewingRecordSet({
+                                                label: "Deleted Record Set",
+                                                rs: c.recordSet,
+                                              })
+                                            }
+                                          >
+                                            <i className="bi bi-clock-history" />
+                                            View deleted recordset
+                                          </button>
+                                        )}
+                                      </div>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {false &&
+                        (recentRcNextEnabled || recentRcPrevEnabled) && (
+                          <Pagination
+                            onPrev={recentRcPrevPage}
+                            onNext={recentRcNextPage}
+                            prevEnabled={recentRcPrevEnabled}
+                            nextEnabled={recentRcNextEnabled}
+                            panelTitle={recentRcPanelTitle()}
+                          />
+                        )}
                     </>
                   )}
                 </div>
@@ -1622,7 +1744,10 @@ export function ZoneDetailPage() {
                     <div className="ms-auto d-flex align-items-center gap-2 flex-wrap justify-content-end">
                       <button
                         className="btn btn-sm d-flex align-items-center gap-1 vds-btn-nav vds-create-record-btn"
-                        onClick={() => { setShowRecordForm(true); setEditRecord(null); }}
+                        onClick={() => {
+                          setShowRecordForm(true);
+                          setEditRecord(null);
+                        }}
                       >
                         <i className="bi bi-plus-circle-fill" />
                         Create New Record
@@ -1643,17 +1768,23 @@ export function ZoneDetailPage() {
                       <button
                         className="btn btn-sm d-flex align-items-center gap-1 vds-btn-flat"
                         disabled={recordsFetching}
-                        onClick={() => runWithRecordFormGuard(() => {
-                          setNameFilter('');
-                          setTypeFilter('');
-                          setStatusFilter('');
-                          setTtlFilter(null);
-                          searchRecords({ name: "", type: "" });
-                          void refetchRecords();
-                        })}
+                        onClick={() =>
+                          runWithRecordFormGuard(() => {
+                            setNameFilter("");
+                            setTypeFilter("");
+                            setStatusFilter("");
+                            setTtlFilter(null);
+                            searchRecords({ name: "", type: "" });
+                            void refetchRecords();
+                          })
+                        }
                       >
-                        <i className={`bi bi-arrow-clockwise${recordsFetching ? ' vds-spin' : ''}`} />
-                        <span className="vds-btn-flat__label">{recordsFetching ? 'Refreshing...' : 'Refresh'}</span>
+                        <i
+                          className={`bi bi-arrow-clockwise${recordsFetching ? " vds-spin" : ""}`}
+                        />
+                        <span className="vds-btn-flat__label">
+                          {recordsFetching ? "Refreshing..." : "Refresh"}
+                        </span>
                       </button>
                     </div>
                   </div>
@@ -1746,9 +1877,17 @@ export function ZoneDetailPage() {
 
               <div className="position-relative">
                 {recordsFetching && (
-                  <div className="vds-table-fetch-overlay" role="status" aria-live="polite" aria-label="Refreshing records">
+                  <div
+                    className="vds-table-fetch-overlay"
+                    role="status"
+                    aria-live="polite"
+                    aria-label="Refreshing records"
+                  >
                     <div className="vds-table-fetch-spinner">
-                      <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+                      <span
+                        className="spinner-border spinner-border-sm"
+                        aria-hidden="true"
+                      />
                       Refreshing records...
                     </div>
                   </div>
@@ -1780,19 +1919,21 @@ export function ZoneDetailPage() {
                   onApproveOwnership={(rec) =>
                     approveOwnershipMutation.mutate(rec)
                   }
-                  onRejectOwnership={(rec) => rejectOwnershipMutation.mutate(rec)}
+                  onRejectOwnership={(rec) =>
+                    rejectOwnershipMutation.mutate(rec)
+                  }
                 />
               </div>
-                {false && (recNextEnabled || recPrevEnabled) && (
-                  <Pagination
-                    onPrev={recordsPrev}
-                    onNext={recordsNext}
-                    prevEnabled={recPrevEnabled}
-                    nextEnabled={recNextEnabled}
-                    panelTitle={recPanelTitle()}
-                  />
-                )}
-              </>
+              {false && (recNextEnabled || recPrevEnabled) && (
+                <Pagination
+                  onPrev={recordsPrev}
+                  onNext={recordsNext}
+                  prevEnabled={recPrevEnabled}
+                  nextEnabled={recNextEnabled}
+                  panelTitle={recPanelTitle()}
+                />
+              )}
+            </>
           )}
 
           {/* Delete modal */}
@@ -1940,13 +2081,7 @@ export function ZoneDetailPage() {
 
                   <div className="modal-body px-4 py-3">
                     {/* Record info */}
-                    <div
-                      className="d-flex align-items-center gap-3 mb-4 p-3 rounded-3"
-                      style={{
-                        background: "linear-gradient(135deg,#f8faff,#eff6ff)",
-                        border: "1px solid #dbeafe",
-                      }}
-                    >
+                    <div className="d-flex align-items-center gap-3 mb-4 p-3 rounded-3 vds-record--info">
                       <div>
                         <div
                           className="fw-bold text-primary"
@@ -2011,10 +2146,7 @@ export function ZoneDetailPage() {
                     </div>
                   </div>
 
-                  <div
-                    className="modal-footer"
-                    style={{ borderTop: "1px solid #e2e8f0" }}
-                  >
+                  <div className="modal-footer vds-record--footer">
                     <button
                       className="btn btn-outline-secondary"
                       onClick={() => {
@@ -2120,7 +2252,10 @@ export function ZoneDetailPage() {
                       Date & Time <SortArrow dir={rcTimeSort} />
                     </th>
                     <th>Recordset Name</th>
-                    <th>Recordset <br />Type</th>
+                    <th>
+                      Recordset <br />
+                      Type
+                    </th>
                     <th>Change Type</th>
                     <th>User</th>
                     <th>Status</th>
@@ -2249,13 +2384,13 @@ export function ZoneDetailPage() {
                                       <i className="bi bi-eye" />
                                       View new recordset
                                     </button>
-                                    {c.updates?.recordSet && (
+                                    {c.updates && (
                                       <button
                                         className="btn btn-sm vds-btn-flat px-2 py-0 d-flex align-items-center gap-1 vds-history-btn"
                                         onClick={() =>
                                           setViewingRecordSet({
                                             label: "Old Record Set",
-                                            rs: c.updates!.recordSet!,
+                                            rs: c.updates!,
                                           })
                                         }
                                       >
@@ -2275,8 +2410,13 @@ export function ZoneDetailPage() {
               </table>
             </div>
             {false && (rcNextEnabled || rcPrevEnabled) && (
-              <Pagination onPrev={rcPrevPage} onNext={rcNextPage}
-                prevEnabled={rcPrevEnabled} nextEnabled={rcNextEnabled} panelTitle={rcPanelTitle()} />
+              <Pagination
+                onPrev={rcPrevPage}
+                onNext={rcNextPage}
+                prevEnabled={rcPrevEnabled}
+                nextEnabled={rcNextEnabled}
+                panelTitle={rcPanelTitle()}
+              />
             )}
           </div>
         ))}
@@ -2301,7 +2441,14 @@ export function ZoneDetailPage() {
                 />
                 <button
                   className="btn btn-sm vds-btn-flat d-flex align-items-center gap-1"
-                  onClick={() => runWithRecordFormGuard(() => void queryClient.invalidateQueries({ queryKey: ['zone-changes', id] }))}
+                  onClick={() =>
+                    runWithRecordFormGuard(
+                      () =>
+                        void queryClient.invalidateQueries({
+                          queryKey: ["zone-changes", id],
+                        }),
+                    )
+                  }
                 >
                   <i className="bi bi-arrow-clockwise" />
                   <span className="vds-btn-flat__label">Refresh</span>
@@ -2486,8 +2633,13 @@ export function ZoneDetailPage() {
               </table>
             </div>
             {false && (zcNextEnabled || zcPrevEnabled) && (
-              <Pagination onPrev={zcPrevPage} onNext={zcNextPage}
-                prevEnabled={zcPrevEnabled} nextEnabled={zcNextEnabled} panelTitle={zcPanelTitle()} />
+              <Pagination
+                onPrev={zcPrevPage}
+                onNext={zcNextPage}
+                prevEnabled={zcPrevEnabled}
+                nextEnabled={zcNextEnabled}
+                panelTitle={zcPanelTitle()}
+              />
             )}
           </div>
         ))}
@@ -2876,10 +3028,7 @@ export function ZoneDetailPage() {
                         <span className="text-muted fw-normal">(optional)</span>
                       </button>
                       {zoneConnOpen && (
-                        <div
-                          className="p-2 rounded-3 border"
-                          style={{ background: "#f8fafc" }}
-                        >
+                        <div className="p-2 rounded-3 border vds-zone-connection-form">
                           <div className="row g-3">
                             <div className="col-md-6">
                               <label className="vds-zone-form__label">
@@ -3022,10 +3171,7 @@ export function ZoneDetailPage() {
                         <span className="text-muted fw-normal">(optional)</span>
                       </button>
                       {zoneTransferOpen && (
-                        <div
-                          className="p-3 rounded-3 border"
-                          style={{ background: "#f8fafc" }}
-                        >
+                        <div className="p-3 rounded-3 border vds-zone-connection-form">
                           <div className="row g-3">
                             <div className="col-md-6">
                               <label className="vds-zone-form__label">
@@ -3456,24 +3602,39 @@ export function ZoneDetailPage() {
                   </button>
                 </div>
               </div>
-              {zoneSyncOpen && (              <>
-              <div className="p-2">
-                <div className="mb-2">
-                  <label className="vds-zone-form__label d-flex align-items-center gap-2">
-                    <i className="bi bi-calendar-week" />Run on Days
-                  </label>
-                  <div className="d-flex gap-2 flex-wrap mt-2">
-                    {[
-                      { short: 'MON', label: 'Mon' },
-                      { short: 'TUE', label: 'Tue' },
-                      { short: 'WED', label: 'Wed' },
-                      { short: 'THU', label: 'Thu' },
-                      { short: 'FRI', label: 'Fri' },
-                      { short: 'SAT', label: 'Sat' },
-                      { short: 'SUN', label: 'Sun' },
-                    ].map(({ short, label }) => {
-                      const active = syncDays.includes(short);
-                      return (
+              {zoneSyncOpen && (
+                <>
+                  <div className="p-2">
+                    <div className="mb-2">
+                      <label className="vds-zone-form__label d-flex align-items-center gap-2">
+                        <i className="bi bi-calendar-week" />
+                        Run on Days
+                      </label>
+                      <div className="d-flex gap-2 flex-wrap mt-2">
+                        {[
+                          { short: "MON", label: "Mon" },
+                          { short: "TUE", label: "Tue" },
+                          { short: "WED", label: "Wed" },
+                          { short: "THU", label: "Thu" },
+                          { short: "FRI", label: "Fri" },
+                          { short: "SAT", label: "Sat" },
+                          { short: "SUN", label: "Sun" },
+                        ].map(({ short, label }) => {
+                          const active = syncDays.includes(short);
+                          return (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-secondary px-2 py-0"
+                              style={{ fontSize: "0.75rem", height: 28 }}
+                              disabled={syncScheduleRemove}
+                              onClick={() =>
+                                setSyncDays(["MON", "TUE", "WED", "THU", "FRI"])
+                              }
+                            >
+                              Weekdays
+                            </button>
+                          );
+                        })}
                         <button
                           type="button"
                           className="btn btn-sm btn-outline-secondary px-2 py-0"
@@ -3485,33 +3646,38 @@ export function ZoneDetailPage() {
                         >
                           Weekdays
                         </button>
-                      );
-                    })}
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-secondary px-2 py-0"
-                      style={{ fontSize: '0.75rem', height: 28 }}
-                      disabled={syncScheduleRemove}
-                      onClick={() => setSyncDays(['MON','TUE','WED','THU','FRI'])}
-                    >Weekdays</button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-secondary px-2 py-0"
-                      style={{ fontSize: '0.75rem', height: 28 }}
-                      disabled={syncScheduleRemove}
-                      onClick={() => setSyncDays(['MON','TUE','WED','THU','FRI','SAT','SUN'])}
-                    >All Days</button>
-                    {syncDays.length > 0 && (
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-danger px-2 py-0"
-                      style={{ fontSize: '0.75rem', height: 28 }}
-                      disabled={syncScheduleRemove}
-                      onClick={() => setSyncDays([])}
-                    >Clear All</button>
-                    )}
-                  </div>
-                </div>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-secondary px-2 py-0"
+                          style={{ fontSize: "0.75rem", height: 28 }}
+                          disabled={syncScheduleRemove}
+                          onClick={() =>
+                            setSyncDays([
+                              "MON",
+                              "TUE",
+                              "WED",
+                              "THU",
+                              "FRI",
+                              "SAT",
+                              "SUN",
+                            ])
+                          }
+                        >
+                          All Days
+                        </button>
+                        {syncDays.length > 0 && (
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger px-2 py-0"
+                            style={{ fontSize: "0.75rem", height: 28 }}
+                            disabled={syncScheduleRemove}
+                            onClick={() => setSyncDays([])}
+                          >
+                            Clear All
+                          </button>
+                        )}
+                      </div>
+                    </div>
 
                     <div className="row g-3 mb-2">
                       <div className="col-sm-4">
@@ -4585,44 +4751,92 @@ export function ZoneDetailPage() {
                 {/* Record data */}
                 <div className="px-4 py-3">
                   {(viewingRecordSet.rs.ownerGroupId ||
-                    (viewingRecordSet.rs.recordSetGroupChange?.requestedOwnerGroupId &&
-                      viewingRecordSet.rs.recordSetGroupChange.requestedOwnerGroupId !== 'null') ||
-                    (viewingRecordSet.rs.recordSetGroupChange?.ownershipTransferStatus)) && (
-                    <div className="mb-3 pb-3" style={{ borderBottom: '1px solid #e3eaf4' }}>
-                      <div className="fw-semibold mb-2" style={{ fontSize: '0.85rem', color: '#3a5c8c' }}>
-                        <i className="bi bi-people-fill me-1" />Ownership
+                    (viewingRecordSet.rs.recordSetGroupChange
+                      ?.requestedOwnerGroupId &&
+                      viewingRecordSet.rs.recordSetGroupChange
+                        .requestedOwnerGroupId !== "null") ||
+                    viewingRecordSet.rs.recordSetGroupChange
+                      ?.ownershipTransferStatus) && (
+                    <div className="mb-3 pb-3 vds-view-record--data">
+                      <div
+                        className="fw-semibold mb-2"
+                        style={{ fontSize: "0.85rem", color: "#3a5c8c" }}
+                      >
+                        <i className="bi bi-people-fill me-1" />
+                        Ownership
                       </div>
                       <div className="d-flex flex-wrap gap-3">
                         {viewingRecordSet.rs.ownerGroupId && (
                           <div>
-                            <div className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Record Owner Group</div>
+                            <div
+                              className="text-muted"
+                              style={{
+                                fontSize: "0.72rem",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.06em",
+                              }}
+                            >
+                              Record Owner Group
+                            </div>
                             <div className="fw-semibold small">
-                              {viewingRecordSet.rs.ownerGroupName ?? viewingRecordSet.rs.ownerGroupId}
+                              {viewingRecordSet.rs.ownerGroupName ??
+                                viewingRecordSet.rs.ownerGroupId}
                             </div>
                           </div>
                         )}
-                        {viewingRecordSet.rs.recordSetGroupChange?.requestedOwnerGroupId &&
-                          viewingRecordSet.rs.recordSetGroupChange.requestedOwnerGroupId !== 'null' && (
-                          <div>
-                            <div className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Ownership Transfer Group</div>
-                            <div className="fw-semibold small">
-                              {viewingRecordSet.rs.recordSetGroupChange.requestedOwnerGroupId}
+                        {viewingRecordSet.rs.recordSetGroupChange
+                          ?.requestedOwnerGroupId &&
+                          viewingRecordSet.rs.recordSetGroupChange
+                            .requestedOwnerGroupId !== "null" && (
+                            <div>
+                              <div
+                                className="text-muted"
+                                style={{
+                                  fontSize: "0.72rem",
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.06em",
+                                }}
+                              >
+                                Ownership Transfer Group
+                              </div>
+                              <div className="fw-semibold small">
+                                {
+                                  viewingRecordSet.rs.recordSetGroupChange
+                                    .requestedOwnerGroupId
+                                }
+                              </div>
                             </div>
-                          </div>
-                        )}
-                        {viewingRecordSet.rs.recordSetGroupChange?.ownershipTransferStatus && (
+                          )}
+                        {viewingRecordSet.rs.recordSetGroupChange
+                          ?.ownershipTransferStatus && (
                           <div>
-                            <div className="text-muted" style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Ownership Transfer Status</div>
+                            <div
+                              className="text-muted"
+                              style={{
+                                fontSize: "0.72rem",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.06em",
+                              }}
+                            >
+                              Ownership Transfer Status
+                            </div>
                             <div className="fw-semibold small">
-                              {viewingRecordSet.rs.recordSetGroupChange.ownershipTransferStatus}
+                              {
+                                viewingRecordSet.rs.recordSetGroupChange
+                                  .ownershipTransferStatus
+                              }
                             </div>
                           </div>
                         )}
                       </div>
                     </div>
                   )}
-                  <div className="fw-semibold mb-2" style={{ fontSize: '0.85rem', color: '#3a5c8c' }}>
-                    <i className="bi bi-list-ul me-1" />Record Data ({viewingRecordSet.rs.records.length})
+                  <div
+                    className="fw-semibold mb-2"
+                    style={{ fontSize: "0.85rem", color: "#3a5c8c" }}
+                  >
+                    <i className="bi bi-list-ul me-1" />
+                    Record Data ({viewingRecordSet.rs.records.length})
                   </div>
                   {viewingRecordSet.rs.records.length === 0 ? (
                     <div className="text-muted small">No records</div>
@@ -4643,16 +4857,7 @@ export function ZoneDetailPage() {
                             <React.Fragment key={i}>
                               {i > 0 && (
                                 <tr>
-                                  <td
-                                    colSpan={2}
-                                    style={{
-                                      background: "#f0f4fa",
-                                      fontSize: "0.72rem",
-                                      color: "#7a9cc4",
-                                      fontStyle: "italic",
-                                      padding: "3px 12px",
-                                    }}
-                                  >
+                                  <td colSpan={2} className="vds-view-record">
                                     — record {i + 1} —
                                   </td>
                                 </tr>

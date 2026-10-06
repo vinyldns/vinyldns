@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import type { Group } from '../../types/group';
+import React, { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import type { Group } from "../../types/group";
 
 interface GroupFormData {
   name: string;
@@ -29,7 +29,7 @@ interface GroupFormProps {
   onSubmit: (data: GroupFormData) => void;
   onCancel: () => void;
   isSubmitting: boolean;
-  mode: 'create' | 'edit';
+  mode: "create" | "edit";
 }
 
 export function GroupForm({
@@ -39,20 +39,25 @@ export function GroupForm({
   isSubmitting,
   mode,
 }: GroupFormProps) {
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<GroupFormData>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<GroupFormData>({
     defaultValues: {
-      name: initialData?.name ?? '',
-      email: initialData?.email ?? '',
-      description: initialData?.description ?? '',
+      name: initialData?.name ?? "",
+      email: initialData?.email ?? "",
+      description: initialData?.description ?? "",
     },
   });
 
   useEffect(() => {
     if (initialData) {
       reset({
-        name: initialData.name ?? '',
-        email: initialData.email ?? '',
-        description: initialData.description ?? '',
+        name: initialData.name ?? "",
+        email: initialData.email ?? "",
+        description: initialData.description ?? "",
       });
     }
   }, [initialData, reset]);
@@ -64,11 +69,13 @@ export function GroupForm({
           Group Name <span className="text-danger">*</span>
         </label>
         <input
-          className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+          className={`form-control ${errors.name ? "is-invalid" : ""}`}
           placeholder="Enter group name"
-          {...register('name', { required: 'Group name is required' })}
+          {...register("name", { required: "Group name is required" })}
         />
-        {errors.name && <div className="invalid-feedback">{errors.name.message}</div>}
+        {errors.name && (
+          <div className="invalid-feedback">{errors.name.message}</div>
+        )}
       </div>
 
       <div className="mb-3">
@@ -77,11 +84,13 @@ export function GroupForm({
         </label>
         <input
           type="email"
-          className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+          className={`form-control ${errors.email ? "is-invalid" : ""}`}
           placeholder="group@example.com"
-          {...register('email', { required: 'Email is required' })}
+          {...register("email", { required: "Email is required" })}
         />
-        {errors.email && <div className="invalid-feedback">{errors.email.message}</div>}
+        {errors.email && (
+          <div className="invalid-feedback">{errors.email.message}</div>
+        )}
       </div>
 
       <div className="mb-4">
@@ -90,34 +99,42 @@ export function GroupForm({
           className="form-control"
           rows={2}
           placeholder="Optional description"
-          {...register('description')}
+          {...register("description")}
         />
       </div>
 
       <div className="d-flex gap-2">
-        <button type="submit" className="btn btn-primary" style={{background: 'linear-gradient(90deg, #1e5fa8, #0d1b3e)', border: 'none'}} disabled={isSubmitting}>
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={isSubmitting}
+        >
           {isSubmitting ? (
             <>
               <span className="spinner-border spinner-border-sm me-1" />
               Saving…
             </>
-          ) : mode === 'create' ? (
-            'Create Group'
+          ) : mode === "create" ? (
+            "Create Group"
           ) : (
-            'Update Group'
+            "Update Group"
           )}
         </button>
-        {mode === 'create' && (
+        {mode === "create" && (
           <button
             type="button"
             className="btn btn-outline-secondary"
-            onClick={() => reset({ name: '', email: '', description: '' })}
+            onClick={() => reset({ name: "", email: "", description: "" })}
           >
             <i className="bi bi-x-circle me-1" />
             Clear
           </button>
         )}
-        <button type="button" className="btn btn-outline-secondary" onClick={onCancel}>
+        <button
+          type="button"
+          className="btn btn-outline-secondary"
+          onClick={onCancel}
+        >
           Cancel
         </button>
       </div>

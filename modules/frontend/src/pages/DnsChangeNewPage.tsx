@@ -213,8 +213,8 @@ export function DnsChangeNewPage() {
         >
           <div
             style={{
-              background: isDark ? "#1e293b" : "#ffffff",
-              border: `1px solid ${isDark ? "#2d4163" : "#e8ecf0"}`,
+              background: isDark ? "#161618" : "#ffffff",
+              border: `1px solid ${isDark ? "#2a2a2c" : "#e8ecf0"}`,
               borderRadius: "0.85rem",
               boxShadow: "0 25px 60px rgba(0,0,0,0.4)",
               width: "min(440px, 100%)",
@@ -227,10 +227,8 @@ export function DnsChangeNewPage() {
                 alignItems: "center",
                 gap: "0.85rem",
                 padding: "1.1rem 1.4rem",
-                borderBottom: `1px solid ${isDark ? "#2d4163" : "#e8ecf0"}`,
-                background: isDark
-                  ? "linear-gradient(90deg,#1e293b,#162035)"
-                  : "linear-gradient(90deg,#ffffff,#f8fafd)",
+                borderBottom: `1px solid ${isDark ? "#2a2a2c" : "#e8ecf0"}`,
+                background: isDark ? "#161618" : "#ffffff",
               }}
             >
               <span
@@ -256,7 +254,7 @@ export function DnsChangeNewPage() {
                     margin: 0,
                     fontSize: "1rem",
                     fontWeight: 700,
-                    color: isDark ? "#e2e8f0" : "#0d1b3e",
+                    color: isDark ? "#ffffff" : "#0d1b3e",
                   }}
                 >
                   Discard batch change?
@@ -278,8 +276,8 @@ export function DnsChangeNewPage() {
                 justifyContent: "flex-end",
                 gap: "0.6rem",
                 padding: "0.9rem 1.4rem",
-                borderTop: `1px solid ${isDark ? "#2d4163" : "#e8ecf0"}`,
-                background: isDark ? "#162032" : "#f8fafd",
+                borderTop: `1px solid ${isDark ? "#2a2a2c" : "#e8ecf0"}`,
+                background: isDark ? "#161618" : "#f8fafd",
               }}
             >
               <button
@@ -288,7 +286,7 @@ export function DnsChangeNewPage() {
                 style={{
                   padding: "0.5rem 1.1rem",
                   background: "transparent",
-                  border: `1px solid ${isDark ? "#2d4163" : "#d4dbe8"}`,
+                  border: `1px solid ${isDark ? "#2a2a2c" : "#d4dbe8"}`,
                   color: isDark ? "#94a3b8" : "#334155",
                   borderRadius: "0.5rem",
                   cursor: "pointer",
@@ -303,7 +301,7 @@ export function DnsChangeNewPage() {
                 onClick={() => navigate("/dnschanges")}
                 style={{
                   padding: "0.5rem 1.25rem",
-                  background: "linear-gradient(135deg,#ef4444,#dc2626)",
+                  background: "#dc2626",
                   border: "none",
                   color: "#fff",
                   borderRadius: "0.5rem",
