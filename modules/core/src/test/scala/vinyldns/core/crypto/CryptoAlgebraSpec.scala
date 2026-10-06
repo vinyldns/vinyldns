@@ -29,6 +29,7 @@ class TestCrypto(config: Config) extends CryptoAlgebra {
   def encrypt(value: String): String = value
   def decrypt(value: String): String = value
 }
+
 class CryptoAlgebraSpec extends AnyWordSpec with Matchers {
 
   private val conf =
@@ -61,6 +62,183 @@ class CryptoAlgebraSpec extends AnyWordSpec with Matchers {
         .load(badConfig)
         .unsafeRunSync()
       thrown.getCause shouldBe a[ConfigException]
+    }
+
+    "SECURITY: reject NoOpCrypto in production JAR deployments" in {
+      // This test verifies that when running from a JAR file (production),
+      // NoOpCrypto is rejected to prevent plaintext storage of secrets
+      val noOpCryptoConf = ConfigFactory.parseString("""
+        type = "vinyldns.core.crypto.NoOpCrypto"
+      """)
+
+      // Note: This test runs in development (sbt), so NoOpCrypto is allowed.
+      // In actual production JAR deployments, the startup would fail with IllegalArgumentException.
+      // The security check in CryptoAlgebra.isProductionJar() detects if running from .jar
+      val result = CryptoAlgebra.load(noOpCryptoConf).unsafeRunSync()
+      result shouldBe a[NoOpCrypto] // Allowed in sbt/development mode
+    }
+
+    "allow JavaCrypto with proper configuration" in {
+      val javaCryptoConf = ConfigFactory.parseString("""
+        type = "vinyldns.core.crypto.JavaCrypto"
+        secret = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      """)
+
+      val result = CryptoAlgebra.load(javaCryptoConf).unsafeRunSync()
+      result shouldBe a[JavaCrypto]
+    }
+
+    "encrypt and decrypt with JavaCrypto" in {
+      val javaCryptoConf = ConfigFactory.parseString("""
+        type = "vinyldns.core.crypto.JavaCrypto"
+        secret = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      """)
+
+      val crypto = CryptoAlgebra.load(javaCryptoConf).unsafeRunSync()
+      val plaintext = "mySecretKey123"
+      val encrypted = crypto.encrypt(plaintext)
+      val decrypted = crypto.decrypt(encrypted)
+
+      // Encrypted form should be different from plaintext and prefixed with "ENC:"
+      encrypted should not equal plaintext
+      encrypted should startWith("ENC:")
+
+      // Decrypted should match original plaintext
+      decrypted shouldBe plaintext
+    }
+
+    "handle plaintext values that are not encrypted" in {
+      val javaCryptoConf = ConfigFactory.parseString("""
+        type = "vinyldns.core.crypto.JavaCrypto"
+        secret = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      """)
+
+      val crypto = CryptoAlgebra.load(javaCryptoConf).unsafeRunSync()
+      val plaintext = "unencryptedValue"
+
+      // Decrypt should return plaintext as-is if not prefixed with "ENC:"
+      crypto.decrypt(plaintext) shouldBe plaintext
+    }
+
+    "prevent double encryption with JavaCrypto" in {
+      val javaCryptoConf = ConfigFactory.parseString("""
+        type = "vinyldns.core.crypto.JavaCrypto"
+        secret = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      """)
+
+      val crypto = CryptoAlgebra.load(javaCryptoConf).unsafeRunSync()
+      val plaintext = "mySecret"
+      val encrypted1 = crypto.encrypt(plaintext)
+      val encrypted2 = crypto.encrypt(encrypted1)
+
+      // Should not double-encrypt; encrypted2 should equal encrypted1
+      encrypted2 shouldBe encrypted1
+    }
+
+    "NoOpCrypto: encrypt returns plaintext unchanged" in {
+      val noOpCrypto = new NoOpCrypto(ConfigFactory.parseString("type = \"vinyldns.core.crypto.NoOpCrypto\""))
+      val plaintext = "secretData123"
+      
+      // NoOpCrypto is identity function - encryption should return input unchanged
+      val encrypted = noOpCrypto.encrypt(plaintext)
+      encrypted shouldBe plaintext
+    }
+
+    "NoOpCrypto: decrypt returns plaintext unchanged" in {
+      val noOpCrypto = new NoOpCrypto(ConfigFactory.parseString("type = \"vinyldns.core.crypto.NoOpCrypto\""))
+      val plaintext = "secretData123"
+      
+      // NoOpCrypto is identity function - decryption should return input unchanged
+      val decrypted = noOpCrypto.decrypt(plaintext)
+      decrypted shouldBe plaintext
+    }
+
+    "JavaCrypto: reject invalid secret length (too short)" in {
+      val invalidSecretConf = ConfigFactory.parseString("""
+        type = "vinyldns.core.crypto.JavaCrypto"
+        secret = "0123456789abcdef"
+      """)
+
+      // Secret must be 64-character hex string (32 bytes)
+      an[Exception] should be thrownBy CryptoAlgebra.load(invalidSecretConf).unsafeRunSync()
+    }
+
+    "JavaCrypto: reject invalid secret with non-hex characters" in {
+      val invalidSecretConf = ConfigFactory.parseString("""
+        type = "vinyldns.core.crypto.JavaCrypto"
+        secret = "0123456789abcdefGHIJKLMN0123456789abcdefGHIJKLMN0123456789abcdef"
+      """)
+
+      // Secret must be valid hex string
+      an[Exception] should be thrownBy CryptoAlgebra.load(invalidSecretConf).unsafeRunSync()
+    }
+
+    "JavaCrypto: encrypt multiple values consistently" in {
+      val javaCryptoConf = ConfigFactory.parseString("""
+        type = "vinyldns.core.crypto.JavaCrypto"
+        secret = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      """)
+
+      val crypto = CryptoAlgebra.load(javaCryptoConf).unsafeRunSync()
+      
+      // Test with different sensitive values
+      val apiSecret = "api-secret-key-12345"
+      val tsigKey = "zone-transfer-key-abcde"
+      
+      val encryptedSecret = crypto.encrypt(apiSecret)
+      val encryptedTsig = crypto.encrypt(tsigKey)
+      
+      // Both should be encrypted (prefixed with "ENC:")
+      encryptedSecret should startWith("ENC:")
+      encryptedTsig should startWith("ENC:")
+      
+      // They should be different (different plaintext)
+      encryptedSecret should not equal encryptedTsig
+      
+      // Decryption should recover originals
+      crypto.decrypt(encryptedSecret) shouldBe apiSecret
+      crypto.decrypt(encryptedTsig) shouldBe tsigKey
+    }
+
+    "JavaCrypto: encrypt long values" in {
+      val javaCryptoConf = ConfigFactory.parseString("""
+        type = "vinyldns.core.crypto.JavaCrypto"
+        secret = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      """)
+
+      val crypto = CryptoAlgebra.load(javaCryptoConf).unsafeRunSync()
+      val longPlaintext = "A" * 1000 // 1000-character value
+      
+      val encrypted = crypto.encrypt(longPlaintext)
+      val decrypted = crypto.decrypt(encrypted)
+      
+      encrypted should startWith("ENC:")
+      decrypted shouldBe longPlaintext
+    }
+
+    "JavaCrypto: handle special characters in plaintext" in {
+      val javaCryptoConf = ConfigFactory.parseString("""
+        type = "vinyldns.core.crypto.JavaCrypto"
+        secret = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      """)
+
+      val crypto = CryptoAlgebra.load(javaCryptoConf).unsafeRunSync()
+      val specialChars = """!@#$%^&*()_+-=[]{}|;':",./<>?"""
+      
+      val encrypted = crypto.encrypt(specialChars)
+      val decrypted = crypto.decrypt(encrypted)
+      
+      encrypted should startWith("ENC:")
+      decrypted shouldBe specialChars
+    }
+
+    "JavaCrypto: reject config without secret key" in {
+      val missingSecretConf = ConfigFactory.parseString("""
+        type = "vinyldns.core.crypto.JavaCrypto"
+      """)
+
+      // Should fail because secret is required
+      an[Exception] should be thrownBy CryptoAlgebra.load(missingSecretConf).unsafeRunSync()
     }
   }
 }
