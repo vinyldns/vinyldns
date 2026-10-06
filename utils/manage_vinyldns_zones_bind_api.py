@@ -214,8 +214,16 @@ zone "{zoneName}" {{
     def reload_bind(self, zoneName: str) -> Tuple[bool, Optional[str]]:
         """
         Reload BIND configuration with optional zone validation if zone file exists.
+        
+        For zones with allow-update (dynamic zones):
+        - rndc freeze → write zone file → rndc thaw (reloads from disk)
+        For new zone blocks appended to named.conf:
+        - rndc reconfig (loads new zone configurations)
+        
+        This approach avoids dropping the server and causing test failures in parallel test runs.
         """
         try:
+            # Step 1: Validate BIND config
             check_zone_config_result = subprocess.run(
                 ['named-checkconf', self.zone_config],
                 capture_output=True,
@@ -230,7 +238,10 @@ zone "{zoneName}" {{
             logger.info("VinylDNS BIND configuration validated successfully")
 
             zone_file_path = os.path.join(self.zones_dir, zoneName)
-            if os.path.exists(zone_file_path):
+            zone_file_exists = os.path.exists(zone_file_path)
+
+            # Step 2: Validate zone file if it exists
+            if zone_file_exists:
                 check_zone_result = subprocess.run(
                     ['named-checkzone', zoneName, zone_file_path],
                     capture_output=True,
@@ -246,27 +257,62 @@ zone "{zoneName}" {{
             else:
                 logger.warning(f"Zone file for '{zoneName}' not found. Skipping zone validation (possibly deleted).")
 
-            # Step 3: Restart BIND
-            # pkill exits 1 if no matching process is found (e.g. named not started yet on a
-            # native runner where the cmdline doesn't include the full binary path) - that's not
-            # a failure, so only raise on a genuine pkill error (>1).
-            kill_result = subprocess.run(['pkill', '-f', 'named -c'], capture_output=True, text=True)
-            if kill_result.returncode > 1:
-                raise subprocess.CalledProcessError(
-                    kill_result.returncode, kill_result.args, kill_result.stdout, kill_result.stderr
+            # Step 3: Reload BIND using rndc (no restart needed)
+            # This avoids the downtime caused by pkill/restart which was causing intermittent
+            # test failures in parallel test runs. With rndc, BIND stays running continuously.
+            
+            # First, reload the config to handle any new zone blocks in named.conf.
+            # rndc reconfig re-parses the configuration file and loads new zone definitions
+            # without restarting the server (replaces: pkill -f 'named -c' && /usr/sbin/named -c ...)
+            try:
+                reconfig_result = subprocess.run(
+                    ['rndc', 'reconfig'],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                    check=True
                 )
-            subprocess.run(['/usr/sbin/named', '-c', self.zone_config], capture_output=True, text=True, check=True)
+                logger.info("BIND reconfig completed via rndc (new zone configs loaded)")
+            except subprocess.CalledProcessError as e:
+                logger.error(f"rndc reconfig failed: {e.stderr}")
+                return False, e.stderr or e.stdout or "BIND reconfig failed"
 
-            logger.info("VinylDNS BIND service restarted successfully")
+            # If zone file exists, freeze then thaw to reload it from disk.
+            # This is necessary for dynamic zones (with allow-update { any; }) because:
+            # - plain 'rndc reload' fails with "dynamic zone" error
+            # - rndc freeze prepares the zone for editing and stops updates
+            # - rndc thaw resumes updates and reloads the zone file from disk
+            # For non-dynamic zones, this sequence is still harmless and ensures consistency.
+            if zone_file_exists:
+                try:
+                    freeze_result = subprocess.run(
+                        ['rndc', 'freeze', zoneName],
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
+                        check=True
+                    )
+                    logger.info(f"Froze zone {zoneName}")
+
+                    thaw_result = subprocess.run(
+                        ['rndc', 'thaw', zoneName],
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
+                        check=True
+                    )
+                    logger.info(f"Thawed zone {zoneName} - zone reloaded from disk")
+
+                except subprocess.CalledProcessError as e:
+                    logger.error(f"rndc freeze/thaw failed for zone {zoneName}: {e.stderr}")
+                    return False, e.stderr or e.stdout or "BIND zone reload failed"
+
+            logger.info("VinylDNS BIND reloaded successfully via rndc (no restart)")
             return True, None
 
         except subprocess.TimeoutExpired:
             logger.error("Configuration or zone validation timed out")
             return False, "Timeout during configuration or zone validation"
-
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Error restarting BIND: {e.stderr}")
-            return False, e.stderr or e.stdout or "BIND restart failed"
 
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
