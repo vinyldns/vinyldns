@@ -164,6 +164,7 @@ object Boot extends App {
           vinyldnsConfig.dottedHostsConfig,
           vinyldnsConfig.serverConfig.approvedNameServers,
           vinyldnsConfig.serverConfig.useRecordSetCache,
+          vinyldnsConfig.serverConfig.globalRecordSetSearchAccessAllZones,
           notifiers
         )
       val zoneService = ZoneService(

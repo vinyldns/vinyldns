@@ -106,7 +106,8 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
           any[Option[Set[RecordType]]],
           any[Option[String]],
           any[NameSort],
-          any[RecordTypeSort]
+          any[RecordTypeSort],
+          any[Option[vinyldns.core.domain.auth.AuthPrincipal]]
         )
 
       val underTest = VinylDNSZoneViewLoader(testZone, mockRecordSetRepo, mockRecordSetDataRepo)
