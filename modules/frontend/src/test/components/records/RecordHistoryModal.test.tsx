@@ -250,8 +250,8 @@ describe("<RecordHistoryModal /> integration", () => {
     await screen.findByText(/Record Change History/i);
     expect(screen.getByText(/Record ID/i)).toBeInTheDocument();
     expect(screen.getByText(/Zone ID/i)).toBeInTheDocument();
-    expect(screen.getByTitle("Copy Record ID")).toBeInTheDocument();
-    expect(screen.getByTitle("Copy Zone ID")).toBeInTheDocument();
+    expect(screen.getByTitle("Copy RECORD ID")).toBeInTheDocument();
+    expect(screen.getByTitle("Copy ZONE ID")).toBeInTheDocument();
   });
 
   it("requests history using the provided zoneId + page size of 100", async () => {
