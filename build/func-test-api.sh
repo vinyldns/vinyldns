@@ -6,5 +6,8 @@ set -euo pipefail
 
 DIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
 
+# Allow NoOpCrypto for testing to enable JAR-based functional tests
+export VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING=true
+
 cd "$DIR/../test/api/functional"
 make

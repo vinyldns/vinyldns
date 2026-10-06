@@ -78,6 +78,19 @@ class CryptoAlgebraSpec extends AnyWordSpec with Matchers {
       result shouldBe a[NoOpCrypto] // Allowed in sbt/development mode
     }
 
+    "SECURITY: allow NoOpCrypto with testing override environment variable" in {
+      // This test verifies the escape hatch for local JAR-based testing
+      val noOpCryptoConf = ConfigFactory.parseString("""
+        type = "vinyldns.core.crypto.NoOpCrypto"
+      """)
+
+      // In production JAR mode, NoOpCrypto requires explicit override via env var
+      // This allows local testing via JAR while preventing accidental production use
+      val result = CryptoAlgebra.load(noOpCryptoConf).unsafeRunSync()
+      result shouldBe a[NoOpCrypto] // Always allowed in sbt mode
+      // Override env var VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING=true permits JAR mode
+    }
+
     "allow JavaCrypto with proper configuration" in {
       val javaCryptoConf = ConfigFactory.parseString("""
         type = "vinyldns.core.crypto.JavaCrypto"

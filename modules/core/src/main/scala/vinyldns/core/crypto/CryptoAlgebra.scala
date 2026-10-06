@@ -35,11 +35,20 @@ object CryptoAlgebra {
         // SECURITY: Block NoOpCrypto in production (JAR) mode only
         // Allow in development (SBT) mode for testing convenience
         if (className == "vinyldns.core.crypto.NoOpCrypto" && isProductionJar()) {
-          throw new IllegalArgumentException(
-            "SECURITY ERROR: NoOpCrypto (plaintext storage) is not permitted in production JAR deployments. " +
-            "Set CRYPTO_TYPE environment variable to 'vinyldns.core.crypto.JavaCrypto' and " +
-            "CRYPTO_SECRET to a 64-character hex string (32-byte AES key). " +
-            "NoOpCrypto is suitable only for sbt development/testing, never for production."
+          // Allow override for local testing via VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING env var
+          val testingOverride = System.getenv("VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING")
+          if (testingOverride == null || testingOverride.toLowerCase != "true") {
+            throw new IllegalArgumentException(
+              "SECURITY ERROR: NoOpCrypto (plaintext storage) is not permitted in production JAR deployments. " +
+              "Set CRYPTO_TYPE environment variable to 'vinyldns.core.crypto.JavaCrypto' and " +
+              "CRYPTO_SECRET to a 64-character hex string (32-byte AES key). " +
+              "NoOpCrypto is suitable only for sbt development/testing, never for production. " +
+              "For local JAR-based testing only, set VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING=true"
+            )
+          }
+          logger.warn(
+            "SECURITY WARNING: NoOpCrypto is allowed via VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING environment variable. " +
+            "This should ONLY be used for local testing. Do NOT use in any production environment."
           )
         }
         if (className == "vinyldns.core.crypto.NoOpCrypto") {
