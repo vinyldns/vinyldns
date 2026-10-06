@@ -1749,7 +1749,6 @@ class RecordSetServiceSpec
     }
 
     "fail with RecordSetNotFoundError when the recordSet belongs to a different zone" in {
-      // recordSet belongs to okZone
       val recordSetFromOkZone = aaaa.copy(zoneId = okZone.id)
       
       doReturn(IO.pure(Some(recordSetFromOkZone)))
