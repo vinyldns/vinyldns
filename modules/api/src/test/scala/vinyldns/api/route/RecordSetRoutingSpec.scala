@@ -990,7 +990,7 @@ class RecordSetRoutingSpec
       }
     }
 
-    "return a 404 Not Found when the recordSet belongs to a different zone (IDOR protection)" in {
+    "return a 404 Not Found when the recordSet belongs to a different zone" in {
       Get(s"/zones/${notAuthorizedZone.id}/recordsets/${rsOk.id}") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }

@@ -1748,11 +1748,10 @@ class RecordSetServiceSpec
       result shouldBe a[NotAuthorizedError]
     }
 
-    "fail with RecordSetNotFoundError when the recordSet belongs to a different zone (IDOR protection)" in {
+    "fail with RecordSetNotFoundError when the recordSet belongs to a different zone" in {
       // recordSet belongs to okZone
       val recordSetFromOkZone = aaaa.copy(zoneId = okZone.id)
       
-      // Try to access it through a different zone (zoneNotAuthorized)
       doReturn(IO.pure(Some(recordSetFromOkZone)))
         .when(mockRecordRepo)
         .getRecordSet(aaaa.id)
@@ -1768,7 +1767,6 @@ class RecordSetServiceSpec
           .getRecordSetByZone(aaaa.id, zoneNotAuthorized.id, okAuth)
           .value.unsafeRunSync().swap.toOption.get
       
-      // Should fail with RecordSetNotFoundError, not NotAuthorizedError
       result shouldBe a[RecordSetNotFoundError]
       result.asInstanceOf[RecordSetNotFoundError].getMessage should include("does not exist")
     }
