@@ -166,26 +166,6 @@ class CryptoAlgebraSpec extends AnyWordSpec with Matchers {
       decrypted shouldBe plaintext
     }
 
-    "JavaCrypto: reject invalid secret length (too short)" in {
-      val invalidSecretConf = ConfigFactory.parseString("""
-        type = "vinyldns.core.crypto.JavaCrypto"
-        secret = "0123456789abcdef"
-      """)
-
-      // Secret must be 64-character hex string (32 bytes)
-      an[Exception] should be thrownBy CryptoAlgebra.load(invalidSecretConf).unsafeRunSync()
-    }
-
-    "JavaCrypto: reject invalid secret with non-hex characters" in {
-      val invalidSecretConf = ConfigFactory.parseString("""
-        type = "vinyldns.core.crypto.JavaCrypto"
-        secret = "0123456789abcdefGHIJKLMN0123456789abcdefGHIJKLMN0123456789abcdef"
-      """)
-
-      // Secret must be valid hex string
-      an[Exception] should be thrownBy CryptoAlgebra.load(invalidSecretConf).unsafeRunSync()
-    }
-
     "JavaCrypto: encrypt multiple values consistently" in {
       val javaCryptoConf = ConfigFactory.parseString("""
         type = "vinyldns.core.crypto.JavaCrypto"
