@@ -526,7 +526,14 @@ class RecordSetRoutingSpec
         recordSetId match {
           case rsError.id => Left(new RuntimeException("fail"))
           case rsNotFound.id => Left(RecordSetNotFoundError(s"$zoneId"))
-          case rsOk.id => Right(rsOkSummary)
+          case rsOk.id =>
+            // Check if the recordSet belongs to the requested zone
+            if (rsOk.zoneId == zoneId) {
+              Right(rsOkSummary)
+            } else {
+              Left(RecordSetNotFoundError(s"RecordSet with id $recordSetId does not exist."))
+            }
+          case _ => Left(RecordSetNotFoundError(s"RecordSet with id $recordSetId does not exist."))
         }
       }
     }.toResult
@@ -979,6 +986,12 @@ class RecordSetRoutingSpec
 
     "return a 404 Not Found when the zone doesn't exist" in {
       Get(s"/zones/${zoneNotFound.id}/recordsets/${rsZoneNotFound.id}") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
+    }
+
+    "return a 404 Not Found when the recordSet belongs to a different zone (IDOR protection)" in {
+      Get(s"/zones/${notAuthorizedZone.id}/recordsets/${rsOk.id}") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
