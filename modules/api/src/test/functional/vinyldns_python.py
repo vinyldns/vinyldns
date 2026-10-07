@@ -159,6 +159,17 @@ class VinylDNSClient(object):
 
         return data
 
+    def reload_config(self, **kwargs):
+        """
+        Triggers a live reload of the application configuration.
+        Only non-super users are authorised to call this endpoint.
+
+        :return: (status_code, response_body) tuple
+        """
+        url = urljoin(self.index_url, "/appconfig/reload")
+        response, data = self.make_request(url, "POST", self.headers, **kwargs)
+        return response, data
+
     def color(self):
         """
         Gets the current color for the application

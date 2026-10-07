@@ -17,6 +17,7 @@
 package vinyldns.api.domain.zone
 
 import cats.syntax.either._
+import cats.effect.IO
 import com.comcast.ip4s.Cidr
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -27,14 +28,15 @@ import vinyldns.core.domain.zone.{ACLRule, Zone, ZoneACL}
 
 import scala.util.{Failure, Success, Try}
 
-class ZoneValidations(syncDelayMillis: Int) {
+class ZoneValidations(syncDelayMillis: IO[Int]) {
 
-  def outsideSyncDelay(zone: Zone): Either[Throwable, Unit] =
-    zone.latestSync match {
-      case Some(time) if Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli - time.toEpochMilli < syncDelayMillis => {
-        RecentSyncError(s"Zone ${zone.name} was recently synced. Cannot complete sync").asLeft
+  def outsideSyncDelay(zone: Zone): IO[Either[Throwable, Unit]] =
+    syncDelayMillis.map { delay =>
+      zone.latestSync match {
+        case Some(time) if Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli - time.toEpochMilli < delay =>
+          RecentSyncError(s"Zone ${zone.name} was recently synced. Cannot complete sync").asLeft
+        case _ => Right(())
       }
-      case _ => Right(())
     }
 
   // TODO - zone ACL validations should happen up front as input validation longer term

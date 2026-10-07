@@ -47,12 +47,12 @@ object BatchChangeService {
       dataAccessor: ApiDataAccessor,
       batchChangeValidations: BatchChangeValidationsAlgebra,
       batchChangeConverter: BatchChangeConverterAlgebra,
-      manualReviewEnabled: Boolean,
+      manualReviewEnabled: IO[Boolean],
       authProvider: AuthPrincipalProvider,
       notifiers: AllNotifiers,
-      scheduledChangesEnabled: Boolean,
+      scheduledChangesEnabled: IO[Boolean],
       v6DiscoveryNibbleBoundaries: V6DiscoveryNibbleBoundaries,
-      defaultTtl: Long
+      defaultTtl: IO[Long]
   ): BatchChangeService =
     new BatchChangeService(
       dataAccessor.zoneRepository,
@@ -79,12 +79,12 @@ class BatchChangeService(
     batchChangeRepo: BatchChangeRepository,
     batchChangeConverter: BatchChangeConverterAlgebra,
     userRepository: UserRepository,
-    manualReviewEnabled: Boolean,
+    manualReviewEnabled: IO[Boolean],
     authProvider: AuthPrincipalProvider,
     notifiers: AllNotifiers,
-    scheduledChangesEnabled: Boolean,
+    scheduledChangesEnabled: IO[Boolean],
     v6zoneNibbleBoundaries: V6DiscoveryNibbleBoundaries,
-    defaultTtl: Long
+    defaultTtl: IO[Long]
 ) extends BatchChangeServiceAlgebra {
 
   import batchChangeValidations._
@@ -96,32 +96,40 @@ class BatchChangeService(
       allowManualReview: Boolean
   ): BatchResult[BatchChange] =
     for {
-      validationOutput <- applyBatchChangeValidationFlow(batchChangeInput, auth, isApproved = false)
+      manualReview <- manualReviewEnabled.toBatchResult
+      scheduledEnabled <- scheduledChangesEnabled.toBatchResult
+      ttl <- defaultTtl.toBatchResult
+      validationOutput <- applyBatchChangeValidationFlow(batchChangeInput, auth, isApproved = false, ttl)
       changeForConversion <- buildResponse(
         batchChangeInput,
         validationOutput.validatedChanges,
         auth,
-        allowManualReview
+        allowManualReview,
+        manualReview,
+        scheduledEnabled,
+        ttl
       ).toBatchResult
       serviceCompleteBatch <- convertOrSave(
         changeForConversion,
         validationOutput.existingZones,
         validationOutput.groupedChanges,
-        batchChangeInput.ownerGroupId
+        batchChangeInput.ownerGroupId,
+        manualReview
       )
     } yield serviceCompleteBatch
 
   def applyBatchChangeValidationFlow(
       batchChangeInput: BatchChangeInput,
       auth: AuthPrincipal,
-      isApproved: Boolean
+      isApproved: Boolean,
+      ttl: Long
   ): BatchResult[BatchValidationFlowOutput] =
     for {
       existingGroup <- getOwnerGroup(batchChangeInput.ownerGroupId)
       _ <- validateBatchChangeInput(batchChangeInput, existingGroup, auth)
       inputValidatedSingleChanges = validateInputChanges(batchChangeInput.changes, isApproved)
       zoneMap <- getZonesForRequest(inputValidatedSingleChanges).toBatchResult
-      changesWithZones = zoneDiscovery(inputValidatedSingleChanges, zoneMap)
+      changesWithZones = zoneDiscovery(inputValidatedSingleChanges, zoneMap, ttl)
       recordSets <- getExistingRecordSets(changesWithZones, zoneMap).toBatchResult
       withTtl = doTtlMapping(changesWithZones, recordSets)
       groupedChanges = ChangeForValidationMap(withTtl, recordSets)
@@ -192,6 +200,7 @@ class BatchChangeService(
       approveBatchChangeInput: ApproveBatchChangeInput
   ): BatchResult[BatchChange] =
     for {
+      manualReview <- manualReviewEnabled.toBatchResult
       batchChange <- getExistingBatchChange(batchChangeId)
       requesterAuth <- EitherT.fromOptionF(
         authProvider.getAuthPrincipalByUserId(batchChange.userId),
@@ -203,7 +212,8 @@ class BatchChangeService(
         authPrincipal.userId,
         approveBatchChangeInput.reviewComment
       )
-      validationOutput <- applyBatchChangeValidationFlow(asInput, requesterAuth, isApproved = true)
+      ttl <- defaultTtl.toBatchResult
+      validationOutput <- applyBatchChangeValidationFlow(asInput, requesterAuth, isApproved = true, ttl)
       changeForConversion = rebuildBatchChangeForUpdate(
         batchChange,
         validationOutput.validatedChanges,
@@ -213,7 +223,8 @@ class BatchChangeService(
         changeForConversion,
         validationOutput.existingZones,
         validationOutput.groupedChanges,
-        batchChange.ownerGroupId
+        batchChange.ownerGroupId,
+        manualReview
       )
       response <- buildResponseForApprover(serviceCompleteBatch).toBatchResult
     } yield response
@@ -338,22 +349,24 @@ class BatchChangeService(
 
   def zoneDiscovery(
       changes: ValidatedBatch[ChangeInput],
-      zoneMap: ExistingZones
+      zoneMap: ExistingZones,
+      ttl: Long
   ): ValidatedBatch[ChangeForValidation] =
     changes.mapValid { change =>
       change.typ match {
-        case A | AAAA | CNAME | MX | TXT | NS | NAPTR | SRV => forwardZoneDiscovery(change, zoneMap)
+        case A | AAAA | CNAME | MX | TXT | NS | NAPTR | SRV => forwardZoneDiscovery(change, zoneMap, ttl)
         case PTR if validateIpv4Address(change.inputName).isValid =>
-          ptrIpv4ZoneDiscovery(change, zoneMap)
+          ptrIpv4ZoneDiscovery(change, zoneMap, ttl)
         case PTR if validateIpv6Address(change.inputName).isValid =>
-          ptrIpv6ZoneDiscovery(change, zoneMap)
+          ptrIpv6ZoneDiscovery(change, zoneMap, ttl)
         case _ => ZoneDiscoveryError(change.inputName).invalidNel
       }
     }
 
   def forwardZoneDiscovery(
       change: ChangeInput,
-      zoneMap: ExistingZones
+      zoneMap: ExistingZones,
+      ttl: Long
   ): SingleValidation[ChangeForValidation] = {
 
     // getAllPossibleZones is ordered most to least specific, so 1st match is right
@@ -365,14 +378,15 @@ class BatchChangeService(
       case Some(zn) if zn.name == change.inputName && change.typ == CNAME =>
         CnameAtZoneApexError(zn.name).invalidNel
       case Some(zn) =>
-        ChangeForValidation(zn, relativize(change.inputName, zn.name), change, defaultTtl).validNel
+        ChangeForValidation(zn, relativize(change.inputName, zn.name), change, ttl).validNel
       case None => ZoneDiscoveryError(change.inputName).invalidNel
     }
   }
 
   def ptrIpv4ZoneDiscovery(
       change: ChangeInput,
-      zoneMap: ExistingZones
+      zoneMap: ExistingZones,
+      ttl: Long
   ): SingleValidation[ChangeForValidation] = {
     val recordName = change.inputName.split('.').takeRight(1).mkString
     val validZones = zoneMap.getipv4PTRMatches(change.inputName)
@@ -382,14 +396,15 @@ class BatchChangeService(
       else validZones.headOption
     }
     zone match {
-      case Some(z) => ChangeForValidation(z, recordName, change, defaultTtl).validNel
+      case Some(z) => ChangeForValidation(z, recordName, change, ttl).validNel
       case None => ZoneDiscoveryError(change.inputName).invalidNel
     }
   }
 
   def ptrIpv6ZoneDiscovery(
       change: ChangeInput,
-      zoneMap: ExistingZones
+      zoneMap: ExistingZones,
+      ttl: Long
   ): SingleValidation[ChangeForValidation] = {
     val zones = zoneMap.getipv6PTRMatches(change.inputName)
 
@@ -409,7 +424,7 @@ class BatchChangeService(
           // remove zone name from fqdn for recordname
           getIPv6FullReverseName(change.inputName).map(_.dropRight(zone.name.length + 1))
         }
-      } yield ChangeForValidation(zone, recordName, change, defaultTtl).validNel
+      } yield ChangeForValidation(zone, recordName, change, ttl).validNel
 
       changeForValidation.getOrElse(ZoneDiscoveryError(change.inputName).invalidNel)
     }
@@ -419,7 +434,10 @@ class BatchChangeService(
       batchChangeInput: BatchChangeInput,
       transformed: ValidatedBatch[ChangeForValidation],
       auth: AuthPrincipal,
-      allowManualReview: Boolean
+      allowManualReview: Boolean,
+      manualReview: Boolean,
+      scheduledEnabled: Boolean,
+      ttl: Long
   ): Either[BatchChangeErrorResponse, BatchChange] = {
 
     // Respond with a fatal error that kicks the change out to the user
@@ -432,7 +450,7 @@ class BatchChangeService(
         case (validated, input) =>
           validated match {
             case Valid(v) => v.asStoredChange()
-            case Invalid(e) => input.asNewStoredChange(e, defaultTtl)
+            case Invalid(e) => input.asNewStoredChange(e, ttl)
           }
       }
       BatchChange(
@@ -471,7 +489,7 @@ class BatchChangeService(
     // Tells us that we have soft errors, and no errors are hard errors
     val hardErrorsPresent = allErrors.exists(_.isFatal)
     val noErrors = allErrors.isEmpty
-    val isScheduled = batchChangeInput.scheduledTime.isDefined && this.scheduledChangesEnabled
+    val isScheduled = batchChangeInput.scheduledTime.isDefined && scheduledEnabled
     val isNSRecordsPresent = batchChangeInput.changes.exists(_.typ == NS)
 
     if (hardErrorsPresent) {
@@ -480,7 +498,7 @@ class BatchChangeService(
     } else if (noErrors && !isScheduled && !isNSRecordsPresent) {
       // There are no errors and this is not scheduled, so process immediately
       processNowResponse
-    } else if (this.manualReviewEnabled && allowManualReview || isNSRecordsPresent) {
+    } else if (manualReview && allowManualReview || isNSRecordsPresent) {
       if ((noErrors && isScheduled) || batchChangeInput.ownerGroupId.isDefined) {
         // There are no errors and this is scheduled
         // or we have soft errors and owner group is defined
@@ -527,27 +545,28 @@ class BatchChangeService(
       batchChange: BatchChange,
       existingZones: ExistingZones,
       groupedChanges: ChangeForValidationMap,
-      ownerGroupId: Option[String]
+      ownerGroupId: Option[String],
+      manualReview: Boolean
   ): BatchResult[BatchChange] = batchChange.approvalStatus match {
     case AutoApproved =>
       // send on to the converter, it will be saved there
       batchChangeConverter
         .sendBatchForProcessing(batchChange, existingZones, groupedChanges, ownerGroupId)
         .map(_.batchChange)
-    case ManuallyApproved if manualReviewEnabled =>
+    case ManuallyApproved if manualReview =>
       // send on to the converter, it will be saved there
       batchChangeConverter
         .sendBatchForProcessing(batchChange, existingZones, groupedChanges, ownerGroupId)
         .map(_.batchChange)
-    case PendingReview if manualReviewEnabled =>
+    case PendingReview if manualReview =>
       // save the change, will need to return to it later on approval
       batchChangeRepo.save(batchChange).toBatchResult
-    // TODO: handle PendingReview if manualReviewEnabled is false
+    // TODO: handle PendingReview if manualReview is false
     case _ =>
       // this should not be called with a rejected change (or if manual review is off)!
       logger.error(
         s"convertOrSave called with a rejected batch change; " +
-          s"batchChangeId=${batchChange.id}; manualReviewEnabled=$manualReviewEnabled"
+          s"batchChangeId=${batchChange.id}; manualReviewEnabled=$manualReview"
       )
       UnknownConversionError("Cannot convert a rejected batch change").toLeftBatchResult
   }

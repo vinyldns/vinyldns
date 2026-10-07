@@ -22,6 +22,7 @@ import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.core.domain.batch.BatchChangeRepository
+import vinyldns.core.domain.config.AppConfigRepository
 import vinyldns.core.domain.membership.{
   GroupChangeRepository,
   GroupRepository,
@@ -59,7 +60,8 @@ class ApiDataAccessorProviderSpec
       enabled,
       enabled,
       enabled,
-      None
+      enabled,
+      enabled
     )
 
     val user = mock[UserRepository]
@@ -73,6 +75,7 @@ class ApiDataAccessorProviderSpec
     val zoneChange = mock[ZoneChangeRepository]
     val zone = mock[ZoneRepository]
     val batchChange = mock[BatchChangeRepository]
+    val appConfig = mock[AppConfigRepository]
 
     "create an accessor if all repos can be pulled from the right datastore" in {
       val enabledConfig =
@@ -89,8 +92,12 @@ class ApiDataAccessorProviderSpec
         Some(zoneChange),
         Some(zone),
         Some(batchChange),
-        None
-      ) // API doesn't use Task repository
+        None,  // userChangeRepository
+        None,  // taskRepository
+        Some(appConfig)
+      )
+
+      println(ApiDataAccessorProvider.create(List((enabledConfig, enabledDataStore))))
 
       ApiDataAccessorProvider.create(List((enabledConfig, enabledDataStore))) should be(valid)
     }

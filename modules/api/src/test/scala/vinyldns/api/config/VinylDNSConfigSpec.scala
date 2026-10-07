@@ -54,18 +54,34 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAndAfterAl
         groupChange,
         zoneChange,
         recordChange,
-        recordSetCache
+        recordSetCache,
+        userChange,
+        task,
+        appConfig
       )
     }
 
     "properly load the notifier configs" in {
-      val notifierConfigs = underTest.notifierConfigs
+      // Build the notifier config inline — no application.conf entry needed.
+      // Notifier class names are bootstrap config (file-only); this test verifies
+      // that loadFrom() correctly parses the notifiers string-list convention.
+      val notifierFragment = com.typesafe.config.ConfigFactory.parseString(
+        """
+          |vinyldns {
+          |  notifiers = ["someclass"]
+          |  someclass {
+          |    class-name = "someclass"
+          |    settings { value = "test" }
+          |  }
+          |}
+        """.stripMargin
+      )
+      val configWithNotifier = notifierFragment.withFallback(com.typesafe.config.ConfigFactory.load())
+      val notifierConfigs = VinylDNSConfig.loadFrom(configWithNotifier).unsafeRunSync().notifierConfigs
 
       notifierConfigs.length shouldBe 1
-
       notifierConfigs.head.className shouldBe "someclass"
-
-      notifierConfigs.head.settings.getString("value").shouldBe("test")
+      notifierConfigs.head.settings.getString("value") shouldBe "test"
     }
 
     "load specified backends" in {

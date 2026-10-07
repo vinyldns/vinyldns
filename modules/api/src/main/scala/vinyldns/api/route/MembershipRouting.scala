@@ -19,7 +19,7 @@ package vinyldns.api.route
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.api.config.LimitsConfig
+import vinyldns.api.config.RuntimeVinylDNSConfig
 import vinyldns.api.domain.membership._
 import vinyldns.api.domain.zone.NotAuthorizedError
 import vinyldns.api.route.MembershipJsonProtocol.{CreateGroupInput, UpdateGroupInput}
@@ -27,15 +27,14 @@ import vinyldns.core.domain.membership.{Group, LockStatus}
 
 class MembershipRoute(
     membershipService: MembershipServiceAlgebra,
-    limitsConfig: LimitsConfig,
     val vinylDNSAuthenticator: VinylDNSAuthenticator
 ) extends VinylDNSJsonProtocol
     with VinylDNSDirectives[Throwable] {
 
-  final private val DEFAULT_MAX_ITEMS: Int = limitsConfig.MEMBERSHIP_ROUTING_DEFAULT_MAX_ITEMS
-  final private val MAX_ITEMS_LIMIT: Int = limitsConfig.MEMBERSHIP_ROUTING_MAX_ITEMS_LIMIT
-  final private val MAX_GROUPS_LIST_LIMIT: Int =
-    limitsConfig.MEMBERSHIP_ROUTING_MAX_GROUPS_LIST_LIMIT
+  private def DEFAULT_MAX_ITEMS: Int = RuntimeVinylDNSConfig.limitsConfig.MEMBERSHIP_ROUTING_DEFAULT_MAX_ITEMS
+  private def MAX_ITEMS_LIMIT: Int = RuntimeVinylDNSConfig.limitsConfig.MEMBERSHIP_ROUTING_MAX_ITEMS_LIMIT
+  private def MAX_GROUPS_LIST_LIMIT: Int =
+    RuntimeVinylDNSConfig.limitsConfig.MEMBERSHIP_ROUTING_MAX_GROUPS_LIST_LIMIT
 
   def getRoutes: Route = membershipRoute
 

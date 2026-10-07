@@ -231,33 +231,28 @@ final case class ConfiguredDnsConnections(
     dnsBackends: List[LegacyDnsBackend]
 )
 object ConfiguredDnsConnections {
+  private val emptyConnection: ZoneConnection =
+    ZoneConnection("", "", Encrypted(""), "", Algorithm.HMAC_MD5)
+
+  private def loadZoneConnection(config: Config, path: String, crypto: CryptoAlgebra): ZoneConnection =
+    if (!config.hasPath(path)) emptyConnection
+    else {
+      val connectionConfig = config.getConfig(path)
+      val name = connectionConfig.getString("name")
+      val keyName = connectionConfig.getString("keyName")
+      val key = connectionConfig.getString("key")
+      val primaryServer = connectionConfig.getString("primaryServer")
+      val algorithm =
+        if (connectionConfig.hasPath("algorithm"))
+          Algorithm.Map.getOrElse(connectionConfig.getString("algorithm"), Algorithm.HMAC_MD5)
+        else Algorithm.HMAC_MD5
+      ZoneConnection(name, keyName, Encrypted(key), primaryServer, algorithm).encrypted(crypto)
+    }
+
   def load(config: Config, cryptoConfig: Config): IO[ConfiguredDnsConnections] =
     CryptoAlgebra.load(cryptoConfig).map { crypto =>
-      val defaultZoneConnection = {
-        val connectionConfig = config.getConfig("vinyldns.defaultZoneConnection")
-        val name = connectionConfig.getString("name")
-        val keyName = connectionConfig.getString("keyName")
-        val key = connectionConfig.getString("key")
-        val primaryServer = connectionConfig.getString("primaryServer")
-        val algorithm =
-          if (connectionConfig.hasPath("algorithm"))
-            Algorithm.Map.getOrElse(connectionConfig.getString("algorithm"), Algorithm.HMAC_MD5)
-          else Algorithm.HMAC_MD5
-        ZoneConnection(name, keyName, Encrypted(key), primaryServer, algorithm).encrypted(crypto)
-      }
-
-      val defaultTransferConnection = {
-        val connectionConfig = config.getConfig("vinyldns.defaultTransferConnection")
-        val name = connectionConfig.getString("name")
-        val keyName = connectionConfig.getString("keyName")
-        val key = connectionConfig.getString("key")
-        val primaryServer = connectionConfig.getString("primaryServer")
-        val algorithm =
-          if (connectionConfig.hasPath("algorithm"))
-            Algorithm.Map.getOrElse(connectionConfig.getString("algorithm"), Algorithm.HMAC_MD5)
-          else Algorithm.HMAC_MD5
-        ZoneConnection(name, keyName, Encrypted(key), primaryServer, algorithm).encrypted(crypto)
-      }
+      val defaultZoneConnection     = loadZoneConnection(config, "vinyldns.defaultZoneConnection",     crypto)
+      val defaultTransferConnection = loadZoneConnection(config, "vinyldns.defaultTransferConnection", crypto)
 
       val dnsBackends = {
         if (config.hasPath("vinyldns.backends")) {

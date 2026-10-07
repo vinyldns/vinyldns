@@ -59,7 +59,7 @@ class AccessValidationsSpec
     ACLRule(AccessLevel.Read, userId = None, groupId = Some("bad-group"))
 
   private val accessValidationTest = new AccessValidations(
-    sharedApprovedTypes =
+    sharedApprovedTypesFn = () =>
       List(RecordType.A, RecordType.AAAA, RecordType.CNAME, RecordType.PTR, RecordType.TXT)
   )
   private val groupIds = Seq(okGroup.id, twoUserGroup.id)
@@ -92,7 +92,7 @@ class AccessValidationsSpec
   private val globalAcl = GlobalAcl(List(okGroup.id), List(".*foo.*"))
   private val globalAclTest = new AccessValidations(
     GlobalAcls(List(globalAcl)),
-    VinylDNSTestHelpers.sharedApprovedTypes
+    () => VinylDNSTestHelpers.sharedApprovedTypes
   )
 
   private val testUser = User("test", "test", Encrypted("test"), isTest = true)

@@ -174,7 +174,7 @@ class ZoneRoutingSpec
     LimitsConfig(100,100,1000,1500,100,100,100)
 
   val zoneRoute: Route =
-    new ZoneRoute(TestZoneService,testLimitConfig, new TestVinylDNSAuthenticator(okAuth), crypto).getRoutes
+    new ZoneRoute(TestZoneService, new TestVinylDNSAuthenticator(okAuth), crypto).getRoutes
 
   object TestZoneService extends ZoneServiceAlgebra {
     def connectToZone(

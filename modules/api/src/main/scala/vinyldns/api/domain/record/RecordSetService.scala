@@ -29,7 +29,7 @@ import cats.data._
 import cats.effect.IO
 import org.slf4j.{Logger, LoggerFactory}
 import org.xbill.DNS.ReverseMap
-import vinyldns.api.config.{DottedHostsConfig, HighValueDomainConfig, ZoneAuthConfigs}
+import vinyldns.api.config.{DottedHostsConfig, HighValueDomainConfig, RuntimeVinylDNSConfig, ZoneAuthConfigs}
 import vinyldns.api.domain.DomainValidations.{validateIpv4Address, validateIpv6Address}
 import vinyldns.api.domain.access.AccessValidationsAlgebra
 import vinyldns.core.domain.record.NameSort.NameSort
@@ -47,11 +47,9 @@ object RecordSetService {
              messageQueue: MessageQueue,
              accessValidation: AccessValidationsAlgebra,
              backendResolver: BackendResolver,
-             validateRecordLookupAgainstDnsBackend: Boolean,
-             highValueDomainConfig: HighValueDomainConfig,
-             dottedHostsConfig: DottedHostsConfig,
+             validateRecordLookupAgainstDnsBackend: IO[Boolean],
              approvedNameServers: List[Regex],
-             useRecordSetCache: Boolean,
+             useRecordSetCache: IO[Boolean],
              notifiers: AllNotifiers
            ): RecordSetService =
     new RecordSetService(
@@ -65,12 +63,9 @@ object RecordSetService {
       accessValidation,
       backendResolver,
       validateRecordLookupAgainstDnsBackend,
-      highValueDomainConfig,
-      dottedHostsConfig,
       approvedNameServers,
       useRecordSetCache,
       notifiers
-
     )
 }
 
@@ -84,13 +79,16 @@ class RecordSetService(
                         messageQueue: MessageQueue,
                         accessValidation: AccessValidationsAlgebra,
                         backendResolver: BackendResolver,
-                        validateRecordLookupAgainstDnsBackend: Boolean,
-                        highValueDomainConfig: HighValueDomainConfig,
-                        dottedHostsConfig: DottedHostsConfig,
+                        validateRecordLookupAgainstDnsBackend: IO[Boolean],
                         approvedNameServers: List[Regex],
-                        useRecordSetCache: Boolean,
-                        notifiers: AllNotifiers
+                        useRecordSetCache: IO[Boolean],
+                        notifiers: AllNotifiers,
+                        private val highValueDomainConfigFn: () => HighValueDomainConfig = () => RuntimeVinylDNSConfig.highValueDomainConfig,
+                        private val dottedHostsConfigFn: () => DottedHostsConfig = () => RuntimeVinylDNSConfig.dottedHostsConfig
                       ) extends RecordSetServiceAlgebra {
+
+  private def highValueDomainConfig: HighValueDomainConfig = highValueDomainConfigFn()
+  private def dottedHostsConfig: DottedHostsConfig = dottedHostsConfigFn()
 
   import RecordSetValidations._
   import accessValidation._
@@ -102,6 +100,7 @@ class RecordSetService(
 
   def addRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
+      validateLookup <- validateRecordLookupAgainstDnsBackend.toResult[Boolean]
       zone <- getZone(recordSet.zoneId)
       authZones = dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
       change <- RecordSetChangeGenerator.forAdd(recordSet, zone, Some(auth)).toResult
@@ -112,7 +111,7 @@ class RecordSetService(
         backendResolver.resolve,
         zone,
         rsForValidations,
-        validateRecordLookupAgainstDnsBackend
+        validateLookup
       )
       _ <- validRecordTypes(rsForValidations, zone).toResult
       _ <- validRecordNameLength(rsForValidations, zone).toResult
@@ -149,6 +148,7 @@ class RecordSetService(
 
   def updateRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult] =
     for {
+      validateLookup <- validateRecordLookupAgainstDnsBackend.toResult[Boolean]
       zone <- getZone(recordSet.zoneId)
       existing <- getRecordSet(recordSet.id)
       _ <- unchangedRecordName(existing, recordSet, zone).toResult
@@ -189,7 +189,7 @@ class RecordSetService(
         rsForValidations,
         existingRecordsWithName,
         zone,
-        validateRecordLookupAgainstDnsBackend
+        validateLookup
       )
       _ <- noCnameWithNewName(rsForValidations, existingRecordsWithName, zone).toResult
       authZones = dottedHostsConfig.zoneAuthConfigs.map(x => x.zone)
@@ -601,8 +601,9 @@ class RecordSetService(
                       ): Result[ListGlobalRecordSetsResponse] = {
     for {
       _ <- validRecordNameFilterLength(recordNameFilter).toResult
+      useCache <- useRecordSetCache.toResult[Boolean]
       formattedRecordNameFilter <- formatRecordNameFilter(recordNameFilter)
-      recordSetResults <- if (useRecordSetCache) {
+      recordSetResults <- if (useCache) {
         // Search the cache
         recordSetCacheRepository.listRecordSetData(
           None,

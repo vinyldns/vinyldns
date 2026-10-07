@@ -34,7 +34,7 @@ trait ZoneConnectionValidatorAlgebra {
 class ZoneConnectionValidator(
     backendResolver: BackendResolver,
     approvedNameServers: List[Regex],
-    maxZoneSize: Int
+    maxZoneSize: IO[Int]
 ) extends ZoneConnectionValidatorAlgebra {
 
   import ZoneRecordValidations._
@@ -43,7 +43,7 @@ class ZoneConnectionValidator(
   val opTimeout: FiniteDuration = 60.seconds
 
   def loadDns(zone: Zone): IO[ZoneView] =
-    DnsZoneViewLoader(zone, backendResolver.resolve(zone), maxZoneSize).load()
+    maxZoneSize.flatMap(size => DnsZoneViewLoader(zone, backendResolver.resolve(zone), size).load())
 
   def hasApexNS(zoneView: ZoneView): Result[Unit] = {
     val apexRecord = zoneView.recordSetsMap.get(zoneView.zone.name, RecordType.NS) match {

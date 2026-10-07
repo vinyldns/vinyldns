@@ -19,13 +19,12 @@ package vinyldns.api.route
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.{RejectionHandler, Route, ValidationRejection}
 import org.slf4j.{Logger, LoggerFactory}
-import vinyldns.api.config.{LimitsConfig, ManualReviewConfig}
+import vinyldns.api.config.{ManualReviewConfig, RuntimeVinylDNSConfig}
 import vinyldns.api.domain.batch._
 import vinyldns.core.domain.batch._
 
 class BatchChangeRoute(
     batchChangeService: BatchChangeServiceAlgebra,
-    limitsConfig: LimitsConfig,
     val vinylDNSAuthenticator: VinylDNSAuthenticator,
     manualReviewConfig: ManualReviewConfig
 ) extends VinylDNSJsonProtocol
@@ -55,7 +54,7 @@ class BatchChangeRoute(
     case scnpd: ScheduledChangeNotDue => complete(StatusCodes.Forbidden, scnpd.message)
   }
 
-  final private val MAX_ITEMS_LIMIT: Int = limitsConfig.BATCHCHANGE_ROUTING_MAX_ITEMS_LIMIT
+  private def MAX_ITEMS_LIMIT: Int = RuntimeVinylDNSConfig.limitsConfig.BATCHCHANGE_ROUTING_MAX_ITEMS_LIMIT
 
   val batchChangeRoute: Route = {
     val standardBatchChangeRoutes = path("zones" / "batchrecordchanges") {
@@ -159,7 +158,6 @@ class BatchChangeRoute(
             }
           }
         }
-
     if (manualReviewConfig.enabled)
       standardBatchChangeRoutes ~ manualBatchReviewRoutes
     else standardBatchChangeRoutes

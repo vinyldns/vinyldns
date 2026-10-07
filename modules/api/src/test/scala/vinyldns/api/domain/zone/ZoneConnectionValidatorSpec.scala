@@ -70,7 +70,7 @@ class ZoneConnectionValidatorSpec
       extends ZoneConnectionValidator(
         mockBackendResolver,
         List(new Regex("some.test.ns.")),
-        10000
+        IO(10000)
       ) {
     override val opTimeout: FiniteDuration = 60.seconds
     override def loadDns(zone: Zone): IO[ZoneView] = testLoadDns(zone)
@@ -228,7 +228,7 @@ class ZoneConnectionValidatorSpec
       doReturn(false).when(mockBackendResolver).isRegistered("bad")
 
       val underTest =
-        new ZoneConnectionValidator(mockBackendResolver, Nil, 10000)
+        new ZoneConnectionValidator(mockBackendResolver, Nil, IO(10000))
 
       "return success if the backendId exists" in {
         underTest.isValidBackendId(Some("some-test-backend")) shouldBe right

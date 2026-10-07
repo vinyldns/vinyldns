@@ -332,6 +332,14 @@ case class RecordSetCount( count: Int = 0 )
 // Errors
 case class InvalidRequest(msg: String) extends Throwable(msg)
 
+case class ConfigNotFound(msg: String) extends Throwable(msg)
+
+case class ConfigAlreadyExists(msg: String) extends Throwable(msg)
+
+case class ConfigValidationError(msg: String) extends Throwable(msg)
+
+case class BulkOperationError(msg: String) extends Throwable(msg)
+
 case class UnrecognizedRequest(msg: String) extends Throwable(msg)
 
 case class RecordSetAlreadyExists(msg: String) extends Throwable(msg)

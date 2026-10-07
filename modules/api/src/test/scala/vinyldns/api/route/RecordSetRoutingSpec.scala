@@ -793,7 +793,7 @@ class RecordSetRoutingSpec
     LimitsConfig(100,100,1000,1500,100,100,100)
 
   val recordSetRoute: Route =
-    new RecordSetRoute(recordSetService,testLimitConfig, new TestVinylDNSAuthenticator(okAuth)).getRoutes
+    new RecordSetRoute(recordSetService, new TestVinylDNSAuthenticator(okAuth)).getRoutes
 
   private def rsJson(recordSet: RecordSet): String =
     compact(render(Extraction.decompose(recordSet)))
