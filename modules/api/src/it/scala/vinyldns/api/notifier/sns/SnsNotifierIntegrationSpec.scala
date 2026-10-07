@@ -107,12 +107,14 @@ class SnsNotifierIntegrationSpec
         }
         queueArn <- IO {
           val queueArnAttribute = QueueAttributeName.QueueArn.toString
-          sqs
+          val queueArnValue = sqs
             .getQueueAttributes(
               new GetQueueAttributesRequest(queueUrl).withAttributeNames(queueArnAttribute)
             )
             .getAttributes
             .get(queueArnAttribute)
+          require(queueArnValue != null, "QueueArn attribute missing")
+          queueArnValue
         }
         topic <- IO {
           sns.createTopic("batchChanges").getTopicArn
