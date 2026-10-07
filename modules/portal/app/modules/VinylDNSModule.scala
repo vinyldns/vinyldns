@@ -37,6 +37,7 @@ import cats.effect.{ContextShift, IO, Timer}
 import com.google.inject.AbstractModule
 import controllers._
 import controllers.repository.{PortalDataAccessor, PortalDataAccessorProvider}
+import org.slf4j.LoggerFactory
 import play.api.{Configuration, Environment}
 import tasks.UserSyncTask
 import vinyldns.core.crypto.CryptoAlgebra
@@ -49,6 +50,7 @@ import vinyldns.core.task.{TaskRepository, TaskScheduler}
 class VinylDNSModule(environment: Environment, configuration: Configuration)
     extends AbstractModule {
 
+  private val logger = LoggerFactory.getLogger(classOf[VinylDNSModule])
   val settings = new Settings(configuration)
   implicit val t: Timer[IO] = IO.timer(scala.concurrent.ExecutionContext.global)
   implicit val cs: ContextShift[IO] =
@@ -62,22 +64,26 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
       loaderResponse <- DataStoreLoader
         .loadAll[PortalDataAccessor](repoConfigs, crypto, PortalDataAccessorProvider)
       auth = authenticator()
+      syncProvider = buildSyncProvider(auth)
+      pollingInterval = resolvePollingInterval()
       healthService = new HealthService(auth.healthCheck() :: loaderResponse.healthChecks)
       repositories = loaderResponse.accessor
       userAccessor = new UserAccountAccessor(
         repositories.userRepository,
         repositories.userChangeRepository
       )
-      _ <- if (settings.ldapSyncEnabled) {
-        TaskScheduler
-          .schedule(
-            new UserSyncTask(userAccessor, auth, settings.ldapSyncPollingInterval),
-            repositories.taskRepository
-          )
-          .compile
-          .drain
-          .start
-      } else IO.unit
+      _ <- syncProvider match {
+        case NoOpUserSyncProvider => IO.unit
+        case _ =>
+          TaskScheduler
+            .schedule(
+              new UserSyncTask(userAccessor, syncProvider, pollingInterval, dryRun = settings.userSyncDryRun),
+              repositories.taskRepository
+            )
+            .compile
+            .drain
+            .start
+      }
     } yield {
       bind(classOf[SecuritySupport]).to(classOf[LegacySecuritySupport])
       bind(classOf[CryptoAlgebra]).toInstance(crypto)
@@ -91,13 +97,46 @@ class VinylDNSModule(environment: Environment, configuration: Configuration)
     startApp.unsafeRunSync()
   }
 
-  private def authenticator(): Authenticator =
-    /**
-      * Why not load config here you ask?  Well, there is some ugliness in the LdapAuthenticator
-      * that I am not looking to undo at this time.  There are private classes
-      * that do some wrapping.  It all seems to work, so I am leaving it alone
-      * to complete the Play framework upgrade
-      */
-    LdapAuthenticator(settings)
+  private def buildSyncProvider(auth: Authenticator): UserSyncProvider =
+    settings.userSyncProvider match {
+      case "graph-api" =>
+        settings.validateOidcConfig()
+        new GraphApiUserSyncProvider(
+          settings.oidcTenantId,
+          settings.oidcClientId,
+          settings.oidcSecret,
+          settings.graphApiUsernameAttribute
+        )
+      case "ldap" =>
+        new LdapUserSyncProvider(auth)
+      case "none" =>
+        // fall back to legacy LDAP sync config for backward compat
+        if (settings.ldapSyncEnabled) new LdapUserSyncProvider(auth)
+        else NoOpUserSyncProvider
+      case unknown =>
+        throw new IllegalArgumentException(
+          s"""Unrecognized user-sync.provider="$unknown". Valid values are "ldap", "graph-api", or "none"."""
+        )
+    }
+
+  private def resolvePollingInterval() =
+    settings.userSyncProvider match {
+      case "graph-api" | "ldap" => settings.userSyncPollingInterval
+      case _ =>
+        if (settings.ldapSyncEnabled) settings.ldapSyncPollingInterval
+        else settings.userSyncPollingInterval
+    }
+
+  private def authenticator(): Authenticator = {
+    val needsLdap = settings.userSyncProvider == "ldap" ||
+      (settings.userSyncProvider == "none" && settings.ldapSyncEnabled) ||
+      !settings.oidcEnabled
+
+    if (needsLdap) {
+      settings.validateLdapConfig()
+      LdapAuthenticator(settings)
+    } else
+      new NoOpAuthenticator
+  }
 }
 // $COVERAGE-ON$
