@@ -33,11 +33,6 @@ jobs:
             const targetRepoName = repo.name;
 
             const repoFull = wr.repository?.full_name || `${targetOwner}/${targetRepoName}`;
-            const defaultBranch = repo.default_branch;
-            const isDefault =
-              wr.head_repository?.full_name === repoFull &&
-              wr.head_branch === defaultBranch;
-
             const status = (wr.conclusion || "unknown").toUpperCase();
             const trigger = wr.event || "unknown";
             const actor =
@@ -46,11 +41,9 @@ jobs:
               wr.triggering_actor?.login ||
               "unknown";
 
-            const headRepo = wr.head_repository?.full_name || repoFull;
             const headBranch = wr.head_branch || "unknown";
             const headShaShort = (wr.head_sha || "").slice(0, 7) || "unknown";
 
-            let prLine = "";
             let prUrl = "";
             let prNumber = undefined;
             let prTitle = "";
@@ -68,7 +61,6 @@ jobs:
                   prTitle = pr.data.title || "";
                   prBase = pr.data.base?.ref || "unknown";
                   prUrl = pr.data.html_url || "";
-                  prLine = `PR: #${prNumber} "${prTitle}" → base: ${prBase}`;
                 } catch (e) {
                   // no-op: couldn't fetch PR details
                 }
@@ -97,7 +89,6 @@ jobs:
               }
             }
 
-            let releaseLine = "";
             let releaseTag = "";
             let releaseUrl = "";
             if (workflowName === "VinylDNS Official Release") {
@@ -116,7 +107,6 @@ jobs:
                   const match = versionSbt.match(/"([^"]+)"/);
                   if (match?.[1]) {
                     releaseTag = `v${match[1]}`;
-                    releaseLine = `Release: ${releaseTag}`;
 
                     // If a GitHub Release exists for this tag, link to it (best-effort)
                     try {
@@ -132,7 +122,7 @@ jobs:
                   }
                 }
               } catch (e) {
-                // no-op: keep releaseLine empty if we can't read version.sbt
+                // no-op: release details are optional
               }
             }
 
