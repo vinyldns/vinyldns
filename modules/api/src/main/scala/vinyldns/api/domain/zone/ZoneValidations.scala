@@ -21,6 +21,7 @@ import com.comcast.ip4s.Cidr
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import vinyldns.api.Interfaces.ensuring
+import vinyldns.api.domain.access.RegexValidator
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.{ACLRule, Zone, ZoneACL}
@@ -65,9 +66,11 @@ class ZoneValidations(syncDelayMillis: Int) {
       case Some(_) if rule.recordTypes.contains(RecordType.PTR) =>
         InvalidRequest("Multiple record types including PTR must have no mask").asLeft
       case Some(mask) =>
-        Try("string".matches(mask)) match {
+        Try {
+          RegexValidator.validatePattern(mask)
+        } match {
           case Success(_) => ().asRight
-          case Failure(_) => InvalidRequest(s"record mask $mask is an invalid regex").asLeft
+          case Failure(ex) => InvalidRequest(s"record mask is invalid: ${ex.getMessage}").asLeft
         }
       case None => ().asRight
     }
