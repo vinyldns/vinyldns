@@ -62,6 +62,12 @@ class RegexValidatorSpec extends AnyWordSpec with Matchers {
         RegexValidator.validatePattern("(a*)*")
       }
       ex2.getMessage should include("potentially dangerous")
+
+      
+      val ex3 = the[IllegalArgumentException] thrownBy {
+        RegexValidator.validatePattern("(a+)+$")
+      }
+      ex3.getMessage should include("potentially dangerous")
     }
 
     "reject patterns exceeding max length" in {
