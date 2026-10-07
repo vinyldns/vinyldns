@@ -513,16 +513,18 @@ class VinylDNSClient(object):
         response, data = self.make_request(url, "GET", self.headers, **kwargs)
         return data
 
-    def create_recordset(self, recordset, **kwargs):
+    def create_recordset(self, recordset, uri_zone_id=None, **kwargs):
         """
         Creates a new recordset
         :param recordset: the recordset to be created
+        :param uri_zone_id: optional zone id to use in request URI when different from body or omitted in body
         :return: the content of the response
         """
         if recordset and "name" in recordset:
             recordset["name"] = recordset["name"].replace("_", "-")
 
-        url = urljoin(self.index_url, "/zones/{0}/recordsets".format(recordset["zoneId"]))
+        zone_id = uri_zone_id if uri_zone_id is not None else recordset["zoneId"]
+        url = urljoin(self.index_url, "/zones/{0}/recordsets".format(zone_id))
         response, data = self.make_request(url, "POST", self.headers, json.dumps(recordset), **kwargs)
         return data
 

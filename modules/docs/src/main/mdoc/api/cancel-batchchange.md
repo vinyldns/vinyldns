@@ -22,6 +22,12 @@ name          | type          | required?   | description |
  ------------ | :------------ | ----------- | :---------- |
 id            | string        | yes         | Unique identifier assigned to each created batch change. |
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+POST /zones/batchrecordchanges/2f5c4a9b-87f7-4b1a-8a2f-3bd1e1bf2f7d/cancel
+```
+
 
 #### HTTP RESPONSE TYPES
 

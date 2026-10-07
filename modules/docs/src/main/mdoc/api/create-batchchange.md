@@ -25,7 +25,7 @@ name          | type          | required?   | description |
 comments      | string        | no          | Optional comments about the batch change. |
 changes       | Array of ChangeInput| yes   | Set of *ChangeInput*s in the batch change. A *ChangeInput*  is an [AddChangeInput](#addchangeinput-attributes) or [DeleteChangeInput](#deletechangeinput-attributes). Type is inferred from specified *changeType*.|
 ownerGroupId  | string        | sometimes   | Record ownership assignment. Required if any records in the batch change are in [shared zones](zone-model.html#shared-zones) and are new or unowned. |
-scheduledTime | date-time      | no          | Optional datetime. Stored as UTC. Batch change will not be processed until after the scheduled time. Required format is an ISO 8601 date time string.|
+scheduledTime | date-time      | no          | Optional datetime in the request body. Stored as UTC. Batch change will not be processed until after the scheduled time. Required format is an ISO 8601 date-time string (for example, `2026-03-23T15:30:00Z`).|
 allowManualReview | boolean   | no          | Optional override to control whether manual review is enabled for the batch change request. Default value is `true`. Must be passed in as a query parameter, not in the request body. |
 
 ##### AddChangeInput <a id="addchangeinput-attributes" />
@@ -53,6 +53,7 @@ record        | [RecordData](recordset-model.html#record-data) | no         | Th
 {
     "comments": "this is optional",
     "ownerGroupId": "f42385e4-5675-38c0-b42f-64105e743bfe",
+    "scheduledTime": "2026-03-23T15:30:00Z",
     "changes": [
         {
             "inputName": "example.com.",

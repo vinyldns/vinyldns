@@ -12,6 +12,12 @@ Gets a list of valid email domains which are allowed while entering groups and z
 
 > GET groups/valid/domains
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /groups/valid/domains
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |
