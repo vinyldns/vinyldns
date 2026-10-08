@@ -16,10 +16,17 @@
 
 package vinyldns.core.domain
 
-import vinyldns.core.domain.batch.OwnerType.OwnerType
 import vinyldns.core.domain.record.{RecordData, RecordType, RecordSet}
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.Messages._
+
+// Authorization operation types for contextual error messages
+object AuthorizationOperation extends Enumeration {
+  type AuthorizationOperation = Value
+  val Add = Value("Add")
+  val Update = Value("Update")
+  val Delete = Value("Delete")
+}
 
 // $COVERAGE-OFF$
 sealed abstract class DomainValidationError(val isFatal: Boolean = true) {
@@ -139,18 +146,35 @@ final case class CnameIsNotUniqueError(name: String, typ: RecordType)
 final case class UserIsNotAuthorizedError(
     recordName: String,
     ownerGroupId: String,
-    ownerType: OwnerType,              
+    operation: AuthorizationOperation.Value,
     contactEmail: Option[String] = None,
     ownerGroupName: Option[String] = None
 ) extends DomainValidationError {
 
   def message: String = {
     val groupName = ownerGroupName.getOrElse(ownerGroupId)
-    val guidanceMsg = contactEmail match {
-      case Some(email) if email.nonEmpty =>
-        s"Only members of this group may update the record. Please contact them for assistance: $email."
-      case _ =>
-        "Only members of this group may update the record."
+    val guidanceMsg = operation match {
+      case AuthorizationOperation.Add =>
+        contactEmail match {
+          case Some(email) if email.nonEmpty =>
+            NotAuthorizedAddContactMsg.format(email)
+          case _ =>
+            NotAuthorizedAddDefaultMsg
+        }
+      case AuthorizationOperation.Update =>
+        contactEmail match {
+          case Some(email) if email.nonEmpty =>
+            NotAuthorizedUpdateContactMsg.format(email)
+          case _ =>
+            NotAuthorizedUpdateDefaultMsg
+        }
+      case AuthorizationOperation.Delete =>
+        contactEmail match {
+          case Some(email) if email.nonEmpty =>
+            NotAuthorizedDeleteContactMsg.format(email)
+          case _ =>
+            NotAuthorizedDeleteDefaultMsg
+        }
     }
 
     NotAuthorizedErrorMsg.format(

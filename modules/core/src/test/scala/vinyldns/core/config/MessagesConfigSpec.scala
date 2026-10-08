@@ -16,18 +16,14 @@
 
 package vinyldns.core.config
 
+import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import pureconfig.ConfigSource
+import pureconfig.generic.auto._
+import vinyldns.core.Messages
 
 class MessagesConfigSpec extends AnyWordSpec with Matchers {
-
-  // Helper method that mirrors the orConfig implementation
-  private def applyOverride(message: String, config: Map[String, Message]): String =
-    config
-      .get(message)
-      .flatMap(_.overrideText)
-      .filter(_.nonEmpty)
-      .getOrElse(message)
 
   "Message class" should {
     "construct with text and Some override text" in {
@@ -52,7 +48,7 @@ class MessagesConfigSpec extends AnyWordSpec with Matchers {
         originalMsg -> Message(originalMsg, Some(overrideMsg))
       )
       
-      val result = applyOverride(originalMsg, testConfig)
+      val result = Messages.applyOverride(testConfig, originalMsg)
       result shouldBe overrideMsg
     }
 
@@ -60,7 +56,7 @@ class MessagesConfigSpec extends AnyWordSpec with Matchers {
       val unknownMessage = "This message does not exist in the system."
       val testConfig: Map[String, Message] = Map()
       
-      val result = applyOverride(unknownMessage, testConfig)
+      val result = Messages.applyOverride(testConfig, unknownMessage)
       result shouldBe unknownMessage
     }
 
@@ -71,7 +67,7 @@ class MessagesConfigSpec extends AnyWordSpec with Matchers {
         originalMsg -> Message(originalMsg, None)
       )
       
-      val result = applyOverride(originalMsg, testConfig)
+      val result = Messages.applyOverride(testConfig, originalMsg)
       result shouldBe originalMsg
     }
 
@@ -82,7 +78,7 @@ class MessagesConfigSpec extends AnyWordSpec with Matchers {
         originalMsg -> Message(originalMsg, Some(""))
       )
       
-      val result = applyOverride(originalMsg, testConfig)
+      val result = Messages.applyOverride(testConfig, originalMsg)
       result shouldBe originalMsg
     }
 
@@ -94,12 +90,12 @@ class MessagesConfigSpec extends AnyWordSpec with Matchers {
         originalMsg -> Message(originalMsg, Some(overrideMsg))
       )
       
-      val result = applyOverride(originalMsg, testConfig)
+      val result = Messages.applyOverride(testConfig, originalMsg)
       result shouldBe overrideMsg
       result should include("%s")
     }
 
-    "use override with mismatched format placeholder count (allows caller to specify)" in {
+    "reject override with mismatched format placeholder count" in {
       val originalMsg = "Invalid TTL: \"%s\", must be a number between %d and %d."
       val overrideMsgWithoutPlaceholders = "TTL is invalid and must be a positive number."
       
@@ -107,9 +103,22 @@ class MessagesConfigSpec extends AnyWordSpec with Matchers {
         originalMsg -> Message(originalMsg, Some(overrideMsgWithoutPlaceholders))
       )
       
-      val result = applyOverride(originalMsg, testConfig)
-      result shouldBe overrideMsgWithoutPlaceholders
-      result should not include "%d"
+      val result = Messages.applyOverride(testConfig, originalMsg)
+      // Should return original because format doesn't match
+      result shouldBe originalMsg
+    }
+
+    "reject override with different placeholder types" in {
+      val originalMsg = "Invalid port: %s, must be between %d and %d"
+      val overrideMsgWrongType = "Invalid port: %d, must be between %s and %s"
+      
+      val testConfig: Map[String, Message] = Map(
+        originalMsg -> Message(originalMsg, Some(overrideMsgWrongType))
+      )
+      
+      val result = Messages.applyOverride(testConfig, originalMsg)
+      // Should return original because format types differ
+      result shouldBe originalMsg
     }
 
     "handle multiline override text correctly" in {
@@ -121,7 +130,7 @@ class MessagesConfigSpec extends AnyWordSpec with Matchers {
         originalMsg -> Message(originalMsg, Some(overrideMsg))
       )
       
-      val result = applyOverride(originalMsg, testConfig)
+      val result = Messages.applyOverride(testConfig, originalMsg)
       result shouldBe overrideMsg
       result should include("cannot be created")
       result should include("already exist")
@@ -148,21 +157,66 @@ class MessagesConfigSpec extends AnyWordSpec with Matchers {
       val nonExistentMsg = "This message does not exist anywhere"
       
       val testConfig: Map[String, Message] = Map(
-        msgWithOverride -> Message(msgWithOverride, Some("Custom error: Unable to create group.")),
+        msgWithOverride -> Message(msgWithOverride, Some("Unable to create group: %s already in use.")),
         msgWithoutOverride -> Message(msgWithoutOverride, None)
       )
       
-      // Message WITH override
-      val result1 = applyOverride(msgWithOverride, testConfig)
-      result1 shouldBe "Custom error: Unable to create group."
+      // Message WITH override (matching format)
+      val result1 = Messages.applyOverride(testConfig, msgWithOverride)
+      result1 shouldBe "Unable to create group: %s already in use."
       
       // Message WITHOUT override (None)
-      val result2 = applyOverride(msgWithoutOverride, testConfig)
+      val result2 = Messages.applyOverride(testConfig, msgWithoutOverride)
       result2 shouldBe msgWithoutOverride
       
       // Non-existent message
-      val result3 = applyOverride(nonExistentMsg, testConfig)
+      val result3 = Messages.applyOverride(testConfig, nonExistentMsg)
       result3 shouldBe nonExistentMsg
+    }
+  }
+
+  "Config file reader integration" should {
+    "populate overrideText from application.conf override-text field" in {
+      val configContent =
+        """
+          |messages = [
+          |  {
+          |    text = "Cannot create group. A group, %s, is already associated with the email address %s."
+          |    override-text = "Unable to create group: name %s already used. Contact %s for access."
+          |  }
+          |]
+        """.stripMargin
+
+      val config = ConfigFactory.parseString(configContent)
+      val result = ConfigSource.fromConfig(config).load[MessagesConfig]
+
+      result shouldBe a[Right[_, _]]
+      val messagesConfig = result.asInstanceOf[Right[_, MessagesConfig]].value
+      messagesConfig.messages should have length 1
+      messagesConfig.messages(0).text shouldBe 
+        "Cannot create group. A group, %s, is already associated with the email address %s."
+      messagesConfig.messages(0).overrideText shouldBe 
+        Some("Unable to create group: name %s already used. Contact %s for access.")
+    }
+
+    "handle missing override-text field correctly" in {
+      val configContent =
+        """
+          |messages = [
+          |  {
+          |    text = "User with ID %s was not found"
+          |  }
+          |]
+        """.stripMargin
+
+      val config = ConfigFactory.parseString(configContent)
+      val result = ConfigSource.fromConfig(config).load[MessagesConfig]
+
+      result shouldBe a[Right[_, _]]
+      val messagesConfig = result.asInstanceOf[Right[_, MessagesConfig]].value
+      messagesConfig.messages should have length 1
+      messagesConfig.messages(0).text shouldBe "User with ID %s was not found"
+      messagesConfig.messages(0).overrideText shouldBe None
     }
   }
 }

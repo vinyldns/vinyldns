@@ -24,6 +24,14 @@ object Messages {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
+  // Regex to extract format specifiers from message strings
+  private val FormatSpecifier =
+    """%(?:\d+\$)?[-#+ 0,(]*\d*(?:\.\d+)?([a-zA-Z%])""".r
+
+  // Extract conversion types from a message string to validate override compatibility
+  private def conversions(s: String): List[String] =
+    FormatSpecifier.findAllMatchIn(s).map(_.group(1)).filterNot(_ == "%").toList
+
   // Getting the messages present in the config file
   val configMessages: Map[String, Message] = messages.fold(
     failures => {
@@ -33,36 +41,60 @@ object Messages {
     value => value.messages.map(value => value.text -> value).toMap
   )
 
+  // Extract the override logic for testability
+  private[core] def applyOverride(
+      messagesMap: Map[String, Message],
+      existingMessage: String
+  ): String =
+    messagesMap
+      .get(existingMessage)
+      .flatMap(_.overrideText)
+      .filter(_.nonEmpty)
+      .filter { candidate =>
+        val matches = conversions(candidate) == conversions(existingMessage)
+        if (!matches)
+          logger.warn(
+            s"Ignoring message override, placeholders differ: [$existingMessage] -> [$candidate]"
+          )
+        matches
+      }
+      .getOrElse(existingMessage)
+
   // Checking if a message is present in config file and overriding the existing message
   implicit class MessagesStringExtension(existingMessage: String) {
-    def orConfig: String =
-      configMessages
-        .get(existingMessage)
-        .flatMap(_.overrideText)
-        .filter(_.nonEmpty)
-        .getOrElse(existingMessage)
+    def orConfig: String = applyOverride(configMessages, existingMessage)
   }
 
   // Messages displayed to the user and the files in which they are present
   /* MembershipService.scala */
+  // Placeholders: %s = group name, %s = email address, %s = contact
   val GroupEmailExistsErrorMsg: String = "Cannot create group. A group, %s, is already associated with the email address %s. Please contact %s to be added to the group.".orConfig
 
+  // Placeholders: %s = group name, %s = email address
   val GroupEmailExistsUpdateErrorMsg: String = "Cannot update group. A group, %s, is already associated with the email address %s. Visit FAQ for more information.".orConfig
 
+  // Placeholders: %s = user id
   val UserNotFoundErrorMsg: String = "User with ID %s was not found".orConfig
 
+  // Placeholders: %s = group id
   val GroupNotFoundErrorMsg: String = "Group with ID %s was not found".orConfig
 
+  // Placeholders: %s = user ids
   val UsersNotFoundErrorMsg: String = "Users [ %s ] were not found".orConfig
 
+  // Placeholders: %s = user name
   val UserIsNotFoundErrorMsg: String = "User %s was not found".orConfig
 
+  // Placeholders: %s = group name, %s = zone/record name
   val ACLRuleErrorMsg: String = "%s has an ACL rule for a zone including %s. Cannot delete. Please transfer the ownership to another group before deleting.".orConfig
 
+  // Placeholders: %s = group name, %s = record set name
   val RecordSetOwnerErrorMsg: String = "%s is the owner for a record set including %s. Cannot delete. Please transfer the ownership to another group before deleting.".orConfig
 
+  // Placeholders: %s = group name, %s = contact
   val GroupAlreadyExistsErrorMsg: String = "Group with name %s already exists. Please try a different name or contact %s to be added to the group.".orConfig
 
+  // Placeholders: %s = group name
   val ZoneAdminErrorMsg: String = "%s is the admin of a zone. Cannot delete. Please transfer the ownership to another group before deleting.".orConfig
 
   val GroupValidationErrorMsg: String = "Group name and email cannot be empty.".orConfig
@@ -74,85 +106,140 @@ object Messages {
   val DotsValidationErrorMsg: String = "Please enter a valid Email. Number of dots allowed after @ is".orConfig
 
   /* DomainValidationErrors.scala */
+  // Placeholders: %d = limit
   val ChangeLimitExceededErrorMsg: String = "Cannot request more than %d changes in a single batch change request".orConfig
 
+  // Placeholders: %s = group id
   val GroupIdNotFoundErrorMsg: String = "Group with ID \"%s\" was not found".orConfig
 
+  // Placeholders: %d = max count
   val BatchChangeIsEmptyErrorMsg: String = "Batch change contained no changes. Batch change must have at least one change, up to a maximum of %d changes.".orConfig
 
+  // Placeholders: %s = user name, %s = group name
   val NotMemberOfGroupErrorMsg: String = "User \"%s\" must be a member of group \"%s\" to apply this group to batch changes.".orConfig
 
+  // Placeholders: %s = domain name
   val InvalidDomainNameErrorMsg: String = "Invalid domain name: \"%s\", valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.".orConfig
 
+  // Placeholders: %s = value, %d = min length, %d = max length
   val InvalidLengthErrorMsg: String = "Invalid length: \"%s\", length needs to be between %d and %d characters.".orConfig
 
+  // Placeholders: %s = email address
   val InvalidEmailErrorMsg: String = "Invalid email address: \"%s\".".orConfig
 
+  // Placeholders: %s = record type, %s = valid types list
   val InvalidRecordTypeErrorMsg: String = "Invalid record type: \"%s\", valid record types include %s.".orConfig
 
+  // Placeholders: %s = port number, %d = min port, %d = max port
   val InvalidPortNumberErrorMsg: String = "Invalid port number: \"%s\", port must be a number between %d and %d.".orConfig
 
+  // Placeholders: %s = IPv4 address
   val InvalidIpv4AddressErrorMsg: String = "Invalid IPv4 address: \"%s\".".orConfig
 
+  // Placeholders: %s = IPv6 address
   val InvalidIpv6AddressErrorMsg: String = "Invalid IPv6 address: \"%s\".".orConfig
 
+  // Placeholders: %s = IP address
   val InvalidIPAddressErrorMsg: String = "Invalid IP address: \"%s\".".orConfig
 
+  // Placeholders: %s = TTL value, %d = min TTL, %d = max TTL
   val InvalidTTLErrorMsg: String = "Invalid TTL: \"%s\", must be a number between %d and %d.".orConfig
 
+  // Placeholders: %s = MX preference, %d = min preference, %d = max preference
   val InvalidMxPreferenceErrorMsg: String = "Invalid MX Preference: \"%s\", must be a number between %d and %d.".orConfig
 
+  // Placeholders: %s = record type, %s = field name, %s = value, %d = min, %d = max
   val InvalidMX_NAPTR_SRVDataErrorMsg: String = "Invalid %s %s: \"%s\", must be a number between %d and %d.".orConfig
 
+  // Placeholders: %s = NAPTR flag value
   val InvalidNaptrFlagErrorMsg: String = "Invalid NAPTR flag value: '%s'. Valid NAPTR flag value must be U, S, A or P.".orConfig
 
+  // Placeholders: %s = NAPTR regexp value
   val InvalidNaptrRegexpErrorMsg: String = "Invalid NAPTR regexp value: '%s'. Valid NAPTR regexp value must start and end with '!'.".orConfig
 
+  // Placeholders: %s = error message
   val InvalidBatchRequestErrorMsg: String = "%s".orConfig
 
+  // Placeholders: %s = name server
   val NotApprovedNSErrorMsg: String = "Name Server %s is not an approved name server.".orConfig
 
+  // Placeholders: %s = record type, %s = valid types list
   val InvalidBatchRecordTypeErrorMsg: String = "Invalid Batch Record Type: \"%s\", valid record types for batch changes include %s.".orConfig
 
+  // Placeholders: %s = zone name
   val ZoneDiscoveryErrorMsg: String = "Zone Discovery Failed: zone for \"%s\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.".orConfig
 
+  // Placeholders: %s = record name
   val RecordAlreadyExistsErrorMsg: String = "RecordName \"%s\" already exists. If you intended to update this record, submit a DeleteRecordSet entry followed by an Add.".orConfig
 
+  // Placeholders: %s = record name
   val RecordDoesNotExistErrorMsg: String = "Record \"%s\" Does Not Exist: cannot delete a record that does not exist.".orConfig
 
+  // Placeholders: %s = record name, %s = record type
   val CnameIsNotUniqueErrorMsg: String = "CNAME Conflict: CNAME record names must be unique. Existing record with name \"%s\" and type \"%s\" conflicts with this record.".orConfig
 
+  // Placeholders: %s = record name, %s = record type
   val RecordNameNotUniqueInBatchErrorMsg: String = "Record Name \"%s\" Not Unique In Batch Change: cannot have multiple \"%s\" records with the same name.".orConfig
 
+  // Placeholders: %s = record name, %s = record type
   val RecordInReverseZoneErrorMsg: String = "Invalid Record Type In Reverse Zone: record with name \"%s\" and type \"%s\" is not allowed in a reverse zone.".orConfig
 
+  // Placeholders: %s = record name
   val HighValueDomainErrorMsg: String = "Record name \"%s\" is configured as a High Value Domain, so it cannot be modified.".orConfig
 
+  // Placeholders: %s = zone name, %s = record name
   val MissingOwnerGroupIdErrorMsg: String = "Zone \"%s\" is a shared zone, so owner group ID must be specified for record \"%s\".".orConfig
 
+  // Placeholders: %s = zone name
   val CnameAtZoneApexErrorMsg: String = "CNAME cannot be the same name as zone \"%s\".".orConfig
 
+  // Placeholders: %s = record set name
   val RecordManualReviewErrorMsg: String = "Record set with name \"%s\" requires manual review.".orConfig
 
+  // Placeholders: %s = feature name
   val UnsupportedOperationErrorMsg: String = "%s is not yet implemented/supported in VinylDNS.".orConfig
 
+  // Placeholders: %s = record data, %s = record name
   val DeleteRecordDataDoesNotExistErrorMsg: String = "Record data %s does not exist for \"%s\".".orConfig
 
+  // Placeholders: %s = record name, %s = group name, %s = group id, %s = guidance message
   val NotAuthorizedErrorMsg: String = "The record \"%s\" is owned by the %s group (id: %s). %s".orConfig
 
+  // Placeholders: %s = contact email
+  val NotAuthorizedAddContactMsg: String = "Only members of this group may add records to this zone. Please contact them for assistance: %s".orConfig
+
+  val NotAuthorizedAddDefaultMsg: String = "Only members of this group may add records to this zone.".orConfig
+
+  // Placeholders: %s = contact email
+  val NotAuthorizedUpdateContactMsg: String = "Only members of this group may update this record. Please contact them for assistance: %s".orConfig
+
+  val NotAuthorizedUpdateDefaultMsg: String = "Only members of this group may update this record.".orConfig
+
+  // Placeholders: %s = contact email
+  val NotAuthorizedDeleteContactMsg: String = "Only members of this group may delete this record. Please contact them for assistance: %s".orConfig
+
+  val NotAuthorizedDeleteDefaultMsg: String = "Only members of this group may delete this record.".orConfig
+
+  // Placeholders: %s = CNAME value
   val InvalidIPv4CNameErrorMsg: String = "Invalid Cname: \"%s\", Valid CNAME record data should not be an IP address".orConfig
 
+  // Placeholders: %s = CNAME value
   val InvalidForwardCnameErrorMsg: String = "Invalid Cname: \"%s\", valid cnames must be letters, numbers, slashes, underscores, and hyphens, joined by dots, and terminated with a dot.".orConfig
 
+  // Placeholders: %s = CNAME value
   val InvalidReverseCnameErrorMsg: String = "Invalid Cname: \"%s\", valid cnames must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.".orConfig
 
+  // Placeholders: %s = record name
   val InvalidUpdateRequestErrorMsg: String = "Cannot perform request for the record \"%s\". Add and Delete for the record with same record data exists in the batch.".orConfig
 
   /* Deprecated errors */
+  // Placeholders: %s = record name, %s = record type, %s = number of records
   val ExistingMultiRecordErrorMsg: String = "RecordSet with name %s and type %s cannot be updated in a single Batch Change because it contains multiple DNS records (%s).".orConfig
 
+  // Placeholders: %s = record name, %s = record type
   val NewMultiRecordErrorMsg: String = "Multi-record recordsets are not enabled for this instance of VinylDNS. Cannot create a new record set with multiple records for inputName %s and type %s.".orConfig
 
+  // Placeholders: %s = user name
   val UserIsNotAuthorizedMsg: String = "User \"%s\" is not authorized.".orConfig
 
   /* RecordSetValidations.scala */
@@ -164,49 +251,68 @@ object Messages {
 
   val UnchangedRecordNameErrorMsg: String = "Cannot update RecordSet's name.".orConfig
 
+  // Placeholders: %s = group id
   val RecordOwnerGroupNotFoundErrorMsg: String = "Record owner group with id \"%s\" not found".orConfig
 
+  // Placeholders: %s = group id
   val UserNotInOwnerGroupErrorMsg: String = "User not in record owner group with id \"%s\"".orConfig
 
+  // Placeholders: %s = record name
   val NSApexErrorMsg: String = "Record with name %s is an NS record at apex and cannot be added".orConfig
 
+  // Placeholders: %s = record name
   val NSApexEditErrorMsg: String = "Record with name %s is an NS record at apex and cannot be edited".orConfig
 
+  // Placeholders: %s = record name, %d = NS TTL
   val DSTTLErrorMsg: String = "DS record [%s] must have TTL matching its linked NS (%d)".orConfig
 
+  // Placeholders: %s = record name, %s = zone name
   val DSInvalidErrorMsg: String = "DS record [%s] is invalid because there is no NS record with that name in the zone [%s]".orConfig
 
+  // Placeholders: %s = record name
   val DSApexErrorMsg: String = "Record with name [%s] is an DS record at apex and cannot be added".orConfig
 
+  // Placeholders: %s = record name, %s = zone name
   val CnameDuplicateErrorMsg: String = "RecordSet with name %s already exists in zone %s, CNAME record cannot use duplicate name".orConfig
 
   val InvalidCnameErrorMsg: String = "CNAME RecordSet cannot have name '@' because it points to zone origin".orConfig
 
   val SOADeleteErrorMsg: String = "SOA records cannot be deleted".orConfig
 
+  // Placeholders: %s = record name, %s = record type, %s = zone name
   val DottedHostErrorMsg: String = "Record with name %s and type %s is a dotted host which is not allowed in zone %s".orConfig
 
+  // Placeholders: %s = record name, %s = record type, %s = zone name
   val RecordSetAlreadyExistsErrorMsg: String = "RecordSet with name %s and type %s already exists in zone %s".orConfig
 
+  // Placeholders: %s = record name, %s = zone name
   val RecordSetCnameExistsErrorMsg: String = "RecordSet with name %s and type CNAME already exists in zone %s".orConfig
 
+  // Placeholders: %s = record set id, %s = record name, %s = record type
   val PendingUpdateErrorMsg: String = "RecordSet with id %s, name %s and type %s currently has a pending change".orConfig
 
+  // Placeholders: %s = record name
   val RecordNameLengthErrorMsg: String = "record set name %s is too long".orConfig
 
+  // Placeholders: %s = hostname
   val ReverseLookupErrorMsg: String = "%s is not valid in reverse lookup zone.".orConfig
 
   val InvalidPtrErrorMsg: String = "PTR is not valid in forward lookup zone".orConfig
 
+  // Placeholders: %s = FQDN, %s = zone name
   val InvalidRequestErrorMsg: String = ("Record with fqdn '%s.%s' cannot be created. " +
     "Please check if a record with the same FQDN and type already exist and make the change there.").orConfig
 
+  // Placeholders: %s = zone name
   val RtypeOrUserNotAllowedErrorMsg: String = "Record type is not allowed or the user is not authorized to create a dotted host in the zone '%s'".orConfig
 
+  // Placeholders: %s = record data
   val RDataWithConsecutiveDotsErrorMsg: String = "RecordSet Data cannot contain consecutive 'dot' character. RData: '%s'".orConfig
 
+  // Placeholders: %s = CNAME value
   val IPv4inCnameErrorMsg: String = "Invalid CNAME: %s, valid CNAME record data cannot be an IP address.".orConfig
 
+  // Placeholders: %s = record name, %s = dots limit
   val MoreDotsThanAllowedErrorMsg: String = ("RecordSet with name %s has more dots than that is allowed in config for this zone " +
     "which is, 'dots-limit = %s'.").orConfig
 
@@ -218,35 +324,46 @@ object Messages {
 
   val OwnershipTransferZoneNotSharedErrorMsg: String = "Cannot update RecordSet Ownership Status when zone is not shared.".orConfig
 
+  // Placeholders: %s = group id
   val OwnershipTransferAlreadyOwnedErrorMsg: String = "Record owner group with id %s already owns the record, new request is not needed.".orConfig
 
+  // Placeholders: %s = group id (old request status)
   val OwnershipTransferInvalidPendingReviewErrorMsg: String = "Invalid Ownership transfer status: %s".orConfig
 
+  // Placeholders: %s = action being performed
   val OwnershipTransferInvalidApprovalErrorMsg: String = "Unable to %s the Ownership transfer status for the record: None".orConfig
 
+  // Placeholders: %s = current status
   val OwnershipTransferInvalidCancelErrorMsg: String = "Unable to cancel the Ownership transfer. Current status: %s".orConfig
 
   val OwnershipTransferUnauthorisedCancelErrorMsg: String = "Unauthorised to Cancel the ownership transfer".orConfig
 
+  // Placeholders: %s = new status
   val OwnershipTransferUnauthorizedChangeErrorMsg: String = "Unauthorized to change ownership transfer status to '%s'".orConfig
 
 
 
   /* BatchChangeErrors.scala */
+  // Placeholders: %s = batch change id
   val BatchChangeNotFoundErrorMsg: String = "Batch change with id %s cannot be found".orConfig
 
+  // Placeholders: %s = item id
   val UserNotAuthorizedErrorMsg: String = "User does not have access to item %s".orConfig
 
+  // Placeholders: %s = record name, %s = record type
   val BatchConversionErrorMsg: String = "Batch conversion for processing failed to convert change with name \"%s\" and type \"%s\"".orConfig
 
+  // Placeholders: %s = batch change id
   val BatchChangeNotPendingReviewErrorMsg: String = "Batch change %s is not pending review, so it cannot be rejected.".orConfig
 
+  // Placeholders: %s = user id, %s = user name
   val BatchRequesterNotFoundErrorMsg: String = "The requesting user with id %s and name %s cannot be found in VinylDNS".orConfig
 
   val ScheduledChangesDisabledErrorMsg: String = "Cannot create a scheduled change, as it is currently disabled on this VinylDNS instance.".orConfig
 
   val ScheduledTimeMustBeInFutureErrorMsg: String = "Scheduled time must be in the future.".orConfig
 
+  // Placeholders: %s = scheduled date time
   val ScheduledChangeNotDueErrorMsg: String = "Cannot process scheduled change as it is not past the scheduled date of %s".orConfig
 
   val ManualReviewRequiresOwnerGroupErrorMsg: String = "Batch change requires owner group for manual review.".orConfig
@@ -324,6 +441,7 @@ object Messages {
 
   val MissingTXTRecordsMsg: String = "Missing TXT Records".orConfig
 
+  // Placeholders: %s = record type, %s = valid types list
   val UnsupportedRecordTypeMsg: String = "Unsupported type %s, valid types include %s".orConfig
 
   val MissingAAddressMsg: String = "Missing A.address".orConfig
@@ -444,10 +562,12 @@ object Messages {
 
   val MissingDSAlgorithmMsg: String = "Missing DS.algorithm".orConfig
 
+  // Placeholders: %d = algorithm number
   val UnsupportedDNSSECMsg: String = "Algorithm %d is not a supported DNSSEC algorithm".orConfig
 
   val MissingDSDigestTypeMsg: String = "Missing DS.digesttype".orConfig
 
+  // Placeholders: %d = digest type number
   val UnsupportedDigestTypeMsg: String = "Digest Type %d is not a supported DS record digest type".orConfig
 
   val MissingDSDigestMsg: String = "Missing DS.digest".orConfig
@@ -463,18 +583,25 @@ object Messages {
   val UnsupportedEncryptedTypeErrorMsg: String = "Unsupported type for zone connection key, must be a string".orConfig
 
   /* AccessValidations.scala */
+  // Placeholders: %s = user name, %s = zone name
   val CannotAccessZoneErrorMsg: String = "User %s cannot access zone '%s'".orConfig
 
+  // Placeholders: %s = user name, %s = zone name
   val CannotAccessZoneChangeErrorMsg: String = "User %s cannot access zone '%s' changes".orConfig
 
+  // Placeholders: %s = user name, %s = zone name, %s = admin group name
   val CannotChangeZoneErrorMsg: String = "User '%s' cannot create or modify zone '%s' because they are not in the Zone Admin Group '%s'".orConfig
 
+  // Placeholders: %s = user name, %s = zone name, %s = record name
   val CannotAddRecordErrorMsg: String = "User %s does not have access to create %s.%s".orConfig
 
+  // Placeholders: %s = user name, %s = zone name, %s = record name
   val CannotUpdateRecordErrorMsg: String = "User %s does not have access to update %s.%s".orConfig
 
+  // Placeholders: %s = user name, %s = zone name, %s = record name
   val CannotDeleteRecordErrorMsg: String = "User %s does not have access to delete %s.%s".orConfig
 
+  // Placeholders: %s = user name, %s = zone name, %s = record name
   val CannotViewRecordErrorMsg: String = "User %s does not have access to view %s.%s".orConfig
 
   /* MembershipValidations.scala */
@@ -517,8 +644,10 @@ object Messages {
 
   val RequestSignatureErrorMsg: String = "Request signature could not be validated".orConfig
 
+  // Placeholders: %s = username
   val AccountLockedErrorMsg: String = "Account with username %s is locked".orConfig
 
+  // Placeholders: %s = access key
   val AccountAccessKeyErrorMsg: String = "Account with accessKey %s specified was not found".orConfig
 
   /* RecordSetChangeHandler.scala */
@@ -530,31 +659,41 @@ object Messages {
 
   val RecordConflictMessage: String = "Conflict due to the record having the same name as an NS record in the same zone. Please create the record using the DNS service the NS record has been delegated to (ex. AWS r53), or use a different record name.".orConfig
 
+  // Placeholders: %s = change name, %s = record name, %s = validation error message
   val UpdateValidateMsg: String = "Failed validating update to DNS for change \"%s\": \"%s\": %s".orConfig
 
+  // Placeholders: %s = change id, %s = record name, %s = apply error message
   val UpdateApplyMsg: String = "Failed applying update to DNS for change %s:%s: %s".orConfig
 
+  // Placeholders: %s = change id, %s = record name, %s = verification error message
   val UpdateVerifyMsg: String = "Failed verifying update to DNS for change %s:%s: %s".orConfig
 
   /* ZoneRecordValidations.scala */
+  // Placeholders: %s = name server
   val ApprovedNameServerMsg: String = "Name Server %s is not an approved name server.".orConfig
 
   /* ZoneService.scala */
   val UnknownGroupNameMsg: String = "Unknown group name".orConfig
 
+  // Placeholders: %s = zone name, %s = contact
   val ZoneAlreadyExistsErrorMsg: String = "Zone with name %s already exists. Please contact %s to request access to the zone.".orConfig
 
+  // Placeholders: %s = zone id
   val ZoneIdNotFoundErrorMsg: String = "Zone with id %s does not exists".orConfig
 
+  // Placeholders: %s = zone name
   val ZoneNameNotFoundErrorMsg: String = "Zone with name %s does not exists".orConfig
 
+  // Placeholders: %s = admin group id
   val AdminGroupNotExistsErrorMsg: String = "Admin group with ID %s does not exist".orConfig
 
   val InvalidCronStringErrorMsg: String = "Invalid cron expression. Please enter a valid cron expression in 'recurrenceSchedule'.".orConfig
 
+  // Placeholders: %s = user name
   val UnauthorizedSyncScheduleErrorMsg: String = "User '%s' is not authorized to schedule zone sync in this zone.".orConfig
 
   /* ZoneValidations.scala */
+  // Placeholders: %s = zone name
   val RecentSyncErrorMsg: String = "Zone %s was recently synced. Cannot complete sync".orConfig
 
   val InvalidACLRuleErrorMsg: String = "Invalid ACL rule: ACL rules must have a group or user id".orConfig
@@ -563,34 +702,44 @@ object Messages {
 
   val PTRNoMaskErrorMsg: String = "Multiple record types including PTR must have no mask".orConfig
 
+  // Placeholders: %s = regex pattern
   val InvalidRegexErrorMsg: String = "record mask %s is an invalid regex".orConfig
 
   val CreateSharedZoneErrorMsg: String = "Not authorized to create shared zones.".orConfig
 
+  // Placeholders: %b = old value, %b = new value
   val UpdateSharedZoneErrorMsg: String = "Not authorized to update zone shared status from %b to %b.".orConfig
 
   /* JsonValidation.scala */
   val UnexpectedExtractionErrorMsg: String = "Extraction.extract returned unexpected type".orConfig
 
+  // Placeholders: %s = JSON element name
   val JsonParseErrorMsg: String = "Failed to parse %s".orConfig
 
+  // Placeholders: %s = element being parsed, %s = error message
   val UnexpectedJsonErrorMsg: String = "While parsing %s, received unexpected error '%s'".orConfig
 
+  // Placeholders: %s = entity type
   val InvalidMsg: String = "Invalid %s".orConfig
 
   /* Route53Backend.scala */
+  // Placeholders: %s = zone name
   val HostedZoneErrorMsg: String = "Unable to find hosted zone for zone name %s".orConfig
 
+  // Placeholders: %s = record name
   val RecordConversionErrorMsg: String = "Unable to convert record set to route 53 format for %s".orConfig
 
   /* SqsMessage.scala */
+  // Placeholders: %s = SQS message id
   val SqsParseErrorMsg: String = "Unable to parse SQS Message with ID '%s'".orConfig
 
+  // Placeholders: %s = SQS message id
   val SqsBodyErrorMsg: String = "No message body found for SQS message with ID '%s'".orConfig
 
   val SqsInvalidCommand: String = "Invalid command message type '%s'".orConfig
 
   /* SqsMessageQueue.scala */
+  // Placeholders: %d = duration value, %d = min duration, %d = max duration
   val InvalidDurationErrorMsg: String = "Invalid duration: %d seconds. Duration must be between %d-%d seconds.".orConfig
 
   /* SqsMessageQueueProvider.scala */

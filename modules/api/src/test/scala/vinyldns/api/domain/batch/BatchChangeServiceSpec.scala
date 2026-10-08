@@ -2759,7 +2759,7 @@ class BatchChangeServiceSpec
 
   "getGroupIdsFromUnauthorizedErrors" should {
     val error =
-      UserIsNotAuthorizedError("test-record", okGroup.id, OwnerType.Zone, Some("test@example.com")).invalidNel
+      UserIsNotAuthorizedError("test-record", okGroup.id, AuthorizationOperation.Add, Some("test@example.com")).invalidNel
 
     "combine gets for each valid record" in {
       val in = List(apexAddForVal.validNel, error)
@@ -2772,7 +2772,7 @@ class BatchChangeServiceSpec
 
   "errorGroupMapping" should {
     val error =
-      UserIsNotAuthorizedError("test-record", okGroup.id, OwnerType.Zone, Some("test@example.com")).invalidNel
+      UserIsNotAuthorizedError("test-record", okGroup.id, AuthorizationOperation.Add, Some("test@example.com")).invalidNel
 
     "combine gets for each valid record" in {
       val in = List(error, apexAddForVal.validNel)
@@ -2783,7 +2783,7 @@ class BatchChangeServiceSpec
         UserIsNotAuthorizedError(
           "test-record",
           okGroup.id,
-          OwnerType.Zone,
+          AuthorizationOperation.Add,
           Some(okGroup.email),
           Some(okGroup.name)
         )

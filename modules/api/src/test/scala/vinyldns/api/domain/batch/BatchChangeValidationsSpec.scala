@@ -35,7 +35,7 @@ import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.domain._
 import vinyldns.core.domain.auth.AuthPrincipal
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, OwnerType}
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone, ZoneStatus}
 
@@ -1106,18 +1106,18 @@ class BatchChangeValidationsSpec
 
     result(0) should haveInvalid[DomainValidationError](
       UserIsNotAuthorizedError(
-        addUpdateA.recordName,
+        addUpdateA.inputChange.inputName,
         addUpdateA.zone.adminGroupId,
-        OwnerType.Zone,
+        AuthorizationOperation.Update,
         Some(addUpdateA.zone.email)
       )
     )
 
     result(1) should haveInvalid[DomainValidationError](
       UserIsNotAuthorizedError(
-        deleteUpdateA.recordName,
+        deleteUpdateA.inputChange.inputName,
         deleteUpdateA.zone.adminGroupId,
-        OwnerType.Zone,
+        AuthorizationOperation.Update,
         Some(deleteUpdateA.zone.email)
       )
     )
@@ -1655,9 +1655,9 @@ class BatchChangeValidationsSpec
 
       result(0) should haveInvalid[DomainValidationError](
         UserIsNotAuthorizedError(
-          input.recordName,
+          input.inputChange.inputName,
           input.zone.adminGroupId,
-          OwnerType.Zone,
+          AuthorizationOperation.Add,
           Some(input.zone.email)
         )
       )
@@ -1850,9 +1850,9 @@ class BatchChangeValidationsSpec
 
     result(0) should haveInvalid[DomainValidationError](
       UserIsNotAuthorizedError(
-        deleteA.recordName,
+        deleteA.inputChange.inputName,
         deleteA.zone.adminGroupId,
-        OwnerType.Zone,
+        AuthorizationOperation.Delete,
         Some(deleteA.zone.email)
       )
     )
@@ -2451,9 +2451,9 @@ class BatchChangeValidationsSpec
     result(0) should
       haveInvalid[DomainValidationError](
         UserIsNotAuthorizedError(
-          "shared-delete",
+          deleteSharedChange.inputChange.inputName,
           sharedZoneRecord.ownerGroupId.get,
-          OwnerType.Record,
+          AuthorizationOperation.Delete,
           None
         )
       )

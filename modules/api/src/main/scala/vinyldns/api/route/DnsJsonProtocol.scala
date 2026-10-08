@@ -60,17 +60,17 @@ trait DnsJsonProtocol extends JsonValidation {
   ): ValidatedNel[String, CommonRecordSetInputFields] =
     (
       (js \ "name")
-        .required[String]("Missing RecordSet.name")
+        .required[String](MissingRecordSetNameMsg)
         .check(
-          "Record name must not exceed 255 characters" -> checkDomainNameLen,
-          "Record name cannot contain spaces" -> nameDoesNotContainSpaces
+          RecordNameLengthMsg -> checkDomainNameLen,
+          RecordContainsSpaceMsg -> nameDoesNotContainSpaces
         ),
       recordType,
       (js \ "ttl")
-        .required[Long]("Missing RecordSet.ttl")
+        .required[Long](MissingRecordSetTTL)
         .check(
-          "RecordSet.ttl must be a positive signed 32 bit number" -> (_ <= 2147483647),
-          "RecordSet.ttl must be a positive signed 32 bit number greater than or equal to 30" -> (_ >= 30)
+          RecordSetTTLNotPositiveMsg -> (_ <= 2147483647),
+          RecordSetTTLNotValidMsg -> (_ >= 30)
         ),
       (js \ "status").default(RecordSetStatus, RecordSetStatus.Pending),
       (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
@@ -198,9 +198,8 @@ trait DnsJsonProtocol extends JsonValidation {
       val createInputResult = (
         (js \ "zoneId").optional[String],
         commonRecordSetInputFields(js, recordType)
-      ).mapN {
-        case (zoneId, (name, typ, ttl, status, created, updated, records, id, account, ownerGroupId, recordSetGroupChange, fqdn)) =>
-          CreateRecordSetInput(zoneId, name, typ, ttl, status, created, updated, records, id, account, ownerGroupId, recordSetGroupChange, fqdn)
+      ).mapN { case (zoneId, fields) =>
+        CreateRecordSetInput(zoneId, fields._1, fields._2, fields._3, fields._4, fields._5, fields._6, fields._7, fields._8, fields._9, fields._10, fields._11, fields._12)
       }
 
       // Put additional record set level checks below
@@ -299,31 +298,10 @@ trait DnsJsonProtocol extends JsonValidation {
       val recordTypeGet: RecordType = recordType.getOrElse(A)
       val recordSetResult = (
         (js \ "zoneId").required[String](MissingRecordSetZoneIdMsg),
-        (js \ "name")
-          .required[String](MissingRecordSetNameMsg)
-          .check(
-            RecordNameLengthMsg -> checkDomainNameLen,
-            RecordContainsSpaceMsg -> nameDoesNotContainSpaces
-          ),
-        recordType,
-        (js \ "ttl")
-          .required[Long](MissingRecordSetTTL)
-          .check(
-            // RFC 1035.2.3.4 and  RFC 2181.8
-            RecordSetTTLNotPositiveMsg -> (_ <= 2147483647),
-            RecordSetTTLNotValidMsg -> (_ >= 30)
-          ),
-        (js \ "status").default(RecordSetStatus, RecordSetStatus.Pending),
-        (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
-        (js \ "updated").optional[Instant],
-        recordType
-          .andThen(extractRecords(_, js \ "records")),
-        (js \ "id").default[String](UUID.randomUUID().toString),
-        (js \ "account").default[String]("system"),
-        (js \ "ownerGroupId").optional[String],
-        (js \ "recordSetGroupChange").optional[OwnershipTransfer],
-        (js \ "fqdn").optional[String]
-        ).mapN(RecordSet.apply)
+        commonRecordSetInputFields(js, recordType)
+      ).mapN { case (zoneId, fields) =>
+        RecordSet.apply(zoneId, fields._1, fields._2, fields._3, fields._4, fields._5, fields._6, fields._7, fields._8, fields._9, fields._10, fields._11, fields._12)
+      }
 
       // Put additional record set level checks below
       recordSetResult.checkIf(recordTypeGet == RecordType.CNAME)(
