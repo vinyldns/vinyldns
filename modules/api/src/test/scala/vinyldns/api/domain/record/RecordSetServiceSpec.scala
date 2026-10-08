@@ -18,7 +18,7 @@ package vinyldns.api.domain.record
 
 import cats.effect._
 import cats.scalatest.EitherMatchers
-import org.mockito.Matchers.any
+import org.mockito.Matchers.{any, eq => mockEq}
 import org.mockito.Mockito.doReturn
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatest.matchers.should.Matchers
@@ -1809,7 +1809,7 @@ class RecordSetServiceSpec
           recordOwnerGroupFilter = any[Option[String]],
           nameSort = any[NameSort.NameSort],
           recordTypeSort = any[RecordTypeSort.RecordTypeSort],
-          authPrincipal = eqTo(None)
+          authPrincipal = mockEq(None: Option[AuthPrincipal])
         )
 
       val result: ListGlobalRecordSetsResponse =
@@ -2107,7 +2107,7 @@ class RecordSetServiceSpec
           recordTypeFilter = any[Option[Set[RecordType.RecordType]]],
           recordOwnerGroupFilter = any[Option[String]],
           nameSort = any[NameSort.NameSort],
-          authPrincipal = eqTo(None)
+          authPrincipal = mockEq(None: Option[AuthPrincipal])
         )
 
       val result =
