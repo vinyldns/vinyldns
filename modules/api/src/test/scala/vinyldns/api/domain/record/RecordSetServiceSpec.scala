@@ -1809,7 +1809,7 @@ class RecordSetServiceSpec
           recordOwnerGroupFilter = any[Option[String]],
           nameSort = any[NameSort.NameSort],
           recordTypeSort = any[RecordTypeSort.RecordTypeSort],
-          authPrincipal = any[Option[AuthPrincipal]]
+          authPrincipal = eqTo(None)
         )
 
       val result: ListGlobalRecordSetsResponse =
@@ -1885,7 +1885,7 @@ class RecordSetServiceSpec
           None,
           Some("owner group id"),
           NameSort.ASC,
-          Some(sharedAuth)
+          None
         )
 
       val result =
@@ -1942,7 +1942,7 @@ class RecordSetServiceSpec
           None,
           Some("owner group id"),
           NameSort.ASC,
-          Some(sharedAuth)
+          None
         )
 
       val result =
@@ -1991,7 +1991,7 @@ class RecordSetServiceSpec
           None,
           None,
           NameSort.ASC,
-          Some(sharedAuth)
+          None
         )
 
       val result =
@@ -2041,7 +2041,7 @@ class RecordSetServiceSpec
           None,
           None,
           NameSort.ASC,
-          Some(sharedAuth)
+          None
         )
 
       val result =
@@ -2080,7 +2080,7 @@ class RecordSetServiceSpec
       result shouldBe an[InvalidRequest]
     }
 
-    "exclude recordsets in zones the caller cannot access" in {
+    "include recordsets in zones the caller cannot access" in {
       doReturn(IO.pure(Set(okGroup)))
         .when(mockGroupRepo)
         .getGroups(any[Set[String]])
@@ -2107,7 +2107,7 @@ class RecordSetServiceSpec
           recordTypeFilter = any[Option[Set[RecordType.RecordType]]],
           recordOwnerGroupFilter = any[Option[String]],
           nameSort = any[NameSort.NameSort],
-          authPrincipal = any[Option[AuthPrincipal]]
+          authPrincipal = eqTo(None)
         )
 
       val result =
