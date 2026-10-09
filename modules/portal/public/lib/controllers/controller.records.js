@@ -707,13 +707,13 @@ angular.module('controller.records', [])
 
     // Page through the zone, converting each page to CSV rows as it arrives so we
     // never hold the full recordset list and the assembled CSV in memory at once.
-    function fetchAllRecordsAsCSV() {
+    function fetchAllRecordsAsCSV(filters) {
         const header = ["recordset_id", "fqdn", "record_type", "ttl", "record_data"];
         const csvRows = [header.join(",")];
         let nextId = undefined;
         function fetchPage() {
             return recordsService
-                .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, nextId, null, null, $scope.nameSort, null, false)
+                .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, nextId, filters.query, filters.recordTypes, filters.nameSort, filters.recordTypeSort, false)
                 .then(function(response) {
                     $log.info('recordsService::listRecordSetsByZone-success ('+ response.data.recordSets.length +' records)');
                     appendRecordsToCSV(csvRows, response.data.recordSets);
@@ -723,27 +723,50 @@ angular.module('controller.records', [])
                     } else {
                         return csvRows.join("\n");
                     }
-                })
-                .catch(function(error) {
-                    handleError(error, 'recordsService::listRecordSetsByZone-failure');
-                    return Promise.reject(error);
                 });
         }
 
         return fetchPage();
     }
 
+    function sanitizeForFilename(value) {
+        return String(value || "").replace(/\.+$/, '').replace(/[^A-Za-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '');
+    }
+
+    function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+    // <zone>_recordsets[_<types>][_<name filter>]_<YYYYMMDD-HHmmss>.csv
+    function buildExportFilename(filters) {
+        const now = new Date();
+        const timestamp = now.getFullYear() + pad2(now.getMonth() + 1) + pad2(now.getDate()) + '-' +
+            pad2(now.getHours()) + pad2(now.getMinutes()) + pad2(now.getSeconds());
+        const parts = [sanitizeForFilename($scope.zoneInfo.name) || 'zone', 'recordsets'];
+        if (filters.recordTypes) { parts.push(sanitizeForFilename(filters.recordTypes.replace(/,/g, '-'))); }
+        if (filters.query) { parts.push(sanitizeForFilename(filters.query)); }
+        parts.push(timestamp);
+        return parts.filter(Boolean).join('_') + '.csv';
+    }
+
     $scope.exportRecordsAsCSV = function() {
         if ($scope.exportingCSV) { return; }
         $scope.exportingCSV = true;
-        fetchAllRecordsAsCSV().then(function(csvData) {
+        // Snapshot filters so changing them mid-export doesn't mix results
+        const filters = {
+            query: $scope.query || null,
+            recordTypes: ($scope.selectedRecordTypes || []).toString() || null,
+            nameSort: $scope.nameSort,
+            recordTypeSort: $scope.recordTypeSort
+        };
+        fetchAllRecordsAsCSV(filters).then(function(csvData) {
             const blob = new Blob([csvData], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
-            const downloadLink = angular.element('<a></a>');
-            downloadLink.attr('href', url);
-            downloadLink.attr('download', ($scope.zoneInfo.name || 'records') + '.csv');
-            downloadLink[0].click();
-            window.URL.revokeObjectURL(url);
+            const downloadLink = document.createElement('a');
+            downloadLink.href = url;
+            downloadLink.download = buildExportFilename(filters);
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            setTimeout(function() { window.URL.revokeObjectURL(url); }, 0);
             $log.info('CSV file generated and download triggered');
         }).catch(function(error) {
             handleError(error, 'exportRecordsAsCSV-failure');
