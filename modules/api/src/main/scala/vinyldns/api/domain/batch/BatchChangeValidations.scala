@@ -447,17 +447,21 @@ class BatchChangeValidations(
       groupedChanges.getExistingRecordSet(updatedChange.recordKey) match {
         case Some(rs) =>
           val adds = groupedChanges.getProposedAdds(updatedChange.recordKey).toList
-
-          val authorizationValidation = updatedChange match {
+          // Update scenarios require UPDATE authorization for all operations (both add and delete)
+          // For delete operations, report as Delete operation for user-facing error messages
+          val authValidation = updatedChange match {
             case _: AddChangeForValidation =>
               userCanUpdateRecordSet(updatedChange, auth, rs.ownerGroupId, adds)
-
             case _: DeleteRRSetChangeForValidation =>
-              userCanDeleteRecordSet(updatedChange, auth, rs.ownerGroupId, rs.records)
+              userCanUpdateRecordSet(updatedChange, auth, rs.ownerGroupId, adds).leftMap { errors =>
+                errors.map {
+                  case UserIsNotAuthorizedError(inputName, groupId, _, contact, manualReview) =>
+                    UserIsNotAuthorizedError(inputName, groupId, AuthorizationOperation.Delete, contact, manualReview)
+                  case other => other
+                }
+              }
           }
-
-          authorizationValidation |+|
-            zoneDoesNotRequireManualReview(updatedChange, isApproved)
+          authValidation |+| zoneDoesNotRequireManualReview(updatedChange, isApproved)
 
         case None =>
           if (isSameRecordUpdateInBatch)

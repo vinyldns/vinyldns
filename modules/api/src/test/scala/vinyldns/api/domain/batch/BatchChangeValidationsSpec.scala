@@ -1117,7 +1117,7 @@ class BatchChangeValidationsSpec
       UserIsNotAuthorizedError(
         deleteUpdateA.inputChange.inputName,
         deleteUpdateA.zone.adminGroupId,
-        AuthorizationOperation.Update,
+        AuthorizationOperation.Delete,
         Some(deleteUpdateA.zone.email)
       )
     )
