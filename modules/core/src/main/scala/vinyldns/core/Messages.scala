@@ -206,17 +206,17 @@ object Messages {
   val NotAuthorizedErrorMsg: String = "The record \"%s\" is owned by the %s group (id: %s). %s".orConfig
 
   // Placeholders: %s = contact email
-  val NotAuthorizedAddContactMsg: String = "Only members of this group may add records to this zone. Please contact them for assistance: %s".orConfig
+  val NotAuthorizedAddContactMsg: String = "Only members of this group may add records to this zone. Please contact them for assistance: %s.".orConfig
 
   val NotAuthorizedAddDefaultMsg: String = "Only members of this group may add records to this zone.".orConfig
 
   // Placeholders: %s = contact email
-  val NotAuthorizedUpdateContactMsg: String = "Only members of this group may update this record. Please contact them for assistance: %s".orConfig
+  val NotAuthorizedUpdateContactMsg: String = "Only members of this group may update this record. Please contact them for assistance: %s.".orConfig
 
   val NotAuthorizedUpdateDefaultMsg: String = "Only members of this group may update this record.".orConfig
 
   // Placeholders: %s = contact email
-  val NotAuthorizedDeleteContactMsg: String = "Only members of this group may delete this record. Please contact them for assistance: %s".orConfig
+  val NotAuthorizedDeleteContactMsg: String = "Only members of this group may delete this record. Please contact them for assistance: %s.".orConfig
 
   val NotAuthorizedDeleteDefaultMsg: String = "Only members of this group may delete this record.".orConfig
 
