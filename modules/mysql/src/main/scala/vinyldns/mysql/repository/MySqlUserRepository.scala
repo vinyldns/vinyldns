@@ -67,6 +67,14 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
          |  WHERE ? IN(id, user_name)
      """.stripMargin
 
+  private final val SEARCH_USER_BY_NAME =
+    sql"""
+         | SELECT data
+         |   FROM user
+         |  WHERE user_name LIKE {userName}
+         |  ORDER BY user_name
+     """.stripMargin
+
   private final val BASE_GET_USERS: String =
     """
       | SELECT data
@@ -180,13 +188,29 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
    */
   def getUserByIdOrName(userIdentifier: String): IO[Option[User]] =
     monitor("repo.User.getUser") {
-      logger.debug(s"Getting user with id: $userIdentifier")
+      logger.debug(s"Getting user with id or name: $userIdentifier")
       IO {
         DB.readOnly { implicit s =>
           GET_USER_BY_ID_OR_NAME
             .bind(userIdentifier)
             .map(toUser(1))
             .first()
+            .apply()
+        }
+      }
+    }
+
+  def searchUsersByName(pattern: String): IO[List[User]] =
+    monitor("repo.User.searchUsersByName") {
+      // Convert * wildcard to SQL % wildcard
+      val sqlPattern = pattern.replace("*", "%")
+      logger.debug(s"Searching user with pattern: $pattern, using SQL pattern: $sqlPattern")
+      IO {
+        DB.readOnly { implicit s =>
+          SEARCH_USER_BY_NAME
+            .bindByName('userName -> sqlPattern)
+            .map(toUser(1))
+            .list()
             .apply()
         }
       }

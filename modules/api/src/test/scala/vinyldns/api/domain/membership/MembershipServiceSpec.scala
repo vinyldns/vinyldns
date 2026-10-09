@@ -1395,16 +1395,88 @@ class MembershipServiceSpec
       "return the user info" in {
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(anyString)
         doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
-        val result: UserResponseInfo = underTest.getUserDetails(okUser.id, okAuth).value.unsafeRunSync().toOption.get
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+        val resultEither = underTest.getUserDetails(okUser.id, okAuth).value.unsafeRunSync()
+
+        val result = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
         result.id shouldBe okUser.id
         result.userName.get shouldBe okUser.userName
         result.groupId shouldBe Set(okGroup.id)
+        result.groupMap.headOption match {
+          case Some((id, name)) =>
+            id shouldBe okGroup.id
+            name shouldBe okGroup.name
+          case None =>
+            fail("groupMap is empty or null")
+        }
       }
 
       "return an error if the user is not found" in {
         doReturn(IO.pure(None)).when(mockUserRepo).getUserByIdOrName(anyString)
         val error = underTest.getUserDetails("notfound", okAuth).value.unsafeRunSync().swap.toOption.get
         error shouldBe a[UserNotFoundError]
+      }
+    }
+
+    "search users" should {
+      "return the matched user's info" in {
+        doReturn(IO.pure(List(okUser))).when(mockUserRepo).searchUsersByName(anyString)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+        val resultEither = underTest.searchUsers(okUser.userName, okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results should have size 1
+        val result = results.head
+        result.id shouldBe okUser.id
+        result.userName.get shouldBe okUser.userName
+        result.groupId shouldBe Set(okGroup.id)
+        result.groupMap.headOption match {
+          case Some((id, name)) =>
+            id shouldBe okGroup.id
+            name shouldBe okGroup.name
+          case None =>
+            fail("groupMap is empty or null")
+        }
+      }
+
+      "return the info for every user that matches the search pattern" in {
+        doReturn(IO.pure(List(okUser, dummyUser))).when(mockUserRepo).searchUsersByName(anyString)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(okUser.id)
+        doReturn(IO.pure(Set(dummyGroup.id))).when(mockMembershipRepo).getGroupsForUser(dummyUser.id)
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(Set(okGroup.id))
+        doReturn(IO.pure(Set(dummyGroup))).when(mockGroupRepo).getGroups(Set(dummyGroup.id))
+
+        val resultEither = underTest.searchUsers("match", okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results.map(_.userName.get) should contain theSameElementsAs List(okUser.userName, dummyUser.userName)
+      }
+
+      "return an empty list if no user matches the search pattern" in {
+        doReturn(IO.pure(List())).when(mockUserRepo).searchUsersByName(anyString)
+        val resultEither = underTest.searchUsers("nomatch", okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results shouldBe empty
       }
     }
   }

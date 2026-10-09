@@ -210,6 +210,16 @@ class MembershipRoute(
         }
       }
     } ~
+    path("users" / "search") {
+      (get & monitor("Endpoint.searchUsers")) {
+        parameter("pattern") { pattern =>
+          authenticateAndExecute(membershipService.searchUsers(pattern, _)) {
+            users =>
+              complete(StatusCodes.OK, users)
+          }
+        }
+      }
+    } ~
     path("users" / Segment) { id =>
       (get & monitor("Endpoint.getUser")) {
         authenticateAndExecute(membershipService.getUserDetails(id, _)) {

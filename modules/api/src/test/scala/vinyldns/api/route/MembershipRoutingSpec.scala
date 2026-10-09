@@ -861,6 +861,7 @@ class MembershipRoutingSpec
       Get("/users/name-dummy000") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[UserResponseInfo]
+        result.groupMap shouldBe dummyUserResponseInfo.groupMap
         result.groupId shouldBe dummyUserResponseInfo.groupId
       }
     }
@@ -871,6 +872,48 @@ class MembershipRoutingSpec
         .getUserDetails("fail", okAuth)
       Get("/users/fail") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.NotFound
+      }
+    }
+  }
+
+  "GET search users" should {
+    "return a 200 response with every matched user's info" in {
+      doReturn(result(List(dummyUserResponseInfo)))
+        .when(membershipService)
+        .searchUsers("dummy", okAuth)
+      Get("/users/search?pattern=dummy") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val result = responseAs[List[UserResponseInfo]]
+        result.map(_.id) shouldBe List(dummyUserResponseInfo.id)
+      }
+    }
+
+    "return a 200 response with the groupMap for every matched user" in {
+      doReturn(result(List(dummyUserResponseInfo, okUserResponseInfo)))
+        .when(membershipService)
+        .searchUsers("o", okAuth)
+      Get("/users/search?pattern=o") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val result = responseAs[List[UserResponseInfo]]
+        result.map(_.groupMap) should contain theSameElementsAs List(
+          dummyUserResponseInfo.groupMap,
+          okUserResponseInfo.groupMap
+        )
+        result.map(_.groupId) should contain theSameElementsAs List(
+          dummyUserResponseInfo.groupId,
+          okUserResponseInfo.groupId
+        )
+      }
+    }
+
+    "return a 200 response with an empty list when no user matches the search pattern" in {
+      doReturn(result(List()))
+        .when(membershipService)
+        .searchUsers("nomatch", okAuth)
+      Get("/users/search?pattern=nomatch") ~> membershipRoute ~> check {
+        status shouldBe StatusCodes.OK
+        val result = responseAs[List[UserResponseInfo]]
+        result shouldBe empty
       }
     }
   }

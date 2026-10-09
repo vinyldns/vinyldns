@@ -362,13 +362,38 @@ class MembershipService(
       .orFail(UserNotFoundError(s"User $userIdentifier was not found"))
       .toResult[User]
 
-
   def getUserDetails(userIdentifier: String, authPrincipal: AuthPrincipal): Result[UserResponseInfo] =
     for{
         user <- getUser(userIdentifier,authPrincipal)
         group <-  membershipRepo.getGroupsForUser(user.id).toResult[Set[String]]
-    } yield UserResponseInfo(user.id, Some(user.userName), group)
+        group <- groupRepo.getGroups(group).toResult[Set[Group]]
+      } yield UserResponseInfo(
+        id       = user.id,
+        userName = Some(user.userName),
+        groupId  = group.map(_.id),
+        groupMap = group.map(g => g.id -> g.name).toMap
+      )
 
+  /**
+   * Searches for all Users whose username matches the given (possibly wildcarded) name pattern
+   * @param pattern The username search pattern
+   * @return Each matched User's details, including the groups they belong to
+   */
+  def searchUsers(pattern: String, authPrincipal: AuthPrincipal): Result[List[UserResponseInfo]] =
+    for {
+      users <- userRepo.searchUsersByName(pattern).toResult[List[User]]
+      results <- users.traverse { user =>
+        for {
+          group <- membershipRepo.getGroupsForUser(user.id).toResult[Set[String]]
+          group <- groupRepo.getGroups(group).toResult[Set[Group]]
+        } yield UserResponseInfo(
+          id       = user.id,
+          userName = Some(user.userName),
+          groupId  = group.map(_.id),
+          groupMap = group.map(g => g.id -> g.name).toMap
+        )
+      }
+    } yield results
 
   def getUsers(
       userIds: Set[String],

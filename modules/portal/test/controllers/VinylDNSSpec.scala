@@ -2669,6 +2669,67 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
     }
 
+    ".searchUsers" should {
+      "return the matched user info when found - Ok(200)" in new WithApplication(app) {
+        val searchPattern = "frodo"
+        val client = MockWS {
+          case (GET, u) if u == "http://localhost:9001/users/search" =>
+            defaultActionBuilder { Results.Ok(userJson) }
+        }
+        val underTest = withClient(client)
+        val result = underTest.searchUsers(searchPattern)(
+          FakeRequest(GET, s"/api/users/search?pattern=$searchPattern")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
+
+        status(result) must beEqualTo(OK)
+        hasCacheHeaders(result)
+        contentAsJson(result) must beEqualTo(userJson)
+      }
+      "return unauthorized (401) when user is not logged in" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withClient(client)
+        val result = underTest.searchUsers("frodo")(FakeRequest(GET, s"/api/users/search?pattern=frodo"))
+
+        status(result) mustEqual 401
+        contentAsString(result) must beEqualTo("You are not logged in. Please login to continue.")
+        hasCacheHeaders(result)
+      }
+      "return forbidden (403) when user account is locked" in new WithApplication(app) {
+        val client = mock[WSClient]
+        val underTest = withLockedClient(client)
+        val result = underTest.searchUsers("frodo")(
+          FakeRequest(GET, s"/api/users/search?pattern=frodo")
+            .withSession(
+              "username" -> lockedFrodoUser.userName,
+              "accessKey" -> lockedFrodoUser.accessKey
+            )
+        )
+
+        status(result) mustEqual 403
+        hasCacheHeaders(result)
+        contentAsString(result) must beEqualTo(
+          s"User account for `${lockedFrodoUser.userName}` is locked."
+        )
+      }
+      "return empty list (200) when no user matches the search pattern" in new WithApplication(app) {
+        val searchPattern = "nomatch"
+        val client = MockWS {
+          case (GET, u) if u == "http://localhost:9001/users/search" =>
+            defaultActionBuilder { Results.Ok(Json.arr()) }
+        }
+        val underTest = withClient(client)
+        val result = underTest.searchUsers(searchPattern)(
+          FakeRequest(GET, s"/api/users/search?pattern=$searchPattern")
+            .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
+        )
+
+        status(result) must beEqualTo(OK)
+        hasCacheHeaders(result)
+        contentAsJson(result) must beEqualTo(Json.arr())
+      }
+    }
+
     "getBackendIds" should {
       "return unauthorized (401) if requesting user is not logged in" in new WithApplication(app) {
         val client = mock[WSClient]
