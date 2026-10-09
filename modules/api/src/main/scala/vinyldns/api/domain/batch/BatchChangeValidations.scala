@@ -447,10 +447,23 @@ class BatchChangeValidations(
       groupedChanges.getExistingRecordSet(updatedChange.recordKey) match {
         case Some(rs) =>
           val adds = groupedChanges.getProposedAdds(updatedChange.recordKey).toList
-          userCanUpdateRecordSet(updatedChange, auth, rs.ownerGroupId, adds) |+|
+
+          val authorizationValidation = updatedChange match {
+            case _: AddChangeForValidation =>
+              userCanUpdateRecordSet(updatedChange, auth, rs.ownerGroupId, adds)
+
+            case _: DeleteRRSetChangeForValidation =>
+              userCanDeleteRecordSet(updatedChange, auth, rs.ownerGroupId, rs.records)
+          }
+
+          authorizationValidation |+|
             zoneDoesNotRequireManualReview(updatedChange, isApproved)
+
         case None =>
-          if(isSameRecordUpdateInBatch) InvalidUpdateRequest(updatedChange.inputChange.inputName).invalidNel else ().validNel
+          if (isSameRecordUpdateInBatch)
+            InvalidUpdateRequest(updatedChange.inputChange.inputName).invalidNel
+          else
+            ().validNel
       }
 
     validations.map(_ => updatedChange)
