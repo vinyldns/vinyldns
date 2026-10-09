@@ -32,7 +32,7 @@ import vinyldns.core.Messages.{nonExistentRecordDataDeleteMessage, nonExistentRe
 import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record._
 import vinyldns.core.domain._
-import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, OwnerType, RecordKey, RecordKeyData}
+import vinyldns.core.domain.batch.{BatchChange, BatchChangeApprovalStatus, RecordKey, RecordKeyData}
 import vinyldns.core.domain.membership.Group
 import vinyldns.core.domain.zone.Zone
 import scala.util.matching.Regex
@@ -447,10 +447,27 @@ class BatchChangeValidations(
       groupedChanges.getExistingRecordSet(updatedChange.recordKey) match {
         case Some(rs) =>
           val adds = groupedChanges.getProposedAdds(updatedChange.recordKey).toList
-          userCanUpdateRecordSet(updatedChange, auth, rs.ownerGroupId, adds) |+|
-            zoneDoesNotRequireManualReview(updatedChange, isApproved)
+          // Update scenarios require UPDATE authorization for all operations (both add and delete)
+          // For delete operations, report as Delete operation for user-facing error messages
+          val authValidation = updatedChange match {
+            case _: AddChangeForValidation =>
+              userCanUpdateRecordSet(updatedChange, auth, rs.ownerGroupId, adds)
+            case _: DeleteRRSetChangeForValidation =>
+              userCanUpdateRecordSet(updatedChange, auth, rs.ownerGroupId, adds).leftMap { errors =>
+                errors.map {
+                  case UserIsNotAuthorizedError(inputName, groupId, _, contact, manualReview) =>
+                    UserIsNotAuthorizedError(inputName, groupId, AuthorizationOperation.Delete, contact, manualReview)
+                  case other => other
+                }
+              }
+          }
+          authValidation |+| zoneDoesNotRequireManualReview(updatedChange, isApproved)
+
         case None =>
-          if(isSameRecordUpdateInBatch) InvalidUpdateRequest(updatedChange.inputChange.inputName).invalidNel else ().validNel
+          if (isSameRecordUpdateInBatch)
+            InvalidUpdateRequest(updatedChange.inputChange.inputName).invalidNel
+          else
+            ().validNel
       }
 
     validations.map(_ => updatedChange)
@@ -609,9 +626,9 @@ class BatchChangeValidations(
       .leftMap(
         _ =>
           UserIsNotAuthorizedError(
-            authPrincipal.signedInUser.userName,
+            input.inputChange.inputName,
             input.zone.adminGroupId,
-            OwnerType.Zone,
+            AuthorizationOperation.Add,
             Some(input.zone.email)
           )
       )
@@ -639,12 +656,12 @@ class BatchChangeValidations(
         _ =>
           ownerGroupId match {
             case Some(id) if input.zone.shared =>
-              UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, OwnerType.Record)
+              UserIsNotAuthorizedError(input.inputChange.inputName, id, AuthorizationOperation.Update)
             case _ =>
               UserIsNotAuthorizedError(
-                authPrincipal.signedInUser.userName,
+                input.inputChange.inputName,
                 input.zone.adminGroupId,
-                OwnerType.Zone,
+                AuthorizationOperation.Update,
                 Some(input.zone.email)
               )
           }
@@ -672,12 +689,12 @@ class BatchChangeValidations(
         _ =>
           ownerGroupId match {
             case Some(id) if input.zone.shared =>
-              UserIsNotAuthorizedError(authPrincipal.signedInUser.userName, id, OwnerType.Record)
+              UserIsNotAuthorizedError(input.inputChange.inputName, id, AuthorizationOperation.Delete)
             case _ =>
               UserIsNotAuthorizedError(
-                authPrincipal.signedInUser.userName,
+                input.inputChange.inputName,
                 input.zone.adminGroupId,
-                OwnerType.Zone,
+                AuthorizationOperation.Delete,
                 Some(input.zone.email)
               )
           }

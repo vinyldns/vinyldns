@@ -614,7 +614,7 @@ class VinylDNSJsonProtocolSpec
           ("records" -> data)
 
       val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
-      thrown.msg should include(NSDataError)
+      thrown.msg should include(NSDataErrorMsg)
     }
     "round trip a DS record set" in {
       val rs = RecordSet(
