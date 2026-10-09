@@ -880,6 +880,38 @@ class VinylDNSJsonProtocolSpec
       anonymize(actual).recordSetGroupChange.get.requestedOwnerGroupId shouldBe Some("updated-admin-group-id")
       anonymize(actual).ownerGroupId shouldBe Some("updated-ok-group-id")
     }
+
+    "treat the string \"null\" requestedOwnerGroupId as absent" in {
+      val recordSetJValue: JValue =
+        ("zoneId" -> "1") ~~
+          ("name" -> "TestRecordName") ~~
+          ("type" -> "CNAME") ~~
+          ("ttl" -> 1000) ~~
+          ("status" -> "Pending") ~~
+          ("records" -> List("cname" -> "cname.data ")) ~~
+          ("ownerGroupId" -> "updated-ok-group-id") ~~
+          ("recordSetGroupChange" -> Some(("ownershipTransferStatus" -> "AutoApproved") ~~
+            ("requestedOwnerGroupId" -> "null")))
+
+      val actual = recordSetJValue.extract[RecordSet]
+      actual.recordSetGroupChange.get.requestedOwnerGroupId shouldBe None
+    }
+
+    "treat a blank requestedOwnerGroupId as absent" in {
+      val recordSetJValue: JValue =
+        ("zoneId" -> "1") ~~
+          ("name" -> "TestRecordName") ~~
+          ("type" -> "CNAME") ~~
+          ("ttl" -> 1000) ~~
+          ("status" -> "Pending") ~~
+          ("records" -> List("cname" -> "cname.data ")) ~~
+          ("ownerGroupId" -> "updated-ok-group-id") ~~
+          ("recordSetGroupChange" -> Some(("ownershipTransferStatus" -> "AutoApproved") ~~
+            ("requestedOwnerGroupId" -> "  ")))
+
+      val actual = recordSetJValue.extract[RecordSet]
+      actual.recordSetGroupChange.get.requestedOwnerGroupId shouldBe None
+    }
   }
 }
 

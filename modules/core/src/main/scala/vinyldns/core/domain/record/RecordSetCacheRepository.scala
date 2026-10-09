@@ -18,6 +18,7 @@ package vinyldns.core.domain.record
 
 import cats.effect._
 import scalikejdbc.DB
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.repository.Repository
@@ -31,12 +32,13 @@ trait RecordSetCacheRepository extends Repository {
   def listRecordSetData(
                          zoneId: Option[String],
                          startFrom: Option[String],
-                         maxItems: Option[Int],
-                         recordNameFilter: Option[String],
-                         recordTypeFilter: Option[Set[RecordType]],
-                         recordOwnerGroupFilter: Option[String],
-                         nameSort: NameSort
-                       ): IO[ListRecordSetResults]
+                          maxItems: Option[Int],
+                          recordNameFilter: Option[String],
+                          recordTypeFilter: Option[Set[RecordType]],
+                          recordOwnerGroupFilter: Option[String],
+                          nameSort: NameSort,
+                          authPrincipal: Option[AuthPrincipal] = None
+                        ): IO[ListRecordSetResults]
 
   /**
    * Saves the recordset data to the database

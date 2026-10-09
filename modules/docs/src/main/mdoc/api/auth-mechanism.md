@@ -40,6 +40,14 @@ f536975d06c0309214f805bb90ccff089219ecd68b2577efef23edd43b7e1a59
 4. Validate the signature of the request.
 5. Build the authentication information, which essentially contains all the authorized accounts for the signed in user.
 
+#### EXAMPLE SIGNED REQUEST
+
+```http
+GET /zones
+Authorization: AWS4-HMAC-SHA256 Credential=ACCESS_KEY/20240101/us-east-1/vinyldns/aws4_request, SignedHeaders=host;x-amz-date, Signature=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+X-Amz-Date: 20240101T120000Z
+```
+
 #### Authentication Failure Response
 
 If any these validations fail, a 401 (Unauthorized) or a 403 (Forbidden) error will be thrown; otherwise unanticipated
