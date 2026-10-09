@@ -561,7 +561,7 @@ class RecordSetService(
           recordOwnerGroupFilter,
           nameSort,
           recordTypeSort,
-          Some(authPrincipal)
+          None
         )
         .toResult[ListRecordSetResults]
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
@@ -577,7 +577,8 @@ class RecordSetService(
       recordNameFilter,
       recordSetResults.recordTypeFilter,
       recordSetResults.recordOwnerGroupFilter,
-      recordSetResults.nameSort
+      recordSetResults.nameSort,
+      None
     )
 
   /**
@@ -615,7 +616,7 @@ class RecordSetService(
           recordTypeFilter,
           recordOwnerGroupFilter,
           nameSort,
-          Some(authPrincipal)
+          None
         ).toResult[ListRecordSetResults]
       } else {
         // Search the record table directly
@@ -628,7 +629,7 @@ class RecordSetService(
           recordOwnerGroupFilter,
           nameSort,
           recordTypeSort,
-          Some(authPrincipal)
+          None
         ).toResult[ListRecordSetResults]
       }
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
@@ -644,7 +645,8 @@ class RecordSetService(
       recordNameFilter,
       recordSetResults.recordTypeFilter,
       recordSetResults.recordOwnerGroupFilter,
-      recordSetResults.nameSort
+      recordSetResults.nameSort,
+      recordSetResults.totalCount
     )
   }
 

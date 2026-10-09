@@ -69,6 +69,14 @@ class Settings(private val config: Configuration) {
     config.getOptional[String]("user-sync.graph-api.username-attribute")
       .getOrElse("onPremisesSamAccountName")
 
+  // Optional: employeeType value that marks a service account. When set, disabled
+  // accounts with this employeeType are NOT locked (they're often disabled for
+  // interactive sign-in but still in use). Unset = no carve-out (default behavior).
+  val graphApiServiceAccountEmployeeType: Option[String] =
+    config.getOptional[String]("user-sync.graph-api.service-account-employee-type")
+      .map(_.trim)
+      .filter(_.nonEmpty)
+
   val oidcEnabled: Boolean =
     config.getOptional[Boolean]("oidc.enabled").getOrElse(false)
 
