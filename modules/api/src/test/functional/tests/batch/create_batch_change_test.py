@@ -1943,7 +1943,7 @@ def test_aaaa_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=[f'The record \"{rs_delete_dummy_fqdn}\" is owned by the [{dummy_group_name}] group(/groups/{shared_zone_test_context.dummy_group["id"]}). Only members of this group may delete this record. Please contact them for assistance: test@test.com.'])
         assert_failed_change_in_error_response(response[12], input_name=rs_update_dummy_fqdn,
                                                record_type="AAAA", record_data="1::1",
-                                               error_messages=[f'The record \"{rs_update_dummy_name}\" is owned by the [{dummy_group_name}] group(/groups/{shared_zone_test_context.dummy_group["id"]}). Only members of this group may update this record. Please contact them for assistance: test@test.com.'])
+                                               error_messages=[f'The record \"{rs_update_dummy_fqdn}\" is owned by the [{dummy_group_name}] group(/groups/{shared_zone_test_context.dummy_group["id"]}). Only members of this group may update this record. Please contact them for assistance: test@test.com.'])
         assert_failed_change_in_error_response(response[13], input_name=rs_update_dummy_fqdn,
                                                record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=[f'The record \"{rs_update_dummy_name}\" is owned by the [{dummy_group_name}] group(/groups/{shared_zone_test_context.dummy_group["id"]}). Only members of this group may delete this record. Please contact them for assistance: test@test.com.'])
@@ -2305,7 +2305,7 @@ def test_ptr_recordtype_auth_checks(shared_zone_test_context):
                                                error_messages=[f'The record "{ip4_prefix}.193" is owned by the [{ok_group_name}] group(/groups/{ok_group_id}). Only members of this group may add records to this zone. Please contact them for assistance: test@test.com.'])
         assert_failed_change_in_error_response(errors[2], input_name=f"{ip6_prefix}:1000::1234", record_type="PTR",
                                                record_data="not.authorized.ipv6.ptr.",
-                                               error_messages=[f'The record "{ip6_prefix}:1000::1234" is owned by the [{ok_group_name}] group(/groups/{ok_group_id}). Only members of this group may add records to this zone. Please contact them for assistance: test@test.com.'])
+                                               error_messages=[f'The record "{ip6_prefix}:1000::1234" is owned by the [{ok_group_name}] group(/groups/{ok_group_id}). Only members of this group may update this record. Please contact them for assistance: test@test.com.'])
         assert_failed_change_in_error_response(errors[3], input_name=f"{ip4_prefix}.25", record_type="PTR", record_data=None,
                                                change_type="DeleteRecordSet",
                                                error_messages=[f'The record "{ip4_prefix}.25" is owned by the [{ok_group_name}] group(/groups/{ok_group_id}). Only members of this group may delete this record. Please contact them for assistance: test@test.com.'])
