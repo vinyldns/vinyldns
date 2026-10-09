@@ -17,6 +17,7 @@
 package vinyldns.api.domain.zone
 
 import cats.scalatest.{EitherMatchers, EitherValues}
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import org.mockito.Mockito._
@@ -140,6 +141,7 @@ class ZoneConnectionValidatorSpec
     zc.copy(name = "backend-conn"),
     transfer.copy(name = "backend-transfer")
   )
+
   val connections = ConfiguredDnsConnections(zc, transfer, List(backend))
 
   "ConnectionValidator" should {

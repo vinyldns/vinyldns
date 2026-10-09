@@ -39,7 +39,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
   val components: ControllerComponents = Helpers.stubControllerComponents()
   val parser: BodyParser[AnyContent] = Helpers.stubBodyParser()
   val config: Configuration = Configuration.load(Environment.simple())
-  val oidcConfig: Configuration = config ++ Configuration.from(Map("oidc.enabled" -> true))
+  val oidcConfig: Configuration = config.withFallback(Configuration.from(Map("oidc.enabled" -> true)))
   val userAccessor: UserAccountAccessor = buildMockUserAccountAccessor
   val disabledOidcAuthenticator: OidcAuthenticator = mock[OidcAuthenticator]
   val mockOidcAuthenticator: OidcAuthenticator = mock[OidcAuthenticator]

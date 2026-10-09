@@ -29,7 +29,7 @@ import org.scalatest.{BeforeAndAfterEach, OneInstancePerTest}
 import org.scalatestplus.mockito.MockitoSugar
 import org.slf4j.{Logger, LoggerFactory}
 import vinyldns.api.config.LimitsConfig
-import vinyldns.api.domain.zone.ZoneServiceAlgebra
+import vinyldns.api.domain.zone.{GenerateZoneServiceAlgebra, ZoneServiceAlgebra}
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.route.Monitor
 
@@ -57,7 +57,7 @@ class VinylDNSDirectivesSpec
     LimitsConfig(100,100,1000,1500,100,100,100)
 
   val zoneRoute: Route =
-    new ZoneRoute(mock[ZoneServiceAlgebra],testLimitConfig, mock[VinylDNSAuthenticator], NoOpCrypto.instance).getRoutes
+    new ZoneRoute(mock[ZoneServiceAlgebra], mock[GenerateZoneServiceAlgebra], testLimitConfig, mock[VinylDNSAuthenticator], NoOpCrypto.instance).getRoutes
 
   val zoneService: ZoneServiceAlgebra = mock[ZoneServiceAlgebra]
 
