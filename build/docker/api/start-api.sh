@@ -13,6 +13,12 @@ if [ "${WAIT_FOR_LOCALSTACK:-false}" = "true" ]; then
   done
 fi
 
+# Allow NoOpCrypto for testing if environment variable is set
+# This enables local JAR-based testing with plaintext crypto for development
+if [ "${VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING:-false}" = "true" ]; then
+  echo "WARNING: VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING is enabled. This should ONLY be used for local testing."
+fi
+
 exec java $JVM_OPTS -Dconfig.file=/opt/vinyldns/conf/application.conf \
   -Dlog4j.configurationFile=/opt/vinyldns/conf/log4j2.xml \
   -Dvinyldns.version=$(cat /opt/vinyldns/version) \

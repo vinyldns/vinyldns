@@ -12,6 +12,7 @@ ARG SKIP_API_BUILD="false"
 RUN if [ -f artifacts/vinyldns-api.jar ]; then cp artifacts/vinyldns-api.jar /opt/vinyldns; fi && \
     if [ ! -f /opt/vinyldns/vinyldns-api.jar ] && [ "$SKIP_API_BUILD" == "false" ]; then \
       env SBT_OPTS="-Xmx2G -Xms512M -Xss2M -XX:MaxMetaspaceSize=2G" \
+      VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING=true \
       sbt -Dbuild.scalafmtOnCompile=false -Dbuild.lintOnCompile=false ";project api;coverageOff;assembly" \
       && cp artifacts/vinyldns-api.jar /opt/vinyldns/; \
     fi
@@ -34,4 +35,5 @@ COPY quickstart/bind9/etc/named.conf.* /etc/bind/
 COPY quickstart/bind9/zones/ /var/bind/
 RUN named-checkconf
 
-ENV RUN_SERVICES="all"
+ENV RUN_SERVICES="all" \
+    VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING=true
