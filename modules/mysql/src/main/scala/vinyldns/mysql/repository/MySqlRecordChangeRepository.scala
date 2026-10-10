@@ -187,7 +187,7 @@ class MySqlRecordChangeRepository
       }
     }
 
-  def getRecordSetChange(zoneId: String, changeId: String): IO[Option[RecordSetChange]] =
+  def getRecordSetChange(changeId: String): IO[Option[RecordSetChange]] =
     monitor("repo.RecordChange.listRecordSetChanges") {
       IO {
         DB.readOnly { implicit s =>
