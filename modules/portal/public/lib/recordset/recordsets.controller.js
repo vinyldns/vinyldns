@@ -62,7 +62,8 @@
                 CONFIRM_DELETE: 4,
                 VIEW_DETAILS: 5
             };
-
+            $scope.isRecordSearchTriggered = false;
+            
             // Function to copy the Record ID to clipboard
             $scope.copyToClipboard = function(type) {
                 let valueToCopy = '';
@@ -101,12 +102,68 @@
             var recordsPaging = pagingService.getNewPagingParams(100);
             var recordType = [];
             var recordName = [];
-
+            
             // Initialize Bootstrap tooltips
             $(document).ready(function() {
                 $('[data-toggle="tooltip"]').tooltip();
             });
 
+            function getRecordData(records, type) {
+                if (!records || !records.length) return '';
+                switch (type) {
+                    case 'A':
+                    case 'AAAA':
+                    return records.map(r => r.address).join('\n');
+
+                    case 'CNAME':
+                    return records.map(r => r.cname).join('\n');
+
+                    case 'TXT':
+                    case 'SPF':
+                    return records.map(r => r.text).join('\n');
+
+                    case 'NS':
+                    return records.map(r => r.nsdname).join('\n'); 
+
+                    case 'PTR':
+                    return records.map(r => r.ptrdname).join('\n');
+
+                    case 'MX':
+                    return records.map(r =>
+                        `preference=${r.preference}, exchange=${r.exchange}`
+                    ).join('\n');
+
+                    case 'SOA':
+                    return records.map(r =>
+                        `mname=${r.mname}, rname=${r.rname}, serial=${r.serial}, refresh=${r.refresh}, retry=${r.retry}, expire=${r.expire}, minimum=${r.minimum}`
+                    ).join('\n');
+
+                    case 'DS':
+                    return records.map(r =>
+                        `keyTag=${r.keytag}, algorithm=${r.algorithm}, digestType=${r.digestType}, digest=${r.digest}`
+                    ).join('\n');
+
+                    case 'SRV':
+                    return records.map(r =>
+                        `priority=${r.priority}, weight=${r.weight}, port=${r.port}, target=${r.target}`
+                    ).join('\n');
+
+                    case 'NAPTR':
+                    return records.map(r =>
+                        `order=${r.order}, preference=${r.preference}, flags=${r.flags}, service=${r.service}, regexp=${r.regexp}, replacement=${r.replacement}`
+                    ).join('\n');
+
+                    case 'SSHFP':
+                    return records.map(r =>
+                        `algorithm=${r.algorithm}, type=${r.type}, fingerprint=${r.fingerprint}`
+                    ).join('\n');
+
+                    default:
+                    return '';
+                }
+            };
+
+            $scope.getRecordData = getRecordData;
             var recordSearchAutocomplete = $( "#record-search-text" ).autocomplete({
               source: function( request, response ) {
                 $.ajax({
@@ -145,7 +202,7 @@
             };
 
             $scope.refreshRecords = function() {
-            $scope.isRecordSearchTriggered = true;   
+            $scope.isRecordSearchTriggered = true;
             if($scope.query.includes("|")) {
                 const queryRecord = $scope.query.split('|');
                 recordName = queryRecord[0].trim();
@@ -204,7 +261,197 @@
                     $scope.selectedRecordTypes.push(recordType);
                 }
             };
+            
+            $scope.exportToCSV = function () {
 
+                if (!$scope.isRecordSearchTriggered) return;
+
+                let loader = $("#csvLoaderModal");
+                loader.modal({
+                    backdrop: "static",
+                    keyboard: false,
+                    show: true
+                });
+
+                function hideLoader() {
+                    loader.modal("hide");
+                    $('.modal-backdrop').remove();
+                    $('body').removeClass('modal-open');
+                }
+
+                $timeout(function () {
+
+                    let recordName, recordType;
+                    const pageSize = 100;
+                    const zoneMap = {};
+                    const csvRows = [];
+                    let headerRow = '';
+                    let filename = '';
+
+                    if ($scope.query && $scope.query.includes("|")) {
+                        const queryRecord = $scope.query.split('|');
+                        recordName = queryRecord[0].trim();
+                        recordType = queryRecord[1].trim();
+                    } else {
+                        recordName = $scope.query || '';
+                        recordType = ($scope.selectedRecordTypes || []).toString();
+                    }
+
+                    function buildHeaders() {
+                        return 'FQDN,Record ID,Name,Type,TTL,Record Data,Zone,Zone ID,Zone Access Type,Owner Group Name,Created Date';
+                    }
+
+                    function buildRow(r) {
+                        const headers = ['fqdn', 'id', 'name', 'type', 'ttl', 'records', 'zoneName', 'zoneId', 'zoneShared', 'ownerGroupName', 'created'];
+                        return headers.map(key => {
+                            if (key === 'records')
+                                return toCSVCell(getRecordData(r.records, r.type));
+                            if (key === 'zoneShared')
+                                return toCSVCell(r.zoneShared ? 'Shared' : 'Private');
+                            if (key === 'created')
+                                return toCSVCell(r.created ? new Date(r.created).toISOString() : '');
+                            if (key === 'ownerGroupName') {
+                                if (r.zoneShared)
+                                    return toCSVCell(r.ownerGroupName || 'Unowned');
+                                return toCSVCell(zoneMap[r.zoneId] || r.ownerGroupName || 'Unowned');
+                            }
+                            return toCSVCell(r[key] || '');
+                        }).join(',');
+                    }
+
+                    function setFilename() {
+                        const safeRecordName = (recordName || '')
+                            .replace(/\*/g, '')
+                            .replace(/[^a-zA-Z0-9.-]/g, '_');
+                        const recordLabel = recordType ? 'recordset' : 'recordsets';
+                        filename = safeRecordName
+                            ? `${safeRecordName} - ${recordLabel}.csv`
+                            : 'recordsets.csv';
+                    }
+
+                    let visitedNextIds = new Set();
+
+                    // Stream processing: fetch page, process, drop from memory
+                    function fetchAndProcessPages(nextId = null) {
+                        return recordsService.listRecordSetData(
+                            pageSize,
+                            nextId,
+                            recordName,
+                            recordType,
+                            $scope.nameSort,
+                            $scope.ownerGroupFilter,
+                            true 
+                        ).then(function (response) {
+                            const recordSets = response.data.recordSets || [];
+                            const newNextId = response.data.nextId;
+                            
+                            if (!recordSets.length) return;
+                            // Initialize header on first page
+                            if (csvRows.length === 0) {
+                                setFilename();
+                                headerRow = buildHeaders();
+                                csvRows.push(headerRow);
+                            }
+
+                            const batchZoneIds = getPrivateZoneIdsToLoad(recordSets, zoneMap);
+                            
+                            return Promise.resolve()
+                                .then(() => {
+                                    if (batchZoneIds.length > 0) {
+                                        const promises = batchZoneIds.map(zoneId =>
+                                            recordsService.getCommonZoneDetails(zoneId)
+                                                .then(function (res) {
+                                                    zoneMap[zoneId] = res.data.zone.adminGroupName;
+                                                })
+                                                .catch(function () {
+                                                    zoneMap[zoneId] = "Unowned";
+                                                })
+                                        );
+                                        return Promise.all(promises);
+                                    }
+                                })
+                                .then(() => {
+                                    recordSets.forEach(r => {
+                                        csvRows.push(buildRow(r));
+                                    });
+                                })
+                                .then(() => {
+                                    // Continue fetching next page
+                                    if (!newNextId || visitedNextIds.has(newNextId)) return;
+                                    visitedNextIds.add(newNextId);
+                                    return fetchAndProcessPages(newNextId);
+                                });
+                        });
+                    }
+
+                    function downloadCsv() {
+                        if (csvRows.length <= 1) {
+                            hideLoader();
+                            return;
+                        }
+
+                        // Accumulate all CSV rows into single string
+                        // Record objects were dropped per-page, but CSV rows remain in csvRows[]
+                        const csvContent = '\uFEFF' + csvRows.join('\n');
+
+                        const blob = new Blob([csvContent], { type: 'text/csv' });
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        hideLoader();
+                    }
+
+                    fetchAndProcessPages()
+                        .then(downloadCsv)
+                        .catch(function (error) {
+                            if (error) {
+                                handleError(error, 'recordExport-failure');
+                            }
+                            hideLoader();
+                        });
+                }, 0);
+            };
+            
+            function toCSVCell(value) {
+                let str = String(value == null ? '' : value);
+                if (/^[=+\-@\t\r]/.test(str)) {
+                    str = "'" + str;
+                }
+                return '"' + str.replace(/"/g, '""') + '"';
+            }
+
+            function shouldLoadPrivateZoneOwners() {
+                return true;
+            }
+
+            function getPrivateZoneIdsToLoad(records, zoneMap) {
+                const privateZoneIds = new Set();
+
+                records.forEach(function (record) {
+                    if (!record || record.zoneShared || !record.zoneId || record.zoneId === 'unknown') {
+                        return;
+                    }
+
+                    if (record.ownerGroupName) {
+                        zoneMap[record.zoneId] = record.ownerGroupName;
+                        return;
+                    }
+
+                    if (!zoneMap[record.zoneId]) {
+                        privateZoneIds.add(record.zoneId);
+                    }
+                });
+
+                return Array.from(privateZoneIds);
+            }
+
+            $scope.shouldLoadPrivateZoneOwners = shouldLoadPrivateZoneOwners;
+            $scope.getPrivateZoneIdsToLoad = function (records) {
+                return getPrivateZoneIdsToLoad(records || [], {});
+            };
 
             function updateRecordDisplay(records) {
                 var newRecords = [];
