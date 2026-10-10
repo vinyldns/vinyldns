@@ -528,6 +528,13 @@ class RecordSetService(
     for {
       zone <- getZone(zoneId)
       recordSet <- getRecordSet(recordSetId)
+      _ <- if (recordSet.zoneId == zone.id) {
+        ().toResult
+      } else {
+        Left(RecordSetNotFoundError(
+          s"RecordSet with id $recordSetId does not exist."
+        )).toResult
+      }
       _ <- canViewRecordSet(
         authPrincipal,
         recordSet.name,

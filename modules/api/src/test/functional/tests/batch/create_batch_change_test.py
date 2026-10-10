@@ -3713,7 +3713,7 @@ def test_create_batch_with_global_acl_rule_applied_succeeds(shared_zone_test_con
             shared_client.wait_until_recordset_change_status(delete_a_rs, "Complete")
 
         if create_ptr_rs:
-            retrieved = dummy_client.get_recordset(shared_zone["id"], create_ptr_rs["recordSet"]["id"])
+            retrieved = ok_client.get_recordset(classless_base_zone["id"], create_ptr_rs["recordSet"]["id"])
             retrieved_rs = retrieved["recordSet"]
 
             assert_that(retrieved_rs, is_not(has_key("ownerGroupId")))
@@ -4240,7 +4240,7 @@ def test_create_batch_change_with_multi_record_adds_with_multi_record_support(sh
         "changes": [
             get_change_A_AAAA_json(f"multi.{ok_zone_name}", address="1.2.3.4"),
             get_change_A_AAAA_json(f"multi.{ok_zone_name}", address="4.5.6.7"),
-            get_change_PTR_json(f"{ip4_prefix}.44", ptrdname="multi.test"),
+            get_change_PTR_json(f"{ip4_prefix}.43", ptrdname="multi.test"),
             get_change_PTR_json(f"{ip4_prefix}.44", ptrdname="multi2.test"),
             get_change_TXT_json(f"multi-txt.{ok_zone_name}", text="some-multi-text"),
             get_change_TXT_json(f"multi-txt.{ok_zone_name}", text="more-multi-text"),
@@ -4258,7 +4258,7 @@ def test_create_batch_change_with_multi_record_adds_with_multi_record_support(sh
 
         assert_successful_change_in_error_response(response["changes"][0], input_name=f"multi.{ok_zone_name}", record_data="1.2.3.4")
         assert_successful_change_in_error_response(response["changes"][1], input_name=f"multi.{ok_zone_name}", record_data="4.5.6.7")
-        assert_successful_change_in_error_response(response["changes"][2], input_name=f"{ip4_prefix}.44", record_type="PTR", record_data="multi.test.")
+        assert_successful_change_in_error_response(response["changes"][2], input_name=f"{ip4_prefix}.43", record_type="PTR", record_data="multi.test.")
         assert_successful_change_in_error_response(response["changes"][3], input_name=f"{ip4_prefix}.44", record_type="PTR", record_data="multi2.test.")
         assert_successful_change_in_error_response(response["changes"][4], input_name=f"multi-txt.{ok_zone_name}", record_type="TXT", record_data="some-multi-text")
         assert_successful_change_in_error_response(response["changes"][5], input_name=f"multi-txt.{ok_zone_name}", record_type="TXT", record_data="more-multi-text")
