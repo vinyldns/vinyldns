@@ -387,11 +387,13 @@ class MembershipService(
   def searchUsers(pattern: String, startFrom: Option[Int], maxResults: Int, authPrincipal: AuthPrincipal): Result[List[UserResponseInfo]] = {
     val trimmedPattern = pattern.trim
     
-    // Validate pattern: reject empty, too short, or bare wildcards to prevent full table scans
-    if (trimmedPattern.isEmpty || trimmedPattern.length < 2) {
+    // Validate pattern: reject empty, bare wildcards, or too short to prevent full table scans
+    if (trimmedPattern.isEmpty) {
       SearchValidationError("Search pattern must be at least 2 characters").asLeft.toResult
     } else if (trimmedPattern == "%" || trimmedPattern == "*") {
       SearchValidationError("Search pattern cannot be a bare wildcard").asLeft.toResult
+    } else if (trimmedPattern.length < 2) {
+      SearchValidationError("Search pattern must be at least 2 characters").asLeft.toResult
     } else {
       for {
         users <- userRepo.searchUsersByName(trimmedPattern, startFrom, maxResults).toResult[List[User]]

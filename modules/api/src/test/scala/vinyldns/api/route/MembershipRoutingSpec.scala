@@ -880,7 +880,7 @@ class MembershipRoutingSpec
     "return a 200 response with every matched user's info" in {
       doReturn(result(List(dummyUserResponseInfo)))
         .when(membershipService)
-        .searchUsers("dummy", okAuth)
+        .searchUsers(anyString, any[Option[Int]], anyInt, any[AuthPrincipal])
       Get("/users/search?pattern=dummy") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[List[UserResponseInfo]]
@@ -891,7 +891,7 @@ class MembershipRoutingSpec
     "return a 200 response with the groupMap for every matched user" in {
       doReturn(result(List(dummyUserResponseInfo, okUserResponseInfo)))
         .when(membershipService)
-        .searchUsers("o", okAuth)
+        .searchUsers(anyString, any[Option[Int]], anyInt, any[AuthPrincipal])
       Get("/users/search?pattern=o") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[List[UserResponseInfo]]
@@ -909,7 +909,7 @@ class MembershipRoutingSpec
     "return a 200 response with an empty list when no user matches the search pattern" in {
       doReturn(result(List()))
         .when(membershipService)
-        .searchUsers("nomatch", okAuth)
+        .searchUsers(anyString, any[Option[Int]], anyInt, any[AuthPrincipal])
       Get("/users/search?pattern=nomatch") ~> membershipRoute ~> check {
         status shouldBe StatusCodes.OK
         val result = responseAs[List[UserResponseInfo]]
