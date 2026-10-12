@@ -323,10 +323,20 @@
                         const safeRecordName = (recordName || '')
                             .replace(/\*/g, '')
                             .replace(/[^a-zA-Z0-9.-]/g, '_');
-                        const recordLabel = recordType ? 'recordset' : 'recordsets';
+                        const recordLabel = recordType ? 'recordset_search' : 'recordsets_search';
+                        
+                        // Generate timestamp in format YYYY-MM-DD_HH-mm-ss
+                        const now = new Date();
+                        const timestamp = now.getFullYear() + '-' +
+                            String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                            String(now.getDate()).padStart(2, '0') + '_' +
+                            String(now.getHours()).padStart(2, '0') + '-' +
+                            String(now.getMinutes()).padStart(2, '0') + '-' +
+                            String(now.getSeconds()).padStart(2, '0');
+                        
                         filename = safeRecordName
-                            ? `${safeRecordName} - ${recordLabel}.csv`
-                            : 'recordsets.csv';
+                            ? `${safeRecordName}-${recordLabel}-${timestamp}.csv`
+                            : `recordsets_search-${timestamp}.csv`;
                     }
 
                     let visitedNextIds = new Set();

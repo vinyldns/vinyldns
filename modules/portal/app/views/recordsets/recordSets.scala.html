@@ -120,9 +120,7 @@
                     </div>
                     <div style="font-size: medium;" class="bolder-font-weight dataTables_paginate" ng-show="isRecordSearchTriggered">
                         {{recordSetCount}} {{recordSetCount === 1 ? 'match' : 'matches'}} found
-                        <button class="btn btn-primary btn-sm" ng-show="isRecordSearchTriggered && records && records.length > 0" ng-click="exportToCSV()" style="margin-left: 15px;">
-                            <span class="fa fa-download"></span> Export CSV
-                        </button>
+                        <button class="export-btn" ng-show="isRecordSearchTriggered && records && records.length > 0" ng-click="exportToCSV()">Export CSV</button>
                     </div>
                 </div>
 
