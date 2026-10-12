@@ -448,7 +448,7 @@ object RecordSetValidations {
           authPrincipal.isSuper ||
           authPrincipal.isGroupMember(owt.requestedOwnerGroupId.getOrElse("none"))},
       (),
-      InvalidRequest(OwnershipTransferUnauthorisedCancelErrorMsg)
+      InvalidRequest(OwnershipTransferUnauthorizedCancelErrorMsg)
     )
 
   def canChangeFromPendingReview(
