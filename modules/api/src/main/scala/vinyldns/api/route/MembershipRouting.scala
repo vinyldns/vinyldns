@@ -50,6 +50,7 @@ class MembershipRoute(
     case UserNotFoundError(msg) => complete(StatusCodes.NotFound, msg)
     case InvalidGroupRequestError(msg) => complete(StatusCodes.BadRequest, msg)
     case EmailValidationError(msg) => complete(StatusCodes.BadRequest, msg)
+    case SearchValidationError(msg) => complete(StatusCodes.BadRequest, msg)
   }
 
   val membershipRoute: Route = path("groups" / Segment) { groupId =>
@@ -212,11 +213,20 @@ class MembershipRoute(
     } ~
     path("users" / "search") {
       (get & monitor("Endpoint.searchUsers")) {
-        parameter("pattern") { pattern =>
-          authenticateAndExecute(membershipService.searchUsers(pattern, _)) {
-            users =>
-              complete(StatusCodes.OK, users)
-          }
+        parameters("pattern", "startFrom".as[Int].?, "maxItems".as[Int].?(MAX_ITEMS_LIMIT)) {
+          (pattern: String, startFrom: Option[Int], maxItems: Int) =>
+            handleRejections(invalidQueryHandler) {
+              validate(
+                0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
+                s"maxItems was $maxItems, maxItems must be between 0 and $MAX_ITEMS_LIMIT"
+              ) {
+                authenticateAndExecute(
+                  membershipService.searchUsers(pattern, startFrom, maxItems, _)
+                ) { users =>
+                  complete(StatusCodes.OK, users)
+                }
+              }
+            }
         }
       }
     } ~

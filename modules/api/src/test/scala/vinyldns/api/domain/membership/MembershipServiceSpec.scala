@@ -1425,11 +1425,11 @@ class MembershipServiceSpec
 
     "search users" should {
       "return the matched user's info" in {
-        doReturn(IO.pure(List(okUser))).when(mockUserRepo).searchUsersByName(anyString)
+        doReturn(IO.pure(List(okUser))).when(mockUserRepo).searchUsersByName(anyString, any[Option[Int]], anyInt)
         doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
         doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
 
-        val resultEither = underTest.searchUsers(okUser.userName, okAuth).value.unsafeRunSync()
+        val resultEither = underTest.searchUsers(okUser.userName, None, 100, okAuth).value.unsafeRunSync()
 
         val results = resultEither match {
           case Right(value) => value
@@ -1451,13 +1451,13 @@ class MembershipServiceSpec
       }
 
       "return the info for every user that matches the search pattern" in {
-        doReturn(IO.pure(List(okUser, dummyUser))).when(mockUserRepo).searchUsersByName(anyString)
+        doReturn(IO.pure(List(okUser, dummyUser))).when(mockUserRepo).searchUsersByName(anyString, any[Option[Int]], anyInt)
         doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(okUser.id)
         doReturn(IO.pure(Set(dummyGroup.id))).when(mockMembershipRepo).getGroupsForUser(dummyUser.id)
         doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(Set(okGroup.id))
         doReturn(IO.pure(Set(dummyGroup))).when(mockGroupRepo).getGroups(Set(dummyGroup.id))
 
-        val resultEither = underTest.searchUsers("match", okAuth).value.unsafeRunSync()
+        val resultEither = underTest.searchUsers("match", None, 100, okAuth).value.unsafeRunSync()
 
         val results = resultEither match {
           case Right(value) => value
@@ -1468,8 +1468,8 @@ class MembershipServiceSpec
       }
 
       "return an empty list if no user matches the search pattern" in {
-        doReturn(IO.pure(List())).when(mockUserRepo).searchUsersByName(anyString)
-        val resultEither = underTest.searchUsers("nomatch", okAuth).value.unsafeRunSync()
+        doReturn(IO.pure(List())).when(mockUserRepo).searchUsersByName(anyString, any[Option[Int]], anyInt)
+        val resultEither = underTest.searchUsers("nomatch", None, 100, okAuth).value.unsafeRunSync()
 
         val results = resultEither match {
           case Right(value) => value
@@ -1478,6 +1478,147 @@ class MembershipServiceSpec
 
         results shouldBe empty
       }
+
+      "reject empty search pattern" in {
+        val resultEither = underTest.searchUsers("", None, 100, okAuth).value.unsafeRunSync()
+
+        val error = resultEither match {
+          case Left(err)    => err
+          case Right(value) => fail(s"Expected error but got success: $value")
+        }
+
+        error shouldBe a[SearchValidationError]
+        error.getMessage should include("at least 2 characters")
+      }
+
+      "reject whitespace-only search pattern" in {
+        val resultEither = underTest.searchUsers("   ", None, 100, okAuth).value.unsafeRunSync()
+
+        val error = resultEither match {
+          case Left(err)    => err
+          case Right(value) => fail(s"Expected error but got success: $value")
+        }
+
+        error shouldBe a[SearchValidationError]
+        error.getMessage should include("at least 2 characters")
+      }
+
+      "reject single character search pattern" in {
+        val resultEither = underTest.searchUsers("a", None, 100, okAuth).value.unsafeRunSync()
+
+        val error = resultEither match {
+          case Left(err)    => err
+          case Right(value) => fail(s"Expected error but got success: $value")
+        }
+
+        error shouldBe a[SearchValidationError]
+        error.getMessage should include("at least 2 characters")
+      }
+
+      "reject bare % wildcard" in {
+        val resultEither = underTest.searchUsers("%", None, 100, okAuth).value.unsafeRunSync()
+
+        val error = resultEither match {
+          case Left(err)    => err
+          case Right(value) => fail(s"Expected error but got success: $value")
+        }
+
+        error shouldBe a[SearchValidationError]
+        error.getMessage should include("bare wildcard")
+      }
+
+      "reject bare * wildcard" in {
+        val resultEither = underTest.searchUsers("*", None, 100, okAuth).value.unsafeRunSync()
+
+        val error = resultEither match {
+          case Left(err)    => err
+          case Right(value) => fail(s"Expected error but got success: $value")
+        }
+
+        error shouldBe a[SearchValidationError]
+        error.getMessage should include("bare wildcard")
+      }
+
+      "accept two-character pattern" in {
+        doReturn(IO.pure(List(okUser))).when(mockUserRepo).searchUsersByName("ab", None, 100)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+        val resultEither = underTest.searchUsers("ab", None, 100, okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results should have size 1
+      }
+
+      "accept pattern with leading/trailing whitespace and trim it" in {
+        doReturn(IO.pure(List(okUser))).when(mockUserRepo).searchUsersByName("jo", None, 100)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+        val resultEither = underTest.searchUsers("  jo  ", None, 100, okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results should have size 1
+      }
+
+      "pass startFrom parameter to repository" in {
+        doReturn(IO.pure(List(okUser))).when(mockUserRepo).searchUsersByName("jo", Some(50), 100)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+        val resultEither = underTest.searchUsers("jo", Some(50), 100, okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results should have size 1
+        verify(mockUserRepo).searchUsersByName("jo", Some(50), 100)
+      }
+
+      "pass custom maxResults parameter to repository" in {
+        doReturn(IO.pure(List(okUser))).when(mockUserRepo).searchUsersByName("jo", None, 50)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+        val resultEither = underTest.searchUsers("jo", None, 50, okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results should have size 1
+        verify(mockUserRepo).searchUsersByName("jo", None, 50)
+      }
+
+      "pass both startFrom and maxResults to repository" in {
+        doReturn(IO.pure(List(okUser, dummyUser))).when(mockUserRepo).searchUsersByName("match", Some(100), 25)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(okUser.id)
+        doReturn(IO.pure(Set(dummyGroup.id))).when(mockMembershipRepo).getGroupsForUser(dummyUser.id)
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(Set(okGroup.id))
+        doReturn(IO.pure(Set(dummyGroup))).when(mockGroupRepo).getGroups(Set(dummyGroup.id))
+
+        val resultEither = underTest.searchUsers("match", Some(100), 25, okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results.map(_.userName.get) should contain theSameElementsAs List(okUser.userName, dummyUser.userName)
+        verify(mockUserRepo).searchUsersByName("match", Some(100), 25)
+      }
     }
   }
 }
+

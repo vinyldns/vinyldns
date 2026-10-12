@@ -38,7 +38,7 @@ trait UserRepository extends Repository {
 
   def getUserByIdOrName(userIdentifier: String): IO[Option[User]]
 
-  def searchUsersByName(pattern: String): IO[List[User]]
+  def searchUsersByName(pattern: String, startFrom: Option[Int] = None, maxResults: Int = 100): IO[List[User]]
 
   def save(user: User): IO[User]
 

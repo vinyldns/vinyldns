@@ -73,6 +73,8 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
          |   FROM user
          |  WHERE user_name LIKE {userName}
          |  ORDER BY user_name
+         |  LIMIT {maxResults}
+         |  OFFSET {offset}
      """.stripMargin
 
   private final val BASE_GET_USERS: String =
@@ -200,15 +202,16 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
       }
     }
 
-  def searchUsersByName(pattern: String): IO[List[User]] =
+  def searchUsersByName(pattern: String, startFrom: Option[Int] = None, maxResults: Int = 100): IO[List[User]] =
     monitor("repo.User.searchUsersByName") {
       // Convert * wildcard to SQL % wildcard
       val sqlPattern = pattern.replace("*", "%")
-      logger.debug(s"Searching user with pattern: $pattern, using SQL pattern: $sqlPattern")
+      val offset = startFrom.getOrElse(0)
+      logger.debug(s"Searching user with pattern: $pattern, using SQL pattern: $sqlPattern, offset: $offset, max results: $maxResults")
       IO {
         DB.readOnly { implicit s =>
           SEARCH_USER_BY_NAME
-            .bindByName('userName -> sqlPattern)
+            .bindByName('userName -> sqlPattern, 'offset -> offset, 'maxResults -> maxResults)
             .map(toUser(1))
             .list()
             .apply()
