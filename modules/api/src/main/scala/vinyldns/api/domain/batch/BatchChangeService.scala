@@ -598,12 +598,12 @@ class BatchChangeService(
     val startDateTime = if(dateTimeStartRange.isDefined && dateTimeStartRange.get.isEmpty) None else dateTimeStartRange
     val endDateTime = if(dateTimeEndRange.isDefined && dateTimeEndRange.get.isEmpty) None else dateTimeEndRange
     for {
-      groupID <-
-        groupName match {
-          case Some(groupName) if groupName.nonEmpty =>
-            groupRepository.getGroupByName(groupName).map{group => group.map(_.id)}.toBatchResult
-          case _ => None.toRightBatchResult
-        }
+      groupID <- if (isSearchByGroup) {
+          groupName match {
+            case Some(groupName)
+              if groupName.nonEmpty => groupRepository.getGroupByName(groupName).map { group => group.map(_.id) }.toBatchResult
+            case _ => None.toRightBatchResult
+          }} else  None.toRightBatchResult
       listResults <- batchChangeRepo
         .getBatchChangeSummaries(userId, submitterUserName, groupID, isSearchByGroup,
           startDateTime, endDateTime, startFrom, maxItems, batchStatus, approvalStatus)
