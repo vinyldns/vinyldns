@@ -23,7 +23,7 @@ import scalikejdbc.DB
 import vinyldns.api.backend.dns.DnsProtocol.TryAgain
 import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.domain.record.RecordSetHelpers._
-import vinyldns.core.Messages.{nonExistentRecordDataDeleteMessage, nonExistentRecordDeleteMessage}
+import vinyldns.core.Messages.{NonExistentRecordDataDeleteMessage, NonExistentRecordDeleteMessage}
 import vinyldns.core.domain.backend.{Backend, BackendResponse}
 import vinyldns.core.domain.batch.{BatchChangeRepository, SingleChange}
 import vinyldns.core.domain.record._
@@ -102,7 +102,7 @@ object RecordSetChangeHandler extends TransactionProvider {
            singleChangeStatusUpdates.exists { singleChange =>
              singleChange.recordChangeId.contains(recordSetChange.id) &&
                singleChange.systemMessage.exists(msg =>
-                 msg == nonExistentRecordDeleteMessage || msg == nonExistentRecordDataDeleteMessage
+                 msg == NonExistentRecordDeleteMessage || msg == NonExistentRecordDataDeleteMessage
                )
            }
          }

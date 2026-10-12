@@ -28,7 +28,7 @@ import vinyldns.api.domain.batch.BatchChangeInterfaces._
 import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.zone.ZoneRecordValidations.isStringInRegexList
 import vinyldns.api.domain.zone.ZoneRecordValidations
-import vinyldns.core.Messages.{nonExistentRecordDataDeleteMessage, nonExistentRecordDeleteMessage}
+import vinyldns.core.Messages.{NonExistentRecordDataDeleteMessage, NonExistentRecordDeleteMessage}
 import vinyldns.core.domain.DomainHelpers.omitTrailingDot
 import vinyldns.core.domain.record._
 import vinyldns.core.domain._
@@ -361,10 +361,10 @@ class BatchChangeValidations(
 
     // Perform the system message update based on the condition
     val updatedChange = if (groupedChanges.getExistingRecordSet(change.recordKey).isEmpty && !isSameRecordUpdateInBatch) {
-      val updatedChangeInput = updateSystemMessage(change.inputChange, nonExistentRecordDeleteMessage)
+      val updatedChangeInput = updateSystemMessage(change.inputChange, NonExistentRecordDeleteMessage)
       change.withUpdatedInputChange(updatedChangeInput)
     } else if (!ensureRecordExists(change, groupedChanges)) {
-      val updatedChangeInput = updateSystemMessage(change.inputChange, nonExistentRecordDataDeleteMessage)
+      val updatedChangeInput = updateSystemMessage(change.inputChange, NonExistentRecordDataDeleteMessage)
       change.withUpdatedInputChange(updatedChangeInput)
     } else {
       change
@@ -434,10 +434,10 @@ class BatchChangeValidations(
 
     // Perform the system message update based on the condition
     val updatedChange = if (groupedChanges.getExistingRecordSet(change.recordKey).isEmpty && !isSameRecordUpdateInBatch) {
-      val updatedChangeInput = updateSystemMessage(change.inputChange, nonExistentRecordDeleteMessage)
+      val updatedChangeInput = updateSystemMessage(change.inputChange, NonExistentRecordDeleteMessage)
       change.withUpdatedInputChange(updatedChangeInput)
     } else if (!ensureRecordExists(change, groupedChanges)) {
-      val updatedChangeInput = updateSystemMessage(change.inputChange, nonExistentRecordDataDeleteMessage)
+      val updatedChangeInput = updateSystemMessage(change.inputChange, NonExistentRecordDataDeleteMessage)
       change.withUpdatedInputChange(updatedChangeInput)
     } else {
       change

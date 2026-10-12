@@ -67,14 +67,8 @@ object Messages {
 
   // Messages displayed to the user and the files in which they are present
   /* MembershipService.scala */
-  // Placeholders: %s = group name, %s = email address, %s = contact
-  val GroupEmailExistsErrorMsg: String = "Cannot create group. A group, %s, is already associated with the email address %s. Please contact %s to be added to the group.".orConfig
-
-  // Placeholders: %s = group name, %s = email address
-  val GroupEmailExistsUpdateErrorMsg: String = "Cannot update group. A group, %s, is already associated with the email address %s. Visit FAQ for more information.".orConfig
-
   // Placeholders: %s = user id
-  val UserNotFoundErrorMsg: String = "User with ID %s not found".orConfig
+  val UserIDNotFoundErrorMsg: String = "User with ID %s not found".orConfig
 
   // Placeholders: %s = group id
   val GroupNotFoundErrorMsg: String = "Group with ID %s not found".orConfig
@@ -83,10 +77,10 @@ object Messages {
   val UsersNotFoundErrorMsg: String = "Users [ %s ] not found".orConfig
 
   // Placeholders: %s = user name
-  val UserIsNotFoundErrorMsg: String = "User %s not found".orConfig
+  val UserNotFoundErrorMsg: String = "User %s not found".orConfig
 
   // Placeholders: %s = group name, %s = zone/record name
-  val ACLRuleErrorMsg: String = "%s has an ACL rule for a zone including %s. Cannot delete. Please transfer the ownership to another group before deleting.".orConfig
+  val ACLRuleErrorMsg: String = "Group %s has an ACL rule on zone %s. Group cannot be deleted. Please transfer the ownership of ACL to another group before deleting.".orConfig
 
   // Placeholders: %s = group name, %s = record set name
   val RecordSetOwnerErrorMsg: String = "%s is the owner for a record set including %s. Cannot delete. Please transfer the ownership to another group before deleting.".orConfig
@@ -169,6 +163,9 @@ object Messages {
   // Placeholders: %s = zone name
   val ZoneDiscoveryErrorMsg: String = "Zone discovery failed: zone for \"%s\" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.".orConfig
 
+  // Placeholders: %s = zone name
+  val DuplicateZoneErrorMsg: String = "Zone with name \"%s\" already exists.".orConfig
+
   // Placeholders: %s = record name
   val RecordAlreadyExistsErrorMsg: String = "RecordName \"%s\" already exists. If you intended to update this record, submit a DeleteRecordSet entry followed by an Add.".orConfig
 
@@ -203,7 +200,7 @@ object Messages {
   val DeleteRecordDataDoesNotExistErrorMsg: String = "Record data %s does not exist for \"%s\".".orConfig
 
   // Placeholders: %s = record name, %s = group name, %s = group id, %s = guidance message
-  val NotAuthorizedErrorMsg: String = "The record \"%s\" is owned by the %s group (id: %s). %s".orConfig
+  val NotAuthorizedErrorMsg: String = "You are not authorized to modify the record \"%s\", which is owned by the %s group (id: %s). %s".orConfig
 
   // Placeholders: %s = contact email
   val NotAuthorizedAddContactMsg: String = "Only members of this group may add records to this zone. Please contact them for assistance: %s".orConfig
@@ -354,7 +351,7 @@ object Messages {
   val BatchConversionErrorMsg: String = "Batch conversion for processing failed to convert change with name \"%s\" and type \"%s\"".orConfig
 
   // Placeholders: %s = batch change id
-  val BatchChangeNotPendingReviewErrorMsg: String = "Batch change %s is not pending review, so it cannot be rejected.".orConfig
+  val BatchChangeNotPendingReviewErrorMsg: String = "Batch change %s is not in pending review state, so it cannot be rejected.".orConfig
 
   // Placeholders: %s = user id, %s = user name
   val BatchRequesterNotFoundErrorMsg: String = "The requesting user with id %s and name %s not found in VinylDNS".orConfig
@@ -746,8 +743,8 @@ object Messages {
   val InvalidQueueNameErrorMsg: String = ("Invalid queue name: %s. Must be 1-80 alphanumeric, hyphen or underscore characters. " +
     "FIFO queues (queue names ending in \".fifo\") are not supported.").orConfig
 
-  val nonExistentRecordDeleteMessage = "This record does not exist. No further action is required."
+  val NonExistentRecordDeleteMessage = "This record does not exist. No further action is required."
 
-  val nonExistentRecordDataDeleteMessage = "Record data entered does not exist. No further action is required."
+  val NonExistentRecordDataDeleteMessage = "Record data entered does not exist. No further action is required."
 
 }

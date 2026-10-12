@@ -26,7 +26,7 @@ import vinyldns.api.domain.batch.BatchTransformations._
 import vinyldns.api.domain.batch.BatchTransformations.LogicalChangeType._
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.api.repository._
-import vinyldns.core.Messages.{nonExistentRecordDataDeleteMessage, nonExistentRecordDeleteMessage}
+import vinyldns.core.Messages.{NonExistentRecordDataDeleteMessage, NonExistentRecordDeleteMessage}
 import vinyldns.core.TestMembershipData.okUser
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData.{okZone, _}
@@ -171,11 +171,11 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
   )
 
   private val singleChangesOneDataDelete = List(
-    makeSingleDeleteRRSetChange("DataDoesNotExistToDelete", A, okZone, Some(nonExistentRecordDataDeleteMessage))
+    makeSingleDeleteRRSetChange("DataDoesNotExistToDelete", A, okZone, Some(NonExistentRecordDataDeleteMessage))
   )
 
   private val changeForValidationOneDataDelete = List(
-    makeDeleteRRSetChangeForValidation("DataDoesNotExistToDelete", A, Some(nonExistentRecordDataDeleteMessage))
+    makeDeleteRRSetChangeForValidation("DataDoesNotExistToDelete", A, Some(NonExistentRecordDataDeleteMessage))
   )
 
   private val singleChangesOneBad = List(
@@ -614,8 +614,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
       val receivedChange = returnedBatch.changes(0)
       receivedChange.status shouldBe SingleChangeStatus.Pending
       receivedChange.recordChangeId shouldBe None
-      receivedChange.systemMessage shouldBe Some(nonExistentRecordDataDeleteMessage)
-      returnedBatch.changes(0) shouldBe singleChangesOneDataDelete(0).copy(systemMessage = Some(nonExistentRecordDataDeleteMessage), status = SingleChangeStatus.Pending)
+      receivedChange.systemMessage shouldBe Some(NonExistentRecordDataDeleteMessage)
+      returnedBatch.changes(0) shouldBe singleChangesOneDataDelete(0).copy(systemMessage = Some(NonExistentRecordDataDeleteMessage), status = SingleChangeStatus.Pending)
 
       // check the update has been made in the DB
       val savedBatch: Option[BatchChange] =

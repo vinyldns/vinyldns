@@ -20,6 +20,7 @@ import cats.effect._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.core.repository.Repository
+import vinyldns.core.Messages._
 
 trait ZoneRepository extends Repository {
 
@@ -62,6 +63,6 @@ trait ZoneRepository extends Repository {
 
 object ZoneRepository {
   final case class DuplicateZoneError(zoneName: String) {
-    def message: String = s"""Zone with name "$zoneName" already exists."""
+    def message: String = DuplicateZoneErrorMsg.format(zoneName)
   }
 }

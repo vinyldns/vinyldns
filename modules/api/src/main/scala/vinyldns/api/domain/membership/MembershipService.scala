@@ -359,7 +359,7 @@ class MembershipService(
   def getUser(userIdentifier: String, authPrincipal: AuthPrincipal): Result[User] =
     userRepo
       .getUserByIdOrName(userIdentifier)
-      .orFail(UserNotFoundError(UserIsNotFoundErrorMsg.format(userIdentifier)))
+      .orFail(UserNotFoundError(UserNotFoundErrorMsg.format(userIdentifier)))
       .toResult[User]
 
 
@@ -382,7 +382,7 @@ class MembershipService(
   def getExistingUser(userId: String): Result[User] =
     userRepo
       .getUser(userId)
-      .orFail(UserNotFoundError(UserNotFoundErrorMsg.format(userId)))
+      .orFail(UserNotFoundError(UserIDNotFoundErrorMsg.format(userId)))
       .toResult[User]
 
   def getExistingGroup(groupId: String): Result[Group] =
