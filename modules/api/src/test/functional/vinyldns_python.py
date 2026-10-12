@@ -670,7 +670,7 @@ class VinylDNSClient(object):
         return data
 
     def list_batch_change_summaries(self, start_from=None, max_items=None, ignore_access=False, approval_status=None,
-                                    **kwargs):
+                                    group_name=None, is_search_by_group=False, **kwargs):
         """
         Gets list of user's batch change summaries
         :return: the content of the response
@@ -684,6 +684,10 @@ class VinylDNSClient(object):
             args.append("ignoreAccess={0}".format(ignore_access))
         if approval_status:
             args.append("approvalStatus={0}".format(approval_status))
+        if group_name:
+            args.append("groupName={0}".format(group_name))
+        if is_search_by_group:
+            args.append("isSearchByGroup={0}".format(is_search_by_group))
 
         url = urljoin(self.index_url, "/zones/batchrecordchanges") + "?" + "&".join(args)
 

@@ -336,6 +336,15 @@ class BatchChangeServiceSpec
         }
       }
 
+    override def getGroupByName(groupName: String): IO[Option[Group]] =
+      IO.pure {
+        groupName match {
+          case okGroup.name => Some(okGroup)
+          case authGrp.name => Some(authGrp)
+          case _ => None
+        }
+      }
+
     override def getGroups(groupIds: Set[String]): IO[Set[Group]] =
       IO.pure {
         groupIds.flatMap {
@@ -2537,6 +2546,114 @@ class BatchChangeServiceSpec
       result.batchChanges(0).createdTimestamp shouldBe batchChange.createdTimestamp
       result.batchChanges(0).ownerGroupId shouldBe Some("no-existo")
       result.batchChanges(0).ownerGroupName shouldBe None
+    }
+
+    "return list of batchChangeSummaries filtered by groupName across all groups when super user searches by group" in {
+      val matchingBatchChange =
+        BatchChange(
+          notAuth.userId,
+          notAuth.signedInUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          List(),
+          ownerGroupId = Some(okGroup.id),
+          BatchChangeApprovalStatus.AutoApproved
+        )
+      batchChangeRepo.save(matchingBatchChange)
+
+      val nonMatchingBatchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS).plusMillis(1000),
+          List(),
+          ownerGroupId = Some("non-matching-group"),
+          BatchChangeApprovalStatus.AutoApproved
+        )
+      batchChangeRepo.save(nonMatchingBatchChange)
+
+      val result =
+        underTest
+          .listBatchChangeSummaries(
+            superUserAuth,
+            groupName = Some(okGroup.name),
+            ignoreAccess = true,
+            isSearchByGroup = true
+          )
+          .value.unsafeRunSync().toOption.get
+
+      result.batchChanges.length shouldBe 1
+      result.batchChanges.head.id shouldBe matchingBatchChange.id
+      result.batchChanges.head.ownerGroupId shouldBe Some(okGroup.id)
+      result.batchChanges.head.ownerGroupName shouldBe Some(okGroup.name)
+      result.ignoreAccess shouldBe true
+    }
+
+    "return empty list across all groups when searching by group and groupName does not exist" in {
+      val batchChange =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          List(),
+          ownerGroupId = Some(okGroup.id),
+          BatchChangeApprovalStatus.AutoApproved
+        )
+      batchChangeRepo.save(batchChange)
+
+      val result =
+        underTest
+          .listBatchChangeSummaries(
+            superUserAuth,
+            groupName = Some("missing-group"),
+            ignoreAccess = true,
+            isSearchByGroup = true
+          )
+          .value.unsafeRunSync().toOption.get
+
+      result.batchChanges shouldBe empty
+      result.ignoreAccess shouldBe true
+    }
+
+    "return unfiltered all-groups list when groupName does not exist and not searching by group" in {
+      val batchChangeOne =
+        BatchChange(
+          auth.userId,
+          auth.signedInUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS),
+          List(),
+          ownerGroupId = Some(okGroup.id),
+          BatchChangeApprovalStatus.AutoApproved
+        )
+      batchChangeRepo.save(batchChangeOne)
+
+      val batchChangeTwo =
+        BatchChange(
+          notAuth.userId,
+          notAuth.signedInUser.userName,
+          None,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS).plusMillis(1000),
+          List(),
+          ownerGroupId = Some("another-group"),
+          BatchChangeApprovalStatus.AutoApproved
+        )
+      batchChangeRepo.save(batchChangeTwo)
+
+      val result =
+        underTest
+          .listBatchChangeSummaries(
+            superUserAuth,
+            groupName = Some("missing-group"),
+            ignoreAccess = true,
+            isSearchByGroup = false
+          )
+          .value.unsafeRunSync().toOption.get
+
+      result.batchChanges.length shouldBe 2
+      result.ignoreAccess shouldBe true
     }
 
     "return list of batchChangeSummaries filtered by batch change status" in {

@@ -31,6 +31,12 @@ CREATE INDEX IF NOT EXISTS batch_change_user_id_created_time_index
 CREATE INDEX IF NOT EXISTS batch_change_user_id_index
     on batch_change (user_id);
 
+CREATE INDEX IF NOT EXISTS batch_change_owner_group_id_created_time_index
+    on batch_change (owner_group_id, created_time);
+
+CREATE INDEX IF NOT EXISTS batch_change_owner_group_id_approval_status_created_time_index
+    on batch_change (owner_group_id, approval_status, created_time);
+
 CREATE TABLE IF NOT EXISTS group_change
 (
     id                char(36)   not null primary key,
