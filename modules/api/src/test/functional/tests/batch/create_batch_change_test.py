@@ -103,18 +103,19 @@ def assert_change_success(changes_json, zone, index, record_name, input_name, re
 def assert_error(input_json, error_messages):
     def normalize_error_message(error):
         def canonicalize_group_ref(match):
-            group_name = match.group('group_name') or match.group('legacy_name')
-            group_id = match.group('group_id') or match.group('legacy_id') or match.group('legacy_group_id')
+            groups = match.groupdict()
+            group_name = groups.get('bracket_name') or groups.get('plain_name') or ''
+            group_id = groups.get('legacy_id') or groups.get('group_id') or ''
             return f'owned by the [{group_name}] group(/groups/{group_id})'
 
         normalized = re.sub(
-            r'owned by the (?:(?:\[(?P<group_name>.+?)\])|(?P<legacy_name>.+?)) group(?:\s*)\(?(?:id:\s*(?P<group_id>.+?)|/groups/(?P<legacy_group_id>.+?)\))?',
+            r'owned by the (?:(?:\[(?P<bracket_name>.+?)\])|(?P<plain_name>.+?)) group\s*\((?:id:\s*(?P<legacy_id>[^)]+)|/groups/(?P<group_id>[^)]+))\)',
             canonicalize_group_ref,
             error,
         )
         normalized = re.sub(
-            r'^You are not authorized to modify the record "(?P<record>.+?)", which is (?P<ownership>owned by the .*? group\(/groups/.+?\))\. (?P<rest>.*)$',
-            r'The record "\g<record>" is \g<ownership>. \g<rest>',
+            r'^You are not authorized to modify the record "(.+?)", which is (owned by the .*? group\(/groups/.+?\))\. (.*)$',
+            r'The record "\1" is \2. \3',
             normalized,
         )
         normalized = re.sub(r'(?i)CNAME Conflict', 'CNAME conflict', normalized)
