@@ -25,6 +25,7 @@ import vinyldns.core.domain.membership.{ListUsersResults, User, UserRepository}
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 import vinyldns.core.protobuf.ProtobufConversions
+import vinyldns.mysql.repository.LikePattern
 
 class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
     extends UserRepository
@@ -71,7 +72,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
     sql"""
          | SELECT data
          |   FROM user
-         |  WHERE user_name LIKE {userName}
+         |  WHERE user_name LIKE {userName} ESCAPE '\\'
          |  ORDER BY user_name
          |  LIMIT {maxResults}
          |  OFFSET {offset}
@@ -204,8 +205,7 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
 
   def searchUsersByName(pattern: String, startFrom: Option[Int] = None, maxResults: Int = 100): IO[List[User]] =
     monitor("repo.User.searchUsersByName") {
-      // Convert * wildcard to SQL % wildcard
-      val sqlPattern = pattern.replace("*", "%")
+      val sqlPattern = LikePattern.prefix(pattern)
       val offset = startFrom.getOrElse(0)
       logger.debug(s"Searching user with pattern: $pattern, using SQL pattern: $sqlPattern, offset: $offset, max results: $maxResults")
       IO {
