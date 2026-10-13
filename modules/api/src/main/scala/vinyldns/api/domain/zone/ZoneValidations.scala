@@ -21,6 +21,7 @@ import com.comcast.ip4s.Cidr
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import vinyldns.api.Interfaces.ensuring
+import vinyldns.core.domain.Encryption
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record.RecordType
 import vinyldns.core.domain.zone.{ACLRule, Zone, ZoneACL}
@@ -89,4 +90,13 @@ class ZoneValidations(syncDelayMillis: Int) {
         s"Not authorized to update zone shared status from $currentShared to $updateShared."
       )
     )(currentShared == updateShared || user.isSuper || user.isSupport)
+
+  // The redacted key means "keep the stored key"; reject it when there is none to keep.
+  def connectionKeyNotRedacted(zone: Zone): Either[Throwable, Unit] =
+    ensuring(
+      InvalidRequest("Zone connection key must be provided and cannot be the redacted value.")
+    ) {
+      !List(zone.connection, zone.transferConnection).flatten
+        .exists(c => Encryption.isRedacted(c.key))
+    }
 }

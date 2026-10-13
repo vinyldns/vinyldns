@@ -87,14 +87,14 @@ id                  | string        | Id of the group change |
         "connection": {
           "name": "dummy.",
           "keyName": "vinyldns.",
-          "key": "OBF:1:uFOhH4AH8xEAABAAlertajQQHrQZB91yWQz5lyBf4O88js2S6aWNMtAq5MS5Otysb4Z7iiO9DoGY9A6BrDQ52b8SOQyj0QpzgPe0CuI/pLW1s/rulmlvgubHkIl7dsYAaRH7SrmZfNBe4BSn02zuv/ATyWEy",
+          "key": "********",
           "primaryServer": "96.115.238.13",
           "algorithm": "HMAC-MD5"
         },
         "transferConnection": {
           "name": "dummy.",
           "keyName": "vinyldns.",
-          "key": "OBF:1:EonJvAJrMwQAABAAO+MPQq6fyNQcjnXUuV6YtvjeCGt8SEicWC6Ke9dLT1UmL4vAtlVg0nARl9rvhb1mxNndSf4ogx+/BvZx2AEvkTgCFxbsPMxJ/s6E/s6uaxa4sf/8+CpnR/1R0oYmfOaMSq04tgD+A+ym",
+          "key": "********",
           "primaryServer": "96.115.238.13",
           "algorithm": "HMAC-MD5"
         },

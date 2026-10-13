@@ -38,7 +38,7 @@ import vinyldns.core.queue.MessageQueue
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.crypto.NoOpCrypto
-import vinyldns.core.domain.Encrypted
+import vinyldns.core.domain.{Encrypted, Encryption}
 import vinyldns.core.domain.backend.BackendResolver
 
 class ZoneServiceSpec
@@ -216,6 +216,28 @@ class ZoneServiceSpec
         underTest.connectToZone(createZoneAuthorized, okAuth).map(_.asInstanceOf[ZoneChange]).value.unsafeRunSync().toOption.get
 
       resultChange.changeType shouldBe ZoneChangeType.Create
+    }
+
+    "return an InvalidRequest when the connection key is the redacted sentinel" in {
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+
+      val redacted = createZoneAuthorized.connection.get
+        .copy(key = Encrypted(Encryption.RedactedKey))
+      val newZone = createZoneAuthorized.copy(connection = Some(redacted))
+      val error = underTest.connectToZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+
+      error shouldBe an[InvalidRequest]
+    }
+
+    "return an InvalidRequest when the transfer connection key is the redacted sentinel" in {
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+
+      val redacted = createZoneAuthorized.connection.get
+        .copy(key = Encrypted(Encryption.RedactedKey))
+      val newZone = createZoneAuthorized.copy(transferConnection = Some(redacted))
+      val error = underTest.connectToZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+
+      error shouldBe an[InvalidRequest]
     }
 
     "return a NotAuthorizedError when zone recurrence schedule is set by a non-superuser" in {
@@ -496,6 +518,31 @@ class ZoneServiceSpec
 
       resultChange.zone.id shouldBe oldZone.id
       resultChange.zone.connection shouldBe oldZone.connection
+    }
+
+    "keep the stored connection key when update sends the redacted sentinel" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZone(anyString)
+
+      val redacted = okZone.connection.get.copy(key = Encrypted(Encryption.RedactedKey))
+      val newZone = updateZoneAuthorized.copy(connection = Some(redacted))
+
+      val resultChange: ZoneChange =
+        underTest
+          .updateZone(newZone, okAuth)
+          .map(_.asInstanceOf[ZoneChange])
+          .value.unsafeRunSync().toOption.get
+
+      resultChange.zone.connection.get.key shouldBe okZone.connection.get.key
+    }
+
+    "return an InvalidRequest when update sends the redacted sentinel with no stored connection" in {
+      doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZone(anyString)
+
+      val redacted = okZone.connection.get.copy(key = Encrypted(Encryption.RedactedKey))
+      val newZone = updateZoneAuthorized.copy(transferConnection = Some(redacted))
+
+      val error = underTest.updateZone(newZone, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe an[InvalidRequest]
     }
 
     "validate connection and fail if changed to bad" in {

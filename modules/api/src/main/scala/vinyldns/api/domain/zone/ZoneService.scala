@@ -95,6 +95,7 @@ class ZoneService(
       _ <- canChangeZone(auth, createZoneInput.name, createZoneInput.adminGroupId).toResult
       createdZoneInput = if(createZoneInput.recurrenceSchedule.isDefined) createZoneInput.copy(scheduleRequestor = Some(auth.signedInUser.userName)) else createZoneInput
       zoneToCreate = Zone(createdZoneInput, auth.isTestUser)
+      _ <- connectionKeyNotRedacted(zoneToCreate).toResult
       _ <- connectionValidator.validateZoneConnections(zoneToCreate)
       createZoneChange <- ZoneChangeGenerator.forAdd(zoneToCreate, auth).toResult
       _ <- messageQueue.send(createZoneChange).toResult[Unit]
@@ -120,6 +121,7 @@ class ZoneService(
       _ <- canChangeZone(auth, updateZoneInput.name, updateZoneInput.adminGroupId).toResult
       updatedZoneInput = if(updateZoneInput.recurrenceSchedule.isDefined) updateZoneInput.copy(scheduleRequestor = Some(auth.signedInUser.userName)) else updateZoneInput
       zoneWithUpdates = Zone(updatedZoneInput, existingZone)
+      _ <- connectionKeyNotRedacted(zoneWithUpdates).toResult
       _ <- validateZoneConnectionIfChanged(zoneWithUpdates, existingZone)
       updateZoneChange <- ZoneChangeGenerator
         .forUpdate(zoneWithUpdates, existingZone, auth, crypto)

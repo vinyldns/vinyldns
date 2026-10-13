@@ -24,6 +24,7 @@ import vinyldns.api.config.LimitsConfig
 import vinyldns.api.domain.membership.EmailValidationError
 import vinyldns.api.domain.zone._
 import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.Encryption
 import vinyldns.core.domain.zone._
 
 import scala.concurrent.duration._
@@ -249,15 +250,19 @@ class ZoneRoute(
     */
   private def encrypt(createZoneInput: CreateZoneInput): CreateZoneInput =
     createZoneInput.copy(
-      connection = createZoneInput.connection.map(_.encrypted(crypto)),
-      transferConnection = createZoneInput.transferConnection.map(_.encrypted(crypto))
+      connection = createZoneInput.connection.map(encryptConnection),
+      transferConnection = createZoneInput.transferConnection.map(encryptConnection)
     )
 
   private def encrypt(updateZoneInput: UpdateZoneInput): UpdateZoneInput =
     updateZoneInput.copy(
-      connection = updateZoneInput.connection.map(_.encrypted(crypto)),
-      transferConnection = updateZoneInput.transferConnection.map(_.encrypted(crypto))
+      connection = updateZoneInput.connection.map(encryptConnection),
+      transferConnection = updateZoneInput.transferConnection.map(encryptConnection)
     )
+
+  // Leave the redacted key unencrypted so the service can recognize it
+  private def encryptConnection(conn: ZoneConnection): ZoneConnection =
+    if (Encryption.isRedacted(conn.key)) conn else conn.encrypted(crypto)
 
   // TODO: This is duplicated across routes.  Leaving duplicated until we upgrade our json serialization
   private val invalidQueryHandler = RejectionHandler

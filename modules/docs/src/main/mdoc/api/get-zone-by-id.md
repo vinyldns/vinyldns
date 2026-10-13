@@ -42,13 +42,13 @@ zone          | map           | Refer to [zone model](zone-model.html) |
       "primaryServer": "127.0.0.1:5301",
       "keyName": "vinyl.",
       "name": "system-test.",
-      "key": "OBF:1:B2cetOaRf1YAABAAek/w22XyKAleCRjA/hZO9fkNtNufPIRWTYHXviAk9GjrfcFOG9nNuB=="
+      "key": "********"
     },
     "transferConnection": {
       "primaryServer": "127.0.0.1:5301",
       "keyName": "vinyl.",
       "name": "system-test.",
-      "key": "OBF:1:PNt2k1nYkC0AABAAePpNMrDp+4C4GDbicWWlAqB5c4mKoKhvfpiWY1PfuRCVzSAeXydztB=="
+      "key": "********"
     },
     "shared": true,
     "acl": {

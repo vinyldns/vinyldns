@@ -1237,7 +1237,11 @@ def test_update_connection_info_success(shared_zone_test_context):
         create_rs = client.create_recordset(new_rs, status=202)
         test_rs = client.wait_until_recordset_change_status(create_rs, "Complete")["recordSet"]
     finally:
-        revert = client.update_zone(zone, status=202)
+        # Connections were dropped above, so the redacted key has nothing to resolve to
+        revert_zone = copy.deepcopy(zone)
+        revert_zone["connection"]["key"] = VinylDNSTestContext.dns_key
+        revert_zone["transferConnection"]["key"] = VinylDNSTestContext.dns_key
+        revert = client.update_zone(revert_zone, status=202)
         client.wait_until_zone_change_status_synced(revert)
         if test_rs:
             delete_result = client.delete_recordset(test_rs["zoneId"], test_rs["id"], status=202)

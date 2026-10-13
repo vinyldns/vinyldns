@@ -47,7 +47,12 @@ object ZoneChangeGenerator {
       crypto: CryptoAlgebra
   ): ZoneChange =
     ZoneChange(
-      newZone.copy(updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)), connection = fixConn(oldZone, newZone, crypto)),
+      newZone.copy(
+        updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)),
+        connection = fixConn(oldZone.connection, newZone.connection, crypto),
+        transferConnection =
+          fixConn(oldZone.transferConnection, newZone.transferConnection, crypto)
+      ),
       authPrincipal.userId,
       ZoneChangeType.Update,
       ZoneChangeStatus.Pending
@@ -77,11 +82,15 @@ object ZoneChangeGenerator {
       ZoneChangeStatus.Pending
     )
 
-  private def fixConn(oldZ: Zone, newZ: Zone, crypto: CryptoAlgebra): Option[ZoneConnection] =
-    newZ.connection.map(newConn => {
-      val oldConn = oldZ.connection.getOrElse(newConn)
-      newConn.copy(
-        key = if (oldConn.key == newConn.decrypted(crypto).key) oldConn.key else newConn.key
-      )
-    })
+  // If a client echoes back the stored ciphertext, the route re-encrypts it; keep the stored key.
+  // Skip the decrypt when keys already match (e.g. the redacted key was resolved in Zone.apply).
+  private def fixConn(
+      oldConn: Option[ZoneConnection],
+      newConn: Option[ZoneConnection],
+      crypto: CryptoAlgebra
+  ): Option[ZoneConnection] =
+    newConn.map { nc =>
+      val oc = oldConn.getOrElse(nc)
+      if (oc.key != nc.key && oc.key == nc.decrypted(crypto).key) nc.copy(key = oc.key) else nc
+    }
 }
