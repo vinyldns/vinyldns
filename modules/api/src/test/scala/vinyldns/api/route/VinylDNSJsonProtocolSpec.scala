@@ -644,7 +644,7 @@ class VinylDNSJsonProtocolSpec
           ("records" -> List(dsData))
 
       val thrown = the[MappingException] thrownBy recordSetJValue.extract[RecordSet]
-      thrown.msg should include("Could not convert digest to valid hex")
+      thrown.msg should include("Unable to convert digest to valid hex")
     }
     "reject a DS record with unknown algorithm" in {
       val dsData = ("keytag" -> 60485) ~

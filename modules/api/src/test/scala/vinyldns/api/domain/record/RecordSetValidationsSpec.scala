@@ -735,49 +735,49 @@ class RecordSetValidationsSpec
         val rs = rsOk.copy(zoneId = "not-real")
         val error = leftValue(unchangedRecordSet(existing, rs))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "Cannot update RecordSet's if user not a member of ownership group. User can only request for ownership transfer"
+        error.getMessage() shouldBe "Cannot update RecordSet's ownership if user is not a member of the ownership group. User can only request an ownership transfer."
       }
       "return invalid request when given record type does not match existing recordset record type" in {
         val existing = rsOk
         val rs = rsOk.copy(typ = RecordType.AAAA)
         val error = leftValue(unchangedRecordSet(existing, rs))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "Cannot update RecordSet's if user not a member of ownership group. User can only request for ownership transfer"
+        error.getMessage() shouldBe "Cannot update RecordSet's ownership if user is not a member of the ownership group. User can only request an ownership transfer."
       }
       "return invalid request when given records does not match existing recordset records" in {
         val existing = rsOk
         val rs = rsOk.copy(records = List(AData("10.1.1.0")))
         val error = leftValue(unchangedRecordSet(existing, rs))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "Cannot update RecordSet's if user not a member of ownership group. User can only request for ownership transfer"
+        error.getMessage() shouldBe "Cannot update RecordSet's ownership if user is not a member of the ownership group. User can only request an ownership transfer."
       }
       "return invalid request when given recordset id does not match existing recordset ID" in {
         val existing = rsOk
         val rs = rsOk.copy(id = abcRecord.id)
         val error = leftValue(unchangedRecordSet(existing, rs))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "Cannot update RecordSet's if user not a member of ownership group. User can only request for ownership transfer"
+        error.getMessage() shouldBe "Cannot update RecordSet's ownership if user is not a member of the ownership group. User can only request an ownership transfer."
       }
       "return invalid request when given recordset name does not match existing recordset name" in {
         val existing = rsOk
         val rs = rsOk.copy(name = "abc")
         val error = leftValue(unchangedRecordSet(existing, rs))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "Cannot update RecordSet's if user not a member of ownership group. User can only request for ownership transfer"
+        error.getMessage() shouldBe "Cannot update RecordSet's ownership if user is not a member of the ownership group. User can only request an ownership transfer."
       }
       "return invalid request when given owner group ID does not match existing recordset owner group ID" in {
         val existing = rsOk
         val rs = rsOk.copy(ownerGroupId = Some(abcGroup.id))
         val error = leftValue(unchangedRecordSet(existing, rs))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "Cannot update RecordSet's if user not a member of ownership group. User can only request for ownership transfer"
+        error.getMessage() shouldBe "Cannot update RecordSet's ownership if user is not a member of the ownership group. User can only request an ownership transfer."
       }
       "return invalid request when given ttl does not match existing recordset ttl" in {
         val existing = rsOk
         val rs = rsOk.copy(ttl = 3000)
         val error = leftValue(unchangedRecordSet(existing, rs))
         error shouldBe an[InvalidRequest]
-        error.getMessage() shouldBe "Cannot update RecordSet's if user not a member of ownership group. User can only request for ownership transfer"
+        error.getMessage() shouldBe "Cannot update RecordSet's ownership if user is not a member of the ownership group. User can only request an ownership transfer."
       }
     }
     "recordSetOwnershipApproveStatus" should {

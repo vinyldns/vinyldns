@@ -163,11 +163,11 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
   )
 
   private val singleChangesOneDelete = List(
-    makeSingleDeleteRRSetChange("DoesNotExistToDelete", A, okZone, Some(nonExistentRecordDeleteMessage))
+    makeSingleDeleteRRSetChange("DoesNotExistToDelete", A, okZone, Some(NonExistentRecordDeleteMessage))
   )
 
   private val changeForValidationOneDelete = List(
-    makeDeleteRRSetChangeForValidation("DoesNotExistToDelete", A, Some(nonExistentRecordDeleteMessage))
+    makeDeleteRRSetChangeForValidation("DoesNotExistToDelete", A, Some(NonExistentRecordDeleteMessage))
   )
 
   private val singleChangesOneDataDelete = List(
@@ -579,8 +579,8 @@ class BatchChangeConverterSpec extends AnyWordSpec with Matchers {
       val receivedChange = returnedBatch.changes(0)
       receivedChange.status shouldBe SingleChangeStatus.Pending
       receivedChange.recordChangeId shouldBe None
-      receivedChange.systemMessage shouldBe Some(nonExistentRecordDeleteMessage)
-      returnedBatch.changes(0) shouldBe singleChangesOneDelete(0).copy(systemMessage = Some(nonExistentRecordDeleteMessage), status = SingleChangeStatus.Pending)
+      receivedChange.systemMessage shouldBe Some(NonExistentRecordDeleteMessage)
+      returnedBatch.changes(0) shouldBe singleChangesOneDelete(0).copy(systemMessage = Some(NonExistentRecordDeleteMessage), status = SingleChangeStatus.Pending)
 
       // check the update has been made in the DB
       val savedBatch: Option[BatchChange] =
