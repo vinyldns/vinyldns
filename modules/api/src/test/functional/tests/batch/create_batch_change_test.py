@@ -465,7 +465,7 @@ def test_create_batch_change_with_soft_failures_scheduled_time_and_allow_manual_
     response = client.create_batch_change(batch_change_input, False, status=400)
     assert_failed_change_in_error_response(response[0], input_name="non.existent.", record_type="A",
                                            record_data="4.5.6.7",
-                                           error_messages=["Zone Discovery Failed: zone for \"non.existent.\" does not exist in VinylDNS. "
+                                           error_messages=["Zone discovery failed: zone for \"non.existent.\" does not exist in VinylDNS. "
                                                            "If zone exists, then it must be connected to in VinylDNS."])
 
 
@@ -1092,7 +1092,7 @@ def test_create_batch_change_with_soft_failures_and_allow_manual_review_disabled
     response = client.create_batch_change(batch_change_input, False, status=400)
     assert_failed_change_in_error_response(response[0], input_name="non.existent.", record_type="A",
                                            record_data="4.5.6.7",
-                                           error_messages=["Zone Discovery Failed: zone for \"non.existent.\" does not exist in VinylDNS. "
+                                           error_messages=["Zone discovery failed: zone for \"non.existent.\" does not exist in VinylDNS. "
                                                            "If zone exists, then it must be connected to in VinylDNS."])
 
 
@@ -1421,7 +1421,7 @@ def test_create_batch_change_with_invalid_duplicate_record_names_fails(shared_zo
         response = client.create_batch_change(batch_change_input, status=400)
         assert_successful_change_in_error_response(response[0], input_name=f"thing1.{ok_zone_name}", record_data="4.5.6.7")
         assert_failed_change_in_error_response(response[1], input_name=f"thing1.{ok_zone_name}", record_type="CNAME", record_data="test.com.",
-                                               error_messages=[f'Record Name "thing1.{ok_zone_name}" Not Unique In Batch Change: '
+                                               error_messages=[f'Record name "thing1.{ok_zone_name}" not unique in batch change: '
                                                                f'cannot have multiple "CNAME" records with the same name.'])
         assert_successful_change_in_error_response(response[2], input_name=f"delete1.{ok_zone_name}", change_type="DeleteRecordSet")
         assert_successful_change_in_error_response(response[3], input_name=f"delete1.{ok_zone_name}", record_type="CNAME", record_data="test.com.")
@@ -1545,21 +1545,21 @@ def test_a_recordtype_add_checks(shared_zone_test_context):
                                                                "valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot."])
         assert_failed_change_in_error_response(response[2], input_name="reverse-zone.10.10.in-addr.arpa.",
                                                record_data="1.2.3.4",
-                                               error_messages=["Invalid Record Type In Reverse Zone: record with name \"reverse-zone.10.10.in-addr.arpa.\" and "
+                                               error_messages=["Invalid record type in reverse zone: record with name \"reverse-zone.10.10.in-addr.arpa.\" and "
                                                                "type \"A\" is not allowed in a reverse zone."])
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[3], input_name=f"no.subzone.{parent_zone_name}", record_data="1.2.3.4",
-                                               error_messages=[f'Zone Discovery Failed: zone for "no.subzone.{parent_zone_name}" does not exist in VinylDNS. '
+                                               error_messages=[f'Zone discovery failed: zone for "no.subzone.{parent_zone_name}" does not exist in VinylDNS. '
                                                                f'If zone exists, then it must be connected to in VinylDNS.'])
         assert_failed_change_in_error_response(response[4], input_name="no.zone.at.all.", record_data="1.2.3.4",
-                                               error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. '
+                                               error_messages=['Zone discovery failed: zone for "no.zone.at.all." does not exist in VinylDNS. '
                                                                'If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validations: duplicate name failure is always on the cname
         assert_failed_change_in_error_response(response[5], input_name=f"cname-duplicate.{parent_zone_name}",
                                                record_type="CNAME", record_data="test.com.",
-                                               error_messages=[f"Record Name \"cname-duplicate.{parent_zone_name}\" Not Unique In Batch Change: "
+                                               error_messages=[f"Record name \"cname-duplicate.{parent_zone_name}\" not unique in batch change: "
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
         assert_successful_change_in_error_response(response[6], input_name=f"cname-duplicate.{parent_zone_name}",
                                                    record_data="1.2.3.4")
@@ -1686,7 +1686,7 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
                                                                'numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[5], input_name="reverse.zone.in-addr.arpa.",
                                                change_type="DeleteRecordSet",
-                                               error_messages=['Invalid Record Type In Reverse Zone: record with name "reverse.zone.in-addr.arpa." and type "A" '
+                                               error_messages=['Invalid record type in reverse zone: record with name "reverse.zone.in-addr.arpa." and type "A" '
                                                                'is not allowed in a reverse zone.'])
         assert_failed_change_in_error_response(response[6], input_name="$another.invalid.host.name.", ttl=300,
                                                error_messages=['Invalid domain name: "$another.invalid.host.name.", valid domain names must be letters, '
@@ -1696,18 +1696,18 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=['Invalid domain name: "$another.invalid.host.name.", valid domain names must be letters, '
                                                                'numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[8], input_name="another.reverse.zone.in-addr.arpa.", ttl=10,
-                                               error_messages=['Invalid Record Type In Reverse Zone: record with name "another.reverse.zone.in-addr.arpa." '
+                                               error_messages=['Invalid record type in reverse zone: record with name "another.reverse.zone.in-addr.arpa." '
                                                                'and type "A" is not allowed in a reverse zone.',
                                                                'Invalid TTL: "10", must be a number between 30 and 2147483647.'])
         assert_failed_change_in_error_response(response[9], input_name="another.reverse.zone.in-addr.arpa.",
                                                change_type="DeleteRecordSet",
-                                               error_messages=['Invalid Record Type In Reverse Zone: record with name "another.reverse.zone.in-addr.arpa." '
+                                               error_messages=['Invalid record type in reverse zone: record with name "another.reverse.zone.in-addr.arpa." '
                                                                'and type "A" is not allowed in a reverse zone.'])
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[10], input_name="zone.discovery.error.",
                                                change_type="DeleteRecordSet",
-                                               error_messages=['Zone Discovery Failed: zone for "zone.discovery.error." does not exist in VinylDNS. '
+                                               error_messages=['Zone discovery failed: zone for "zone.discovery.error." does not exist in VinylDNS. '
                                                                'If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validation failures: record does not exist, not authorized
@@ -1793,23 +1793,23 @@ def test_aaaa_recordtype_add_checks(shared_zone_test_context):
                                                                "valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot."])
         assert_failed_change_in_error_response(response[2], input_name="reverse-zone.1.2.3.ip6.arpa.",
                                                record_type="AAAA", record_data="1::1",
-                                               error_messages=["Invalid Record Type In Reverse Zone: record with name \"reverse-zone.1.2.3.ip6.arpa.\" "
+                                               error_messages=["Invalid record type in reverse zone: record with name \"reverse-zone.1.2.3.ip6.arpa.\" "
                                                                "and type \"AAAA\" is not allowed in a reverse zone."])
 
         # zone discovery failures
         assert_failed_change_in_error_response(response[3], input_name=f"no.subzone.{parent_zone_name}", record_type="AAAA",
                                                record_data="1::1",
-                                               error_messages=[f'Zone Discovery Failed: zone for \"no.subzone.{parent_zone_name}\" does not exist in VinylDNS. '
+                                               error_messages=[f'Zone discovery failed: zone for \"no.subzone.{parent_zone_name}\" does not exist in VinylDNS. '
                                                                f'If zone exists, then it must be connected to in VinylDNS.'])
         assert_failed_change_in_error_response(response[4], input_name="no.zone.at.all.", record_type="AAAA",
                                                record_data="1::1",
-                                               error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
+                                               error_messages=["Zone discovery failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
                                                                "If zone exists, then it must be connected to in VinylDNS."])
 
         # context validations: duplicate name failure (always on the cname), conflicting recordsets, unauthorized error
         assert_failed_change_in_error_response(response[5], input_name=f"cname-duplicate.{parent_zone_name}",
                                                record_type="CNAME", record_data="test.com.",
-                                               error_messages=[f"Record Name \"cname-duplicate.{parent_zone_name}\" Not Unique In Batch Change: "
+                                               error_messages=[f"Record name \"cname-duplicate.{parent_zone_name}\" not unique in batch change: "
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
         assert_successful_change_in_error_response(response[6], input_name=f"cname-duplicate.{parent_zone_name}",
                                                record_type="AAAA", record_data="1::1")
@@ -1918,7 +1918,7 @@ def test_aaaa_recordtype_update_delete_checks(shared_zone_test_context):
                                                                f'valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[6], input_name="reverse.zone.in-addr.arpa.", record_type="AAAA",
                                                record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["Invalid Record Type In Reverse Zone: record with name \"reverse.zone.in-addr.arpa.\" and "
+                                               error_messages=["Invalid record type in reverse zone: record with name \"reverse.zone.in-addr.arpa.\" and "
                                                                "type \"AAAA\" is not allowed in a reverse zone."])
         assert_failed_change_in_error_response(response[7], input_name=f"bad-ttl-and-invalid-name$-update.{ok_zone_name}",
                                                record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
@@ -1933,7 +1933,7 @@ def test_aaaa_recordtype_update_delete_checks(shared_zone_test_context):
         # zone discovery failure
         assert_failed_change_in_error_response(response[9], input_name="no.zone.at.all.", record_type="AAAA",
                                                record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
+                                               error_messages=["Zone discovery failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
                                                                "If zone exists, then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist, not authorized
@@ -2053,12 +2053,12 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.',
                                                                f'Invalid domain name: "bad-ttl-and-invalid-name$.{parent_zone_name}", '
                                                                "valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot.",
-                                                               'Invalid Cname: "also$bad.name.", valid cnames must be letters, numbers, underscores, and hyphens, '
+                                                               'Invalid CNAME: "also$bad.name.", valid CNAMEs must be letters, numbers, underscores, and hyphens, '
                                                                "joined by dots, and terminated with a dot."])
         # zone discovery failure
         assert_failed_change_in_error_response(response[7], input_name="no.zone.com.", record_type="CNAME",
                                                record_data="test.com.",
-                                               error_messages=["Zone Discovery Failed: zone for \"no.zone.com.\" does not exist in VinylDNS. "
+                                               error_messages=["Zone discovery failed: zone for \"no.zone.com.\" does not exist in VinylDNS. "
                                                                "If zone exists, then it must be connected to in VinylDNS."])
 
         # CNAME cant be apex
@@ -2071,15 +2071,15 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
                                                    record_data="test.com.")
         assert_failed_change_in_error_response(response[10], input_name=f"15.{ip4_zone_name}", record_type="CNAME",
                                                record_data="duplicate.other.type.within.batch.",
-                                               error_messages=[f"Record Name \"15.{ip4_zone_name}\" Not Unique In Batch Change: "
+                                               error_messages=[f"Record name \"15.{ip4_zone_name}\" not unique in batch change: "
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
         assert_failed_change_in_error_response(response[11], input_name=f"cname-duplicate.{parent_zone_name}",
                                                record_type="CNAME", record_data="test.com.",
-                                               error_messages=[f"Record Name \"cname-duplicate.{parent_zone_name}\" Not Unique In Batch Change: "
+                                               error_messages=[f"Record name \"cname-duplicate.{parent_zone_name}\" not unique in batch change: "
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
         assert_failed_change_in_error_response(response[12], input_name=f"cname-duplicate.{parent_zone_name}",
                                                record_type="CNAME", record_data="duplicate.cname.type.within.batch.",
-                                               error_messages=[f"Record Name \"cname-duplicate.{parent_zone_name}\" Not Unique In Batch Change: "
+                                               error_messages=[f"Record name \"cname-duplicate.{parent_zone_name}\" not unique in batch change: "
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
 
         # context validations: existing recordsets pre-request, unauthorized, failure on duplicate add
@@ -2101,7 +2101,7 @@ def test_cname_recordtype_add_checks(shared_zone_test_context):
                                                record_type="CNAME", record_data="test.com.",
                                                error_messages=[f'The record "user-add-unauthorized.{dummy_zone_name}" is owned by the [{dummy_group_name}] group(/groups/{shared_zone_test_context.dummy_group["id"]}). Only members of this group may add records to this zone. Please contact them for assistance: test@test.com.'])
         assert_failed_change_in_error_response(response[17], input_name=f"invalid-ipv4-{parent_zone_name}", record_type="CNAME", record_data="1.2.3.4.",
-                                               error_messages=[f'Invalid Cname: "Fqdn(1.2.3.4.)", Valid CNAME record data should not be an IP address'])
+                                               error_messages=[f'Invalid CNAME: "Fqdn(1.2.3.4.)", valid CNAME record data should not be an IP address'])
 
     finally:
         clear_recordset_list(to_delete, client)
@@ -2220,14 +2220,14 @@ def test_cname_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=['Invalid TTL: "20", must be a number between 30 and 2147483647.',
                                                                'Invalid domain name: "$another.invalid.host.name.", valid domain names must be letters, numbers, '
                                                                'underscores, and hyphens, joined by dots, and terminated with a dot.',
-                                                               'Invalid Cname: "$another.invalid.cname.", valid cnames must be letters, numbers, '
+                                                               'Invalid CNAME: "$another.invalid.cname.", valid CNAMEs must be letters, numbers, '
                                                                'underscores, and hyphens, joined by dots, and terminated with a dot.'])
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[11], input_name="zone.discovery.error.", record_type="CNAME",
                                                change_type="DeleteRecordSet",
                                                error_messages=[
-                                                   'Zone Discovery Failed: zone for "zone.discovery.error." does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
+                                                   'Zone discovery failed: zone for "zone.discovery.error." does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validation failures: record does not exist, not authorized
         assert_successful_change_in_error_response(response[12], input_name=f"non-existent-update.{ok_zone_name}",
@@ -2245,11 +2245,11 @@ def test_cname_recordtype_update_delete_checks(shared_zone_test_context):
                                                    record_type="CNAME", change_type="DeleteRecordSet")
         assert_failed_change_in_error_response(response[17], input_name=f"existing-cname2.{parent_zone_name}",
                                                record_type="CNAME", record_data="test.com.",
-                                               error_messages=[f"Record Name \"existing-cname2.{parent_zone_name}\" Not Unique In Batch Change: "
+                                               error_messages=[f"Record name \"existing-cname2.{parent_zone_name}\" not unique in batch change: "
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
         assert_failed_change_in_error_response(response[18], input_name=f"existing-cname2.{parent_zone_name}",
                                                record_type="CNAME", record_data="test2.com.",
-                                               error_messages=[f"Record Name \"existing-cname2.{parent_zone_name}\" Not Unique In Batch Change: "
+                                               error_messages=[f"Record name \"existing-cname2.{parent_zone_name}\" not unique in batch change: "
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
 
     finally:
@@ -2382,16 +2382,16 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
         # delegated and non-delegated PTR duplicate name checks
         assert_successful_change_in_error_response(response[4], input_name=f"{ip4_prefix}.196", record_type="PTR", record_data="test.com.")
         assert_failed_change_in_error_response(response[5], input_name=f"196.{ip4_zone_name}", record_type="CNAME", record_data="test.com.",
-                                               error_messages=[f'Record Name "196.{ip4_zone_name}" Not Unique In Batch Change: cannot have multiple "CNAME" records with the same name.'])
+                                               error_messages=[f'Record name "196.{ip4_zone_name}" not unique in batch change: cannot have multiple "CNAME" records with the same name.'])
         assert_successful_change_in_error_response(response[6], input_name=f"196.192/30.{ip4_zone_name}", record_type="CNAME", record_data="test.com.")
         assert_successful_change_in_error_response(response[7], input_name=f"{ip4_prefix}.55", record_type="PTR", record_data="test.com.")
         assert_failed_change_in_error_response(response[8], input_name=f"55.{ip4_zone_name}", record_type="CNAME", record_data="test.com.",
-                                               error_messages=[f'Record Name "55.{ip4_zone_name}" Not Unique In Batch Change: cannot have multiple "CNAME" records with the same name.'])
+                                               error_messages=[f'Record name "55.{ip4_zone_name}" not unique in batch change: cannot have multiple "CNAME" records with the same name.'])
         assert_successful_change_in_error_response(response[9], input_name=f"55.192/30.{ip4_zone_name}", record_type="CNAME", record_data="test.com.")
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[10], input_name="192.1.1.100", record_type="PTR", record_data="test.com.",
-                                               error_messages=['Zone Discovery Failed: zone for "192.1.1.100" does not exist in VinylDNS. '
+                                               error_messages=['Zone discovery failed: zone for "192.1.1.100" does not exist in VinylDNS. '
                                                                'If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validations: existing cname recordset
@@ -2431,7 +2431,7 @@ def test_ipv4_ptr_recordtype_add_checks(shared_zone_test_context):
 #         assert_failed_change_in_error_response(response[0], input_name=f"{ip4_prefix}.1", record_type="PTR",
 #                                                record_data="test.com.",
 #                                                error_messages=[
-#                                                    f'Zone Discovery Failed: zone for "{ip4_prefix}.1" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
+#                                                    f'Zone discovery failed: zone for "{ip4_prefix}.1" does not exist in VinylDNS. If zone exists, then it must be connected to in VinylDNS.'])
 #
 #     finally:
 #         # re-create classless base zone and update zone info in shared_zone_test_context for use in future tests
@@ -2535,7 +2535,7 @@ def test_ipv4_ptr_recordtype_update_delete_checks(shared_zone_test_context):
         # zone discovery failure
         assert_failed_change_in_error_response(response[12], input_name="192.1.1.25", record_type="PTR",
                                                record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["Zone Discovery Failed: zone for \"192.1.1.25\" does not exist in VinylDNS. If zone exists, "
+                                               error_messages=["Zone discovery failed: zone for \"192.1.1.25\" does not exist in VinylDNS. If zone exists, "
                                                                "then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist
@@ -2600,7 +2600,7 @@ def test_ipv6_ptr_recordtype_add_checks(shared_zone_test_context):
         # zone discovery failure
         assert_failed_change_in_error_response(response[4], input_name="fedc:ba98:7654::abc", record_type="PTR",
                                                record_data="zone.discovery.error.",
-                                               error_messages=["Zone Discovery Failed: zone for \"fedc:ba98:7654::abc\" does not exist in VinylDNS. "
+                                               error_messages=["Zone discovery failed: zone for \"fedc:ba98:7654::abc\" does not exist in VinylDNS. "
                                                                "If zone exists, then it must be connected to in VinylDNS."])
 
         # context validations: existing record sets pre-request
@@ -2689,7 +2689,7 @@ def test_ipv6_ptr_recordtype_update_delete_checks(shared_zone_test_context):
         # zone discovery failure
         assert_failed_change_in_error_response(response[8], input_name="fedc:ba98:7654::abc", record_type="PTR",
                                                record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["Zone Discovery Failed: zone for \"fedc:ba98:7654::abc\" does not exist in VinylDNS. "
+                                               error_messages=["Zone discovery failed: zone for \"fedc:ba98:7654::abc\" does not exist in VinylDNS. "
                                                                "If zone exists, then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist, failure on update with double add
@@ -2763,13 +2763,13 @@ def test_txt_recordtype_add_checks(shared_zone_test_context):
         # zone discovery failure
         assert_failed_change_in_error_response(response[2], input_name="no.zone.at.all.", record_type="TXT",
                                                record_data="test",
-                                               error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. '
+                                               error_messages=['Zone discovery failed: zone for "no.zone.at.all." does not exist in VinylDNS. '
                                                                'If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validations: cname duplicate
         assert_failed_change_in_error_response(response[3], input_name=f"cname-duplicate.{ok_zone_name}", record_type="CNAME",
                                                record_data="test.com.",
-                                               error_messages=[f"Record Name \"cname-duplicate.{ok_zone_name}\" Not Unique In Batch Change: "
+                                               error_messages=[f"Record name \"cname-duplicate.{ok_zone_name}\" not unique in batch change: "
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
 
         # context validations: conflicting recordsets, unauthorized error
@@ -2874,7 +2874,7 @@ def test_txt_recordtype_update_delete_checks(shared_zone_test_context):
         # zone discovery failure
         assert_failed_change_in_error_response(response[7], input_name="no.zone.at.all.", record_type="TXT", record_data=None, change_type="DeleteRecordSet",
                                                error_messages=[
-                                                   "Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
+                                                   "Zone discovery failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
                                                    "If zone exists, then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist, not authorized
@@ -2959,22 +2959,22 @@ def test_mx_recordtype_add_checks(shared_zone_test_context):
                                                                'joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[3], input_name=f"mx.{ip4_zone_name}", record_type="MX",
                                                record_data={"preference": 1, "exchange": "foo.bar."},
-                                               error_messages=[f'Invalid Record Type In Reverse Zone: record with name "mx.{ip4_zone_name}" and type "MX" is not allowed in a reverse zone.'])
+                                               error_messages=[f'Invalid record type in reverse zone: record with name "mx.{ip4_zone_name}" and type "MX" is not allowed in a reverse zone.'])
 
         # zone discovery failures
         assert_failed_change_in_error_response(response[4], input_name=f"no.subzone.{ok_zone_name}", record_type="MX",
                                                record_data={"preference": 1, "exchange": "foo.bar."},
-                                               error_messages=[f'Zone Discovery Failed: zone for "no.subzone.{ok_zone_name}" does not exist in VinylDNS. '
+                                               error_messages=[f'Zone discovery failed: zone for "no.subzone.{ok_zone_name}" does not exist in VinylDNS. '
                                                                f'If zone exists, then it must be connected to in VinylDNS.'])
         assert_failed_change_in_error_response(response[5], input_name="no.zone.at.all.", record_type="MX",
                                                record_data={"preference": 1, "exchange": "foo.bar."},
-                                               error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. '
+                                               error_messages=['Zone discovery failed: zone for "no.zone.at.all." does not exist in VinylDNS. '
                                                                'If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validations: cname duplicate
         assert_failed_change_in_error_response(response[6], input_name=f"cname-duplicate.{ok_zone_name}", record_type="CNAME",
                                                record_data="test.com.",
-                                               error_messages=[f"Record Name \"cname-duplicate.{ok_zone_name}\" Not Unique In Batch Change: "
+                                               error_messages=[f"Record name \"cname-duplicate.{ok_zone_name}\" not unique in batch change: "
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
 
         # context validations: conflicting recordsets, unauthorized error
@@ -3089,13 +3089,13 @@ def test_mx_recordtype_update_delete_checks(shared_zone_test_context):
                                                                'underscores, and hyphens, joined by dots, and terminated with a dot.'])
         assert_failed_change_in_error_response(response[8], input_name=f"mx.{ip4_zone_name}", record_type="MX",
                                                record_data={"preference": 1, "exchange": "foo.bar."},
-                                               error_messages=[f'Invalid Record Type In Reverse Zone: record with name "mx.{ip4_zone_name}" '
+                                               error_messages=[f'Invalid record type in reverse zone: record with name "mx.{ip4_zone_name}" '
                                                                f'and type "MX" is not allowed in a reverse zone.'])
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[9], input_name="no.zone.at.all.", record_type="MX",
                                                record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
+                                               error_messages=["Zone discovery failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
                                                                "If zone exists, then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist, not authorized
@@ -4344,13 +4344,13 @@ def test_ns_recordtype_add_checks(shared_zone_test_context):
         # zone discovery failure
         assert_failed_change_in_error_response(response[2], input_name="no.zone.at.all.", record_type="NS",
                                                record_data="ns1.parent.com.",
-                                               error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. '
+                                               error_messages=['Zone discovery failed: zone for "no.zone.at.all." does not exist in VinylDNS. '
                                                                'If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validations: cname duplicate
         assert_failed_change_in_error_response(response[3], input_name=f"cname-duplicate.{ok_zone_name}", record_type="CNAME",
                                                record_data="test.com.",
-                                               error_messages=[f"Record Name \"cname-duplicate.{ok_zone_name}\" Not Unique In Batch Change: "
+                                               error_messages=[f"Record name \"cname-duplicate.{ok_zone_name}\" not unique in batch change: "
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
 
         # context validations: conflicting recordsets, unauthorized error
@@ -4459,7 +4459,7 @@ def test_ns_recordtype_update_delete_checks(shared_zone_test_context):
         # zone discovery failure
         assert_failed_change_in_error_response(response[7], input_name="no.zone.at.all.", record_type="NS", record_data="ns1.parent.com.", change_type="DeleteRecordSet",
                                                error_messages=[
-                                                   "Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
+                                                   "Zone discovery failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
                                                    "If zone exists, then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist, not authorized
@@ -4542,22 +4542,22 @@ def test_naptr_recordtype_add_checks(shared_zone_test_context):
                                                                "valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot."])
         assert_failed_change_in_error_response(response[2], input_name=f"naptr.{ip4_zone_name}", record_type="NAPTR",
                                                record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."},
-                                               error_messages=[f'Invalid Record Type In Reverse Zone: record with name "naptr.{ip4_zone_name}" and type "NAPTR" is not allowed in a reverse zone.'])
+                                               error_messages=[f'Invalid record type in reverse zone: record with name "naptr.{ip4_zone_name}" and type "NAPTR" is not allowed in a reverse zone.'])
 
         # zone discovery failures
         assert_failed_change_in_error_response(response[3], input_name=f"no.subzone.{ok_zone_name}", record_type="NAPTR",
                                                record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."},
-                                               error_messages=[f'Zone Discovery Failed: zone for "no.subzone.{ok_zone_name}" does not exist in VinylDNS. '
+                                               error_messages=[f'Zone discovery failed: zone for "no.subzone.{ok_zone_name}" does not exist in VinylDNS. '
                                                                f'If zone exists, then it must be connected to in VinylDNS.'])
         assert_failed_change_in_error_response(response[4], input_name="no.zone.at.all.", record_type="NAPTR",
                                                record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."},
-                                               error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. '
+                                               error_messages=['Zone discovery failed: zone for "no.zone.at.all." does not exist in VinylDNS. '
                                                                'If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validations: cname duplicate
         assert_failed_change_in_error_response(response[5], input_name=f"cname-duplicate.{ok_zone_name}", record_type="CNAME",
                                                record_data="test.com.",
-                                               error_messages=[f"Record Name \"cname-duplicate.{ok_zone_name}\" Not Unique In Batch Change: "
+                                               error_messages=[f"Record name \"cname-duplicate.{ok_zone_name}\" not unique in batch change: "
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
 
         # context validations: conflicting recordsets, unauthorized error
@@ -4667,13 +4667,13 @@ def test_naptr_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.'])
         assert_failed_change_in_error_response(response[7], input_name=f"naptr.{ip4_zone_name}", record_type="NAPTR",
                                                record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."},
-                                               error_messages=[f'Invalid Record Type In Reverse Zone: record with name "naptr.{ip4_zone_name}" '
+                                               error_messages=[f'Invalid record type in reverse zone: record with name "naptr.{ip4_zone_name}" '
                                                                f'and type "NAPTR" is not allowed in a reverse zone.'])
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[8], input_name="no.zone.at.all.", record_type="NAPTR",
                                                record_data={"order": 1, "preference": 1000, "flags": "U", "service": "E2U+sip", "regexp": "!.*!test.!", "replacement": "target.vinyldns."}, change_type="DeleteRecordSet",
-                                               error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
+                                               error_messages=["Zone discovery failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
                                                                "If zone exists, then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist, not authorized
@@ -4757,22 +4757,22 @@ def test_srv_recordtype_add_checks(shared_zone_test_context):
                                                                "valid domain names must be letters, numbers, underscores, and hyphens, joined by dots, and terminated with a dot."])
         assert_failed_change_in_error_response(response[2], input_name=f"srv.{ip4_zone_name}", record_type="SRV",
                                                record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."},
-                                               error_messages=[f'Invalid Record Type In Reverse Zone: record with name "srv.{ip4_zone_name}" and type "SRV" is not allowed in a reverse zone.'])
+                                               error_messages=[f'Invalid record type in reverse zone: record with name "srv.{ip4_zone_name}" and type "SRV" is not allowed in a reverse zone.'])
 
         # zone discovery failures
         assert_failed_change_in_error_response(response[3], input_name=f"no.subzone.{ok_zone_name}", record_type="SRV",
                                                record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."},
-                                               error_messages=[f'Zone Discovery Failed: zone for "no.subzone.{ok_zone_name}" does not exist in VinylDNS. '
+                                               error_messages=[f'Zone discovery failed: zone for "no.subzone.{ok_zone_name}" does not exist in VinylDNS. '
                                                                f'If zone exists, then it must be connected to in VinylDNS.'])
         assert_failed_change_in_error_response(response[4], input_name="no.zone.at.all.", record_type="SRV",
                                                record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."},
-                                               error_messages=['Zone Discovery Failed: zone for "no.zone.at.all." does not exist in VinylDNS. '
+                                               error_messages=['Zone discovery failed: zone for "no.zone.at.all." does not exist in VinylDNS. '
                                                                'If zone exists, then it must be connected to in VinylDNS.'])
 
         # context validations: cname duplicate
         assert_failed_change_in_error_response(response[5], input_name=f"cname-duplicate.{ok_zone_name}", record_type="CNAME",
                                                record_data="test.com.",
-                                               error_messages=[f"Record Name \"cname-duplicate.{ok_zone_name}\" Not Unique In Batch Change: "
+                                               error_messages=[f"Record name \"cname-duplicate.{ok_zone_name}\" not unique in batch change: "
                                                                f"cannot have multiple \"CNAME\" records with the same name."])
 
         # context validations: conflicting recordsets, unauthorized error
@@ -4882,13 +4882,13 @@ def test_srv_recordtype_update_delete_checks(shared_zone_test_context):
                                                error_messages=['Invalid TTL: "29", must be a number between 30 and 2147483647.'])
         assert_failed_change_in_error_response(response[7], input_name=f"srv.{ip4_zone_name}", record_type="SRV",
                                                record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."},
-                                               error_messages=[f'Invalid Record Type In Reverse Zone: record with name "srv.{ip4_zone_name}" '
+                                               error_messages=[f'Invalid record type in reverse zone: record with name "srv.{ip4_zone_name}" '
                                                                f'and type "SRV" is not allowed in a reverse zone.'])
 
         # zone discovery failure
         assert_failed_change_in_error_response(response[8], input_name="no.zone.at.all.", record_type="SRV",
                                                record_data={"priority": 1000, "weight": 5, "port": 20, "target": "bar.foo."}, change_type="DeleteRecordSet",
-                                               error_messages=["Zone Discovery Failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
+                                               error_messages=["Zone discovery failed: zone for \"no.zone.at.all.\" does not exist in VinylDNS. "
                                                                "If zone exists, then it must be connected to in VinylDNS."])
 
         # context validation failures: record does not exist, not authorized

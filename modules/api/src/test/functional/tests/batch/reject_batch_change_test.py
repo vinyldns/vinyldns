@@ -43,7 +43,7 @@ def test_reject_batch_change_with_invalid_batch_change_id_fails(shared_zone_test
     client = shared_zone_test_context.ok_vinyldns_client
 
     error = client.reject_batch_change("some-id", status=404)
-    assert_that(error, is_("Batch change with id some-id cannot be found"))
+    assert_that(error, is_("Batch change with id some-id not found"))
 
 
 @pytest.mark.manual_batch_review

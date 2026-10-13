@@ -212,7 +212,7 @@ def test_create_invalid_email(shared_zone_test_context):
     }
 
     errors = client.create_zone(zone, status=400)
-    assert_that(errors, is_("Please enter a valid Email."))
+    assert_that(errors, is_("Please enter a valid email."))
 
 def test_create_invalid_email_number_of_dots(shared_zone_test_context):
     """
@@ -230,7 +230,7 @@ def test_create_invalid_email_number_of_dots(shared_zone_test_context):
     }
 
     errors = client.create_zone(zone, status=400)
-    assert_that(errors, is_("Please enter a valid Email. Number of dots allowed after @ is 2"))
+    assert_that(errors, is_("Please enter a valid email. Number of dots allowed after @ is 2"))
 
 def test_create_invalid_domain(shared_zone_test_context):
     """
@@ -248,7 +248,7 @@ def test_create_invalid_domain(shared_zone_test_context):
     }
 
     errors = client.create_zone(zone, status=400)
-    assert_that(errors, is_("Please enter a valid Email. Valid domains should end with test.com,dummy.com"))
+    assert_that(errors, is_("Please enter a valid email. Valid domains should end with test.com,dummy.com"))
 
 @pytest.mark.serial
 def test_create_zone_with_connection_failure(shared_zone_test_context):
