@@ -197,7 +197,7 @@ class AccessValidations(
     rule.recordMask match {
       case Some(mask) if recordType == RecordType.PTR =>
         ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, zone, recordName)
-      case Some(mask) => recordName.matches(mask)
+      case Some(mask) => RegexValidator.safeMatches(recordName, mask)
       case None => true
     }
 
