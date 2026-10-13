@@ -25,7 +25,6 @@ import vinyldns.core.domain.membership.{ListUsersResults, User, UserRepository}
 import vinyldns.core.route.Monitored
 import vinyldns.proto.VinylDNSProto
 import vinyldns.core.protobuf.ProtobufConversions
-import vinyldns.mysql.repository.LikePattern
 
 class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
     extends UserRepository
