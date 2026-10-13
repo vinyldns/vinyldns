@@ -1587,7 +1587,7 @@ def test_a_recordtype_add_checks(shared_zone_test_context):
                                                                f'Existing record with name "{existing_cname_fqdn}" and type "CNAME" conflicts with this record.'])
         assert_failed_change_in_error_response(response[9], input_name=f"user-add-unauthorized.{dummy_zone_name}",
                                                record_data="1.2.3.4",
-                                               error_messages=[f'You are not authorized to modify the record "user-add-unauthorized.{dummy_zone_name}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may add records to this zone. Please contact them for assistance: test@test.com'])
+                                               error_messages=[f'You are not authorized to modify the record "user-add-unauthorized.{dummy_zone_name}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may add records to this zone. Please contact them for assistance: test@test.com.'])
     finally:
         clear_recordset_list(to_delete, client)
 
@@ -1726,16 +1726,16 @@ def test_a_recordtype_update_delete_checks(shared_zone_test_context):
         # context validation failures: record does not exist, not authorized
         assert_failed_change_in_error_response(response[11], input_name=rs_delete_dummy_fqdn,
                                                change_type="DeleteRecordSet",
-                                               error_messages=[f'You are not authorized to modify the record "{rs_delete_dummy_fqdn}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may delete this record. Please contact them for assistance: test@test.com'])
+                                               error_messages=[f'You are not authorized to modify the record "{rs_delete_dummy_fqdn}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may delete this record. Please contact them for assistance: test@test.com.'])
         assert_failed_change_in_error_response(response[12], input_name=rs_update_dummy_fqdn,
                                                change_type="DeleteRecordSet",
-                                               error_messages=[f'You are not authorized to modify the record "{rs_update_dummy_fqdn}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may delete this record. Please contact them for assistance: test@test.com'])
+                                               error_messages=[f'You are not authorized to modify the record "{rs_update_dummy_fqdn}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may delete this record. Please contact them for assistance: test@test.com.'])
         assert_failed_change_in_error_response(response[13], input_name=rs_update_dummy_fqdn, ttl=300,
-                                               error_messages=[f'You are not authorized to modify the record "{rs_update_dummy_fqdn}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may update this record. Please contact them for assistance: test@test.com'])
+                                               error_messages=[f'You are not authorized to modify the record "{rs_update_dummy_fqdn}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may update this record. Please contact them for assistance: test@test.com.'])
         assert_failed_change_in_error_response(response[14], input_name=rs_update_dummy_with_owner_fqdn, change_type="DeleteRecordSet",
-                                               error_messages=[f'You are not authorized to modify the record "{rs_update_dummy_with_owner_fqdn}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may delete this record. Please contact them for assistance: test@test.com'])
+                                               error_messages=[f'You are not authorized to modify the record "{rs_update_dummy_with_owner_fqdn}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may delete this record. Please contact them for assistance: test@test.com.'])
         assert_failed_change_in_error_response(response[15], input_name=rs_update_dummy_with_owner_fqdn, ttl=300,
-                                               error_messages=[f'You are not authorized to modify the record "{rs_update_dummy_with_owner_fqdn}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may update this record. Please contact them for assistance: test@test.com'])
+                                               error_messages=[f'You are not authorized to modify the record "{rs_update_dummy_with_owner_fqdn}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may update this record. Please contact them for assistance: test@test.com.'])
     finally:
         # Clean up updates
         dummy_deletes = [rs for rs in to_delete if rs["zone"]["id"] == dummy_zone["id"]]
@@ -1834,7 +1834,7 @@ def test_aaaa_recordtype_add_checks(shared_zone_test_context):
                                                                f"and type \"CNAME\" conflicts with this record."])
         assert_failed_change_in_error_response(response[9], input_name=f"user-add-unauthorized.{dummy_zone_name}",
                                                record_type="AAAA", record_data="1::1",
-                                               error_messages=[f'You are not authorized to modify the record "user-add-unauthorized.{dummy_zone_name}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may add records to this zone. Please contact them for assistance: test@test.com'])
+                                               error_messages=[f'You are not authorized to modify the record "user-add-unauthorized.{dummy_zone_name}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may add records to this zone. Please contact them for assistance: test@test.com.'])
     finally:
         clear_recordset_list(to_delete, client)
 
@@ -1953,13 +1953,13 @@ def test_aaaa_recordtype_update_delete_checks(shared_zone_test_context):
         assert_successful_change_in_error_response(response[10], input_name=f"update-nonexistent.{ok_zone_name}", record_type="AAAA", record_data="1::1")
         assert_failed_change_in_error_response(response[11], input_name=rs_delete_dummy_fqdn,
                                                record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=[f'You are not authorized to modify the record "{rs_delete_dummy_fqdn}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may delete this record. Please contact them for assistance: test@test.com'])
+                                               error_messages=[f'You are not authorized to modify the record "{rs_delete_dummy_fqdn}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may delete this record. Please contact them for assistance: test@test.com.'])
         assert_failed_change_in_error_response(response[12], input_name=rs_update_dummy_fqdn,
                                                record_type="AAAA", record_data="1::1",
-                                               error_messages=[f'You are not authorized to modify the record "{rs_update_dummy_fqdn}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may update this record. Please contact them for assistance: test@test.com'])
+                                               error_messages=[f'You are not authorized to modify the record "{rs_update_dummy_fqdn}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may update this record. Please contact them for assistance: test@test.com.'])
         assert_failed_change_in_error_response(response[13], input_name=rs_update_dummy_fqdn,
                                                record_type="AAAA", record_data=None, change_type="DeleteRecordSet",
-                                               error_messages=[f'You are not authorized to modify the record "{rs_update_dummy_fqdn}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may delete this record. Please contact them for assistance: test@test.com'])
+                                               error_messages=[f'You are not authorized to modify the record "{rs_update_dummy_fqdn}", which is owned by the {dummy_group_name} group (id: {shared_zone_test_context.dummy_group["id"]}). Only members of this group may delete this record. Please contact them for assistance: test@test.com.'])
     finally:
         # Clean up updates
         dummy_deletes = [rs for rs in to_delete if rs["zone"]["id"] == dummy_zone["id"]]
