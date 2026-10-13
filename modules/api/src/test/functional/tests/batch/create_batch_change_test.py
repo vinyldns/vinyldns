@@ -102,14 +102,19 @@ def assert_change_success(changes_json, zone, index, record_name, input_name, re
 
 def assert_error(input_json, error_messages):
     def normalize_error_message(error):
+        def canonicalize_group_ref(match):
+            group_name = match.group('group_name') or match.group('legacy_name')
+            group_id = match.group('group_id') or match.group('legacy_id') or match.group('legacy_group_id')
+            return f'owned by the [{group_name}] group(/groups/{group_id})'
+
         normalized = re.sub(
-            r"owned by the \[(.+?)\] group\(/groups/(.+?)\)",
-            r"owned by the \1 group (id: \2)",
+            r'owned by the (?:(?:\[(?P<group_name>.+?)\])|(?P<legacy_name>.+?)) group(?:\s*)\(?(?:id:\s*(?P<group_id>.+?)|/groups/(?P<legacy_group_id>.+?)\))?',
+            canonicalize_group_ref,
             error,
         )
         normalized = re.sub(
-            r'^You are not authorized to modify the record "(.+?)", which is owned by the (.+?) group \(id: (.+?)\)\. (.*)$',
-            r'The record "\1" is owned by the [\2] group(/groups/\3). \4',
+            r'^You are not authorized to modify the record "(?P<record>.+?)", which is (?P<ownership>owned by the .*? group\(/groups/.+?\))\. (?P<rest>.*)$',
+            r'The record "\g<record>" is \g<ownership>. \g<rest>',
             normalized,
         )
         normalized = re.sub(r'(?i)CNAME Conflict', 'CNAME conflict', normalized)
