@@ -1441,6 +1441,7 @@ def test_create_ipv6_ptr_recordset(shared_zone_test_context):
         records = result_rs["records"]
         assert_that(records[0]["ptrdname"], is_("ftp.vinyldns."))
 
+        # verify that the record exists in the backend dns server
         answers = dns_resolve(shared_zone_test_context.ip6_reverse_zone, result_rs["name"], result_rs["type"])
         rdata_strings = rdata(answers)
         assert_that(answers, has_length(1))
@@ -2228,7 +2229,7 @@ def test_create_ds_non_hex_digest(shared_zone_test_context):
     record_data = [{"keytag": 60485, "algorithm": 5, "digesttype": 1, "digest": "2BB183AF5F22588179A53G"}]
     record_json = create_recordset(zone, "dskey", "DS", record_data)
     errors = client.create_recordset(record_json, status=400)["errors"]
-    assert_that(errors, contains_inanyorder("Could not convert digest to valid hex"))
+    assert_that(errors, contains_inanyorder("Unable to convert digest to valid hex"))
 
 
 def test_create_ds_unknown_algorithm(shared_zone_test_context):

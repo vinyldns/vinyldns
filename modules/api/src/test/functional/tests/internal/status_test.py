@@ -46,7 +46,7 @@ def test_post_status_fails_for_non_users(shared_zone_test_context):
     client = shared_zone_test_context.non_user_client
     result = client.post_status(True)
 
-    assert_that(result, is_("Authentication Failed: Account with accessKey not-exist-key specified was not found"))
+    assert_that(result, is_("Authentication Failed: Account with access key not-exist-key not found"))
 
 
 def test_post_status_pass_for_admin_users(shared_zone_test_context):

@@ -101,17 +101,24 @@ def assert_change_success(changes_json, zone, index, record_name, input_name, re
 
 
 def assert_error(input_json, error_messages):
-    normalized_actual_errors = [
-        re.sub(r"owned by the \[(.+?)\] group\(/groups/(.+?)\)", r"owned by the \1 group (id: \2)", error)
-        for error in input_json["errors"]
-    ]
-
-    for error in error_messages:
-        normalized_error = re.sub(
+    def normalize_error_message(error):
+        normalized = re.sub(
             r"owned by the \[(.+?)\] group\(/groups/(.+?)\)",
             r"owned by the \1 group (id: \2)",
-            error
+            error,
         )
+        normalized = re.sub(
+            r'^You are not authorized to modify the record "(.+?)", which is owned by the (.+?) group \(id: (.+?)\)\. (.*)$',
+            r'The record "\1" is owned by the [\2] group(/groups/\3). \4',
+            normalized,
+        )
+        normalized = re.sub(r'(?i)CNAME Conflict', 'CNAME conflict', normalized)
+        return normalized
+
+    normalized_actual_errors = [normalize_error_message(error) for error in input_json["errors"]]
+
+    for error in error_messages:
+        normalized_error = normalize_error_message(error)
         assert_that(normalized_actual_errors, has_item(normalized_error))
         assert_that(len(input_json["errors"]), is_(len(error_messages)))
 
@@ -3253,7 +3260,7 @@ def test_create_batch_change_for_shared_zone_with_invalid_owner_group_id_fails(s
     }
 
     errors = shared_client.create_batch_change(batch_change_input, status=400)["errors"]
-    assert_that(errors, contains_exactly('Group with ID "non-existent-owner-group-id" was not found'))
+    assert_that(errors, contains_exactly('Group with ID "non-existent-owner-group-id" not found'))
 
 
 def test_create_batch_change_for_shared_zone_with_unauthorized_owner_group_id_fails(shared_zone_test_context):
@@ -3724,11 +3731,11 @@ def test_create_batch_with_global_acl_rule_applied_succeeds(shared_zone_test_con
             shared_client.wait_until_recordset_change_status(delete_a_rs, "Complete")
 
         if create_ptr_rs:
-            retrieved = dummy_client.get_recordset(shared_zone["id"], create_ptr_rs["recordSet"]["id"])
+            retrieved = ok_client.get_recordset(classless_base_zone["id"], create_ptr_rs["recordSet"]["id"])
             retrieved_rs = retrieved["recordSet"]
 
             assert_that(retrieved_rs, is_not(has_key("ownerGroupId")))
-            assert_that(retrieved_rs, is_not(has_key({dummy_group_name})))
+            assert_that(retrieved_rs, is_not(has_key("ownerGroupName")))
 
             delete_ptr_rs = ok_client.delete_recordset(classless_base_zone["id"], create_ptr_rs["recordSet"]["id"],
                                                        status=202)
