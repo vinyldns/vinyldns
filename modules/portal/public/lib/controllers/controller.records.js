@@ -743,11 +743,11 @@ angular.module('controller.records', [])
 
     function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
-    // <zone>_recordsets[_<types>][_<name filter>]_<YYYYMMDD-HHmmss>.csv
+    // <zone>_recordsets[_<types>][_<name filter>]_<YYYY-MM-DD_HH-mm-ss>.csv
     function buildExportFilename(filters) {
         const now = new Date();
-        const timestamp = now.getFullYear() + pad2(now.getMonth() + 1) + pad2(now.getDate()) + '-' +
-            pad2(now.getHours()) + pad2(now.getMinutes()) + pad2(now.getSeconds());
+        const timestamp = now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate()) + '_' +
+            pad2(now.getHours()) + '-' + pad2(now.getMinutes()) + '-' + pad2(now.getSeconds());
         const parts = [sanitizeForFilename($scope.zoneInfo.name) || 'zone', 'recordsets'];
         if (filters.recordTypes) { parts.push(sanitizeForFilename(filters.recordTypes.replace(/,/g, '-'))); }
         if (filters.query) { parts.push(sanitizeForFilename(filters.query)); }
