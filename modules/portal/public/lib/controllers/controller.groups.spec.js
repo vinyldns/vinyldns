@@ -28,6 +28,7 @@ describe('Controller: GroupsController', function () {
         this.controllerFactory = $controller;
         this.scope = $rootScope.$new();
         this.groupsService = groupsService;
+        this.profileService = profileService;
         this.utilityService = utilityService;
         this.q = $q;
         this.pagingService = pagingService;
@@ -79,6 +80,76 @@ describe('Controller: GroupsController', function () {
 
         expect(getGroups.calls.count()).toBe(2);
         expect(this.scope.groups.items).toBe("all my groups");
+    });
+
+    it('refresh calls profileService.searchUsersByName with the query when searching by user', function () {
+        this.scope.isSearchByUser = true;
+        this.scope.query = 'frodo';
+
+        var searchUsersByName = spyOn(this.profileService, 'searchUsersByName')
+            .and.stub()
+            .and.returnValue(this.q.when({ data: [] }));
+
+        this.scope.refresh();
+        this.scope.$digest();
+
+        expect(searchUsersByName.calls.count()).toBe(1);
+        expect(searchUsersByName.calls.mostRecent().args).toEqual(['frodo']);
+    });
+
+    it('refresh sends the query with wildcard characters intact to profileService.searchUsersByName', function () {
+        this.scope.isSearchByUser = true;
+        this.scope.query = '*frodo*';
+
+        var searchUsersByName = spyOn(this.profileService, 'searchUsersByName')
+            .and.stub()
+            .and.returnValue(this.q.when({ data: [] }));
+
+        this.scope.refresh();
+        this.scope.$digest();
+
+        expect(searchUsersByName.calls.mostRecent().args).toEqual(['*frodo*']);
+    });
+
+    it('refresh does not call profileService.searchUsersByName when not searching by user', function () {
+        this.scope.isSearchByUser = false;
+        this.scope.query = '';
+
+        var searchUsersByName = spyOn(this.profileService, 'searchUsersByName')
+            .and.stub()
+            .and.returnValue(this.q.when({ data: [] }));
+
+        this.scope.refresh();
+        this.scope.$digest();
+
+        expect(searchUsersByName.calls.count()).toBe(0);
+    });
+
+    it('refresh unions groups across every matched user instead of dropping non-first matches', function (done) {
+        this.scope.isSearchByUser = true;
+        this.scope.query = 'jacob';
+
+        spyOn(this.profileService, 'searchUsersByName')
+            .and.stub()
+            .and.returnValue(this.q.when({
+                data: [
+                    { userName: 'sjacob1', groupMap: { 'group-1': 'Group One' } },
+                    { userName: 'tjacob1', groupMap: { 'group-2': 'Group Two' } }
+                ]
+            }));
+        var getGroup = spyOn(this.groupsService, 'getGroup')
+            .and.callFake(function (groupId) {
+                return Promise.resolve({ data: { id: groupId } });
+            });
+
+        this.scope.refresh();
+        this.scope.$digest();
+
+        setTimeout(function () {
+            expect(getGroup.calls.count()).toBe(2);
+            expect(getGroup.calls.allArgs()).toEqual([['group-1', false], ['group-2', false]]);
+            done();
+        }, 0);
     });
 
     it('createGroup correctly calls utilityService when passing createGroup', function() {
@@ -231,19 +302,51 @@ describe('Controller: GroupsController', function () {
             [expectedMaxItems, expectedStartFrom, expectedIgnoreAccess, expectedQuery]);
     });
 
-    it('renders group autocomplete labels as text while preserving highlights', function () {
-        document.body.innerHTML = '<input id="group-search-text" />';
+    it('initializes group autocomplete', function () {
+        document.body.innerHTML = '<input id="my-group-search-text" />';
 
         var scope = this.rootScope.$new();
         this.controllerFactory('GroupsController', {'$scope': scope});
 
-        var instance = $('#group-search-text').autocomplete('instance');
+        var instance = $('#my-group-search-text').autocomplete('instance');
+
+        expect(instance).toBeDefined();
+        expect(instance.options.minLength).toBe(1);
+
+        document.body.innerHTML = '';
+    });
+
+    it('initializes all-group autocomplete', function () {
+        document.body.innerHTML = '<input id="all-group-search-text" />';
+
+        var scope = this.rootScope.$new();
+        this.controllerFactory('GroupsController', {'$scope': scope});
+
+        var instance = $('#all-group-search-text').autocomplete('instance');
+
+        expect(instance).toBeDefined();
+        expect(instance.options.minLength).toBe(1);
+
+        document.body.innerHTML = '';
+    });
+
+    it('renders group autocomplete labels as text while preserving highlights', function () {
+        document.body.innerHTML = '<input id="my-group-search-text" />';
+
+        var scope = this.rootScope.$new();
+        this.controllerFactory('GroupsController', {'$scope': scope});
+
+        var instance = $('#my-group-search-text').autocomplete('instance');
+
+        expect(instance).toBeDefined();
+
         var rendered = instance._renderItem($('<ul></ul>'), {
             label: '<img src=x onerror=alert(1)>Team',
             value: '<img src=x onerror=alert(1)>Team'
         });
 
         instance.term = 'Team';
+
         rendered = instance._renderItem($('<ul></ul>'), {
             label: '<img src=x onerror=alert(1)>Team',
             value: '<img src=x onerror=alert(1)>Team'

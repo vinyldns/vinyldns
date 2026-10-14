@@ -8,6 +8,8 @@ section: "api"
 
 Gets a user corresponding to the given identifier (user ID or username).
 
+To search for a user by a partial or wildcarded username instead, see [Search User](search-user.html).
+
 #### HTTP REQUEST
 
 > GET /users/{userIdentifier}
@@ -33,6 +35,7 @@ GET /users/ok
 | id       | string | Unique UUID of the user  |
 | userName | string | The username of the user |
 | groupId  | Array of groupId's | The Group ID's of the user |
+| groupMap | Object mapping groupId to group name | The Group ID's of the user mapped to their group names |
 
 
 #### EXAMPLE RESPONSE
@@ -42,10 +45,11 @@ GET /users/ok
   "id": "ok",
   "userName": "ok",
   "groupId" : [
-    {
-      "id": "ok-group"
-    }
-  ]
+    "ok-group"
+  ],
+  "groupMap": {
+    "ok-group": "ok-group-name"
+  }
 }
 ```
 

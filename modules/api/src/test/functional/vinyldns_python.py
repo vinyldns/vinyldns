@@ -334,6 +334,28 @@ class VinylDNSClient(object):
 
         return data
 
+    def get_user(self, user_identifier, **kwargs):
+        """
+        Gets a user's details by user ID or username
+        :param user_identifier: the user ID or username of the user to get
+        :return: the user response info json, including the groups the user belongs to
+        """
+        url = urljoin(self.index_url, "/users/" + user_identifier)
+        response, data = self.make_request(url, "GET", self.headers, not_found_ok=True, **kwargs)
+
+        return data
+
+    def search_users(self, pattern, **kwargs):
+        """
+        Searches for a user whose username matches the given (possibly wildcarded) pattern
+        :param pattern: the username search pattern
+        :return: the user response info json, including the groups the matched user belongs to
+        """
+        url = urljoin(self.index_url, "/users/search?pattern=" + pattern)
+        response, data = self.make_request(url, "GET", self.headers, not_found_ok=True, **kwargs)
+
+        return data
+
     def create_zone(self, zone, **kwargs):
         """
         Creates a new zone with the given name and email
