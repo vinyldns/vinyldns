@@ -19,6 +19,7 @@ package vinyldns.mysql.repository
 import cats.implicits._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
@@ -276,18 +277,20 @@ class MySqlRecordSetCacheRepository
     * @return A list of {@link RecordSet} matching the criteria
     */
   def listRecordSetData(
-                         zoneId: Option[String],
-                         startFrom: Option[String],
-                         maxItems: Option[Int],
-                         recordNameFilter: Option[String],
-                         recordTypeFilter: Option[Set[RecordType]],
-                         recordOwnerGroupFilter: Option[String],
-                         nameSort: NameSort
-                       ): IO[ListRecordSetResults] =
+                          zoneId: Option[String],
+                          startFrom: Option[String],
+                          maxItems: Option[Int],
+                          recordNameFilter: Option[String],
+                          recordTypeFilter: Option[Set[RecordType]],
+                          recordOwnerGroupFilter: Option[String],
+                          nameSort: NameSort,
+                          authPrincipal: Option[AuthPrincipal]
+                        ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSetData") {
       IO {
         val maxPlusOne = maxItems.map(_ + 1)
         val wildcardStart = raw"^\s*[*%](.+[^*%])\s*$$".r
+        val authFilter = authPrincipal.filter(auth => zoneId.isEmpty && !auth.isSystemAdmin).map(buildAccessFilter)
 
         // setup optional filters
         val zoneAndNameFilters = (zoneId, recordNameFilter) match {
@@ -337,7 +340,7 @@ class MySqlRecordSetCacheRepository
           recordOwnerGroupFilter.map(owner => sqls"recordset.owner_group_id = $owner ")
 
         val opts =
-          (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
+          (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter ++ authFilter).toList
 
         val qualifiers = if (nameSort == ASC) {
           sqls"ORDER BY recordset.fqdn ASC, recordset.type ASC "
@@ -404,6 +407,12 @@ class MySqlRecordSetCacheRepository
         }
       }
     }
+
+  private def buildAccessFilter(authPrincipal: AuthPrincipal): SQLSyntax = {
+    val accessors =
+      MySqlAccessors.buildZoneSearchAccessorList(authPrincipal.signedInUser, authPrincipal.memberGroupIds, logger)
+    sqls"recordset.zone_id IN (SELECT za.zone_id FROM zone_access za WHERE za.accessor_id IN ($accessors))"
+  }
 
 
   private val IPV4_ARPA = ".in-addr.arpa."

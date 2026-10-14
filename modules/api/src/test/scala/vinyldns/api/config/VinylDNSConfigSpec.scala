@@ -33,6 +33,7 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAndAfterAl
   "VinylDNSConfig" should {
     "load the rest config" in {
       underTest.httpConfig.port shouldBe 9000
+      underTest.serverConfig.globalRecordSetSearchAccessAllZones shouldBe true
     }
 
     "properly load the datastore configs" in {

@@ -799,6 +799,13 @@ class ZoneServiceSpec
       val result = underTest.getZoneByName("abc.zone.recordsets", abcAuth).value.unsafeRunSync()
       result.right.value shouldBe expectedZoneInfo
     }
+
+    "return NotAuthorizedError when the caller cannot access the zone by name" in {
+      doReturn(IO.pure(Some(zoneNotAuthorized))).when(mockZoneRepo).getZoneByName(zoneNotAuthorized.name)
+
+      val error = underTest.getZoneByName(zoneNotAuthorized.name, okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[NotAuthorizedError]
+    }
   }
 
   "Getting a zone details" should {
@@ -1363,6 +1370,17 @@ class ZoneServiceSpec
       result.startFrom shouldBe 1
       result.nextId shouldBe 0
       result.maxItems shouldBe 1
+    }
+
+    "return NotAuthorizedError when failed changes include an inaccessible zone" in {
+      doReturn(IO.pure(ListFailedZoneChangesResults(
+        List(zoneCreate.copy(zone = zoneNotAuthorized, status = ZoneChangeStatus.Failed))
+      )))
+        .when(mockZoneChangeRepo)
+        .listFailedZoneChanges(100,0)
+
+      val error = underTest.listFailedZoneChanges(okAuth).value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[NotAuthorizedError]
     }
   }
 
