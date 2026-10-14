@@ -45,8 +45,8 @@ object ZoneChangeHandler {
             )
           )
         case Some(dbZone) if zoneChange.changeType == ZoneChangeType.Delete =>
-          // Use authoritative zone configuration for deletion scope
-          zoneRepository.save(dbZone).flatMap { _ =>
+          val deletedZone = dbZone.copy(status = ZoneStatus.Deleted)
+          zoneRepository.save(deletedZone).flatMap { _ =>
             executeWithinTransaction { db: DB =>
               for {
                 _ <- recordSetRepository
@@ -59,11 +59,11 @@ object ZoneChangeHandler {
             }
           }
         case Some(dbZone) =>
-          // Preserve authoritative zone properties for ACL and ownership integrity
           val trustedZone = zoneChange.zone.copy(
             adminGroupId = dbZone.adminGroupId,
-            acl = dbZone.acl,
-            shared = dbZone.shared
+            shared = dbZone.shared,
+            backendId = dbZone.backendId,
+            connection = dbZone.connection
           )
           zoneRepository.save(trustedZone).flatMap {
             case Left(duplicateZoneError) =>

@@ -28,6 +28,7 @@ import vinyldns.core.TestZoneData.zoneChangePending
 import vinyldns.core.domain.record.{RecordSetCacheRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.Encrypted
 import vinyldns.api.engine.ZoneSyncHandler.executeWithinTransaction
 
 
@@ -78,7 +79,7 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     val deleteChange = change.copy(changeType = ZoneChangeType.Delete)
 
     doReturn(IO.pure(Some(deleteChange.zone))).when(mockZoneRepo).getZone(deleteChange.zone.id)
-    doReturn(IO.pure(Right(deleteChange.zone))).when(mockZoneRepo).save(deleteChange.zone)
+    doReturn(IO.pure(Right(deleteChange.zone))).when(mockZoneRepo).save(any[Zone])
     executeWithinTransaction { db: DB =>
       doReturn(IO.pure(()))
         .when(mockRecordSetRepo)
@@ -101,7 +102,7 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     val deleteChange = change.copy(changeType = ZoneChangeType.Delete)
 
     doReturn(IO.pure(Some(deleteChange.zone))).when(mockZoneRepo).getZone(deleteChange.zone.id)
-    doReturn(IO.pure(Right(deleteChange.zone))).when(mockZoneRepo).save(deleteChange.zone)
+    doReturn(IO.pure(Right(deleteChange.zone))).when(mockZoneRepo).save(any[Zone])
     executeWithinTransaction { db: DB =>
       doReturn(IO.raiseError(new Throwable("error")))
         .when(mockRecordSetRepo)
@@ -138,13 +139,17 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     val deleteChange = change.copy(changeType = ZoneChangeType.Delete, zone = modifiedZone)
 
     doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(change.zone.id)
-    doReturn(IO.pure(Right(dbZone))).when(mockZoneRepo).save(dbZone)
+    doReturn(IO.pure(Right(dbZone))).when(mockZoneRepo).save(any[Zone])
     doReturn(IO.pure(deleteChange)).when(mockChangeRepo).save(any[ZoneChange])
 
     test(deleteChange).unsafeRunSync()
 
-    // zone save must use the DB zone (not the attacker-supplied name)
-    verify(mockZoneRepo).save(dbZone)
+    // zone save must use the deleted DB zone (not the attacker-supplied name)
+    val zoneCaptor = ArgumentCaptor.forClass(classOf[Zone])
+    verify(mockZoneRepo).save(zoneCaptor.capture())
+    zoneCaptor.getValue.status shouldBe ZoneStatus.Deleted
+    zoneCaptor.getValue.id shouldBe dbZone.id
+    zoneCaptor.getValue.name shouldBe dbZone.name
     val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
     verify(mockChangeRepo).save(changeCaptor.capture())
     changeCaptor.getValue.status shouldBe ZoneChangeStatus.Synced
@@ -162,11 +167,13 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     // zone save must NOT be called when zone does not exist
     verify(mockZoneRepo, never()).save(any[Zone])
   }
-  "preserve DB zone adminGroupId, acl, and shared for Update; discard message-supplied values" in new Fixture {
+  "preserve DB zone adminGroupId, shared, backendId, connection for Update; allow ACL updates from message" in new Fixture {
     val dbZone = change.zone
     val modifiedZone = change.zone.copy(
       adminGroupId = "modified-group",
       shared = true,
+      backendId = Some("modified-backend"),
+      connection = Some(ZoneConnection("modified.server", "key", Encrypted("xyz"), "10.2.2.2")),
       acl = ZoneACL(Set(ACLRule(AccessLevel.Delete)))
     )
     val updateChange = change.copy(zone = modifiedZone)
@@ -180,11 +187,14 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     val zoneCaptor = ArgumentCaptor.forClass(classOf[Zone])
     verify(mockZoneRepo).save(zoneCaptor.capture())
     val saved = zoneCaptor.getValue
-    // Authoritative zone properties must be preserved from database
     saved.adminGroupId shouldBe dbZone.adminGroupId
-    saved.acl shouldBe dbZone.acl
     saved.shared shouldBe dbZone.shared
+    saved.backendId shouldBe dbZone.backendId
+    saved.connection shouldBe dbZone.connection
+    saved.acl shouldBe modifiedZone.acl
     saved.adminGroupId should not be "modified-group"
     saved.shared shouldBe false
+    saved.backendId should not be Some("modified-backend")
+    saved.connection should not be Some(ZoneConnection("modified.server", "key", Encrypted("xyz"), "10.2.2.2"))
   }
 }
