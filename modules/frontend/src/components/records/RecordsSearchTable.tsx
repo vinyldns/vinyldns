@@ -288,11 +288,10 @@ function RecordDataCell({ rec }: { rec: any }) {
         <li style={{ listStyle: "none" }}>
           <button
             type="button"
-            className="btn btn-link btn-sm p-0"
-            style={{ fontSize: "0.78rem" }}
+            className="vds-record-data-more"
             onClick={() => setExpanded(true)}
           >
-            Show more… (+{records.length - SHOW_MAX})
+            {`+${records.length - SHOW_MAX} more`}
           </button>
         </li>
       )}
@@ -300,11 +299,10 @@ function RecordDataCell({ rec }: { rec: any }) {
         <li style={{ listStyle: "none" }}>
           <button
             type="button"
-            className="btn btn-link btn-sm p-0"
-            style={{ fontSize: "0.78rem" }}
+            className="vds-record-data-more"
             onClick={() => setExpanded(false)}
           >
-            Show fewer…
+            Show fewer
           </button>
         </li>
       )}
