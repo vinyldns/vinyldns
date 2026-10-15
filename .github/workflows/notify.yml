@@ -69,23 +69,27 @@ jobs:
 
             let failedLine = "";
             if (wr.conclusion === "failure") {
-              const jobs = await github.rest.actions.listJobsForWorkflowRun({
-                owner: targetOwner,
-                repo: targetRepoName,
-                run_id: wr.id
-              });
+              try {
+                const jobs = await github.rest.actions.listJobsForWorkflowRun({
+                  owner: targetOwner,
+                  repo: targetRepoName,
+                  run_id: wr.id
+                });
 
-              const failedJob =
-                jobs.data.jobs.find(j => j.conclusion === "failure") ||
-                jobs.data.jobs.find(j => j.conclusion && j.conclusion !== "success");
+                const failedJob =
+                  jobs.data.jobs.find(j => j.conclusion === "failure") ||
+                  jobs.data.jobs.find(j => j.conclusion && j.conclusion !== "success");
 
-              if (failedJob) {
-                const failedStep = Array.isArray(failedJob.steps)
-                  ? failedJob.steps.find(s => s.conclusion === "failure")
-                  : undefined;
-                failedLine = failedStep
-                  ? `Failed in job \`${failedJob.name}\` at step \`${failedStep.name}\``
-                  : `Failed in job \`${failedJob.name}\``;
+                if (failedJob) {
+                  const failedStep = Array.isArray(failedJob.steps)
+                    ? failedJob.steps.find(s => s.conclusion === "failure")
+                    : undefined;
+                  failedLine = failedStep
+                    ? `Failed in job \`${failedJob.name}\` at step \`${failedStep.name}\``
+                    : `Failed in job \`${failedJob.name}\``;
+                }
+              } catch (e) {
+                // no-op: failure details are optional
               }
             }
 
