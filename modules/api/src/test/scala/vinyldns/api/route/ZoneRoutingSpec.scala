@@ -845,6 +845,16 @@ class ZoneRoutingSpec
       }
     }
 
+    "reject a create with a forged encrypted connection key with 400" in {
+      val forged = connectionOk.copy(
+        connection = connectionOk.connection.map(_.copy(key = Encrypted("ENC:////////////////////////")))
+      )
+      post(forged) ~> zoneRoute ~> check {
+        status shouldBe BadRequest
+        responseAs[String] shouldBe ZoneRoute.InvalidConnectionKeyMessage
+      }
+    }
+
     "return a fully populated zone in the response" in {
       post(ok) ~> zoneRoute ~> check {
         val result = responseAs[ZoneChange]
@@ -1365,6 +1375,63 @@ class ZoneRoutingSpec
       ) ~> zoneRoute ~> check {
         status shouldBe Accepted
       }
+    }
+
+    "keep an already encrypted (authenticated) connection key unchanged on update" in {
+      val storedKey = crypto.encrypt("key")
+      val withStoredKey = connectionOk.copy(
+        connection = connectionOk.connection.map(_.copy(key = Encrypted(storedKey))),
+        transferConnection = connectionOk.transferConnection.map(_.copy(key = Encrypted(storedKey)))
+      )
+      Put(s"/zones/${connectionOk.id}").withEntity(
+        HttpEntity(ContentTypes.`application/json`, zoneJson(withStoredKey))
+      ) ~> zoneRoute ~> check {
+        status shouldBe Accepted
+        val result = responseAs[ZoneChange]
+        result.zone.connection.get.key.value shouldBe storedKey
+        result.zone.transferConnection.get.key.value shouldBe storedKey
+      }
+    }
+
+    "reject an update with a forged authenticated connection key with 400 and a generic message" in {
+      val forged = connectionOk.copy(
+        connection = connectionOk.connection.map(_.copy(key = Encrypted("ENC:v2:" + "A" * 48)))
+      )
+      Put(s"/zones/${connectionOk.id}").withEntity(
+        HttpEntity(ContentTypes.`application/json`, zoneJson(forged))
+      ) ~> zoneRoute ~> check {
+        status shouldBe BadRequest
+        responseAs[String] shouldBe ZoneRoute.InvalidConnectionKeyMessage
+      }
+    }
+
+    "reject an update with a malformed legacy transfer connection key with 400" in {
+      val malformed = connectionOk.copy(
+        transferConnection = connectionOk.transferConnection.map(_.copy(key = Encrypted("ENC:!!!!")))
+      )
+      Put(s"/zones/${connectionOk.id}").withEntity(
+        HttpEntity(ContentTypes.`application/json`, zoneJson(malformed))
+      ) ~> zoneRoute ~> check {
+        status shouldBe BadRequest
+        responseAs[String] shouldBe ZoneRoute.InvalidConnectionKeyMessage
+      }
+    }
+
+    "return the same response for tampered ciphertext regardless of where it was modified" in {
+      val valid = crypto.encrypt("key").stripPrefix("ENC:v2:")
+      val bytes = java.util.Base64.getDecoder.decode(valid)
+      val responses = Seq(0, 13, bytes.length - 1).map { idx =>
+        val tampered = bytes.clone()
+        tampered(idx) = (tampered(idx) ^ 0x01).toByte
+        val key = "ENC:v2:" + java.util.Base64.getEncoder.encodeToString(tampered)
+        val zone = connectionOk.copy(connection = connectionOk.connection.map(_.copy(key = Encrypted(key))))
+        Put(s"/zones/${connectionOk.id}").withEntity(
+          HttpEntity(ContentTypes.`application/json`, zoneJson(zone))
+        ) ~> zoneRoute ~> check {
+          (status, responseAs[String])
+        }
+      }
+      responses.toSet shouldBe Set((BadRequest, ZoneRoute.InvalidConnectionKeyMessage))
     }
 
     "fail the update if the connection validation fails" in {

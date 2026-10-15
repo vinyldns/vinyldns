@@ -631,3 +631,29 @@ def retrieve_dns_records(shared_zone_test_context) -> List[Dict]:
         {"name": "already-exists",
          "type": "A",
          "records": [{"address": "6.6.6.6"}]}]
+
+
+@pytest.mark.serial
+def test_create_zone_with_injected_ciphertext_key_is_rejected(shared_zone_test_context):
+    """
+    Test that a caller-supplied "ENC:" connection key is rejected with a client error (never a server error)
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    zone_name = f"one-time{shared_zone_test_context.partition_id}"
+
+    zone = {
+        "name": zone_name,
+        "email": "test@test.com",
+        "adminGroupId": shared_zone_test_context.ok_group["id"],
+        "connection": {
+            "name": zone_name,
+            "keyName": VinylDNSTestContext.dns_key_name,
+            "key": "ENC:////////////////////////",
+            "primaryServer": VinylDNSTestContext.name_server_ip
+        }
+    }
+
+    result = client.create_zone(zone, status=400)
+    assert_that(result, any_of(contains_string("Invalid zone connection key"),
+                               contains_string("Custom zone connections are not supported")))
+    client.get_zone_by_name(zone_name, status=404)

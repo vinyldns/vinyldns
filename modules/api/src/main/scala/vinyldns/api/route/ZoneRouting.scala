@@ -20,17 +20,23 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import akka.util.Timeout
 import org.slf4j.{Logger, LoggerFactory}
+import vinyldns.api.Interfaces._
 import vinyldns.api.config.LimitsConfig
 import vinyldns.api.domain.membership.EmailValidationError
 import vinyldns.api.domain.zone._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.zone._
 
+import java.security.GeneralSecurityException
 import scala.concurrent.duration._
 
 case class GetZoneResponse(zone: ZoneInfo)
 case class GetZoneDetailsResponse(zone: ZoneDetails)
 case class ZoneRejected(zone: Zone, errors: List[String])
+
+object ZoneRoute {
+  val InvalidConnectionKeyMessage = "Invalid zone connection key"
+}
 
 class ZoneRoute(
     zoneService: ZoneServiceAlgebra,
@@ -71,7 +77,7 @@ class ZoneRoute(
     (post & monitor("Endpoint.createZone")) {
       authenticateAndExecuteWithEntity[ZoneCommandResult, CreateZoneInput](
         (authPrincipal, createZoneInput) =>
-          zoneService.connectToZone(encrypt(createZoneInput), authPrincipal)
+          encrypt(createZoneInput).toResult.flatMap(zoneService.connectToZone(_, authPrincipal))
       ) { chg =>
         complete(StatusCodes.Accepted, chg)
       }
@@ -164,7 +170,7 @@ class ZoneRoute(
         (put & monitor("Endpoint.updateZone")) {
           authenticateAndExecuteWithEntity[ZoneCommandResult, UpdateZoneInput](
             (authPrincipal, updateZoneInput) =>
-              zoneService.updateZone(encrypt(updateZoneInput), authPrincipal)
+              encrypt(updateZoneInput).toResult.flatMap(zoneService.updateZone(_, authPrincipal))
           ) { chg =>
             complete(StatusCodes.Accepted, chg)
           }
@@ -245,19 +251,31 @@ class ZoneRoute(
   /**
     * Important!  Will encrypt the key on the zone if a connection is present
     * @param createZoneInput/updateZoneInput The zone input to be encrypted
-    * @return A new zone with the connection encrypted, or the same zone if not connection
+    * @return A new zone with the connection encrypted, or the same zone if not connection;
+    *         an InvalidRequest if a supplied key carries an encrypted prefix but is not a valid encrypted value
     */
-  private def encrypt(createZoneInput: CreateZoneInput): CreateZoneInput =
-    createZoneInput.copy(
-      connection = createZoneInput.connection.map(_.encrypted(crypto)),
-      transferConnection = createZoneInput.transferConnection.map(_.encrypted(crypto))
-    )
+  private def encrypt(createZoneInput: CreateZoneInput): Either[Throwable, CreateZoneInput] =
+    encryptConnections(createZoneInput.connection, createZoneInput.transferConnection).map {
+      case (conn, transferConn) =>
+        createZoneInput.copy(connection = conn, transferConnection = transferConn)
+    }
 
-  private def encrypt(updateZoneInput: UpdateZoneInput): UpdateZoneInput =
-    updateZoneInput.copy(
-      connection = updateZoneInput.connection.map(_.encrypted(crypto)),
-      transferConnection = updateZoneInput.transferConnection.map(_.encrypted(crypto))
-    )
+  private def encrypt(updateZoneInput: UpdateZoneInput): Either[Throwable, UpdateZoneInput] =
+    encryptConnections(updateZoneInput.connection, updateZoneInput.transferConnection).map {
+      case (conn, transferConn) =>
+        updateZoneInput.copy(connection = conn, transferConnection = transferConn)
+    }
+
+  private def encryptConnections(
+      connection: Option[ZoneConnection],
+      transferConnection: Option[ZoneConnection]
+  ): Either[Throwable, (Option[ZoneConnection], Option[ZoneConnection])] =
+    try {
+      Right((connection.map(_.encrypted(crypto)), transferConnection.map(_.encrypted(crypto))))
+    } catch {
+      // Deliberately generic so no detail about the ciphertext is revealed to the caller
+      case _: GeneralSecurityException => Left(InvalidRequest(ZoneRoute.InvalidConnectionKeyMessage))
+    }
 
   // TODO: This is duplicated across routes.  Leaving duplicated until we upgrade our json serialization
   private val invalidQueryHandler = RejectionHandler

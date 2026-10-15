@@ -1259,3 +1259,46 @@ def test_update_connection_info_invalid_backendid(shared_zone_test_context):
 
     result = client.update_zone(to_update, status=400)
     assert_that(result, contains_string("Invalid backendId"))
+
+
+@pytest.mark.serial
+@pytest.mark.parametrize("injected_key", [
+    "ENC:////////////////////////",
+    "ENC:!!!!",
+    "ENC:v2:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+])
+def test_update_zone_with_injected_ciphertext_key_is_rejected(shared_zone_test_context, injected_key):
+    """
+    Test that a caller-supplied "ENC:" connection key is rejected with a client error (never a server error),
+    is not persisted, and leaves the zone fully usable
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    result_zone = None
+    try:
+        zone_name = f"one-time{shared_zone_test_context.partition_id}"
+        result = client.create_zone(new_backend_zone(shared_zone_test_context, zone_name), status=202)
+        result_zone = result["zone"]
+        client.wait_until_zone_active(result_zone["id"])
+
+        tampered = copy.deepcopy(result_zone)
+        tampered["connection"] = {
+            "name": zone_name,
+            "keyName": VinylDNSTestContext.dns_key_name,
+            "key": injected_key,
+            "primaryServer": VinylDNSTestContext.name_server_ip
+        }
+        error = client.update_zone(tampered, status=400)
+        assert_that(error, any_of(contains_string("Invalid zone connection key"),
+                                  contains_string("Custom zone connections are not supported")))
+
+        stored = client.get_zone(result_zone["id"])["zone"]
+        assert_that(stored, is_not(has_key("connection")))
+
+        # The zone must remain usable after the rejected request
+        stored["email"] = "test@dummy.com"
+        update_result = client.update_zone(stored, status=202)
+        client.wait_until_zone_change_status_synced(update_result)
+        assert_that(client.get_zone(result_zone["id"])["zone"]["email"], is_("test@dummy.com"))
+    finally:
+        if result_zone:
+            client.abandon_zones([result_zone["id"]], status=202)
