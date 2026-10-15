@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { useState, useRef, useEffect } from "react";
+import ReactDOM from "react-dom";
 
-import React, { useState, useRef, useEffect } from 'react';
-import ReactDOM from 'react-dom';
-
-export type TimeRange = 'all' | '1d' | '7d' | '30d' | '90d' | 'custom';
+export type TimeRange = "all" | "1d" | "7d" | "30d" | "90d" | "custom";
 
 interface TimeFilterDropdownProps {
   value: TimeRange;
@@ -29,31 +28,66 @@ interface TimeFilterDropdownProps {
 }
 
 const LABELS: Record<TimeRange, string> = {
-  all:    'All Time',
-  '1d':   'Today',
-  '7d':   'Last 7 Days',
-  '30d':  'Last 30 Days',
-  '90d':  'Last 90 Days',
-  custom: 'Custom Range',
+  all: "All Time",
+  "1d": "Today",
+  "7d": "Last 7 Days",
+  "30d": "Last 30 Days",
+  "90d": "Last 90 Days",
+  custom: "Custom Range",
 };
 
-const GRID: { range: TimeRange; icon: string; label: string; desc: string }[][] = [
+const GRID: {
+  range: TimeRange;
+  icon: string;
+  label: string;
+  desc: string;
+}[][] = [
   [
-    { range: 'all',    icon: 'bi-infinity',       label: 'All Time',      desc: 'No restriction' },
-    { range: '1d',     icon: 'bi-sun',            label: 'Today',         desc: 'Last 24 hours'  },
+    {
+      range: "all",
+      icon: "bi-infinity",
+      label: "All Time",
+      desc: "No restriction",
+    },
+    { range: "1d", icon: "bi-sun", label: "Today", desc: "Last 24 hours" },
   ],
   [
-    { range: '7d',     icon: 'bi-calendar-week',  label: 'Last 7 Days',   desc: 'Past week'      },
-    { range: '30d',    icon: 'bi-calendar-month', label: 'Last 30 Days',  desc: 'Past month'     },
+    {
+      range: "7d",
+      icon: "bi-calendar-week",
+      label: "Last 7 Days",
+      desc: "Past week",
+    },
+    {
+      range: "30d",
+      icon: "bi-calendar-month",
+      label: "Last 30 Days",
+      desc: "Past month",
+    },
   ],
   [
-    { range: '90d',    icon: 'bi-calendar3-range', label: 'Last 90 Days', desc: 'Past 3 months'  },
-    { range: 'custom', icon: 'bi-calendar-range',  label: 'Custom Range', desc: 'Pick dates'     },
+    {
+      range: "90d",
+      icon: "bi-calendar3-range",
+      label: "Last 90 Days",
+      desc: "Past 3 months",
+    },
+    {
+      range: "custom",
+      icon: "bi-calendar-range",
+      label: "Custom Range",
+      desc: "Pick dates",
+    },
   ],
 ];
 
 export function TimeFilterDropdown({
-  value, dateFrom, dateTo, onChange, onDateFromChange, onDateToChange,
+  value,
+  dateFrom,
+  dateTo,
+  onChange,
+  onDateFromChange,
+  onDateToChange,
 }: TimeFilterDropdownProps) {
   const [open, setOpen] = useState(false);
   const [panelPos, setPanelPos] = useState({ top: 0, right: 0 });
@@ -68,19 +102,20 @@ export function TimeFilterDropdown({
     }
   };
 
-  // Close on outside click 
+  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (
-        ref.current && !ref.current.contains(target) &&
-        !target.closest('[data-time-filter-panel]')
+        ref.current &&
+        !ref.current.contains(target) &&
+        !target.closest("[data-time-filter-panel]")
       ) {
         setOpen(false);
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   // Track scroll/resize while open so panel follows the button
@@ -88,209 +123,180 @@ export function TimeFilterDropdown({
     if (!open) return;
     const onScroll = () => updatePos();
     const onResize = () => updatePos();
-    window.addEventListener('scroll', onScroll, true);
-    window.addEventListener('resize', onResize);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
     return () => {
-      window.removeEventListener('scroll', onScroll, true);
-      window.removeEventListener('resize', onResize);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
     };
-  }, [open]); 
+  }, [open]);
 
-  const isActive = value !== 'all';
-  const isDark = document.documentElement.getAttribute('data-vds-theme') === 'dark';
-
+  const isActive = value !== "all";
+  
   const btnLabel =
-    value === 'custom' && (dateFrom || dateTo)
-      ? `${dateFrom || '…'} – ${dateTo || '…'}`
+    value === "custom" && (dateFrom || dateTo)
+      ? `${dateFrom || "…"} – ${dateTo || "…"}`
       : LABELS[value];
 
-  // ── Renders one option card cell ──────────────────────────────────────────
-  const renderCell = (opt: { range: TimeRange; icon: string; label: string; desc: string }) => {
+  const renderCell = (opt: {
+    range: TimeRange;
+    icon: string;
+    label: string;
+    desc: string;
+  }) => {
     const selected = value === opt.range;
     return (
       <button
         key={opt.range}
         type="button"
-        onClick={() => { onChange(opt.range); if (opt.range !== 'custom') setOpen(false); }}
-        style={{
-          flex: '1 1 0',
-          border: selected ? '1.5px solid rgba(46,80,144,0.45)' : '1px solid rgba(46,80,144,0.1)',
-          borderRadius: '0.5rem',
-          background: selected
-            ? 'linear-gradient(135deg,rgba(30,58,95,0.11) 0%,rgba(46,80,144,0.16) 100%)'
-            : isDark ? 'rgba(22,34,54,0.8)' : 'rgba(246,248,252,0.95)',
-          padding: '5px 4px 4px',
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 6,
-          cursor: 'pointer',
-          transition: 'all 0.14s',
-          boxShadow: selected ? '0 1px 6px rgba(46,80,144,0.15)' : 'none',
-          outline: 'none',
-          position: 'relative',
+        onClick={() => {
+          onChange(opt.range);
+          if (opt.range !== "custom") setOpen(false);
         }}
-        onMouseEnter={(e) => {
-          if (!selected) (e.currentTarget as HTMLButtonElement).style.background = isDark ? 'rgba(30,50,80,0.7)' : 'rgba(46,80,144,0.07)';
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = selected
-            ? 'linear-gradient(135deg,rgba(30,58,95,0.11) 0%,rgba(46,80,144,0.16) 100%)'
-            : isDark ? 'rgba(22,34,54,0.8)' : 'rgba(246,248,252,0.95)';
-        }}
+        className={`vds-time-filter-opt ${selected ? "vds-time-filter-opt--active" : ""}`}
       >
-        <div style={{
-          width: 20, height: 20, borderRadius: '50%',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: selected ? 'linear-gradient(135deg,#1e3a5f 0%,#2e5090 100%)' : 'rgba(46,80,144,0.1)',
-          flexShrink: 0,
-        }}>
-          <i className={`bi ${opt.icon}`} style={{ fontSize: '0.62rem', color: selected ? '#c8deff' : '#506080' }} />
+        <div className="vds-time-filter-icon-wrap">
+          <i className={`bi ${opt.icon} vds-time-filter-icon custom-icon`} />
         </div>
-        <span style={{ fontSize: '0.7rem', fontWeight: selected ? 700 : 500, color: selected ? (isDark ? '#c8e0ff' : '#1e3a5f') : (isDark ? '#8ab0d8' : '#344563'), lineHeight: 1.2, whiteSpace: 'nowrap' }}>
+        <span className="vds-time-filter-label">
           {opt.label}
         </span>
         {selected && (
-          <i className="bi bi-check-circle-fill" style={{
-            marginLeft: 'auto', fontSize: '0.58rem', color: '#2e5090', flexShrink: 0,
-          }} />
+          <i className="bi bi-check-circle-fill vds-time-filter-check" />
         )}
       </button>
     );
   };
 
   return (
-    <div ref={ref} className="position-relative" style={{ display: 'inline-block' }}>
+    <div
+      ref={ref}
+      className="position-relative"
+      style={{ display: "inline-block" }}
+    >
       {/* ── Trigger button ── */}
       <button
         ref={btnRef}
         type="button"
-        className={`btn btn-sm d-flex align-items-center gap-2 vds-btn-flat${isActive ? ' vds-btn-flat--active' : ''}`}
-        style={{ height: 30, fontSize: '0.8rem', paddingLeft: 10, paddingRight: 8, fontWeight: isActive ? 600 : 400 }}
+        className={`btn btn-sm d-flex align-items-center gap-2 vds-btn-flat${isActive ? " vds-btn-flat--active" : ""}`}
+        style={{
+          height: 30,
+          fontSize: "0.8rem",
+          paddingLeft: 10,
+          paddingRight: 8,
+          fontWeight: isActive ? 600 : 400,
+        }}
         onClick={() => {
           if (!open) updatePos();
           setOpen((o) => !o);
         }}
       >
-        <i className="bi bi-calendar3" style={{ fontSize: '0.78rem', color: isActive ? '#2e5090' : undefined }} />
-        <span style={{ whiteSpace: 'nowrap' }}>{btnLabel}</span>
+        <i className="bi bi-calendar3" style={{ fontSize: "0.78rem" }} />
+        <span style={{ whiteSpace: "nowrap" }}>{btnLabel}</span>
         {isActive && (
-          <span className="vds-filter-chip--accent" style={{ fontSize: '0.62rem', padding: '1px 5px', lineHeight: 1.5 }}>
+          <span
+            className="vds-filter-chip--accent"
+            style={{ fontSize: "0.62rem", padding: "1px 5px", lineHeight: 1.5 }}
+          >
             Active
           </span>
         )}
-        <i className={`bi bi-chevron-${open ? 'up' : 'down'}`} style={{ fontSize: '0.6rem', opacity: 0.55, marginLeft: 2 }} />
+        <i
+          className={`bi bi-chevron-${open ? "up" : "down"}`}
+          style={{ fontSize: "0.6rem", opacity: 0.55, marginLeft: 2 }}
+        />
       </button>
 
       {/* ── Dropdown panel — rendered in body via portal to escape overflow clipping ── */}
-      {open && ReactDOM.createPortal(
-        <div
-          data-time-filter-panel
-          style={{
-            position: 'fixed',
-            top: panelPos.top,
-            right: panelPos.right,
-            zIndex: 1200,
-            width: 320,
-            background: isDark ? '#1a2840' : '#fff',
-            borderRadius: '0.9rem',
-            boxShadow: isDark ? '0 12px 40px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.3)' : '0 12px 40px rgba(20,40,90,0.2), 0 2px 8px rgba(0,0,0,0.07)',
-            border: isDark ? '1px solid rgba(127,168,216,0.2)' : '1px solid #d4dbe8',
-            overflow: 'hidden',
-          }}>
-          {/* Gradient header */}
-          <div style={{
-            background: 'linear-gradient(90deg,#1e3a5f 0%,#2e5090 100%)',
-            padding: '10px 14px 9px',
-            display: 'flex', alignItems: 'center', gap: 7,
-          }}>
-            <i className="bi bi-calendar3" style={{ color: '#c8deff', fontSize: '0.75rem' }} />
-            <span style={{ color: '#c8deff', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em' }}>
-              TIME FILTER
-            </span>
-          </div>
+      {open &&
+        ReactDOM.createPortal(
+          <div
+            data-time-filter-panel
+            className="vds-time-filter-panel"
+            style={{
+              top: panelPos.top,
+              right: panelPos.right,
+            }}
+          >
+            {/* Header */}
+            <div className="vds-time-filter-header">
+              <i className="bi bi-calendar3 vds-time-filter-header-icon" />
+              <span className="vds-time-filter-header-title">TIME FILTER</span>
+            </div>
 
-          {/* 2-column grid of option cards */}
-          <div style={{ padding: '8px 10px 4px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {GRID.map((row, ri) => (
-              <div key={ri} style={{ display: 'flex', gap: 4 }}>
-                {row.map(renderCell)}
-              </div>
-            ))}
-          </div>
+            {/* 2-column grid of option cards */}
+            <div className="vds-time-filter-grid">
+              {GRID.map((row, ri) => (
+                <div key={ri} className="vds-time-filter-row">
+                  {row.map(renderCell)}
+                </div>
+              ))}
+            </div>
 
-          {/* Custom date range – expands below grid when Custom is selected */}
-          {value === 'custom' && (
-            <div style={{
-              margin: '6px 12px 8px',
-              padding: '11px 13px',
-              background: 'rgba(46,80,144,0.05)',
-              borderRadius: '0.6rem',
-              border: '1px solid rgba(46,80,144,0.18)',
-            }}>
-              <div style={{ fontSize: '0.67rem', color: '#506080', fontWeight: 700, marginBottom: 8,
-                  letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 5 }}>
-                <i className="bi bi-calendar-range" style={{ color: '#2e5090' }} />
-                DATE RANGE
-              </div>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.67rem', color: '#8090a8', marginBottom: 4, fontWeight: 500 }}>From</div>
-                  <input type="date" className="form-control form-control-sm"
-                    style={{ fontSize: '0.76rem', borderRadius: '0.4rem', borderColor: 'rgba(46,80,144,0.3)' }}
-                    value={dateFrom}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => onDateFromChange(e.target.value)} />
+            {/* Custom date range – expands below grid when Custom is selected */}
+            {value === "custom" && (
+              <div className="vds-time-filter-custom-wrap">
+                <div className="vds-time-filter-custom-title">
+                  <i className="bi bi-calendar-range vds-time-filter-custom-title-icon" />
+                  DATE RANGE
                 </div>
-                <div style={{ color: '#9baec8', fontSize: '1rem', paddingBottom: 4 }}>–</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.67rem', color: '#8090a8', marginBottom: 4, fontWeight: 500 }}>To</div>
-                  <input type="date" className="form-control form-control-sm"
-                    style={{ fontSize: '0.76rem', borderRadius: '0.4rem', borderColor: 'rgba(46,80,144,0.3)' }}
-                    value={dateTo}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => onDateToChange(e.target.value)} />
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <div className="vds-time-filter-input-label">From</div>
+                    <input
+                      type="date"
+                      className="form-control form-control-sm vds-time-filter-input"
+                      value={dateFrom}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => onDateFromChange(e.target.value)}
+                    />
+                  </div>
+                  <div className="vds-time-filter-divider">–</div>
+                  <div style={{ flex: 1 }}>
+                    <div className="vds-time-filter-input-label">To</div>
+                    <input
+                      type="date"
+                      className="form-control form-control-sm vds-time-filter-input"
+                      value={dateTo}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => onDateToChange(e.target.value)}
+                    />
+                  </div>
                 </div>
+                {(dateFrom || dateTo) && (
+                  <button
+                    type="button"
+                    className="vds-time-filter-btn-apply"
+                    onClick={() => setOpen(false)}
+                  >
+                    <i className="bi bi-check-lg" />
+                    Apply Range
+                  </button>
+                )}
               </div>
-              {(dateFrom || dateTo) && (
-                <button type="button"
-                  style={{
-                    marginTop: 10, width: '100%',
-                    background: 'linear-gradient(90deg,#1e3a5f 0%,#2e5090 100%)',
-                    color: '#fff', border: 'none', borderRadius: '0.4rem',
-                    padding: '5px 0', fontSize: '0.75rem', fontWeight: 600,
-                    cursor: 'pointer', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', gap: 5,
+            )}
+
+            {/* Clear footer */}
+            {isActive && (
+              <div className="vds-time-filter-footer">
+                <button
+                  type="button"
+                  className="vds-time-filter-btn-clear"
+                  onClick={() => {
+                    onChange("all");
+                    onDateFromChange("");
+                    onDateToChange("");
+                    setOpen(false);
                   }}
-                  onClick={() => setOpen(false)}>
-                  <i className="bi bi-check-lg" />Apply Range
+                >
+                  <i className="bi bi-x-circle" />
+                  Clear Filter
                 </button>
-              )}
-            </div>
-          )}
-
-          {/* Clear footer */}
-          {isActive && (
-            <div style={{ padding: '6px 12px 10px', borderTop: isDark ? '1px solid rgba(127,168,216,0.12)' : '1px solid #eef0f5' }}>
-              <button type="button"
-                style={{
-                  width: '100%',
-                  background: 'rgba(229,62,62,0.06)',
-                  border: '1px solid rgba(229,62,62,0.18)',
-                  borderRadius: '0.4rem',
-                  color: '#e53e3e', fontSize: '0.75rem', fontWeight: 600,
-                  padding: '5px 0', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                }}
-                onClick={() => { onChange('all'); onDateFromChange(''); onDateToChange(''); setOpen(false); }}>
-                <i className="bi bi-x-circle" />Clear Filter
-              </button>
-            </div>
-          )}
-        </div>,
-        document.body
-      )}
+              </div>
+            )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
-

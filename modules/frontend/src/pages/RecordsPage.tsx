@@ -31,7 +31,7 @@ import { groupsService } from "../services/groupsService";
 import { zonesService } from "../services/zonesService";
 import { TimeFilterDropdown } from "../components/common/TimeFilterDropdown";
 import type { TimeRange } from "../components/common/TimeFilterDropdown";
-import { RecordHistoryModal } from "../components/records/RecordHistoryModal";
+import { RecordHistoryModal } from "../components/modals/RecordHistoryModal";
 
 // Status display labels shared by the filter dropdown and active-chip row.
 const STATUS_LABELS: Record<string, string> = {
@@ -1192,21 +1192,23 @@ export function RecordsPage() {
             onToggleSort={handleToggleSort}
             onViewHistory={(rec) => setHistoryRecord(rec)}
           />
-          {false && records.length > 0 && (prevPageEnabled || nextPageEnabled) && (
-            <div className="card-footer d-flex align-items-center justify-content-end py-2 px-3 mt-1">
-              <Pagination
-                onPrev={prevPage}
-                onNext={nextPage}
-                prevEnabled={prevPageEnabled}
-                nextEnabled={nextPageEnabled}
-                rangeLabel={
-                  records.length > 0
-                    ? `${(currentPage - 1) * pageSize + 1}–${(currentPage - 1) * pageSize + records.length}`
-                    : undefined
-                }
-              />
-            </div>
-          )}
+          {false &&
+            records.length > 0 &&
+            (prevPageEnabled || nextPageEnabled) && (
+              <div className="card-footer d-flex align-items-center justify-content-end py-2 px-3 mt-1">
+                <Pagination
+                  onPrev={prevPage}
+                  onNext={nextPage}
+                  prevEnabled={prevPageEnabled}
+                  nextEnabled={nextPageEnabled}
+                  rangeLabel={
+                    records.length > 0
+                      ? `${(currentPage - 1) * pageSize + 1}–${(currentPage - 1) * pageSize + records.length}`
+                      : undefined
+                  }
+                />
+              </div>
+            )}
         </>
       )}
 

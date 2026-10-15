@@ -18,7 +18,9 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GroupsTable } from "../components/groups/GroupsTable";
-import { GroupForm } from "../components/groups/GroupForm";
+import { DeleteConfirmationModal } from "../components/modals/DeleteConfirmationModal";
+import { CreateGroupModal } from "../components/modals/CreateGroupModal";
+import { EditGroupModal } from "../components/modals/EditGroupModal";
 import { PaginatedSection } from "../components/common/Pagination";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { useGroups } from "../hooks/useGroups";
@@ -333,8 +335,7 @@ export function GroupsPage() {
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
-    return () =>
-      window.removeEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [showForm, createFormDirty, editGroup, editFormDirty]);
 
   const handleRefresh = useCallback(() => {
@@ -538,108 +539,23 @@ export function GroupsPage() {
         </div>
       </div>
 
-      {showForm && (
-        <>
-          <div
-            className="modal fade show d-block"
-            tabIndex={-1}
-            role="dialog"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) closeCreateForm();
-            }}
-          >
-            <div className="modal-dialog modal-dialog-centered" role="document">
-              <div className="modal-content" ref={createFormRef}>
-                <div
-                  className="modal-header"
-                  style={{
-                    background: "linear-gradient(90deg, #1e5fa8, #0d1b3e)",
-                    color: "#fff",
-                  }}
-                >
-                  <h5 className="modal-title d-flex align-items-center gap-2">
-                    <i className="bi bi-plus-circle" />
-                    Create New Group
-                  </h5>
-                  <button
-                    type="button"
-                    className="btn-close btn-close-white"
-                    onClick={closeCreateForm}
-                  />
-                </div>
-                <div className="modal-body">
-                  <GroupForm
-                    onSubmit={handleCreate}
-                    onCancel={closeCreateForm}
-                    isSubmitting={isCreating}
-                    mode="create"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div
-            className="modal-backdrop fade show"
-            style={{
-              backdropFilter: "blur(4px)",
-              WebkitBackdropFilter: "blur(4px)",
-              opacity: 0.7,
-            }}
-          />
-        </>
-      )}
+      <CreateGroupModal
+        isOpen={showForm}
+        formRef={createFormRef}
+        onSubmit={handleCreate}
+        onCancel={closeCreateForm}
+        isSubmitting={isCreating}
+      />
 
-      {/* ── Edit Group modal ── */}
       {editGroup && (
-        <>
-          <div
-            className="modal fade show d-block"
-            tabIndex={-1}
-            role="dialog"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) closeEditForm();
-            }}
-          >
-            <div className="modal-dialog modal-dialog-centered" role="document">
-              <div className="modal-content" ref={editFormRef}>
-                <div
-                  className="modal-header"
-                  style={{
-                    background: "linear-gradient(90deg, #3a6db5, #1e3a6e)",
-                    color: "#fff",
-                  }}
-                >
-                  <h5 className="modal-title d-flex align-items-center gap-2">
-                    <i className="bi bi-pencil-square" />
-                    Edit Group: {editGroup.name}
-                  </h5>
-                  <button
-                    type="button"
-                    className="btn-close btn-close-white"
-                    onClick={closeEditForm}
-                  />
-                </div>
-                <div className="modal-body">
-                  <GroupForm
-                    initialData={editGroup}
-                    onSubmit={handleUpdate}
-                    onCancel={closeEditForm}
-                    isSubmitting={isUpdating}
-                    mode="edit"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div
-            className="modal-backdrop fade show"
-            style={{
-              backdropFilter: "blur(4px)",
-              WebkitBackdropFilter: "blur(4px)",
-              opacity: 0.7,
-            }}
-          />
-        </>
+        <EditGroupModal
+          isOpen={Boolean(editGroup)}
+          formRef={editFormRef}
+          group={editGroup}
+          onSubmit={handleUpdate}
+          onCancel={closeEditForm}
+          isSubmitting={isUpdating}
+        />
       )}
 
       {/* ── Toolbar ── */}
@@ -1209,48 +1125,23 @@ export function GroupsPage() {
           </>
         )}
       </div>
-      {/* ── Delete confirmation modal ── */}
       {groupToDelete && (
-        <div
-          className="modal d-block"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setGroupToDelete(null);
-          }}
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title fw-semibold">Delete Group</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setGroupToDelete(null)}
-                />
-              </div>
-              <div className="modal-body">
-                Are you sure you want to delete group{" "}
-                <strong>{groupToDelete.name}</strong>? This action cannot be
-                undone.
-              </div>
-              <div className="modal-footer">
-                <button
-                  className="btn btn-outline-secondary"
-                  onClick={() => setGroupToDelete(null)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="btn btn-danger"
-                  onClick={handleDeleteConfirm}
-                >
-                  <i className="bi bi-trash me-1" />
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <DeleteConfirmationModal
+          isOpen={Boolean(groupToDelete)}
+          title="Delete Group"
+          description={
+            <>
+              Are you sure you want to delete group{" "}
+              <strong>{groupToDelete.name}</strong>? This action cannot be
+              undone.
+            </>
+          }
+          cancelLabel="Cancel"
+          confirmLabel="Delete"
+          confirmIcon="bi-trash"
+          onClose={() => setGroupToDelete(null)}
+          onConfirm={handleDeleteConfirm}
+        />
       )}
     </div>
   );

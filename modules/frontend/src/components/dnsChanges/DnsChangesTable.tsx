@@ -323,20 +323,18 @@ export function DnsChangesTable({
                           ? { fromTab, paging: currentPaging }
                           : undefined
                       }
-                      className="vds-ubtn vds-ubtn--secondary vds-ubtn--sm"
+                      className="vds-action-btn vds-action-btn--view vds-action-btn--text"
                       title="View"
                     >
-                      <i className="bi bi-eye" />
                       <span>View</span>
                     </Link>
                     {canCancel && onCancel && (
                       <button
                         type="button"
-                        className="vds-ubtn vds-ubtn--danger-outline vds-ubtn--sm"
+                        className="vds-action-btn vds-action-btn--edit vds-action-btn--text"
                         title="Cancel"
                         onClick={() => onCancel(change)}
                       >
-                        <i className="bi bi-x-circle" />
                         <span>Cancel</span>
                       </button>
                     )}
