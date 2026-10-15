@@ -8,7 +8,6 @@ on:
 
 jobs:
   notify:
-    if: contains(fromJSON('["success","failure"]'), github.event.workflow_run.conclusion)
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -69,7 +68,7 @@ jobs:
             }
 
             let failedLine = "";
-            if (wr.conclusion !== "success") {
+            if (wr.conclusion === "failure") {
               const jobs = await github.rest.actions.listJobsForWorkflowRun({
                 owner: targetOwner,
                 repo: targetRepoName,
@@ -130,7 +129,7 @@ jobs:
             const runUrl = wr.html_url;
 
             // Status emoji
-            const statusEmoji = status === "SUCCESS" ? ":white_check_mark:" : ":x:";
+            const statusEmoji = status === "SUCCESS" ? ":white_check_mark:" : status === "FAILURE" ? ":x:" : ":information_source:";
 
             // Title text (shown above attachment, with emoji, bold)
             const titleText = `${statusEmoji} *${workflowName} — ${status}*`;
@@ -185,7 +184,7 @@ jobs:
             blocks.push({ type: "actions", elements: actions });
 
             // Use attachment with colored sidebar for visual grouping
-            const attachmentColor = status === "SUCCESS" ? "#36a64f" : "#dc3545";
+            const attachmentColor = status === "SUCCESS" ? "#36a64f" : status === "FAILURE" ? "#dc3545" : "#808080";
 
             const payload = {
               channel: process.env.SLACK_CHANNEL_ID,
