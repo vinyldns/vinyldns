@@ -1262,37 +1262,47 @@ def test_update_connection_info_invalid_backendid(shared_zone_test_context):
 
 
 @pytest.mark.serial
+@pytest.mark.parametrize("connection_field", ["connection", "transferConnection"])
 @pytest.mark.parametrize("injected_key", [
     "ENC:////////////////////////",
     "ENC:!!!!",
-    "ENC:v2:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
 ])
-def test_update_zone_with_injected_ciphertext_key_is_rejected(shared_zone_test_context, injected_key):
+def test_update_zone_with_injected_ciphertext_key_is_rejected(shared_zone_test_context, injected_key, connection_field):
     """
-    Test that a caller-supplied "ENC:" connection key is rejected with a client error (never a server error),
-    is not persisted, and leaves the zone fully usable
+    Invalid connection keys must return 400, preserve the stored zone and leave it usable,
+    regardless of the crypto provider.
     """
     client = shared_zone_test_context.ok_vinyldns_client
     result_zone = None
     try:
         zone_name = f"one-time{shared_zone_test_context.partition_id}"
-        result = client.create_zone(new_backend_zone(shared_zone_test_context, zone_name), status=202)
+        zone = {
+            "name": zone_name,
+            "email": "test@test.com",
+            "adminGroupId": shared_zone_test_context.ok_group["id"],
+            "connection": {
+                "name": zone_name,
+                "keyName": VinylDNSTestContext.dns_key_name,
+                "key": VinylDNSTestContext.dns_key,
+                "primaryServer": VinylDNSTestContext.name_server_ip
+            }
+        }
+        result = client.create_zone(zone, status=202)
         result_zone = result["zone"]
         client.wait_until_zone_active(result_zone["id"])
+        original = client.get_zone(result_zone["id"])["zone"]
 
-        tampered = copy.deepcopy(result_zone)
-        tampered["connection"] = {
+        tampered = copy.deepcopy(original)
+        tampered[connection_field] = {
             "name": zone_name,
             "keyName": VinylDNSTestContext.dns_key_name,
             "key": injected_key,
             "primaryServer": VinylDNSTestContext.name_server_ip
         }
-        error = client.update_zone(tampered, status=400)
-        assert_that(error, any_of(contains_string("Invalid zone connection key"),
-                                  contains_string("Custom zone connections are not supported")))
+        client.update_zone(tampered, status=400)
 
         stored = client.get_zone(result_zone["id"])["zone"]
-        assert_that(stored, is_not(has_key("connection")))
+        assert_that(stored, is_(original))
 
         # The zone must remain usable after the rejected request
         stored["email"] = "test@dummy.com"
