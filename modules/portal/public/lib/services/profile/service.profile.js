@@ -18,21 +18,6 @@
 
 angular.module('service.profile', [])
     .service('profileService', function ($http, utilityService) {
-        this.withLoader = function (httpPromise) {
-            var loader = $('#loader');
-            loader.modal({
-                backdrop: 'static',
-                keyboard: false,
-                show: true
-            });
-            httpPromise.then(function () {
-                loader.modal('hide');
-            }, function () {
-                loader.modal('hide');
-            });
-            return httpPromise;
-        };
-
         this.getAuthenticatedUserData = function () {
             return $http.get('/api/users/currentuser');
         };
@@ -45,12 +30,8 @@ angular.module('service.profile', [])
             return $http.get('/api/users/' + encodeURIComponent(userId));
         }
 
-        this.searchUsersByName = function(pattern, showLoader){
-            var request = $http.get('/api/users/search?pattern=' + encodeURIComponent(pattern));
-            if (showLoader === false) {
-                return request;
-            }
-            return this.withLoader(request);
+        this.searchUsersByName = function(pattern){
+            return $http.get('/api/users/search?pattern=' + encodeURIComponent(pattern));
         }
 
         this.regenerateCredentials = function(){
