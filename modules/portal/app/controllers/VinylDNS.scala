@@ -201,7 +201,9 @@ class VinylDNS @Inject() (
               case Failure(_) => "/index"
             }
 
-          Redirect(redirectLocation).withSession(ID_TOKEN -> token.toString)
+          Redirect(redirectLocation).withSession(
+            request.session - "oidc_state" - "oidc_nonce" + (ID_TOKEN -> token.toString)
+          )
         case Left(err) =>
           logger.error(s"LoginId [$loginId] failed with error: $err")
           InternalServerError(

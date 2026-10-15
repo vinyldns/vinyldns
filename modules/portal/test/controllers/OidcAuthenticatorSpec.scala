@@ -354,8 +354,29 @@ class OidcAuthenticatorSpec extends Specification with Mockito {
           """
         testResponse.setContent(body)
 
-        testOidcAuthenticator.handleCallbackResponse(testResponse) must beLeft(
+        testOidcAuthenticator.handleCallbackResponse(testResponse, Some("test-nonce")) must beLeft(
           ErrorResponse(400, "Sign in token error: some error description")
+        )
+      }
+      "fail with missing expected nonce" in {
+        val testResponse = new HTTPResponse(200)
+        testResponse.setHeader("Content-Type", "application/json", "charset=utf-8")
+
+        val body =
+          s"""{
+              "access_token": "$unsignedTestKey",
+              "token_type": "Bearer",
+              "id_token": "$unsignedTestKey"
+              }
+          """
+
+        testResponse.setContent(body)
+
+        testOidcAuthenticator.handleCallbackResponse(
+          testResponse,
+          None
+        ) must beLeft(
+          ErrorResponse(500, "Missing nonce in session - OIDC callback validation failed")
         )
       }
     }

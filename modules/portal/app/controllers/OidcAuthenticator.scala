@@ -273,31 +273,36 @@ class OidcAuthenticator @Inject() (wsClient: WSClient, configuration: Configurat
       response: HTTPResponse,
       expectedNonce: Option[String] = None
   ): Either[ErrorResponse, JWTClaimsSet] = {
-    def matchTokenResponse(token: TokenResponse) = token match {
-      case success: OIDCTokenResponse => Right(success)
-      case err: TokenErrorResponse =>
-        val errorMessage = s"Sign in token error: ${err.getErrorObject.getDescription}"
-        Left(ErrorResponse(err.toHTTPResponse.getStatusCode, errorMessage))
-      case _ => Left(ErrorResponse(500, "Unable to parse OIDC token response"))
-    }
-
-    def getClaimSet(oidcTokenResposne: OIDCTokenResponse): Either[ErrorResponse, JWTClaimsSet] = {
-      val idToken = oidcTokenResposne.getOIDCTokens.getIDToken
-
-      oidcTry(jwtProcessor.process(idToken, sc)).flatMap { claims =>
-        if (isValidIdToken(claims, expectedNonce)) {
-          Right(claims)
-        } else {
-          Left(ErrorResponse(500, "Invalid ID token response received from from OIDC provider"))
+    expectedNonce match {
+      case None =>
+        Left(ErrorResponse(500, "Missing nonce in session - OIDC callback validation failed"))
+      case Some(_) =>
+        def matchTokenResponse(token: TokenResponse) = token match {
+          case success: OIDCTokenResponse => Right(success)
+          case err: TokenErrorResponse =>
+            val errorMessage = s"Sign in token error: ${err.getErrorObject.getDescription}"
+            Left(ErrorResponse(err.toHTTPResponse.getStatusCode, errorMessage))
+          case _ => Left(ErrorResponse(500, "Unable to parse OIDC token response"))
         }
-      }
-    }
 
-    for {
-      asTokenResponse <- oidcTry(OIDCTokenResponseParser.parse(response))
-      asOidcToken <- matchTokenResponse(asTokenResponse)
-      claims <- getClaimSet(asOidcToken)
-    } yield claims
+        def getClaimSet(oidcTokenResposne: OIDCTokenResponse): Either[ErrorResponse, JWTClaimsSet] = {
+          val idToken = oidcTokenResposne.getOIDCTokens.getIDToken
+
+          oidcTry(jwtProcessor.process(idToken, sc)).flatMap { claims =>
+            if (isValidIdToken(claims, expectedNonce)) {
+              Right(claims)
+            } else {
+              Left(ErrorResponse(500, "Invalid ID token response received from from OIDC provider"))
+            }
+          }
+        }
+
+        for {
+          asTokenResponse <- oidcTry(OIDCTokenResponseParser.parse(response))
+          asOidcToken <- matchTokenResponse(asTokenResponse)
+          claims <- getClaimSet(asOidcToken)
+        } yield claims
+    }
   }
 
   def oidcCallback(code: AuthorizationCode, loginId: String, expectedNonce: Option[String])(
