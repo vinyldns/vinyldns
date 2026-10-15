@@ -107,6 +107,16 @@ object LdapAuthenticator {
       createContext: ContextCreator
   ) {
 
+    private def escapeLdapFilterValue(value: String): String =
+      value.flatMap {
+        case '*' => "\\2a"
+        case '(' => "\\28"
+        case ')' => "\\29"
+        case '\\' => "\\5c"
+        case '\u0000' => "\\00"
+        case character => character.toString
+      }
+
     private val SEARCH_BASE = settings.ldapSearchBase
       .map(searchDomain ⇒ searchDomain.organization → searchDomain.domainName)
       .toMap
@@ -126,7 +136,7 @@ object LdapAuthenticator {
 
         val result = dirContext.search(
           SEARCH_BASE(organization),
-          s"(${settings.ldapUserNameAttribute}=$lookupUserName)",
+          s"(${settings.ldapUserNameAttribute}=${escapeLdapFilterValue(lookupUserName)})",
           searchControls
         )
 
