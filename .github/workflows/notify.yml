@@ -8,7 +8,7 @@ on:
 
 jobs:
   notify:
-    if: github.event.workflow_run.name != 'VinylDNS Beta Release' || contains(fromJSON('["success","failure"]'), github.event.workflow_run.conclusion)
+    if: contains(fromJSON('["success","failure"]'), github.event.workflow_run.conclusion)
     runs-on: ubuntu-latest
     permissions:
       actions: read
