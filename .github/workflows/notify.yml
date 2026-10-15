@@ -208,6 +208,9 @@ jobs:
 
       - name: Log Slack API response
         if: always()
+        env:
+          SLACK_OK: ${{ steps.slack.outputs.ok }}
+          SLACK_RESPONSE: ${{ steps.slack.outputs.response }}
         run: |
-          echo "slack ok: ${{ steps.slack.outputs.ok }}"
-          echo "slack response: ${{ steps.slack.outputs.response }}"
+          echo "slack ok: $SLACK_OK"
+          echo "slack response: $SLACK_RESPONSE"
