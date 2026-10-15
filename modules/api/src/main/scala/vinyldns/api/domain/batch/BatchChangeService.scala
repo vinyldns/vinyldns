@@ -36,7 +36,7 @@ import vinyldns.core.domain.batch._
 import vinyldns.core.domain.batch.BatchChangeApprovalStatus._
 import vinyldns.core.domain.batch.BatchChangeStatus.BatchChangeStatus
 import vinyldns.core.domain.{CnameAtZoneApexError, SingleChangeError, UserIsNotAuthorizedError, ZoneDiscoveryError}
-import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, User, UserRepository}
+import vinyldns.core.domain.membership.{Group, GroupRepository, ListUsersResults, MembershipRepository, User, UserRepository}
 import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.domain.zone.ZoneRepository
@@ -52,7 +52,8 @@ object BatchChangeService {
       notifiers: AllNotifiers,
       scheduledChangesEnabled: Boolean,
       v6DiscoveryNibbleBoundaries: V6DiscoveryNibbleBoundaries,
-      defaultTtl: Long
+      defaultTtl: Long,
+      membershipRepo: MembershipRepository
   ): BatchChangeService =
     new BatchChangeService(
       dataAccessor.zoneRepository,
@@ -64,6 +65,7 @@ object BatchChangeService {
       dataAccessor.userRepository,
       manualReviewEnabled,
       authProvider,
+      membershipRepo,
       notifiers,
       scheduledChangesEnabled,
       v6DiscoveryNibbleBoundaries,
@@ -81,6 +83,7 @@ class BatchChangeService(
     userRepository: UserRepository,
     manualReviewEnabled: Boolean,
     authProvider: AuthPrincipalProvider,
+    membershipRepo: MembershipRepository,
     notifiers: AllNotifiers,
     scheduledChangesEnabled: Boolean,
     v6zoneNibbleBoundaries: V6DiscoveryNibbleBoundaries,
@@ -588,6 +591,7 @@ class BatchChangeService(
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
       ignoreAccess: Boolean = false,
+      isMyGroupAccess: Boolean = false,
       batchStatus: Option[BatchChangeStatus] = None,
       approvalStatus: Option[BatchChangeApprovalStatus] = None
   ): BatchResult[BatchChangeSummaryList] = {
@@ -596,8 +600,9 @@ class BatchChangeService(
     val startDateTime = if(dateTimeStartRange.isDefined && dateTimeStartRange.get.isEmpty) None else dateTimeStartRange
     val endDateTime = if(dateTimeEndRange.isDefined && dateTimeEndRange.get.isEmpty) None else dateTimeEndRange
     for {
+      groups <- (if (isMyGroupAccess) membershipRepo.getGroupsForUser(auth.userId) else IO.pure(Set.empty[String])).toBatchResult
       listResults <- batchChangeRepo
-        .getBatchChangeSummaries(userId, submitterUserName, startDateTime, endDateTime, startFrom, maxItems, batchStatus, approvalStatus)
+        .getBatchChangeSummaries(userId, groups, submitterUserName, startDateTime, endDateTime, startFrom, maxItems, batchStatus, approvalStatus)
         .toBatchResult
       rsOwnerGroupIds = listResults.batchChanges.flatMap(_.ownerGroupId).toSet
       rsOwnerGroups <- groupRepository.getGroups(rsOwnerGroupIds).toBatchResult
@@ -614,6 +619,7 @@ class BatchChangeService(
       listWithGroupNames = listResults.copy(
         batchChanges = summariesWithReviewerUserNames,
         ignoreAccess = ignoreAccess,
+        isMyGroupAccess = isMyGroupAccess,
         approvalStatus = approvalStatus,
         userName = userName,
         dateTimeStartRange = dateTimeStartRange,

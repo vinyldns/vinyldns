@@ -30,13 +30,14 @@ trait BatchChangeRepository extends Repository {
 
   def getBatchChangeSummaries(
       userId: Option[String],
+      groups: Set[String] = Set.empty,
       userName: Option[String] = None,
       dateTimeStartRange: Option[String] = None,
       dateTimeEndRange: Option[String] = None,
       startFrom: Option[Int] = None,
       maxItems: Int = 100,
       batchStatus: Option[BatchChangeStatus] = None,
-      approvalStatus: Option[BatchChangeApprovalStatus] = None
+      approvalStatus: Option[BatchChangeApprovalStatus] = None,
   ): IO[BatchChangeSummaryList]
 
   // updateSingleChanges updates status, recordSetId, recordChangeId and systemMessage (in data).
