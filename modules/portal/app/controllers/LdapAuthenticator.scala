@@ -148,24 +148,26 @@ object LdapAuthenticator {
         searchDomain: LdapSearchDomain,
         username: String,
         password: String
-    ): Either[LdapException, LdapUserDetails] = {
+    ): Either[LdapException, LdapUserDetails] =
+      if (password.trim.isEmpty) {
+        Left(InvalidCredentials(username))
+      } else {
+        // Login as the service account
+        val qualifiedName =
+          if (settings.ldapDomain.isEmpty) settings.ldapUser
+          else s"${settings.ldapDomain}\\${settings.ldapUser}"
 
-      // Login as the service account
-      val qualifiedName =
-        if (settings.ldapDomain.isEmpty) settings.ldapUser
-        else s"${settings.ldapDomain}\\${settings.ldapUser}"
+        logger.info(s"LDAP authenticate attempt for user $qualifiedName")
 
-      logger.info(s"LDAP authenticate attempt for user $qualifiedName")
-
-      // 1. Login as the service account
-      // 2. Find the user information (if it is in this search domain)
-      // 3. Login as the user that was found (if the user was found) to authenticate
-      for {
-        ctx <- createContext(qualifiedName, settings.ldapPwd)
-        user <- searchContext(ctx, searchDomain.organization, username)
-        _ <- createContext(user.nameInNamespace, password)
-      } yield user
-    }
+        // 1. Login as the service account
+        // 2. Find the user information (if it is in this search domain)
+        // 3. Login as the user that was found (if the user was found) to authenticate
+        for {
+          ctx <- createContext(qualifiedName, settings.ldapPwd)
+          user <- searchContext(ctx, searchDomain.organization, username)
+          _ <- createContext(user.nameInNamespace, password)
+        } yield user
+      }
 
     private[controllers] def lookup(
         searchDomain: LdapSearchDomain,
