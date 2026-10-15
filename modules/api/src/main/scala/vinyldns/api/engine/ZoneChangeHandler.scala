@@ -60,10 +60,9 @@ object ZoneChangeHandler {
           }
         case Some(dbZone) =>
           val trustedZone = zoneChange.zone.copy(
-            adminGroupId = dbZone.adminGroupId,
-            shared = dbZone.shared,
             backendId = dbZone.backendId,
-            connection = dbZone.connection
+            connection = dbZone.connection,
+            transferConnection = dbZone.transferConnection
           )
           zoneRepository.save(trustedZone).flatMap {
             case Left(duplicateZoneError) =>
