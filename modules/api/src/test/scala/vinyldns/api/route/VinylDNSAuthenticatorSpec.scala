@@ -214,7 +214,7 @@ class VinylDNSAuthenticatorSpec extends AnyWordSpec with Matchers with MockitoSu
         .getAuthPrincipal(any[String])
 
       val result = underTest.authenticate(context, "").unsafeRunSync()
-      result shouldBe Left(AuthRejected("Account with accessKey fakeKey specified was not found"))
+      result shouldBe Left(AuthRejected("Account with access key fakeKey not found"))
     }
     "fail if signatures can not be validated" in {
       val fakeHttpHeader = mock[HttpHeader]

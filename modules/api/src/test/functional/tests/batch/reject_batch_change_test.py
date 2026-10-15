@@ -43,7 +43,7 @@ def test_reject_batch_change_with_invalid_batch_change_id_fails(shared_zone_test
     client = shared_zone_test_context.ok_vinyldns_client
 
     error = client.reject_batch_change("some-id", status=404)
-    assert_that(error, is_("Batch change with id some-id cannot be found"))
+    assert_that(error, is_("Batch change with id some-id not found"))
 
 
 @pytest.mark.manual_batch_review
@@ -102,6 +102,6 @@ def test_reject_batch_change_fails_when_not_pending_approval(shared_zone_test_co
         to_delete = [(change["zoneId"], change["recordSetId"]) for change in completed_batch["changes"]]
         error = rejector.reject_batch_change(completed_batch["id"], status=400)
         assert_that(error, is_("Batch change " + completed_batch["id"] +
-                               " is not pending review, so it cannot be rejected."))
+                               " is not in pending review state, so it cannot be rejected."))
     finally:
         clear_zoneid_rsid_tuple_list(to_delete, client)

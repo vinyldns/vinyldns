@@ -1955,7 +1955,7 @@ def test_update_owner_group_transfer_auto_approved(shared_zone_test_context):
 
         update["recordSetGroupChange"] = recordset_group_change_json
         error = shared_client.update_recordset(update, status=422)
-        assert_that(error, is_(f"Unable to AutoApproved the Ownership transfer status for the record: None"))
+        assert_that(error, is_(f"Unable to AutoApproved the ownership transfer status for the record: None"))
     finally:
         if update_rs:
             delete_result = shared_client.delete_recordset(zone["id"], update_rs["id"], status=202)
@@ -2176,7 +2176,7 @@ def test_update_request_owner_group_transfer_cancelled_not_a_member_fails(shared
 
         update_rs["recordSetGroupChange"] = recordset_group_change_json
         error = shared_client.update_recordset(update_rs, status=422)
-        assert_that(error, is_(f"Unauthorised to Cancel the ownership transfer"))
+        assert_that(error, is_(f"Unauthorized to cancel the ownership transfer"))
 
     finally:
         if update_rs:
@@ -2632,7 +2632,7 @@ def test_update_owner_group_transfer_and_ttl_on_user_not_in_owner_group_in_fails
         update["ttl"] = update["ttl"] + 100
 
         error = dummy_client.update_recordset(update, status=422)
-        assert_that(error, is_(f"Cannot update RecordSet's if user not a member of ownership group. User can only request for ownership transfer"))
+        assert_that(error, is_(f"Cannot update RecordSet's ownership if user is not a member of the ownership group. User can only request an ownership transfer."))
 
     finally:
         if update_rs:

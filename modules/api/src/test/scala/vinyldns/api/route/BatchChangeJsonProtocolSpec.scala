@@ -576,7 +576,7 @@ class BatchChangeJsonProtocolSpec
 
   "Serializing BatchChangeRevalidationErrorList" should {
     "serialize a mix of valid and invalid inputs" in {
-      val errorMessage = "Zone Discovery Failed: zone for \"foo.\" does not exist in VinylDNS. " +
+      val errorMessage = "Zone discovery failed: zone for \"foo.\" does not exist in VinylDNS. " +
         "If zone exists, then it must be connected to in VinylDNS."
       val delete = SingleDeleteRRSetChange(
         Some("zoneId"),

@@ -33,10 +33,10 @@ object DomainValidationErrorType extends Enumeration {
   InvalidDomainName, InvalidCname, InvalidLength, InvalidEmail, InvalidRecordType, InvalidPortNumber,
   InvalidIpv4Address, InvalidIpv6Address, InvalidIPAddress, InvalidTTL, InvalidMX_NAPTR_SRVData, InvalidNaptrFlag,
   InvalidNaptrRegexp, InvalidBatchRecordType, ZoneDiscoveryError, RecordAlreadyExists, RecordDoesNotExist,
-  InvalidUpdateRequest, CnameIsNotUniqueError, UserIsNotAuthorized, UserIsNotAuthorizedError, RecordNameNotUniqueInBatch,
-  RecordInReverseZoneError, HighValueDomainError, MissingOwnerGroupId, ExistingMultiRecordError,
-  NewMultiRecordError, CnameAtZoneApexError, RecordRequiresManualReview, UnsupportedOperation,
-  DeleteRecordDataDoesNotExist, InvalidIPv4CName, InvalidBatchRequest, NotApprovedNSError  = Value
+  InvalidUpdateRequest, CnameIsNotUniqueError, UserIsNotAuthorizedError, RecordNameNotUniqueInBatch,
+  RecordInReverseZoneError, HighValueDomainError, MissingOwnerGroupId, CnameAtZoneApexError, RecordRequiresManualReview, UnsupportedOperation,
+  DeleteRecordDataDoesNotExist, InvalidIPv4CName, InvalidBatchRequest, NotApprovedNSError,
+  NewMultiRecordError, ExistingMultiRecordError, UserIsNotAuthorized  = Value
 
   // $COVERAGE-OFF$
   def from(error: DomainValidationError): DomainValidationErrorType =
@@ -64,14 +64,11 @@ object DomainValidationErrorType extends Enumeration {
       case _: RecordDoesNotExist => RecordDoesNotExist
       case _: InvalidUpdateRequest => InvalidUpdateRequest
       case _: CnameIsNotUniqueError => CnameIsNotUniqueError
-      case _: UserIsNotAuthorized => UserIsNotAuthorized
       case _: UserIsNotAuthorizedError => UserIsNotAuthorizedError
       case _: RecordNameNotUniqueInBatch => RecordNameNotUniqueInBatch
       case _: RecordInReverseZoneError => RecordInReverseZoneError
       case _: HighValueDomainError => HighValueDomainError
       case _: MissingOwnerGroupId => MissingOwnerGroupId
-      case _: ExistingMultiRecordError => ExistingMultiRecordError
-      case _: NewMultiRecordError => NewMultiRecordError
       case _: CnameAtZoneApexError => CnameAtZoneApexError
       case _: RecordRequiresManualReview => RecordRequiresManualReview
       case _: UnsupportedOperation => UnsupportedOperation
@@ -79,6 +76,10 @@ object DomainValidationErrorType extends Enumeration {
       case _: InvalidIPv4CName => InvalidIPv4CName
       case _: InvalidBatchRequest => InvalidBatchRequest
       case _: NotApprovedNSError => NotApprovedNSError
+      //Deprecated errors
+      case _: UserIsNotAuthorized => UserIsNotAuthorized
+      case _: ExistingMultiRecordError => ExistingMultiRecordError
+      case _: NewMultiRecordError => NewMultiRecordError
     }
   // $COVERAGE-ON$
 }

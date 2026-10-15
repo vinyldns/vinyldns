@@ -93,8 +93,8 @@ def test_approve_pending_batch_change_fails_if_there_are_still_errors(shared_zon
         assert_that(get_batch["changes"][1]["validationErrors"][0]["errorType"], is_("ZoneDiscoveryError"))
 
         approval_response = approver.approve_batch_change(result["id"], status=400)
-        assert_that((approval_response[0]["errors"][0]), contains_string("Zone Discovery Failed"))
-        assert_that((approval_response[1]["errors"][0]), contains_string("Zone Discovery Failed"))
+        assert_that((approval_response[0]["errors"][0]), contains_string("Zone discovery failed"))
+        assert_that((approval_response[1]["errors"][0]), contains_string("Zone discovery failed"))
 
         updated_batch = client.get_batch_change(result["id"], status=200)
         assert_that(updated_batch["status"], is_("PendingReview"))
@@ -121,7 +121,7 @@ def test_approve_batch_change_with_invalid_batch_change_id_fails(shared_zone_tes
     client = shared_zone_test_context.ok_vinyldns_client
 
     error = client.approve_batch_change("some-id", status=404)
-    assert_that(error, is_("Batch change with id some-id cannot be found"))
+    assert_that(error, is_("Batch change with id some-id not found"))
 
 
 @pytest.mark.manual_batch_review
