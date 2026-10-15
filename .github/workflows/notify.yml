@@ -2,12 +2,13 @@ name: Notify on Workflow Complete
 
 on:
   workflow_run:
-    workflows: [Verify and Test, VinylDNS Official Release]
+    workflows: [Verify and Test, VinylDNS Official Release, VinylDNS Beta Release]
     types:
       - completed
 
 jobs:
   notify:
+    if: github.event.workflow_run.name != 'VinylDNS Beta Release' || contains(fromJSON('["success","failure"]'), github.event.workflow_run.conclusion)
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -91,7 +92,7 @@ jobs:
 
             let releaseTag = "";
             let releaseUrl = "";
-            if (workflowName === "VinylDNS Official Release") {
+            if (workflowName === "VinylDNS Official Release" || workflowName === "VinylDNS Beta Release") {
               try {
                 const versionFile = await github.rest.repos.getContent({
                   owner: targetOwner,
