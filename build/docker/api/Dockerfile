@@ -8,6 +8,7 @@ RUN mkdir -p /opt/vinyldns/conf && \
     if [ -f artifacts/vinyldns-api.jar ]; then cp artifacts/vinyldns-api.jar /opt/vinyldns/; fi && \
     if [ ! -f /opt/vinyldns/vinyldns-api.jar ]; then \
       env SBT_OPTS="-Xmx2G -Xms512M -Xss2M -XX:MaxMetaspaceSize=2G" \
+      VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING=true \
       sbt -Dbuild.scalafmtOnCompile=false -Dbuild.lintOnCompile=false ";project api;coverageOff;assembly" \
       && cp artifacts/vinyldns-api.jar /opt/vinyldns/; \
     fi
@@ -37,6 +38,7 @@ RUN chmod +x /opt/vinyldns/bin/start-api.sh
 EXPOSE 9000
 
 ENV JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" \
-    WAIT_FOR_LOCALSTACK="false"
+    WAIT_FOR_LOCALSTACK="false" \
+    VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING=true
 
 ENTRYPOINT ["/opt/vinyldns/bin/start-api.sh"]

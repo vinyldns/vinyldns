@@ -39,7 +39,7 @@ build:
 run:
 	@set -euo pipefail
 	USE_TTY="" && test -t 1 && USE_TTY="-t"
-	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
+	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) -e VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING=true -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
 
 # Runs the dependencies for the functional test in the background
 # This is useful when running the tests on your host machine against the API in a container
@@ -47,12 +47,12 @@ run-deps-bg:
 	@set -euo pipefail
 	docker stop $(IMAGE_NAME) &> /dev/null || true
 	USE_TTY="" && test -t 1 && USE_TTY="-t"
-	docker run -d $${USE_TTY} --name $(IMAGE_NAME) --rm $(DOCKER_PARAMS) --entrypoint "/initialize.sh" -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) all tail-logs
+	docker run -d $${USE_TTY} --name $(IMAGE_NAME) --rm $(DOCKER_PARAMS) -e VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING=true --entrypoint "/initialize.sh" -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME) all tail-logs
 
 run-local:
 	@set -euo pipefail
 	USE_TTY="" && test -t 1 && USE_TTY="-t"
-	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp -v "$(ROOT_DIR)/../../../modules/api/src/test/functional:/functional_test" $(IMAGE_NAME) -- $(WITH_ARGS)
+	docker run -i $${USE_TTY} --rm $(DOCKER_PARAMS) -e VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING=true -p 9000:9000 -p 19001-19003:19001-19003 -p 19001:19001/udp -v "$(ROOT_DIR)/../../../modules/api/src/test/functional:/functional_test" $(IMAGE_NAME) -- $(WITH_ARGS)
 
 clean-containers:
 	@set -euo pipefail

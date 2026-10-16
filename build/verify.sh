@@ -4,6 +4,9 @@ set -euo pipefail
 DIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
 source "${DIR}/../utils/includes/terminal_colors.sh"
 
+# Allow NoOpCrypto for testing in JAR builds
+export VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING=true
+
 if [ ! -d "${DIR}/../artifacts" ] || [ ! -f "${DIR}/../artifacts/vinyldns-api.jar" ]; then
   echo -e "${F_YELLOW}Warning:${F_RESET} you might want to run 'build/assemble_api.sh' first to improve performance"
 fi
