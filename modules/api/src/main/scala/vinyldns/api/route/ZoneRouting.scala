@@ -83,7 +83,8 @@ class ZoneRoute(
           "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
           "searchByAdminGroup".as[Boolean].?(false),
           "ignoreAccess".as[Boolean].?(false),
-          "includeReverse".as[Boolean].?(true)
+          "includeReverse".as[Boolean].?(true),
+          "accessFilter".as[Int].?
         ) {
           (
               nameFilter: Option[String],
@@ -91,7 +92,8 @@ class ZoneRoute(
               maxItems: Int,
               searchByAdminGroup: Boolean,
               ignoreAccess: Boolean,
-              includeReverse: Boolean
+              includeReverse: Boolean,
+              accessFilter: Option[Int]
           ) =>
             {
               handleRejections(invalidQueryHandler) {
@@ -101,7 +103,7 @@ class ZoneRoute(
                 ) {
                   authenticateAndExecute(
                     zoneService
-                      .listZones(_, nameFilter, startFrom, maxItems, searchByAdminGroup, ignoreAccess, includeReverse)
+                      .listZones(_, nameFilter, startFrom, maxItems, searchByAdminGroup, ignoreAccess, includeReverse, accessFilter)
                   ) { result =>
                     complete(StatusCodes.OK, result)
                   }
@@ -117,13 +119,15 @@ class ZoneRoute(
           "nameFilter".?,
           "startFrom".as[String].?,
           "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
-          "ignoreAccess".as[Boolean].?(false)
+          "ignoreAccess".as[Boolean].?(false),
+          "accessFilter".as[Int].?
         ) {
           (
             nameFilter: Option[String],
             startFrom: Option[String],
             maxItems: Int,
-            ignoreAccess: Boolean
+            ignoreAccess: Boolean,
+            accessFilter: Option[Int]
           ) =>
           {
             handleRejections(invalidQueryHandler) {
@@ -133,7 +137,7 @@ class ZoneRoute(
               ) {
                 authenticateAndExecute(
                   zoneService
-                    .listDeletedZones(_, nameFilter, startFrom, maxItems, ignoreAccess)
+                    .listDeletedZones(_, nameFilter, startFrom, maxItems, ignoreAccess, accessFilter)
                 ) { result =>
                   complete(StatusCodes.OK, result)
                 }
@@ -147,6 +151,13 @@ class ZoneRoute(
       (get & monitor("Endpoint.getBackendIds")) {
         authenticateAndExecute(_ => zoneService.getBackendIds()) { ids =>
           complete(StatusCodes.OK, ids)
+        }
+      }
+    } ~
+    path("zones" / "count") {
+      (get & monitor("Endpoint.countZones")) {
+        authenticateAndExecute(zoneService.countZones(_)) { result =>
+          complete(StatusCodes.OK, result)
         }
       }
     } ~

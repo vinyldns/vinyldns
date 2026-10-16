@@ -158,4 +158,10 @@ class MySqlGroupRepositoryIntegrationSpec
       result should contain theSameElementsAs Set()
     }
   }
+
+  "MySqlGroupRepository.countGroups" should {
+    "return the total number of groups" in {
+      repo.countGroups().unsafeRunSync() shouldBe groups.size
+    }
+  }
 }
