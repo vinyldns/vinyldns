@@ -1259,3 +1259,56 @@ def test_update_connection_info_invalid_backendid(shared_zone_test_context):
 
     result = client.update_zone(to_update, status=400)
     assert_that(result, contains_string("Invalid backendId"))
+
+
+@pytest.mark.serial
+@pytest.mark.parametrize("connection_field", ["connection", "transferConnection"])
+@pytest.mark.parametrize("injected_key", [
+    "ENC:////////////////////////",
+    "ENC:!!!!",
+])
+def test_update_zone_with_injected_ciphertext_key_is_rejected(shared_zone_test_context, injected_key, connection_field):
+    """
+    Invalid connection keys must return 400, preserve the stored zone and leave it usable,
+    regardless of the crypto provider.
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    result_zone = None
+    try:
+        zone_name = f"one-time{shared_zone_test_context.partition_id}"
+        zone = {
+            "name": zone_name,
+            "email": "test@test.com",
+            "adminGroupId": shared_zone_test_context.ok_group["id"],
+            "connection": {
+                "name": zone_name,
+                "keyName": VinylDNSTestContext.dns_key_name,
+                "key": VinylDNSTestContext.dns_key,
+                "primaryServer": VinylDNSTestContext.name_server_ip
+            }
+        }
+        result = client.create_zone(zone, status=202)
+        result_zone = result["zone"]
+        client.wait_until_zone_active(result_zone["id"])
+        original = client.get_zone(result_zone["id"])["zone"]
+
+        tampered = copy.deepcopy(original)
+        tampered[connection_field] = {
+            "name": zone_name,
+            "keyName": VinylDNSTestContext.dns_key_name,
+            "key": injected_key,
+            "primaryServer": VinylDNSTestContext.name_server_ip
+        }
+        client.update_zone(tampered, status=400)
+
+        stored = client.get_zone(result_zone["id"])["zone"]
+        assert_that(stored, is_(original))
+
+        # The zone must remain usable after the rejected request
+        stored["email"] = "test@dummy.com"
+        update_result = client.update_zone(stored, status=202)
+        client.wait_until_zone_change_status_synced(update_result)
+        assert_that(client.get_zone(result_zone["id"])["zone"]["email"], is_("test@dummy.com"))
+    finally:
+        if result_zone:
+            client.abandon_zones([result_zone["id"]], status=202)
