@@ -313,7 +313,6 @@ class CommandHandlerSpec
       verifyZeroInteractions(mockZoneSyncProcessor)
     }
     "use the DB zone for zone sync, not the message-supplied zone" in {
-      // Zone configuration from database takes precedence for sync operations
       val modifiedZone = zoneCreate.zone.copy(backendId = Some("modified-backend"))
       val msg = TestCommandMessage(zoneCreate.copy(changeType = ZoneChangeType.Sync, zone = modifiedZone), "foo")
       val dbZone = zoneCreate.zone
