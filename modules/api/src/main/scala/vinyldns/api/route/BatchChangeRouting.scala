@@ -119,6 +119,48 @@ class BatchChangeRoute(
             }
         }
       } ~
+      path("zones" / "batchrecordchanges" / "count") {
+        (get & monitor("Endpoint.getBatchChangeCount")) {
+          parameters(
+            "userName".as[String].?,
+            "dateTimeRangeStart".as[String].?,
+            "dateTimeRangeEnd".as[String].?,
+            "ignoreAccess".as[Boolean].?(false),
+            "approvalStatus".as[String].?
+          ) {
+            (
+                userName: Option[String],
+                dateTimeRangeStart: Option[String],
+                dateTimeRangeEnd: Option[String],
+                ignoreAccess: Boolean,
+                approvalStatus: Option[String]
+            ) =>
+              {
+                val convertApprovalStatus =
+                  approvalStatus.flatMap(BatchChangeApprovalStatus.find)
+                handleRejections(invalidQueryHandler) {
+                  validate(
+                    approvalStatus.forall(s => BatchChangeApprovalStatus.find(s).isDefined),
+                    s"approvalStatus '${approvalStatus.getOrElse("")}' is not a valid value."
+                  ) {
+                    authenticateAndExecute(
+                      batchChangeService.getBatchChangeCount(
+                        _,
+                        userName,
+                        dateTimeRangeStart,
+                        dateTimeRangeEnd,
+                        ignoreAccess,
+                        convertApprovalStatus
+                      )
+                    ) { result =>
+                      complete(StatusCodes.OK, result)
+                    }
+                  }
+                }
+              }
+          }
+        }
+      } ~
       path("zones" / "batchrecordchanges" / Segment) { id =>
         (get & monitor("Endpoint.getBatchChange")) {
           authenticateAndExecute(batchChangeService.getBatchChange(id, _)) { chg =>
