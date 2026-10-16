@@ -244,6 +244,9 @@ options:
       - title: List Batch Changes
         url: api/list-batchchanges.html
         menu_section: batchchangeapireference
+      - title: Get Batch Change Count
+        url: api/get-batchchange-count.html
+        menu_section: batchchangeapireference
       - title: Batch Change Errors
         url: api/batchchange-errors.html
         menu_section: batchchangeapireference

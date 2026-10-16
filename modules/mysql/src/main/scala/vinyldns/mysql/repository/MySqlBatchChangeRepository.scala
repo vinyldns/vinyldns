@@ -296,25 +296,24 @@ class MySqlBatchChangeRepository
             .apply()
             .toMap
 
-          val complete          = counts.getOrElse("Complete", 0)
-          val failed            = counts.getOrElse("Failed", 0)
-          val partialFailure    = counts.getOrElse("PartialFailure", 0)
-          val rejected          = counts.getOrElse("Rejected", 0)
-          val cancelled         = counts.getOrElse("Cancelled", 0)
-          val pendingReview     = counts.getOrElse("PendingReview", 0)
-          val scheduled         = counts.getOrElse("Scheduled", 0)
-          val pendingProcessing = counts.getOrElse("PendingProcessing", 0)
+          val byStatus = BatchChangeStatus.values.toList
+            .map(s => s -> counts.getOrElse(fromBatchStatus(s), 0))
+            .toMap
+
+          val unrecognized = counts.keySet -- BatchChangeStatus.values.map(fromBatchStatus)
+          if (unrecognized.nonEmpty)
+            logger.warn(s"Unrecognized batch_status values in batch_change: ${unrecognized.mkString(", ")}")
+
           BatchChangeCount(
-            total             = complete + failed + partialFailure + rejected +
-                                cancelled + pendingReview + scheduled + pendingProcessing,
-            complete          = complete,
-            failed            = failed,
-            partialFailure    = partialFailure,
-            rejected          = rejected,
-            cancelled         = cancelled,
-            pendingReview     = pendingReview,
-            scheduled         = scheduled,
-            pendingProcessing = pendingProcessing
+            total             = counts.values.sum,
+            complete          = byStatus(BatchChangeStatus.Complete),
+            failed            = byStatus(BatchChangeStatus.Failed),
+            partialFailure    = byStatus(BatchChangeStatus.PartialFailure),
+            rejected          = byStatus(BatchChangeStatus.Rejected),
+            cancelled         = byStatus(BatchChangeStatus.Cancelled),
+            pendingReview     = byStatus(BatchChangeStatus.PendingReview),
+            scheduled         = byStatus(BatchChangeStatus.Scheduled),
+            pendingProcessing = byStatus(BatchChangeStatus.PendingProcessing)
           )
         }
       }
@@ -361,22 +360,19 @@ class MySqlBatchChangeRepository
                   res.timestampOpt("scheduled_time").map(st => st.toInstant)
                 val cancelledTimestamp =
                   res.timestampOpt("cancelled_timestamp").map(st => st.toInstant)
-                val status = res.stringOpt("batch_status").flatMap(BatchChangeStatus.find).getOrElse(
-                  BatchChangeStatus.calculateBatchStatus(
-                    approvalStatus,
-                    pending > 0,
-                    failed > 0,
-                    complete > 0,
-                    schedTime.isDefined
-                  )
-                )
                 BatchChangeSummary(
                   res.string("user_id"),
                   res.string("user_name"),
                   Option(res.string("comments")),
                   res.timestamp("created_time").toInstant,
                   pending + failed + complete + cancelled,
-                  status,
+                  BatchChangeStatus.calculateBatchStatus(
+                    approvalStatus,
+                    pending > 0,
+                    failed > 0,
+                    complete > 0,
+                    schedTime.isDefined
+                  ),
                   Option(res.string("owner_group_id")),
                   res.string("id"),
                   None,

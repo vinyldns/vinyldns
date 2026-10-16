@@ -1121,6 +1121,24 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       count.pendingProcessing shouldBe 0
     }
 
+    "include empty and unrecognized statuses in the total without adding them to buckets" in {
+      val legacy = pendingBatchChange.copy(id = UUID.randomUUID().toString)
+      val unknown = pendingBatchChange.copy(id = UUID.randomUUID().toString)
+      repo.save(legacy).unsafeRunSync()
+      repo.save(unknown).unsafeRunSync()
+      repo.save(pendingBatchChange).unsafeRunSync()
+
+      DB.localTx { s =>
+        s.executeUpdate("UPDATE batch_change SET batch_status = ? WHERE id = ?", "", legacy.id)
+        s.executeUpdate("UPDATE batch_change SET batch_status = ? WHERE id = ?", "Unknown", unknown.id)
+      }
+
+      repo.getBatchChangeCount(None).unsafeRunSync() shouldBe
+        BatchChangeCount(total = 3, pendingProcessing = 1)
+      repo.getBatchChangeCount(Some(pendingBatchChange.userId)).unsafeRunSync() shouldBe
+        BatchChangeCount(total = 3, pendingProcessing = 1)
+    }
+
     "count batch changes grouped by status across all users when no userId is given" in {
       // change_two and change_six share an id (both copied from completeBatchChange),
       // so build fresh Complete batch changes with unique ids instead

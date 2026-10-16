@@ -1,3 +1,5 @@
+import datetime
+
 import pytest
 
 from utils import *
@@ -75,6 +77,42 @@ def test_get_batch_change_count_reflects_completed_changes(shared_zone_test_cont
         # the number of changes we just completed
         assert_that(after["total"], is_(greater_than_or_equal_to(before["total"] + 2)))
         assert_that(after["complete"], is_(greater_than_or_equal_to(before["complete"] + 2)))
+    finally:
+        for result_rs in to_delete:
+            delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=(202, 404))
+            if not isinstance(delete_result, str):
+                client.wait_until_recordset_change_status(delete_result, "Complete")
+
+
+def test_get_batch_change_count_applies_one_sided_date_bounds(shared_zone_test_context):
+    client = shared_zone_test_context.ok_vinyldns_client
+    ok_zone_name = shared_zone_test_context.ok_zone["name"]
+    yesterday = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+    before_start = client.get_batch_change_count(date_time_range_start=yesterday, status=200)
+    before_end = client.get_batch_change_count(date_time_range_end=yesterday, status=200)
+
+    to_delete = set()
+    try:
+        batch_change_input = {
+            "comments": "count-test-one-sided-date-bounds",
+            "changes": [
+                get_change_A_AAAA_json(generate_record_name(ok_zone_name), address="1.2.3.4")
+            ]
+        }
+        batch_change = client.create_batch_change(batch_change_input, status=202)
+        completed = client.wait_until_batch_change_completed(batch_change)
+        to_delete.update((change["zoneId"], change["recordSetId"]) for change in completed["changes"])
+        assert_that(completed["status"], is_("Complete"))
+
+        after_start = client.get_batch_change_count(date_time_range_start=yesterday, status=200)
+        after_end = client.get_batch_change_count(date_time_range_end=yesterday, status=200)
+
+        assert_count_is_consistent(after_start)
+        assert_count_is_consistent(after_end)
+        assert_that(after_start["total"], is_(greater_than_or_equal_to(before_start["total"] + 1)))
+        assert_that(after_end["total"], is_(before_end["total"]))
     finally:
         for result_rs in to_delete:
             delete_result = client.delete_recordset(result_rs[0], result_rs[1], status=(202, 404))
