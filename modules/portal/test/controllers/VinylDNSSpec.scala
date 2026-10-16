@@ -1426,6 +1426,14 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         content must contain(frodoUser.userName)
         content must contain(frodoUser.accessKey)
         content must contain(frodoUser.secretKey.value)
+        header("Content-Disposition", result) must beSome(
+          """attachment; filename="credentials.csv""""
+        )
+        header("Cache-Control", result) must beSome(
+          "no-cache, no-store, must-revalidate"
+        )
+        header("Pragma", result) must beSome("no-cache")
+        header("Expires", result) must beSome("0")
         there.was(one(crypto).decrypt(frodoUser.secretKey.value))
       }
       "redirect to login if user is not logged in" in new WithApplication(app) {
