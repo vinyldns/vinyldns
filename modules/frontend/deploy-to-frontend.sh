@@ -14,8 +14,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "==> Building React frontend..."
+echo "==> Installing frontend npm packages..."
 cd "${SCRIPT_DIR}"
+npm install -f --no-audit --no-fund
+
+echo "==> Building React frontend..."
 npm run build
 
 MICROSITE_IMG_DIR="${SCRIPT_DIR}/../docs/src/main/resources/microsite/img"
