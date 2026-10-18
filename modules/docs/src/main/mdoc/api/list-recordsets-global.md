@@ -6,6 +6,10 @@ section: "api"
 
 # Global List / Search RecordSets
 
+By default, authenticated users can search records in all zones, including private zones. Operators can set
+`vinyldns.global-recordset-search-access-all-zones = false` to limit results to shared zones and zones the user can
+otherwise access. This setting affects search visibility only; record mutation authorization is unchanged.
+
 Retrieves a list of RecordSets globally in the VinylDNS database based on search criteria. A minimum of two alpha-numeric characters is required.
 
 #### HTTP REQUEST

@@ -34,6 +34,7 @@ final case class ServerConfig(
                                keyName: String,
                                processingDisabled: Boolean,
                                useRecordSetCache: Boolean,
+                               globalRecordSetSearchAccessAllZones: Boolean,
                                loadTestData: Boolean,
                                isZoneSyncScheduleAllowed: Boolean,
                              )
@@ -41,7 +42,7 @@ object ServerConfig {
 
   import ZoneRecordValidations.toCaseIgnoredRegexList
 
-  implicit val configReader: ConfigReader[ServerConfig] = ConfigReader.forProduct13[
+  implicit val configReader: ConfigReader[ServerConfig] = ConfigReader.forProduct14[
     ServerConfig,
     Int,
     Int,
@@ -52,6 +53,7 @@ object ServerConfig {
     String,
     String,
     Config,
+    Boolean,
     Boolean,
     Boolean,
     Boolean,
@@ -68,6 +70,7 @@ object ServerConfig {
     "defaultZoneConnection",
     "processing-disabled",
     "use-recordset-cache",
+    "global-recordset-search-access-all-zones",
     "load-test-data",
     "is-zone-sync-schedule-allowed"
   ) {
@@ -83,6 +86,7 @@ object ServerConfig {
       zoneConnConfig,
       processingDisabled,
       useRecordSetCache,
+      globalRecordSetSearchAccessAllZones,
       loadTestData,
       isZoneSyncScheduleAllowed) =>
       ServerConfig(
@@ -97,6 +101,7 @@ object ServerConfig {
         zoneConnConfig.getString("keyName"),
         processingDisabled,
         useRecordSetCache,
+        globalRecordSetSearchAccessAllZones,
         loadTestData,
         isZoneSyncScheduleAllowed
       )
