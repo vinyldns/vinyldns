@@ -73,20 +73,24 @@ class BatchChangeRoute(
       (get & monitor("Endpoint.listBatchChangeSummaries")) {
         parameters(
           "userName".as[String].?,
+          "groupName".as[String].?,
           "dateTimeRangeStart".as[String].?,
           "dateTimeRangeEnd".as[String].?,
           "startFrom".as[Int].?,
           "maxItems".as[Int].?(MAX_ITEMS_LIMIT),
           "ignoreAccess".as[Boolean].?(false),
+          "isSearchByGroup".as[Boolean].?(false),
           "approvalStatus".as[String].?
         ) {
           (
               userName: Option[String],
+              groupName: Option[String],
               dateTimeRangeStart: Option[String],
               dateTimeRangeEnd: Option[String],
               startFrom: Option[Int],
               maxItems: Int,
               ignoreAccess: Boolean,
+              isSearchByGroup: Boolean,
               approvalStatus: Option[String]
           ) =>
             {
@@ -101,11 +105,13 @@ class BatchChangeRoute(
                       batchChangeService.listBatchChangeSummaries(
                         _,
                         userName,
+                        groupName,
                         dateTimeRangeStart,
                         dateTimeRangeEnd,
                         startFrom,
                         maxItems,
                         ignoreAccess,
+                        isSearchByGroup,
                         // TODO: Update batch status from None to its actual value when the feature is ready for release
                         None,
                         convertApprovalStatus
