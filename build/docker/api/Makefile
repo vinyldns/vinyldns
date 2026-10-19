@@ -34,14 +34,14 @@ all: build run
 artifact:
 	@set -euo pipefail
 	cd ../../..
-	docker build $(BUILD_ARGS) --target base-build --build-arg DOCKER_FILE_PATH="$$(realpath --relative-to="." "$(ROOT_DIR)")" --build-arg VINYLDNS_VERSION="$(IMAGE_TAG)" -t "vinyldns:api-artifact" -f "$(ROOT_DIR)/Dockerfile" .
+	docker build $(BUILD_ARGS) --target base-build --build-arg DOCKER_FILE_PATH="build/docker/api" --build-arg VINYLDNS_VERSION="$(IMAGE_TAG)" -t "vinyldns:api-artifact" -f "$(ROOT_DIR)/Dockerfile" .
 	USE_TTY="" && test -t 1 && USE_TTY="-t"
 	docker run -i $${USE_TTY} --rm -v "$$(pwd)/:/output" vinyldns:api-artifact /bin/bash -c "mkdir -p /output/artifacts/ && cp /build/artifacts/*.jar /output/artifacts/"
 
 build:
 	@set -euo pipefail
 	cd ../../..
-	docker build $(BUILD_ARGS) --build-arg DOCKER_FILE_PATH="$$(realpath --relative-to="." "$(ROOT_DIR)")" --build-arg VINYLDNS_VERSION="$(IMAGE_TAG)" -t $(IMAGE_NAME):$(IMAGE_TAG) -f "$(ROOT_DIR)/Dockerfile" .
+	docker build $(BUILD_ARGS) --build-arg DOCKER_FILE_PATH="build/docker/api" --build-arg VINYLDNS_VERSION="$(IMAGE_TAG)" -t $(IMAGE_NAME):$(IMAGE_TAG) -f "$(ROOT_DIR)/Dockerfile" .
 	docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):latest
 
 run:
@@ -58,7 +58,7 @@ publish: build
 build-vnext:
 	@set -euo pipefail
 	cd ../../..
-	docker build $(BUILD_ARGS) --build-arg DOCKER_FILE_PATH="$$(realpath --relative-to="." "$(ROOT_DIR)")" --build-arg VINYLDNS_VERSION="vnext" -t $(IMAGE_NAME):vnext -f "$(ROOT_DIR)/Dockerfile" .
+	docker build $(BUILD_ARGS) --build-arg DOCKER_FILE_PATH="build/docker/api" --build-arg VINYLDNS_VERSION="vnext" -t $(IMAGE_NAME):vnext -f "$(ROOT_DIR)/Dockerfile" .
 	docker tag $(IMAGE_NAME):vnext "$(IMAGE_NAME):vnext-$$(date -u  +"%Y%m%d")"
 
 publish-vnext: build-vnext
