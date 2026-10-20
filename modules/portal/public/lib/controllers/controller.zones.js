@@ -133,6 +133,8 @@ angular.module('controller.zones', [])
                 $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
             }
         });
+
+        vinyldnsAutocomplete.applyRenderer(zoneSearch);
     };
 
     // Should be the default autocomplete search result option
@@ -170,6 +172,8 @@ angular.module('controller.zones', [])
                 $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
               }
             });
+
+            vinyldnsAutocomplete.applyRenderer(zoneSearch);
         } else {
             $.zoneAutocompleteSearch();
         }

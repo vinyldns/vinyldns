@@ -214,8 +214,8 @@ object TestRecordSetData {
     recordSetGroupChange= None
   )
 
-  val ownerShipTransfer: OwnerShipTransfer = OwnerShipTransfer(
-    OwnerShipTransferStatus.None
+  val ownershipTransfer: OwnershipTransfer = OwnershipTransfer(
+    OwnershipTransferStatus.None
   )
 
   val sharedZoneRecordNoOwnerGroup: RecordSet =

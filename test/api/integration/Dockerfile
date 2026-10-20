@@ -12,7 +12,7 @@ ARG SKIP_API_BUILD="false"
 RUN if [ -f artifacts/vinyldns-api.jar ]; then cp artifacts/vinyldns-api.jar /opt/vinyldns; fi && \
     if [ ! -f /opt/vinyldns/vinyldns-api.jar ] && [ "$SKIP_API_BUILD" == "false" ]; then \
       env SBT_OPTS="-Xmx2G -Xms512M -Xss2M -XX:MaxMetaspaceSize=2G" \
-      sbt -Dbuild.scalafmtOnCompile=false -Dbuild.lintOnCompile=fase ";project api;coverageOff;assembly" \
+      sbt -Dbuild.scalafmtOnCompile=false -Dbuild.lintOnCompile=false ";project api;coverageOff;assembly" \
       && cp artifacts/vinyldns-api.jar /opt/vinyldns/; \
     fi
 
@@ -25,6 +25,9 @@ COPY --from=base-build /opt/vinyldns /opt/vinyldns
 # Copy the project contents
 COPY . /build/
 WORKDIR /build
+
+# Create log files before startup to avoid tail race.
+RUN mkdir -p /localstack && touch /localstack/localstack.log /opt/vinyldns/vinyldns.log
 
 # Local bind server files
 COPY quickstart/bind9/etc/named.conf.* /etc/bind/

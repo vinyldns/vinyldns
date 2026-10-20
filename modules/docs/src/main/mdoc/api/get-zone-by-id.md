@@ -12,6 +12,12 @@ Retrieves a zone with the matching zone ID.
 
 > GET /zones/{zoneId}
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /zones/0f2fcece-b4ee-4982-b671-e5946f7db81d
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |
@@ -58,4 +64,10 @@ zone          | map           | Refer to [zone model](zone-model.html) |
     "latestSync": "2016-12-16T15:27:26Z"
   }
 }
+```
+
+#### EXAMPLE ERROR RESPONSE
+
+```text
+Zone with id e91b6232-2e2f-479b-93fe-ce440314fb87 does not exists
 ```

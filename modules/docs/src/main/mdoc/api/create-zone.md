@@ -73,3 +73,9 @@ id            | string        | The ID of the change.  This is not the ID of the
   "id": "dd449c27-bed5-4cd5-95e6-4c54fb20d930"
 }
 ```
+
+#### EXAMPLE ERROR RESPONSE
+
+```text
+Zone with name dummy. already exists. Please contact test@example.com to request access to the zone.
+```

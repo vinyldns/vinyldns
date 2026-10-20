@@ -83,8 +83,9 @@ class AccessValidations(
       superUserCanUpdateOwnerGroup: Boolean = false,
       newRecordData: List[RecordData] = List.empty
   ): Either[Throwable, Unit] = {
-    val accessLevel =
+    val accessLevel = {
       getAccessLevel(auth, recordName, recordType, zone, recordOwnerGroupId, newRecordData)
+    }
     ensuring(
       NotAuthorizedError(
         s"User ${auth.signedInUser.userName} does not have access to update " +
@@ -223,7 +224,7 @@ class AccessValidations(
       recordData: List[RecordData] = List.empty
   ): AccessLevel = auth match {
     case testUser if testUser.isTestUser && !zone.isTest => AccessLevel.NoAccess
-    case admin if admin.isGroupMember(zone.adminGroupId) =>
+    case admin if admin.isGroupMember(zone.adminGroupId) || admin.isSuper=>
       AccessLevel.Delete
     case recordOwner
         if zone.shared && sharedRecordAccess(recordOwner, recordType, recordOwnerGroupId) =>

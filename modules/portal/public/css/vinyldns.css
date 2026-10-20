@@ -138,6 +138,17 @@ a.action-link {
     margin-left: 10px;
 }
 
+.export-btn {
+    margin-left: 10px;
+    font-size: small;
+    font-weight: normal;
+}
+
+.export-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
 .form-control.zone-edit {
     background: #F9F9F9;
     color:#555;
@@ -448,6 +459,10 @@ input[type="file"] {
 
 .wrap-long-text {
     word-break: break-all;
+}
+
+.preserve-line-breaks {
+    white-space: pre-line;
 }
 
 .no-wrap {
