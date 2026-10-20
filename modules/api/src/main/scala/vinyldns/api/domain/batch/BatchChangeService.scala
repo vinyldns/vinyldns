@@ -154,9 +154,9 @@ class BatchChangeService(
           case e: UserIsNotAuthorizedError =>
             val group = groups.find(_.id == e.ownerGroupId)
             val updatedError = UserIsNotAuthorizedError(
-              e.userName,
+              e.recordName,
               e.ownerGroupId,
-              e.ownerType,
+              e.operation,
               group.map(_.email),
               group.map(_.name)
             )

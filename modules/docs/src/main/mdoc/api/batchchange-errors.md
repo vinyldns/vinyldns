@@ -120,6 +120,7 @@ the VinylDNS instance is configured to have manual review disabled.
 - [Invalid Batch Record Type](#InvalidBatchRecordType)
 - [Record Already Exists](#RecordAlreadyExists)
 - [Record Does Not Exist](#RecordDoesNotExist)
+- [Record Data Does Not Exist](#RecordDataDoesNotExist)
 - [CNAME Conflict](#CNAMEConflict)
 - [User Is Not Authorized](#UserIsNotAuthorized)
 - [Record Name Not Unique In Batch Change](#RecordNameNotUniqueInBatchChange)
@@ -331,13 +332,24 @@ A record with the given name already exists, and cannot be duplicated for the gi
 ##### Error Message:
 
 ```plaintext
-Record "<input>" Does Not Exist: cannot delete a record that does not exist.
+This record does not exist. No further action is required.
 ```
 
 ##### Details:
 
-A record with the given name could not be found in VinylDNS.
-If the record exists in DNS, then you should [sync the zone](sync-zone.html) for that record to bring VinylDNS up to date with what is in the DNS backend.
+A delete request was submitted for a record set that is not present in VinylDNS. This is treated as a non-fatal system message and no further action is required.
+
+#### Record Data Does Not Exist <a id="RecordDataDoesNotExist"></a>
+
+##### Error Message:
+
+```plaintext
+Record data entered does not exist. No further action is required.
+```
+
+##### Details:
+
+A delete request was submitted for record data that is not present on the existing record set. This is treated as a non-fatal system message and no further action is required.
 
 
 #### CNAME Conflict <a id="CNAMEConflict"></a>

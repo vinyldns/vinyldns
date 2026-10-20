@@ -142,7 +142,7 @@ def test_get_batch_change_failure(shared_zone_test_context):
 
     error = client.get_batch_change("invalidId", status=404)
 
-    assert_that(error, is_("Batch change with id invalidId cannot be found"))
+    assert_that(error, is_("Batch change with id invalidId not found"))
 
 
 def test_get_batch_change_with_unauthorized_user_fails(shared_zone_test_context):

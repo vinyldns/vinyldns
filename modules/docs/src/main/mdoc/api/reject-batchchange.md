@@ -39,9 +39,16 @@ reviewComment | string        | no          | Optional rejection explanation. |
 Code          | description |
  ------------ | :---------- |
 200           | **OK** Batch change is rejected and is returned in response body. |
-400           | **BadRequest** Batch change is not in pending approval status. |
+400           | **BadRequest** Batch change is not in pending review state and cannot be rejected. |
 403           | **Forbidden** User is not a system administrator (ie. support or super user). |
 404           | **NotFound** Batch change does not exist. |
+
+
+##### HTTP 400 ERROR MESSAGE
+
+```plaintext
+Batch change <id> is not in pending review state, so it cannot be rejected.
+```
 
 #### HTTP RESPONSE ATTRIBUTES <a id="http-response-attributes" />
 

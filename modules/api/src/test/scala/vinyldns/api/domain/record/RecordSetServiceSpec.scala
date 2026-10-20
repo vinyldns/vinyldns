@@ -2621,7 +2621,7 @@ class RecordSetServiceSpec
       val result =
         underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().swap.toOption.get
 
-      result shouldBe InvalidRequest("Unable to AutoApproved the Ownership transfer status for the record: None")
+      result shouldBe InvalidRequest("Unable to AutoApproved the ownership transfer status for the record: None")
     }
 
     "success if user owners the record with the status Manually approved and super user tries to updated owner group" in {
@@ -2797,7 +2797,7 @@ class RecordSetServiceSpec
       val result =
         underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().swap.toOption.get
 
-      result shouldBe InvalidRequest("Unable to cancel the Ownership transfer. Current status: AutoApproved")
+      result shouldBe InvalidRequest("Unable to cancel the ownership transfer. Current status: AutoApproved")
     }
 
     "fail if user request PendingReview for the owner group" in {
@@ -2852,7 +2852,7 @@ class RecordSetServiceSpec
       val result =
         underTest.updateRecordSet(newRecord, auth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().swap.toOption.get
 
-      result shouldBe InvalidRequest("Invalid Ownership transfer status: PendingReview")
+      result shouldBe InvalidRequest("Invalid ownership transfer status: PendingReview")
     }
 
     "fail if user request ownership transfer for non shared zone" in {
@@ -3175,7 +3175,7 @@ class RecordSetServiceSpec
       val result =
         underTest.updateRecordSet(newRecord, okAuth).map(_.asInstanceOf[RecordSetChange]).value.unsafeRunSync().swap.toOption.get
 
-      result shouldBe InvalidRequest("Unauthorised to Cancel the ownership transfer")
+      result shouldBe InvalidRequest("Unauthorized to cancel the ownership transfer")
     }
 
     "success if user is a super privileged and tried to Cancel ownership transfer request" in {
