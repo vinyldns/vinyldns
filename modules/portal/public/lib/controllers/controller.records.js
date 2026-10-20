@@ -618,6 +618,7 @@ angular.module('controller.records', [])
             .then(success)
             .catch(function (error){
                 handleError(error, 'recordsService::getZone-catch');
+                return $q.reject(error);
             });
     };
 
@@ -864,9 +865,13 @@ angular.module('controller.records', [])
     }
 
     loadZonesPromise = $timeout($scope.refreshZone, 0);
-    loadRecordsPromise = $timeout($scope.refreshRecords, 0);
-    $timeout($scope.refreshRecordChangesPreview, 0);
-    $timeout($scope.refreshRecordChanges, 0);
+    loadZonesPromise.then(function() {
+        loadRecordsPromise = $timeout($scope.refreshRecords, 0);
+        $timeout($scope.refreshRecordChangesPreview, 0);
+        $timeout($scope.refreshRecordChanges, 0);
+    }).catch(function(error) {
+        loadRecordsPromise = $q.reject(error);
+    });
 
     profileService.getAuthenticatedUserData()
         .then(profileSuccess, profileFailure)
