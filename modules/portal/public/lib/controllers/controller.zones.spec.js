@@ -49,6 +49,10 @@ describe('Controller: ZonesController', function () {
         };
 
         $.fn.select2 = function () { return this; };
+        window.vinyldnsAutocomplete = {
+            applyRenderer: function() { /* mock renderer for tests */ }
+        };
+        window.zoneSearch = '.zone-search-text';
         zonesService.getZones = function() {
             return $q.when({
                 data: {

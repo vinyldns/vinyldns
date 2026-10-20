@@ -93,6 +93,7 @@ angular.module('controller.zones', [])
     };
 
     $.zoneAutocompleteSearch = function() {
+        var zoneSearch = '.zone-search-text';
         $(".zone-search-text").autocomplete({
             source: function(request, response) {
                 $.ajax({
@@ -141,6 +142,7 @@ angular.module('controller.zones', [])
     $.zoneAutocompleteSearch();
     
     $('.isGroupSearch').change(function() {
+        var zoneSearch = '.zone-search-text';
         if(this.checked) {
             // Autocomplete for search by admin group (.generateZone-search-text handled by GenerateZonesController)
             $(".zone-search-text").autocomplete({
