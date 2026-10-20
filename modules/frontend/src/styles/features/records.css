@@ -1,0 +1,416 @@
+/*
+ * VinylDNS Feature Styles - Records & Record History
+ */
+
+/* ============================================================
+   Records Table Header Banner & Pill
+   ============================================================ */
+.vds-records-table-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: #f8faff;
+  border-bottom: 1px solid #dce8fb;
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+.vds-records-table-banner__hint {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.vds-records-zone-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.vds-records-zone-pill--shared {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #7dd3fc;
+}
+
+.vds-records-zone-pill--private {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+/* ============================================================
+   Record Actions Layout
+   ============================================================ */
+.vds-record-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vds-record-actions .vds-action-btn:not(.vds-action-btn--text) {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  box-shadow: none;
+}
+
+.vds-record-actions--inline {
+  flex-flow: row nowrap;
+}
+
+.vds-record-actions--stack {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.vds-record-actions--stack .vds-action-btn--text {
+  min-width: 58px;
+  justify-content: center;
+}
+
+/* ============================================================
+   Record Data Rows
+   ============================================================ */
+.vds-record-data-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid #0d9488;
+  border-radius: 0.45rem;
+  padding: 0.55rem 0.6rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.vds-record-data-row:hover {
+  border-left-color: #0891b2;
+  box-shadow: 0 2px 8px rgb(8 145 178 / 10%);
+}
+
+.vds-record-data-row__idx {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Ownership Badges, Chips & Toast
+   ============================================================ */
+.vds-owner-group-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1e40af;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+.vds-unassigned-owner {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: #94a3b8;
+}
+
+.vds-ownership-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.vds-ownership-badge--none {
+  color: #94a3b8;
+  background: transparent;
+}
+
+.vds-ownership-badge--approved {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #86efac;
+}
+
+.vds-ownership-badge--rejected {
+  background: #ffe4e6;
+  color: #be123c;
+  border-color: #fda4af;
+}
+
+.vds-ownership-badge--requested {
+  background: #ede9fe;
+  color: #6d28d9;
+  border-color: #c4b5fd;
+}
+
+.vds-ownership-badge--pending {
+  background: #fefce8;
+  color: #a16207;
+  border-color: #fde047;
+}
+
+.vds-ownership-badge--cancelled {
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: #cbd5e1;
+}
+
+.vds-ownership-toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 2000;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 320px;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 14px;
+  border-left: 5px solid #6366f1;
+  box-shadow:
+    0 12px 40px rgb(0 0 0 / 16%),
+    0 2px 8px rgb(0 0 0 / 8%);
+  padding: 16px 14px 16px 16px;
+}
+
+.vds-ownership-toast__title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.vds-ownership-toast__msg {
+  font-size: 0.85rem;
+  color: #374151;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.vds-ownership-toast__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: #f1f5f9;
+  border-radius: 50%;
+  font-size: 0.95rem;
+  color: #64748b;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Record History Table & Record History Modal (rhm-*)
+   ============================================================ */
+.vds-record-history-table-wrapper {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #b9d1f2 !important;
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+  margin: auto;
+}
+
+.vds-record-history-table-scroll {
+  width: 100%;
+}
+
+.vds-record-history-table-modal {
+  width: 100%;
+  min-width: 980px;
+  table-layout: auto;
+  border-collapse: collapse;
+  background: #fff;
+  margin: 0;
+  border: 0 !important;
+}
+
+.vds-record-history-table-modal thead tr {
+  background: #f1f5f9;
+}
+
+.vds-record-history-table-modal thead th {
+  padding: 8px 16px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #475569;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f1f5f9;
+  border-bottom: 1px solid #a1bbe0;
+}
+
+.vds-record-history-table-modal tbody tr {
+  border-bottom: 1px solid #dbeafe;
+  transition: background 0.13s ease;
+}
+
+.vds-record-history-table-modal tbody tr:last-child {
+  border-bottom: none;
+}
+
+.vds-record-history-table-modal tbody tr:hover {
+  background: #f5f9ff;
+}
+
+.vds-record-history-table-modal tbody td {
+  padding: 6px;
+  vertical-align: middle;
+  font-size: 13px;
+  color: #2c3e50;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.vds-record-history-table-modal tbody td.small,
+.vds-record-history-table-modal tbody td .small {
+  font-size: 13px;
+}
+
+.vds-view-record {
+  padding: 1rem;
+}
+
+.vds-view-record--data {
+  font-family: var(--vds-font-mono);
+  font-size: 0.85rem;
+}
+
+.vds-record--info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vds-record--footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.rhm-form-group,
+.rhm-row,
+.rhm-label,
+.rhm-value,
+.rhm-section {
+  display: block;
+}
+
+.rhm-table-row,
+.rhm-record-row,
+.rhm-card,
+.rhm-panel {
+  border-radius: var(--vds-radius-md);
+}
+
+.rhm-card,
+.rhm-panel {
+  background: var(--vds-bg-surface);
+  border: 1px solid var(--vds-border-color);
+}
+
+/* ============================================================
+   Dark Mode Record Overrides
+   ============================================================ */
+[data-vds-theme="dark"] .vds-records-table-banner {
+  background: #1e293b;
+  border-bottom-color: #334155;
+}
+
+[data-vds-theme="dark"] .vds-record-data-row {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-vds-theme="dark"] .vds-record-history-table-wrapper,
+.dark .vds-record-history-table-wrapper {
+  background: #111213;
+  border-color: #212326 !important;
+}
+
+[data-vds-theme="dark"] .vds-record-history-table-modal,
+.dark .vds-record-history-table-modal {
+  background: #111213;
+}
+
+[data-vds-theme="dark"] .vds-record-history-table-modal thead tr,
+.dark .vds-record-history-table-modal thead tr {
+  background: #1e293b;
+}
+
+[data-vds-theme="dark"] .vds-record-history-table-modal thead th,
+.dark .vds-record-history-table-modal thead th {
+  color: #cbd5e1;
+  background: #1e293b;
+  border-bottom: 1px solid #383b3f;
+}
+
+[data-vds-theme="dark"] .vds-record-history-table-modal tbody tr,
+.dark .vds-record-history-table-modal tbody tr {
+  border-bottom: 1px solid #334155;
+}
+
+[data-vds-theme="dark"] .vds-record-history-table-modal tbody tr:hover,
+.dark .vds-record-history-table-modal tbody tr:hover {
+  background: #172554;
+}
+
+[data-vds-theme="dark"] .vds-record-history-table-modal tbody td,
+.dark .vds-record-history-table-modal tbody td {
+  color: #e2e8f0;
+}
+
+[data-vds-theme="dark"] .vds-ownership-toast {
+  background: #1e293b;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 60%);
+}
+
+[data-vds-theme="dark"] .vds-ownership-toast__msg {
+  color: #e2e8f0;
+}
+
+[data-vds-theme="dark"] .vds-view-record {
+  background: #111;
+}

@@ -1,0 +1,351 @@
+/*
+ * VinylDNS Component Styles - Badges & Status Pills
+ */
+
+/* ============================================================
+   Role Badges
+   ============================================================ */
+.vds-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.vds-role-badge--admin {
+  background: #fff3cd;
+  color: #7d6000;
+  border: 1px solid #ffe88a;
+}
+
+.vds-role-badge--member {
+  background: #eaf2ff;
+  color: #0d6efd;
+  border: 1px solid #c7deff;
+}
+
+.vds-role-badge--none {
+  background: #f1f3f5;
+  color: #8099b8;
+  border: 1px solid #dde3ea;
+}
+
+/* ============================================================
+   Status Badges (Records, Changes, Zones)
+   ============================================================ */
+.vds-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+}
+
+.vds-status-badge--success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.vds-status-badge--danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.vds-status-badge--warning {
+  background: #fff3cd;
+  color: #7d6000;
+  border: 1px solid #fde68a;
+}
+
+.vds-status-badge--info {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.vds-status-badge--secondary {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+/* ============================================================
+   Change Type Badges
+   ============================================================ */
+.vds-change-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vds-change-type-badge--add {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.vds-change-type-badge--delete {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.vds-change-type-badge--update {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.vds-change-type-badge--default {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+/* ============================================================
+   Lock Status Pills
+   ============================================================ */
+.vds-lock-status {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.vds-lock-status--locked {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.vds-lock-status--active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+/* ============================================================
+   Filter Chips & Tags
+   ============================================================ */
+.vds-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  border-radius: 0.35rem;
+  background: rgb(255 255 255 / 16%);
+  color: inherit;
+  opacity: 0.85;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-left: auto;
+}
+
+.vds-filter-chip--accent {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.67rem;
+  font-weight: 700;
+  padding: 0.15em 0.55em;
+  border-radius: 0.35rem;
+  background: #1e5fa8;
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-left: 2px;
+}
+
+.vds-active-filter-tag {
+  background: #edf1f7;
+  color: #1e5fa8;
+  border: 1px solid #d4dbe8;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.28em 0.75em;
+  white-space: nowrap;
+}
+
+.vds-tag-nav {
+  background: #1e5fa8;
+  color: #fff;
+  border: 1px solid rgb(30 95 168 / 28%);
+  box-shadow: 0 1px 6px rgb(13 27 62 / 30%);
+}
+
+.vds-badge-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2em 0.55em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  background-color: #1e5fa8;
+  border-radius: 10rem;
+}
+
+/* ── Record type badge (RecordsTable TYPE column) ── */
+.vds-type-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: #eaf2ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+/* ── DNS change count badge (DnsChangesTable CHANGES column) ── */
+.vds-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: #eaf2ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.vds-dark-modal-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+.vds-dark-modal-badge.badge-fqdn {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.vds-dark-modal-badge.badge-type {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.vds-record-data-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 0.75rem;
+  font-family: var(--vds-font-mono);
+}
+
+/* ============================================================
+   Dark Mode Overrides
+   ============================================================ */
+[data-vds-theme="dark"] .vds-status-badge--success {
+  background: rgb(6 78 59 / 25%);
+  color: #34d399;
+  border: 1px solid rgb(52 211 153 / 30%);
+}
+
+[data-vds-theme="dark"] .vds-status-badge--danger {
+  background: rgb(153 27 27 / 25%);
+  color: #f87171;
+  border: 1px solid rgb(248 113 113 / 30%);
+}
+
+[data-vds-theme="dark"] .vds-status-badge--warning {
+  background: rgb(146 64 14 / 25%);
+  color: #fbbf24;
+  border: 1px solid rgb(251 191 36 / 30%);
+}
+
+[data-vds-theme="dark"] .vds-status-badge--info {
+  background: rgb(30 64 175 / 25%);
+  color: #60a5fa;
+  border: 1px solid rgb(96 165 250 / 30%);
+}
+
+[data-vds-theme="dark"] .vds-status-badge--secondary {
+  background: rgb(107 114 128 / 15%);
+  color: #9ca3af;
+  border: 1px solid rgb(107 114 128 / 30%);
+}
+
+[data-vds-theme="dark"] .vds-change-type-badge--add {
+  background: rgb(16 185 129 / 15%);
+  color: #6ee7b7;
+}
+
+[data-vds-theme="dark"] .vds-change-type-badge--delete {
+  background: rgb(239 68 68 / 15%);
+  color: #fca5a5;
+}
+
+[data-vds-theme="dark"] .vds-change-type-badge--update {
+  background: rgb(251 240 211 / 15%);
+  color: #f5b004;
+}
+
+[data-vds-theme="dark"] .vds-change-type-badge--default {
+  background: rgb(107 114 128 / 15%);
+  color: #9ca3af;
+}
+
+[data-vds-theme="dark"] .vds-role-badge--admin {
+  background: rgb(245 158 11 / 15%);
+  color: #fbbf24;
+  border-color: rgb(245 158 11 / 30%);
+}
+
+[data-vds-theme="dark"] .vds-role-badge--member {
+  background: rgb(59 130 246 / 15%);
+  color: #60a5fa;
+  border-color: rgb(59 130 246 / 30%);
+}
+
+[data-vds-theme="dark"] .vds-role-badge--none {
+  background: rgb(255 255 255 / 6%);
+  color: #a1a1aa;
+  border-color: rgb(255 255 255 / 12%);
+}
+
+[data-vds-theme="dark"] .vds-active-filter-tag {
+  background: #1a1a1a;
+  border-color: #333;
+  color: #7eb0f5;
+}
+
+[data-vds-theme="dark"] .vds-type-badge {
+  background: rgb(59 130 246 / 12%);
+  color: #93c5fd;
+  border-color: rgb(59 130 246 / 25%);
+}
+
+[data-vds-theme="dark"] .vds-count-badge {
+  background: rgb(30 95 168 / 15%);
+  color: #93c5fd;
+  border-color: rgb(30 95 168 / 30%);
+}
+
+[data-vds-theme="dark"] .vds-record-data-chip {
+  background: #1e293b;
+  color: #cbd5e1;
+}

@@ -1,0 +1,528 @@
+/*
+ * VinylDNS Component Styles - Dropdowns & Popovers
+ */
+
+/* ============================================================
+   Base Dropdowns & Role Dropdown
+   ============================================================ */
+.vds-role-dropdown,
+.dropdown-menu {
+  border-radius: var(--vds-radius-md);
+  border: 1px solid var(--vds-border-color);
+  background: var(--vds-bg-surface);
+  box-shadow: var(--vds-shadow-sm);
+}
+
+.dropdown-item {
+  color: var(--vds-text-primary);
+}
+
+.dropdown-item:hover,
+.dropdown-item:active,
+.dropdown-item.active {
+  background: rgb(30 95 168 / 10%);
+  color: var(--vds-accent);
+}
+
+.vds-role-inline {
+  background: #edf1f7;
+  border: 1px solid #d4dbe8;
+  border-radius: 8px;
+  padding: 3px 4px;
+  gap: 2px;
+  flex-wrap: nowrap;
+}
+
+.vds-role-inline__label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #506080;
+  white-space: nowrap;
+  padding: 3px 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border-right: 1px solid #d4dbe8;
+  margin-right: 2px;
+}
+
+.vds-role-chip {
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #506080;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  white-space: nowrap;
+}
+
+.vds-role-chip:hover {
+  background: rgb(30 95 168 / 10%);
+  color: #1e5fa8;
+}
+
+.vds-role-chip--active {
+  background: #1e5fa8;
+  color: #fff !important;
+  box-shadow: 0 1px 5px rgb(13 27 62 / 28%);
+}
+
+.vds-role-chip--active:hover {
+  color: #fff !important;
+}
+
+.vds-role-item--selected {
+  background: #1e5fa8 !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+
+/* ============================================================
+   Group Dropdown Panel
+   ============================================================ */
+.vds-group-dropdown-panel {
+  position: absolute;
+  z-index: 1050;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%);
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.vds-group-dropdown-search-wrap {
+  padding: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.vds-group-dropdown-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.vds-group-dropdown-placeholder {
+  padding: 0.5rem;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.vds-group-dropdown-empty {
+  padding: 0.75rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.vds-group-dropdown-item {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vds-group-dropdown-item:hover {
+  background-color: #f1f5f9;
+}
+
+.vds-group-dropdown-item.selected {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  font-weight: 500;
+}
+
+/* ============================================================
+   Time Filter Panel & Dropdown
+   ============================================================ */
+.vds-time-filter-panel {
+  position: fixed;
+  z-index: 1200;
+  width: 320px;
+  border-radius: 0.9rem;
+  overflow: hidden;
+  background: #fff;
+  box-shadow:
+    0 12px 40px rgb(20 40 90 / 20%),
+    0 2px 8px rgb(0 0 0 / 7%);
+  border: 1px solid #d4dbe8;
+}
+
+.vds-time-filter-header {
+  padding: 10px 14px 9px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #eef2ff;
+}
+
+.vds-time-filter-header-icon {
+  color: #2e5090;
+  font-size: 0.75rem;
+}
+
+.vds-time-filter-header-title {
+  color: #2e5090;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.vds-time-filter-grid {
+  padding: 8px 10px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vds-time-filter-row {
+  display: flex;
+  gap: 4px;
+}
+
+.vds-time-filter-opt {
+  flex: 1 1 0;
+  border-radius: 0.5rem;
+  padding: 5px 4px 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.14s ease;
+  outline: none;
+  background: rgb(246 248 252 / 95%);
+  border: 1px solid rgb(46 80 144 / 10%);
+  box-shadow: none;
+}
+
+.vds-time-filter-opt:hover {
+  background: rgb(46 80 144 / 7%);
+}
+
+.vds-time-filter-opt--active {
+  background: rgb(46 80 144 / 12%);
+  border: 1px solid rgb(46 80 144 / 45%);
+  box-shadow: 0 1px 6px rgb(46 80 144 / 15%);
+}
+
+.vds-time-filter-opt--active:hover {
+  background: rgb(46 80 144 / 12%);
+}
+
+.vds-time-filter-icon-wrap {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgb(46 80 144 / 10%);
+}
+
+.vds-time-filter-opt--active .vds-time-filter-icon-wrap {
+  background: #2e5090;
+}
+
+.vds-time-filter-icon {
+  font-size: 0.62rem;
+  color: #506080;
+}
+
+.vds-time-filter-opt--active .vds-time-filter-icon {
+  color: #fff;
+}
+
+.vds-time-filter-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #344563;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.vds-time-filter-opt--active .vds-time-filter-label {
+  font-weight: 700;
+  color: #1a2a4c;
+}
+
+.vds-time-filter-check {
+  margin-left: auto;
+  font-size: 0.58rem;
+  flex-shrink: 0;
+  color: #2e5090;
+}
+
+.vds-time-filter-custom-wrap {
+  margin: 6px 12px 8px;
+  padding: 11px 13px;
+  border-radius: 0.6rem;
+  background: rgb(46 80 144 / 5%);
+  border: 1px solid rgb(46 80 144 / 18%);
+}
+
+.vds-time-filter-custom-title {
+  font-size: 0.67rem;
+  color: #506080;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.vds-time-filter-custom-title-icon {
+  color: #2e5090;
+}
+
+.vds-time-filter-input-label {
+  font-size: 0.67rem;
+  color: #8090a8;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.vds-time-filter-input {
+  font-size: 0.76rem;
+  border-radius: 0.4rem;
+  border: 1px solid rgb(46 80 144 / 30%);
+}
+
+.vds-time-filter-divider {
+  color: #9baec8;
+  font-size: 1rem;
+  padding-bottom: 4px;
+}
+
+.vds-time-filter-btn-apply {
+  margin-top: 10px;
+  width: 100%;
+  background: #2e5090;
+  color: #fff;
+  border: none;
+  border-radius: 0.4rem;
+  padding: 5px 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.vds-time-filter-footer {
+  padding: 6px 12px 10px;
+  border-top: 1px solid #eef0f5;
+}
+
+.vds-time-filter-btn-clear {
+  width: 100%;
+  background: rgb(229 62 62 / 6%);
+  border: 1px solid rgb(229 62 62 / 18%);
+  border-radius: 0.4rem;
+  color: #e53e3e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 5px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+/* ============================================================
+   Suggestions List
+   ============================================================ */
+.vds-suggestions-list {
+  z-index: 1050;
+  top: 100%;
+  list-style: none;
+  padding: 4px;
+  margin: 0;
+  border-radius: 0 0 0.5rem 0.5rem;
+  background-color: #fff;
+  border: 1px solid #d4dbe8;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 10%);
+}
+
+.vds-suggestion-item {
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+
+.vds-suggestions-list .list-group-item {
+  border: none;
+  padding: 0.5rem 0.75rem;
+}
+
+/* ============================================================
+   Dark Mode Dropdown Overrides
+   ============================================================ */
+[data-vds-theme="dark"] .dropdown-menu {
+  background-color: #1a1a1a;
+  border-color: #333;
+}
+
+[data-vds-theme="dark"] .dropdown-item {
+  color: #f5f5f5;
+}
+
+[data-vds-theme="dark"] .dropdown-item:hover,
+[data-vds-theme="dark"] .dropdown-item:focus {
+  background-color: #2a2a2a;
+  color: #fff;
+}
+
+[data-vds-theme="dark"] .vds-group-dropdown-panel {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-vds-theme="dark"] .vds-group-dropdown-search-wrap {
+  border-bottom-color: #334155;
+}
+
+[data-vds-theme="dark"] .vds-group-dropdown-empty {
+  color: #94a3b8;
+}
+
+[data-vds-theme="dark"] .vds-group-dropdown-item {
+  color: #f8fafc;
+}
+
+[data-vds-theme="dark"] .vds-group-dropdown-item:hover {
+  background-color: #334155;
+}
+
+[data-vds-theme="dark"] .vds-group-dropdown-item.selected {
+  background-color: #0369a1;
+  color: #fff;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-panel {
+  background: #161618;
+  box-shadow:
+    0 12px 40px rgb(0 0 0 / 60%),
+    0 2px 8px rgb(0 0 0 / 30%);
+  border-color: #2a2a2c;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-header {
+  background: #000;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-header-icon,
+[data-vds-theme="dark"] .vds-time-filter-header-title {
+  color: #fff;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-opt {
+  background: #161618;
+  border-color: #2a2a2c;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-opt:hover {
+  background: #222224;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-opt--active {
+  background: #2a2a2c;
+  border-color: #4a4a4c;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 30%);
+}
+
+[data-vds-theme="dark"] .vds-time-filter-opt--active:hover {
+  background: #2a2a2c;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-icon-wrap {
+  background: #242424;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-opt--active .vds-time-filter-icon-wrap {
+  background: #f5f5f5;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-icon {
+  color: #ababb1;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-opt--active .vds-time-filter-icon {
+  color: #000;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-label {
+  color: #e0e0e0;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-opt--active .vds-time-filter-label {
+  color: #fff;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-check {
+  color: #fff;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-custom-wrap {
+  background: #000;
+  border-color: #2a2a2c;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-custom-title,
+[data-vds-theme="dark"] .vds-time-filter-input-label {
+  color: #a1a1aa;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-custom-title-icon {
+  color: #9da0a7;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-input {
+  background: #161618;
+  border-color: #333;
+  color: #f5f5f5;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-divider {
+  color: #6e6e6e;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-btn-apply {
+  background: #e5e5e5;
+  color: #000;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-footer {
+  border-top-color: #2a2a2c;
+}
+
+[data-vds-theme="dark"] .vds-toolbar-filter-list {
+  background: #111 !important;
+  border-color: rgb(255 255 255 / 18%) !important;
+}
+
+[data-vds-theme="dark"] .vds-toolbar-filter-list .list-group-item {
+  background: transparent !important;
+  color: #e0e0e0 !important;
+  border-color: rgb(255 255 255 / 8%) !important;
+}
+
+[data-vds-theme="dark"] .vds-time-filter-input::-webkit-calendar-picker-indicator {
+  background-color: transparent !important;
+  filter: invert(1) brightness(2) !important;
+}

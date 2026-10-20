@@ -1,0 +1,357 @@
+/*
+ * VinylDNS Component Styles - Forms & Inputs
+ */
+
+/* ============================================================
+   Form Inputs & Labels
+   ============================================================ */
+.vds-form-input {
+  display: block;
+  width: 100%;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #212529;
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.vds-form-input:focus {
+  border-color: #86b7fe;
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgb(13 110 253 / 25%);
+}
+
+.vds-form-input:disabled {
+  background-color: #e9ecef;
+  opacity: 1;
+}
+
+.vds-form-input.is-invalid {
+  border-color: #dc3545;
+}
+
+.vds-form-label {
+  display: inline-block;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.vds-form-label-optional {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #64748b;
+  margin-left: 0.35rem;
+}
+
+.vds-field-error-text {
+  font-size: 0.75rem;
+  color: #dc2626;
+  margin-top: 0.25rem;
+}
+
+.vds-help-link {
+  font-size: 0.8rem;
+  color: #1e5fa8;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.vds-help-link:hover {
+  text-decoration: underline;
+}
+
+.vds-select-chevron {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #64748b;
+}
+
+.vds-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 1.5rem;
+}
+
+/* ============================================================
+   Pill Toggle (Segmented Controls)
+   ============================================================ */
+.vds-pill-toggle {
+  display: inline-flex;
+  background: #edf1f7;
+  border-radius: 0.5rem;
+  padding: 5px 15px;
+  border: 1px solid #dce3ee;
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 6%);
+}
+
+.vds-pill-toggle__btn {
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #506080;
+  cursor: pointer;
+  transition:
+    background 0.18s,
+    color 0.18s,
+    box-shadow 0.18s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1.4;
+}
+
+.vds-pill-toggle__btn--active {
+  background: #1e5fa8;
+  color: #fff;
+  box-shadow:
+    0 1px 6px rgb(13 27 62 / 35%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+}
+
+.vds-pill-toggle__btn:hover:not(.vds-pill-toggle__btn--active) {
+  background: rgb(30 95 168 / 10%);
+  color: #1e5fa8;
+}
+
+.vds-pill-toggle--sm {
+  padding: 3px 6px;
+}
+
+.vds-pill-toggle__btn--sm {
+  padding: 2px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  min-width: 36px;
+  justify-content: center;
+}
+
+/* ============================================================
+   Search Group & Variants
+   ============================================================ */
+.vds-search-wrapper {
+  max-width: 860px;
+  width: 100%;
+}
+
+.vds-search-group {
+  background: #edf1f7;
+  border-radius: 8px !important;
+  border: 1px solid #d4dbe8 !important;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgb(30 95 168 / 7%);
+  transition:
+    border-color 0.18s,
+    box-shadow 0.18s;
+}
+
+.vds-search-group:focus-within {
+  border-color: #86b7fe !important;
+  box-shadow: 0 0 0 3px rgb(30 95 168 / 12%) !important;
+}
+
+.vds-search-group .input-group-text,
+.vds-search-group .form-control {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.vds-search-group--gradient {
+  background: #fff;
+  border: 1.5px solid #1e5fa8 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgb(30 95 168 / 12%);
+  overflow: hidden;
+}
+
+.vds-search-group--gradient:focus-within {
+  border-color: #0d1b3e !important;
+  box-shadow:
+    0 0 0 3px rgb(30 95 168 / 18%),
+    0 2px 8px rgb(30 95 168 / 12%) !important;
+}
+
+.vds-search-group--gradient .vds-search-group__icon {
+  background: transparent !important;
+  color: #1e5fa8 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.vds-search-group--gradient .form-control {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #0d1b2a;
+  font-size: 0.875rem;
+}
+
+.vds-search-group--gradient .form-control::placeholder {
+  color: #9aafc8;
+}
+
+.vds-search-group__btn {
+  background: #1e5fa8;
+  color: #fff;
+  border: none !important;
+  border-radius: 0 !important;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.3rem 1rem;
+  letter-spacing: 0.02em;
+  transition: opacity 0.15s;
+}
+
+.vds-search-group__btn:hover {
+  opacity: 0.88;
+  color: #fff;
+}
+
+.vds-search-group__btn:active {
+  opacity: 0.8;
+}
+
+/* ============================================================
+   Info Strips & Validation Warnings
+   ============================================================ */
+.vds-email-warning {
+  background: #fff5f5;
+  border: 1px solid #ffc9c9;
+  font-size: 0.83rem;
+  color: #c0392b;
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vds-info-strip {
+  background: #fff;
+  border: 1px solid #dce8fb;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 5%);
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.vds-info-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4a6fa5;
+}
+
+.vds-info-value {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #2c3e50;
+  word-break: break-all;
+}
+
+.vds-info-value--md {
+  font-size: 0.88rem;
+  color: #2c3e50;
+}
+
+.vds-info-value--placeholder {
+  font-size: 0.88rem;
+  color: #bcc8d8;
+  font-style: italic;
+}
+
+/* ============================================================
+   Dark Mode Form Overrides
+   ============================================================ */
+[data-vds-theme="dark"] .vds-form-input {
+  background-color: var(--vds-input-bg);
+  border-color: var(--vds-input-border);
+  color: var(--vds-input-text);
+}
+
+[data-vds-theme="dark"] .vds-form-label {
+  color: #cbd5e1;
+}
+
+[data-vds-theme="dark"] .vds-form-label-optional {
+  color: #94a3b8;
+}
+
+[data-vds-theme="dark"] .vds-form-footer {
+  border-top-color: #334155;
+}
+
+[data-vds-theme="dark"] .vds-pill-toggle {
+  background: #1a1a1a;
+  border-color: #333;
+}
+
+[data-vds-theme="dark"] .vds-pill-toggle__btn:not(.vds-pill-toggle__btn--active) {
+  color: #a1a1aa;
+}
+
+[data-vds-theme="dark"] .vds-search-group {
+  background: #1a1a1a !important;
+  border-color: #333 !important;
+}
+
+[data-vds-theme="dark"] .vds-search-group--gradient {
+  background: var(--vds-input-bg) !important;
+  border-color: rgb(30 95 168 / 50%) !important;
+}
+
+[data-vds-theme="dark"] .vds-search-group--gradient:focus-within {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgb(30 95 168 / 25%) !important;
+}
+
+[data-vds-theme="dark"] .vds-search-group--gradient .vds-search-group__icon {
+  color: #a1a1aa !important;
+}
+
+[data-vds-theme="dark"] .vds-search-group--gradient .form-control {
+  color: var(--vds-input-text) !important;
+}
+
+[data-vds-theme="dark"] .vds-search-group--gradient .form-control::placeholder {
+  color: rgb(255 255 255 / 45%) !important;
+}
+
+[data-vds-theme="dark"] .vds-info-strip {
+  background: #111;
+  border-color: #2a2a2c;
+}
+
+[data-vds-theme="dark"] .vds-info-label {
+  color: #a1a1aa;
+}
+
+[data-vds-theme="dark"] .vds-info-value,
+[data-vds-theme="dark"] .vds-info-value--md {
+  color: #e0e0e0;
+}

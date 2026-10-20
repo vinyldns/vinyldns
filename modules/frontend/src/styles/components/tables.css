@@ -1,0 +1,519 @@
+/*
+ * VinylDNS Component Styles - Tables & Pagination
+ */
+
+/* ============================================================
+   Table Containers & Layout Wrappers
+   ============================================================ */
+.vds-table-container {
+  border-radius: var(--vds-radius-lg);
+  border: 1px solid var(--vds-border-color);
+  background: var(--vds-bg-surface);
+  overflow: hidden;
+  box-shadow: var(--vds-shadow-sm);
+}
+
+.vds-table-wrap {
+  border-radius: 0.75rem;
+  overflow: auto;
+  max-height: 55vh;
+  box-shadow: 0 2px 12px rgb(13 110 253 / 7%);
+  border: 1px solid #dce8fb;
+  max-width: 100%;
+}
+
+.vds-table-header-row {
+  background: #f8fafc;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.vds-table-th {
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #475569;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.vds-table-cell {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.vds-table-cell-error {
+  background-color: #fef2f2 !important;
+  color: #991b1b !important;
+}
+
+.vds-cell-index {
+  font-weight: 600;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+/* ============================================================
+   Shared Table Cell Helpers
+   ============================================================ */
+.vds-table-primary {
+  color: #0d4a9a;
+}
+
+.vds-table-secondary {
+  color: #506080;
+}
+
+.vds-table-muted {
+  color: #8099b8;
+}
+
+.vds-table-placeholder {
+  color: #bcc8d8;
+  font-style: italic;
+}
+
+.vds-table-nowrap {
+  white-space: nowrap;
+}
+
+.vds-date-wrap {
+  white-space: pre-line;
+}
+
+.vds-table-mono {
+  font-family: var(--vds-font-mono);
+  font-size: 0.75rem;
+}
+
+.vds-table-username {
+  font-weight: 600;
+  color: #0d4a9a;
+}
+
+/* ============================================================
+   Status Text (Inline text indicator)
+   ============================================================ */
+.vds-status-text {
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.vds-status-text--success {
+  color: #047857;
+}
+
+.vds-status-text--danger {
+  color: #b91c1c;
+}
+
+.vds-status-text--warning {
+  color: #b45309;
+}
+
+.vds-status-text--info {
+  color: #1d4ed8;
+}
+
+.vds-status-text--secondary {
+  color: #64748b;
+}
+
+/* ============================================================
+   Zones & Changes Table Primitives
+   ============================================================ */
+.vds-zones-table-wrap {
+  border-radius: 0.75rem;
+  overflow: auto;
+  max-height: 55vh;
+  box-shadow: 0 2px 12px rgb(13 110 253 / 7%);
+  border: 1px solid #e2e8f0;
+  max-width: 100%;
+}
+
+.vds-zones-table {
+  width: 100%;
+  min-width: 980px;
+  table-layout: auto;
+  border-collapse: collapse;
+  background: #fff;
+  margin: 0;
+}
+
+.vds-zones-table thead tr {
+  background: #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.vds-zones-table thead th {
+  padding: 8px 16px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #475569;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f1f5f9;
+}
+
+.vds-zones-table tbody tr {
+  border-bottom: 1px solid #f0f4f9;
+  transition: background 0.13s ease;
+}
+
+.vds-zones-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.vds-zones-table tbody tr:hover {
+  background: #f5f9ff;
+}
+
+.vds-zones-table tbody td {
+  padding: 6px;
+  vertical-align: middle;
+  font-size: 13px;
+  color: #2c3e50;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.vds-zones-table tbody td.small,
+.vds-zones-table tbody td .small {
+  font-size: 13px;
+}
+
+.vds-zones-table tbody tr.vds-row-error {
+  background: #fff8f8;
+  border-left: 3px solid #e74c3c;
+}
+
+.vds-table-fetch-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgb(255 255 255 / 72%);
+  backdrop-filter: blur(2px);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0;
+  pointer-events: all;
+  animation: vdsFetchOverlayIn 0.15s ease forwards;
+}
+
+@keyframes vdsFetchOverlayIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.vds-table-fetch-spinner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: #fff;
+  border: 1px solid #dce8fb;
+  border-radius: 999px;
+  box-shadow: 0 4px 18px rgb(13 27 62 / 12%);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1e5fa8;
+}
+
+.vds-table-fetch-spinner .spinner-border {
+  color: #1e5fa8;
+  width: 1rem;
+}
+
+/* ============================================================
+   Pagination Controls (vds-pager)
+   ============================================================ */
+.vds-pager {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.vds-pager__sizes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vds-pager__sizes-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #8099b8;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.vds-pager__nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vds-pager__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1.5px solid #d4dbe8;
+  background: #fff;
+  border-radius: 8px;
+  padding: 4px 13px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1e5fa8;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.vds-pager__btn:hover:not(:disabled) {
+  background: #1e5fa8;
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 2px 8px rgb(13 27 62 / 22%);
+}
+
+.vds-pager__btn:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.vds-pager__page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 12px;
+  background: #edf1f7;
+  border: 1px solid #c8d3e4;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #2d4a70;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  min-width: 64px;
+  user-select: none;
+}
+
+.vds-pagination-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* ============================================================
+   Empty State
+   ============================================================ */
+.vds-empty-state {
+  border: 2px dashed #94a3b8;
+  border-radius: 0.65rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #475569;
+  background-color: #f8fafc;
+}
+
+/* ============================================================
+   Dark Mode Table Overrides
+   ============================================================ */
+[data-vds-theme="dark"] .vds-table-container {
+  background-color: var(--vds-card-bg);
+  border-color: var(--vds-card-border);
+}
+
+[data-vds-theme="dark"] .vds-table-header-row,
+[data-vds-theme="dark"] .vds-pagination-header {
+  background: #161618;
+  border-bottom-color: #2a2a2c;
+}
+
+[data-vds-theme="dark"] .vds-table-th {
+  color: #a1a1aa;
+  border-bottom-color: #2a2a2c;
+}
+
+[data-vds-theme="dark"] .vds-table-cell {
+  color: #f5f5f5;
+  border-bottom-color: #2a2a2c;
+}
+
+[data-vds-theme="dark"] .vds-table-cell-error {
+  background-color: rgb(220 38 38 / 20%) !important;
+  color: #fca5a5 !important;
+}
+
+[data-vds-theme="dark"] .vds-pager__btn {
+  background: #1a1a1a;
+  border-color: #333;
+  color: #7eb0f5;
+}
+
+[data-vds-theme="dark"] .vds-pager__btn:hover:not(:disabled) {
+  background: #1e5fa8;
+  border-color: transparent;
+  color: #fff;
+}
+
+[data-vds-theme="dark"] .vds-pager__page {
+  background: #1e2d4a;
+  border-color: #333;
+  color: #a0bcdc;
+}
+
+[data-vds-theme="dark"] .vds-empty-state {
+  border-color: #2a2a2c;
+  color: #64748b;
+  background-color: #161618;
+}
+
+[data-vds-theme="dark"] .vds-table-fetch-overlay {
+  background: rgb(0 0 0 / 72%);
+}
+
+[data-vds-theme="dark"] .vds-table-fetch-spinner {
+  background: #161618;
+  border-color: #2a2a2c;
+  color: #7eb0f5;
+}
+
+[data-vds-theme="dark"] .vds-table-primary {
+  color: #90c2f0 !important;
+}
+
+[data-vds-theme="dark"] .vds-table-primary:hover {
+  color: #c2dcff !important;
+}
+
+[data-vds-theme="dark"] .vds-table-secondary {
+  color: #a1a1aa !important;
+}
+
+[data-vds-theme="dark"] .vds-table-placeholder {
+  color: rgb(255 255 255 / 35%) !important;
+}
+
+[data-vds-theme="dark"] .vds-status-text--success {
+  color: #34d399;
+}
+
+[data-vds-theme="dark"] .vds-status-text--danger {
+  color: #f87171;
+}
+
+[data-vds-theme="dark"] .vds-status-text--warning {
+  color: #fbbf24;
+}
+
+[data-vds-theme="dark"] .vds-status-text--info {
+  color: #60a5fa;
+}
+
+[data-vds-theme="dark"] .vds-status-text--secondary {
+  color: #94a3b8;
+}
+
+[data-vds-theme="dark"] .vds-zones-table {
+  background: var(--vds-card-bg);
+}
+
+[data-vds-theme="dark"] .vds-zones-table thead tr {
+  background: #111;
+  border-bottom-color: rgb(255 255 255 / 18%);
+}
+
+[data-vds-theme="dark"] .vds-zones-table thead th {
+  color: #e7e7ef;
+  letter-spacing: 0.04em;
+  background: #111;
+}
+
+[data-vds-theme="dark"] .vds-zones-table tbody tr {
+  border-bottom-color: rgb(255 255 255 / 7%);
+}
+
+[data-vds-theme="dark"] .vds-zones-table tbody tr:hover {
+  background: rgb(255 255 255 / 5%);
+}
+
+[data-vds-theme="dark"] .vds-zones-table tbody td {
+  color: #e0e0e0;
+}
+
+[data-vds-theme="dark"] .vds-zones-table-wrap {
+  border-color: var(--vds-card-border);
+  box-shadow: 0 2px 24px rgb(0 0 0 / 35%);
+}
+
+[data-vds-theme="dark"] .vds-zones-table tbody tr.vds-row-error {
+  background: rgb(220 53 69 / 10%) !important;
+  border-left-color: #e74c3c;
+}
+
+/* ============================================================
+   Responsive Media Queries
+   ============================================================ */
+@media (width <= 900px) {
+  .vds-zones-table-wrap {
+    max-height: 58vh;
+    overflow-x: auto;
+  }
+
+  .vds-zones-table {
+    min-width: 980px;
+    width: 100%;
+    table-layout: auto;
+  }
+
+  .vds-zones-table thead th,
+  .vds-zones-table tbody td,
+  .vds-zones-table .vds-zone-status-badge,
+  .vds-zones-table .vds-access-badge,
+  .vds-zones-table .vds-change-badge {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .vds-zones-table .vds-table-nowrap {
+    white-space: normal;
+  }
+
+  .vds-zones-table .col-info {
+    min-width: 250px;
+    max-width: 300px;
+  }
+
+  .vds-zones-table .col-date {
+    min-width: 150px;
+    max-width: 200px;
+  }
+}

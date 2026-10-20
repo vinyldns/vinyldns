@@ -1,0 +1,177 @@
+/*
+ * VinylDNS Base Styles - Bootstrap 5 Primitive Overrides
+ */
+
+/* Cards */
+.card {
+  border-radius: var(--vds-radius-md);
+  border: 1px solid var(--vds-border-color);
+  background-color: var(--vds-bg-surface);
+}
+
+[data-vds-theme="dark"] .card {
+  background-color: var(--vds-card-bg);
+  border-color: var(--vds-card-border);
+  color: var(--vds-page-text);
+}
+
+[data-vds-theme="dark"] .card-body.bg-white {
+  background-color: #1a1a1a !important;
+  color: var(--vds-page-text);
+  border-color: var(--vds-card-border) !important;
+}
+
+/* Headings */
+h1.h3 {
+  color: #2c3e50;
+}
+
+[data-vds-theme="dark"] h1.h3 {
+  color: var(--vds-page-text);
+}
+
+/* Form Controls & Inputs */
+.form-control,
+.form-select {
+  border-color: var(--vds-border-color);
+  border-radius: var(--vds-radius-md);
+}
+
+.input-group .form-control:focus {
+  z-index: 3;
+}
+
+[data-vds-theme="dark"] .form-control,
+[data-vds-theme="dark"] .form-select {
+  background-color: var(--vds-input-bg) !important;
+  color: var(--vds-input-text) !important;
+  border-color: var(--vds-input-border) !important;
+}
+
+[data-vds-theme="dark"] .form-control::placeholder {
+  color: rgb(161 161 170 / 40%) !important;
+}
+
+[data-vds-theme="dark"] .form-control:focus,
+[data-vds-theme="dark"] .form-select:focus {
+  background-color: #1e2e48 !important;
+  border-color: rgb(255 255 255 / 45%) !important;
+  box-shadow: 0 0 0 0.2rem rgb(255 255 255 / 15%) !important;
+}
+
+[data-vds-theme="dark"] .form-control--add:focus {
+  background-color: #1a1b1a !important;
+}
+
+[data-vds-theme="dark"] .form-control:-webkit-autofill,
+[data-vds-theme="dark"] .form-control:-webkit-autofill:hover,
+[data-vds-theme="dark"] .form-control:-webkit-autofill:focus,
+[data-vds-theme="dark"] .form-control:-webkit-autofill:active {
+  box-shadow: 0 0 0 1000px #1a1a1a inset !important;
+  -webkit-text-fill-color: #e0e0e0 !important;
+  color: #e0e0e0 !important;
+  caret-color: #e0e0e0 !important;
+  border-color: rgb(255 255 255 / 20%) !important;
+  transition:
+    background-color 9999s ease 0s,
+    border-color 9999s ease 0s,
+    color 9999s ease 0s !important;
+  outline: none !important;
+}
+
+[data-vds-theme="light"] .form-control:-webkit-autofill,
+[data-vds-theme="light"] .form-control:-webkit-autofill:hover,
+[data-vds-theme="light"] .form-control:-webkit-autofill:focus,
+[data-vds-theme="light"] .form-control:-webkit-autofill:active {
+  box-shadow: 0 0 0 1000px #fff inset !important;
+  -webkit-text-fill-color: #212529 !important;
+  color: #212529 !important;
+  caret-color: #212529 !important;
+  border-color: #dde3ec !important;
+  transition:
+    background-color 9999s ease 0s,
+    border-color 9999s ease 0s,
+    color 9999s ease 0s !important;
+  outline: none !important;
+}
+
+[data-vds-theme="dark"] label,
+[data-vds-theme="dark"] .form-label {
+  color: #b0b0b0;
+}
+
+[data-vds-theme="dark"] .invalid-feedback {
+  color: #ff9090;
+}
+
+/* Modals */
+.modal-content {
+  border-radius: var(--vds-radius-lg);
+  border: 1px solid var(--vds-border-color);
+  box-shadow: var(--vds-shadow-lg);
+}
+
+[data-vds-theme="dark"] .modal-content {
+  background: #111;
+  color: var(--vds-page-text);
+  border-color: var(--vds-card-border);
+}
+
+[data-vds-theme="dark"] .modal-header {
+  background: #1a1a1a;
+  border-color: rgb(255 255 255 / 10%);
+}
+
+[data-vds-theme="dark"] .modal-footer {
+  background: #1a1a1a;
+  border-color: rgb(255 255 255 / 10%);
+}
+
+/* Alerts */
+[data-vds-theme="dark"] .alert-danger {
+  background: rgb(180 30 30 / 30%);
+  border-color: rgb(220 60 60 / 55%);
+  color: #ffb3b3;
+}
+
+[data-vds-theme="dark"] .alert-success {
+  background: rgb(20 120 60 / 28%);
+  border-color: rgb(40 200 90 / 50%);
+  color: #88f0b0;
+}
+
+[data-vds-theme="dark"] .alert-warning {
+  background: rgb(180 120 10 / 28%);
+  border-color: rgb(220 160 20 / 50%);
+  color: #ffe083;
+}
+
+[data-vds-theme="dark"] .alert-info {
+  background: rgb(20 80 160 / 28%);
+  border-color: rgb(60 130 220 / 50%);
+  color: #a8d4ff;
+}
+
+/* Badges */
+[data-vds-theme="dark"] .badge.bg-secondary {
+  background-color: #253550 !important;
+  color: #90b8e8;
+}
+
+[data-vds-theme="dark"] .badge.bg-primary {
+  background-color: #1e4a8a !important;
+}
+
+/* Utilities */
+[data-vds-theme="dark"] .text-muted {
+  color: #6e8fb0 !important;
+}
+
+[data-vds-theme="dark"] small,
+[data-vds-theme="dark"] .small {
+  color: #7a9ec4;
+}
+
+[data-vds-theme="dark"] .border {
+  border-color: var(--vds-card-border) !important;
+}

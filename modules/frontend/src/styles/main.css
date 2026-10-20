@@ -1,0 +1,27 @@
+/*
+ * VinylDNS Design System - Main Entry Point
+ * Master barrel stylesheet importing tokens, base primitives, reusable components, and feature domains.
+ */
+
+/* 1. Design Tokens */
+@import url("./tokens/variables.css");
+@import url("./tokens/themes.css");
+
+/* 2. Base & Resets */
+@import url("./base/reset.css");
+@import url("./base/bootstrap-overrides.css");
+
+/* 3. Reusable Components */
+@import url("./components/buttons.css");
+@import url("./components/badges.css");
+@import url("./components/cards.css");
+@import url("./components/modals.css");
+@import url("./components/forms.css");
+@import url("./components/dropdowns.css");
+@import url("./components/tables.css");
+
+/* 4. Domain Feature Modules */
+@import url("./features/layout.css");
+@import url("./features/zones.css");
+@import url("./features/records.css");
+@import url("./features/batch.css");
