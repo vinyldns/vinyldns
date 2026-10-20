@@ -142,6 +142,7 @@ angular.module('controller.zones', [])
     $.zoneAutocompleteSearch();
     
     $('.isGroupSearch').change(function() {
+        var zoneSearch = '.zone-search-text';
         if(this.checked) {
             // Autocomplete for search by admin group
             var zoneSearch = $(".zone-search-text").autocomplete({
