@@ -27,8 +27,14 @@ import vinyldns.api.domain.zone._
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
-import vinyldns.core.domain.record.{NameSort, RecordSet, RecordType, RecordTypeSort}
+import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
+import vinyldns.core.domain.record.{NameSort, OwnershipTransferStatus, RecordSet, RecordType, RecordTypeSort, RecordData, RecordSetStatus, OwnershipTransfer}
 import vinyldns.core.domain.zone.ZoneCommandResult
+import akka.http.scaladsl.model.HttpEntity
+import spray.json._
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
 
 import scala.concurrent.duration._
 
@@ -42,7 +48,8 @@ case class ListGlobalRecordSetsResponse(
                                          recordNameFilter: String,
                                          recordTypeFilter: Option[Set[RecordType]] = None,
                                          recordOwnerGroupFilter: Option[String] = None,
-                                         nameSort: NameSort
+                                         nameSort: NameSort,
+                                         totalCount: Option[Int] = None
                                        )
 
 case class ListRecordSetsByZoneResponse(
@@ -56,6 +63,22 @@ case class ListRecordSetsByZoneResponse(
                                          nameSort: NameSort,
                                          recordTypeSort: RecordTypeSort
                                        )
+
+case class CreateRecordSetInput(
+                                 zoneId: Option[String] = None,
+                                 name: String,
+                                 typ: RecordType,
+                                 ttl: Long,
+                                 status: RecordSetStatus = RecordSetStatus.Pending,
+                                 created: Instant = Instant.now.truncatedTo(ChronoUnit.MILLIS),
+                                 updated: Option[Instant] = None,
+                                 records: List[RecordData] = List.empty,
+                                 id: String,
+                                 account: String = "system",
+                                 ownerGroupId: Option[String] = None,
+                                 recordSetGroupChange: Option[OwnershipTransfer] = None,
+                                 fqdn: Option[String] = None
+                               )
 
 class RecordSetRoute(
                       recordSetService: RecordSetServiceAlgebra,
@@ -89,8 +112,29 @@ class RecordSetRoute(
 
   val recordSetRoute: Route = path("zones" / Segment / "recordsets") { zoneId =>
     (post & monitor("Endpoint.addRecordSet")) {
-      authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet](
-        (authPrincipal, recordSet) => recordSetService.addRecordSet(recordSet, authPrincipal)
+      authenticateAndExecuteWithEntity[ZoneCommandResult, CreateRecordSetInput](
+        (authPrincipal, createInput) =>
+          createInput.zoneId match {
+            case Some(bodyZoneId) if bodyZoneId != zoneId =>
+              Left(RecordSetValidation("zoneId in URI and body must match")).toResult
+            case _ =>
+              val recordSet = RecordSet(
+                zoneId = zoneId,
+                name = createInput.name,
+                typ = createInput.typ,
+                ttl = createInput.ttl,
+                status = createInput.status,
+                created = createInput.created,
+                updated = createInput.updated,
+                records = createInput.records,
+                id = createInput.id,
+                account = createInput.account,
+                ownerGroupId = createInput.ownerGroupId,
+                recordSetGroupChange = createInput.recordSetGroupChange,
+                fqdn = createInput.fqdn
+              )
+              recordSetService.addRecordSet(recordSet, authPrincipal)
+          }
       ) { rc =>
         complete(StatusCodes.Accepted, rc)
       }
@@ -205,24 +249,46 @@ class RecordSetRoute(
             complete(StatusCodes.Accepted, rc)
           }
         } ~
-        (put & monitor("Endpoint.updateRecordSet")) {
-          authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet] {
-            (authPrincipal, recordSet) =>
-              recordSet match {
-                case badRs if badRs.zoneId != zoneId =>
-                  Left(InvalidRequest("Cannot update RecordSet's zoneId attribute")).toResult
-                case goodRs =>
-                  recordSetService.updateRecordSet(goodRs, authPrincipal)
+        (put & monitor("Endpoint.updateRecordSet") & extractRequest) { request =>
+          def executeUpdate = {
+            authenticateAndExecuteWithEntity[ZoneCommandResult, RecordSet] {
+              (authPrincipal, recordSet) =>
+                recordSet match {
+                  case badRs if badRs.zoneId != zoneId =>
+                    Left(InvalidRequest("Cannot update RecordSet's zoneId attribute")).toResult
+                  case goodRs =>
+                    recordSetService.updateRecordSet(goodRs, authPrincipal)
+                }
+            } { rc => complete(StatusCodes.Accepted, rc) }
+          }
+          request.entity match {
+            case HttpEntity.Strict(_, data) =>
+              val jsonString = data.utf8String
+              val json = jsonString.parseJson.asJsObject
+              // Check if both fields exist and process accordingly
+              json.fields.get("recordSetGroupChange")
+                .flatMap(groupChange => if (groupChange != JsNull) {
+                  groupChange.asJsObject.fields.get("ownershipTransferStatus")
+                } else None ) match {
+                case Some(status) =>
+                  OwnershipTransferStatus.isStatus(status.toString) match {
+                    case false =>
+                      complete(
+                        StatusCodes.Accepted,
+                        InvalidRequest(s"Invalid Ownership transfer status: ${status}")
+                      )
+                    case true => executeUpdate
+                  }
+                case None => executeUpdate
               }
-          } { rc =>
-            complete(StatusCodes.Accepted, rc)
+            case _ => executeUpdate
           }
         }
     } ~
     path("zones" / Segment / "recordsets" / Segment / "changes" / Segment) {
-      (zoneId, _, changeId) =>
+      (zoneId, rsId, changeId) =>
         (get & monitor("Endpoint.getRecordSetChange")) {
-          authenticateAndExecute(recordSetService.getRecordSetChange(zoneId, changeId, _)) {
+          authenticateAndExecute(recordSetService.getRecordSetChange(zoneId, rsId, changeId, _)) {
             change =>
               complete(StatusCodes.OK, change)
           }

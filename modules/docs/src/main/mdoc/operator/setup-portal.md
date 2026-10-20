@@ -9,12 +9,13 @@ section: "operator_menu"
 The Portal Server is the web UI for VinylDNS. To setup the Portal server, follow these steps:
 
 1. [Setup API Server](setup-api.html)
-1. [Setup LDAP](setup-ldap.html)
+1. [Setup LDAP](setup-ldap.html) (required unless using OIDC for authentication)
 1. [Configure Portal Server](config-portal.html)
 1. [Using the Portal Docker Image](#using-the-portal-docker-image)
 
-Once you have you pre-requisites ready, review the [Portal Configuration Guide](config-portal.html) for how to build out
-your configuration file.
+Once you have your pre-requisites ready, review the [Portal Configuration Guide](config-portal.html) for how to build out
+your configuration file. If using OIDC for authentication, see the [OIDC section](config-portal.html#oidc). For user sync
+configuration, see the [User Sync section](config-portal.html#user-sync).
 
 # Using the Portal Docker Image
 

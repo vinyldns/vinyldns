@@ -93,6 +93,7 @@ angular.module('controller.zones', [])
     };
 
     $.zoneAutocompleteSearch = function() {
+        var zoneSearch = '.zone-search-text';
         $(".zone-search-text").autocomplete({
             source: function(request, response) {
                 $.ajax({
@@ -133,6 +134,8 @@ angular.module('controller.zones', [])
                 $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
             }
         });
+
+        vinyldnsAutocomplete.applyRenderer(zoneSearch);
     };
 
     // Should be the default autocomplete search result option
@@ -140,8 +143,8 @@ angular.module('controller.zones', [])
     
     $('.isGroupSearch').change(function() {
         if(this.checked) {
-            // Autocomplete for search by admin group (.generateZone-search-text handled by GenerateZonesController)
-            $(".zone-search-text").autocomplete({
+            // Autocomplete for search by admin group
+            var zoneSearch = $(".zone-search-text").autocomplete({
               source: function( request, response ) {
                 $.ajax({
                   url: "/api/groups?maxItems=100&abridged=true",
@@ -170,6 +173,8 @@ angular.module('controller.zones', [])
                 $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
               }
             });
+
+            vinyldnsAutocomplete.applyRenderer(zoneSearch);
         } else {
             $.zoneAutocompleteSearch();
         }

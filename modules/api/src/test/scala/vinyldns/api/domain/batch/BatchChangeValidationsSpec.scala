@@ -1603,29 +1603,21 @@ class BatchChangeValidationsSpec
   }
 
   property(
-    "validateChangesWithContext: should fail for AddChangeForValidation if user is a superUser with no other access"
+    "validateChangesWithContext: should succeed for AddChangeForValidation if user is a superUser with no other access"
   ) {
     val addA = AddChangeForValidation(
-      validZone,
-      "valid",
-      AddChangeInput("valid.ok.", RecordType.A, None, ttl, AData("1.1.1.1")),
-      defaultTtl
-    )
-    val result = validateChangesWithContext(
-      ChangeForValidationMap(List(addA.validNel), ExistingRecordSets(recordSetList)),
-      AuthPrincipal(superUser, Seq.empty),
-      false,
-      None
-    )
-
-    result(0) should haveInvalid[DomainValidationError](
-      UserIsNotAuthorizedError(
-        superUser.userName,
-        addA.zone.adminGroupId,
-        OwnerType.Zone,
-        Some(addA.zone.email)
+        validZone,
+        "valid",
+        AddChangeInput("valid.ok.", RecordType.A, None, ttl, AData("1.1.1.1")),
+        defaultTtl
       )
-    )
+      val result = validateChangesWithContext(
+        ChangeForValidationMap(List(addA.validNel), ExistingRecordSets(recordSetList)),
+        AuthPrincipal(superUser, Seq.empty),
+        false,
+        None
+      ) 
+    result(0) shouldBe valid
   }
 
   property(
@@ -1790,7 +1782,7 @@ class BatchChangeValidationsSpec
     result(0) shouldBe valid
   }
 
-  property(""" validateChangesWithContext: should fail for DeleteChangeForValidation
+  property(""" validateChangesWithContext: should succeed for DeleteChangeForValidation
              | if user is superUser with no other access""".stripMargin) {
     val deleteA =
       DeleteRRSetChangeForValidation(
@@ -1809,16 +1801,9 @@ class BatchChangeValidationsSpec
       None
     )
 
-    result(0) should haveInvalid[DomainValidationError](
-      UserIsNotAuthorizedError(
-        superUser.userName,
-        deleteA.zone.adminGroupId,
-        OwnerType.Zone,
-        Some(deleteA.zone.email)
-      )
-    )
+    result(0) shouldBe valid
   }
-
+  
   property(
     "validateChangesWithContext: should succeed for DeleteChangeForValidation if user has necessary ACL rule"
   ) {

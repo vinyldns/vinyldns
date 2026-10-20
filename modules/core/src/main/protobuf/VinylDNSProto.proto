@@ -141,13 +141,13 @@ message RecordSet {
   repeated RecordData record = 9;
   required string account = 10;
   optional string ownerGroupId = 11;
-  optional ownerShipTransfer recordSetGroupChange = 12;
+  optional ownershipTransfer recordSetGroupChange = 12;
   optional string fqdn = 13;
 }
 
-message ownerShipTransfer {
+message ownershipTransfer {
  optional string requestedOwnerGroupId = 1;
- optional string ownerShipTransferStatus = 2;
+ optional string ownershipTransferStatus = 2;
 }
 
 message RecordSetChange {

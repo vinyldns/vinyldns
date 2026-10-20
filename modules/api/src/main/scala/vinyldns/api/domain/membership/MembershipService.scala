@@ -362,13 +362,55 @@ class MembershipService(
       .orFail(UserNotFoundError(s"User $userIdentifier was not found"))
       .toResult[User]
 
-
   def getUserDetails(userIdentifier: String, authPrincipal: AuthPrincipal): Result[UserResponseInfo] =
     for{
         user <- getUser(userIdentifier,authPrincipal)
         group <-  membershipRepo.getGroupsForUser(user.id).toResult[Set[String]]
-    } yield UserResponseInfo(user.id, Some(user.userName), group)
+        group <- groupRepo.getGroups(group).toResult[Set[Group]]
+      } yield UserResponseInfo(
+        id       = user.id,
+        userName = Some(user.userName),
+        groupId  = group.map(_.id),
+        groupMap = group.map(g => g.id -> g.name).toMap
+      )
 
+  /**
+   * Searches for all Users whose username matches the given (possibly wildcarded) name pattern.
+   * Enforces minimum search pattern length to prevent full table scans and rejects bare wildcards.
+   * Results are paginated to prevent N+1 query amplification during group resolution.
+   * 
+   * @param pattern The username search pattern (minimum 2 characters, cannot be bare wildcard)
+   * @param startFrom Starting offset for pagination (0-based)
+   * @param maxResults Maximum number of results to return (default 100)
+   * @return Each matched User's details, including the groups they belong to
+   */
+  def searchUsers(pattern: String, startFrom: Option[Int], maxResults: Int, authPrincipal: AuthPrincipal): Result[List[UserResponseInfo]] = {
+    val trimmedPattern = pattern.trim
+    
+    // Validate pattern: reject empty, bare wildcards, or too short to prevent full table scans
+    if (trimmedPattern.isEmpty) {
+      SearchValidationError("Search pattern must be at least 2 characters").asLeft.toResult
+    } else if (trimmedPattern == "%" || trimmedPattern == "*") {
+      SearchValidationError("Search pattern cannot be a bare wildcard").asLeft.toResult
+    } else if (trimmedPattern.length < 2) {
+      SearchValidationError("Search pattern must be at least 2 characters").asLeft.toResult
+    } else {
+      for {
+        users <- userRepo.searchUsersByName(trimmedPattern, startFrom, maxResults).toResult[List[User]]
+        results <- users.traverse { user =>
+          for {
+            group <- membershipRepo.getGroupsForUser(user.id).toResult[Set[String]]
+            group <- groupRepo.getGroups(group).toResult[Set[Group]]
+          } yield UserResponseInfo(
+            id       = user.id,
+            userName = Some(user.userName),
+            groupId  = group.map(_.id),
+            groupMap = group.map(g => g.id -> g.name).toMap
+          )
+        }
+      } yield results
+    }
+  }
 
   def getUsers(
       userIds: Set[String],

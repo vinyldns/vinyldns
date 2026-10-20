@@ -121,7 +121,10 @@ def retrieve_resolver(resolver_name: str) -> str:
     return resolver_address
 
 class WorkerScheduler(LoadScopeScheduling):
-    worker_assignments: List[MutableMapping] = [{"name": "list_batch_change_summaries_test.py", "worker": 0}]
+    worker_assignments: List[MutableMapping] = [
+        {"name": "list_batch_change_summaries_test.py", "worker": 0},
+        {"name": "status_test.py", "worker": 0}
+    ]
 
     def _assign_work_unit(self, node):
         """Assign a work unit to a node."""
