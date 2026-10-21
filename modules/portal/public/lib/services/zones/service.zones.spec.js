@@ -35,11 +35,70 @@ describe('Service: zoneService', function () {
         this.$httpBackend.flush();
     });
 
+    it('http backend gets called properly when getting generated zones', function () {
+        this.$httpBackend.expectGET('/api/zones/generate/info?maxItems=100&startFrom=start&nameFilter=someQuery&searchByAdminGroup=false&ignoreAccess=false').respond('zone returned');
+        this.zonesService.getGeneratedZones('100', 'start', 'someQuery', false, false)
+            .then(function(response) {
+                expect(response.data).toBe('zone returned');
+            });
+        this.$httpBackend.flush();
+    });
+
+    it('http backend gets called properly when updating a generate zone', function (done) {
+            this.$httpBackend.expectPUT('/api/zones/generate').respond('update sent');
+            var sanitizeConnections = spyOn(this.zonesService, 'sanitizeConnections');
+            this.zonesService.updateGeneratedZone('id', 'zone')
+                .then(function(response) {
+                    expect(response.data).toBe('update sent');
+                    done();
+                });
+            expect(sanitizeConnections.calls.count()).toBe(1);
+            this.$httpBackend.flush();
+        });
+
+    it('http backend gets called properly when deleting generate zone', function (done) {
+            this.$httpBackend.expectDELETE('/api/zones/generate/id').respond('zone deleted');
+            this.zonesService.deleteGeneratedZone('id')
+                .then(function(response) {
+                    expect(response.data).toBe('zone deleted');
+                    done();
+                });
+            this.$httpBackend.flush();
+        });
+
+    it('http backend gets called properly when getting name servers', function () {
+            this.$httpBackend.expectGET('/api/zones/generate/nameservers').respond('nameservers returned');
+            this.zonesService.getNameservers()
+                .then(function(response) {
+                    expect(response.data).toBe('nameservers returned');
+                });
+            this.$httpBackend.flush();
+        });
+
+    it('http backend gets called properly when getting allowedDNSProviders', function () {
+            this.$httpBackend.expectGET('/config/allowedDNSProviders').respond('allowedDNSProviders returned');
+            this.zonesService.getAllowedDNSProviders()
+                .then(function(response) {
+                    expect(response.data).toBe('allowedDNSProviders returned');
+                });
+            this.$httpBackend.flush();
+        });
+
     it('http backend gets called properly when getting zoneChanges', function () {
         this.$httpBackend.expectGET('/api/zones/zoneid/changes?maxItems=100&startFrom=start').respond('zoneChanges returned');
         this.zonesService.getZoneChanges('100', 'start', 'zoneid', false)
             .then(function(response) {
                 expect(response.data).toBe('zoneChanges returned');
+            });
+        this.$httpBackend.flush();
+    });
+
+    it('http backend gets called properly when generate zone', function (done) {
+        this.$httpBackend.expectPOST('/api/zones/generate').respond('zone sent');
+        this.zonesService.generateZone('zone payload')
+            .then(function(response) {
+                expect(response.data).toBe('zone sent');
+                done();
             });
         this.$httpBackend.flush();
     });

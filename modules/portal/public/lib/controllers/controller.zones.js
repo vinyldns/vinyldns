@@ -37,7 +37,6 @@ angular.module('controller.zones', [])
 
     $scope.query = "";
     $scope.includeReverse = true;
-
     $scope.keyAlgorithms = ['HMAC-MD5', 'HMAC-SHA1', 'HMAC-SHA224', 'HMAC-SHA256', 'HMAC-SHA384', 'HMAC-SHA512'];
 
     // Paging status for zone sets
@@ -55,13 +54,28 @@ angular.module('controller.zones', [])
         $scope.profile.active = 'zones';
     });
 
-    $scope.resetCurrentZone = function () {
-        $scope.currentZone = {};
-        $scope.validDomains();
-        if($scope.myGroups && $scope.myGroups.length) {
-            $scope.currentZone.adminGroupId = $scope.myGroups[0].id;
+    $scope.validDomains = function getValidEmailDomains() {
+        function success(response) {
+            $log.debug('zonesService::listEmailDomains-success', response);
+            return $scope.validEmailDomains = response.data;
         }
 
+        return groupsService
+            .listEmailDomains($scope.ignoreAccess, $scope.query)
+            .then(success)
+            .catch(function (error) {
+                handleError(error, 'zonesService::listEmailDomains-failure');
+            });
+    };
+
+    $scope.resetCurrentZone = function () {
+        $scope.currentZone = {};
+        if (typeof $scope.validDomains === 'function') {
+            $scope.validDomains();
+        }
+        if($scope.myGroups && $scope.myGroups.length) {
+                $scope.currentZone.adminGroupId = $scope.myGroups[0].id;
+        }
         $scope.currentZone.connection = {};
         $scope.currentZone.transferConnection = {};
     };
@@ -95,45 +109,59 @@ angular.module('controller.zones', [])
     };
 
     $.zoneAutocompleteSearch = function() {
-        // Autocomplete for zone search
-        var zoneSearch = $(".zone-search-text").autocomplete({
-          source: function( request, response ) {
-            $.ajax({
-              url: "/api/zones?maxItems=100",
-              dataType: "json",
-              data: {nameFilter: request.term, ignoreAccess: $scope.ignoreAccess},
-              success: function(data) {
-                  const search =  JSON.parse(JSON.stringify(data));
-                  response($.map(search.zones, function(zone) {
-                  return {value: zone.name, label: zone.name}
-                  }))
-              }
-            });
-          },
-          minLength: 1,
-          select: function (event, ui) {
-              $scope.query = ui.item.value;
-              $(".zone-search-text").val(ui.item.value);
-              return false;
+        var zoneSearch = '.zone-search-text';
+        $(".zone-search-text").autocomplete({
+            source: function(request, response) {
+                $.ajax({
+                    url: "/api/zones?maxItems=100",
+                    dataType: "json",
+                    data: {
+                        nameFilter: request.term,
+                        ignoreAccess: $scope.ignoreAccess
+                    },
+                    success: function(data) {
+                        if (data && Array.isArray(data.zones)) {
+                            response(data.zones.map(zone => ({
+                                label: zone.name,
+                                value: zone.name
+                            })));
+                        } else {
+                            response([]);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error fetching zones:', error);
+                        response([]);
+                    }
+                });
             },
-          open: function() {
-            $(this).removeClass("ui-corner-all").addClass("ui-corner-top");
-          },
-          close: function() {
-            $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
-          }
+            minLength: 1,
+            select: function(event, ui) {
+                $scope.$apply(function() {
+                    $scope.query = ui.item.value;
+                });
+                $(this).val(ui.item.value);
+                return false;
+            },
+            open: function() {
+                $(this).removeClass("ui-corner-all").addClass("ui-corner-top");
+            },
+            close: function() {
+                $(this).removeClass("ui-corner-top").addClass("ui-corner-all");
+            }
         });
 
-        vinyldnsAutocomplete.applyRenderer(zoneSearch);
+        vinyldnsAutocomplete.applyRenderer($(zoneSearch));
     };
 
     // Should be the default autocomplete search result option
     $.zoneAutocompleteSearch();
-
+    
     $('.isGroupSearch').change(function() {
+        var zoneSearch = '.zone-search-text';
         if(this.checked) {
-            // Autocomplete for search by admin group
-            var zoneSearch = $(".zone-search-text").autocomplete({
+            // Autocomplete for search by admin group (.generateZone-search-text handled by GenerateZonesController)
+            $(".zone-search-text").autocomplete({
               source: function( request, response ) {
                 $.ajax({
                   url: "/api/groups?maxItems=100&abridged=true",
@@ -149,8 +177,10 @@ angular.module('controller.zones', [])
               },
               minLength: 1,
               select: function (event, ui) {
-                  $scope.query = ui.item.value;
-                  $(".zone-search-text").val(ui.item.value);
+                  $scope.$apply(function() {
+                      $scope.query = ui.item.value;
+                  });
+                  $(this).val(ui.item.value);
                   return false;
                 },
               open: function() {
@@ -161,12 +191,21 @@ angular.module('controller.zones', [])
               }
             });
 
-            vinyldnsAutocomplete.applyRenderer(zoneSearch);
+            vinyldnsAutocomplete.applyRenderer($(zoneSearch));
         } else {
             $.zoneAutocompleteSearch();
         }
     });
 
+    // Autocomplete text-highlight
+    $.ui.autocomplete.prototype._renderItem = function(ul, item) {
+            let txt = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
+            return $("<li></li>")
+                  .data("ui-autocomplete-item", item.value)
+                  .append("<div>" + txt + "</div>")
+                  .appendTo(ul);
+    };
+   
     /* Refreshes zone data set and then re-displays */
     $scope.refreshZones = function () {
         zonesPaging = pagingService.resetPaging(zonesPaging);
@@ -200,27 +239,26 @@ angular.module('controller.zones', [])
             });
 
         zonesService
-                    .getDeletedZones(myDeletedZonesPaging.maxItems, undefined, $scope.query, false)
-                    .then(function (response) {
-                        $log.debug('zonesService::getMyDeletedZones-success (' + response.data.zonesDeletedInfo.length + ' zones)');
-                        myDeletedZonesPaging.next = response.data.nextId;
-                        updateMyDeletedZoneDisplay(response.data.zonesDeletedInfo);
-                    })
-                    .catch(function (error) {
-                        handleError(error, 'zonesService::getDeletedZones-failure');
-                    });
+            .getDeletedZones(myDeletedZonesPaging.maxItems, undefined, $scope.query, false)
+            .then(function (response) {
+                $log.debug('zonesService::getMyDeletedZones-success (' + response.data.zonesDeletedInfo.length + ' zones)');
+                myDeletedZonesPaging.next = response.data.nextId;
+                updateMyDeletedZoneDisplay(response.data.zonesDeletedInfo);
+            })
+            .catch(function (error) {
+                handleError(error, 'zonesService::getDeletedZones-failure');
+            });
 
         zonesService
-                    .getDeletedZones(allDeletedZonesPaging.maxItems, undefined, $scope.query, true)
-                    .then(function (response) {
-                        $log.debug('zonesService::getAllDeletedZones-success (' + response.data.zonesDeletedInfo.length + ' zones)');
-                        allDeletedZonesPaging.next = response.data.nextId;
-                        updateAllDeletedZoneDisplay(response.data.zonesDeletedInfo);
-                    })
-                    .catch(function (error) {
-                        handleError(error, 'zonesService::getDeletedZones-failure');
-                    });
-
+            .getDeletedZones(allDeletedZonesPaging.maxItems, undefined, $scope.query, true)
+            .then(function (response) {
+                $log.debug('zonesService::getAllDeletedZones-success (' + response.data.zonesDeletedInfo.length + ' zones)');
+                allDeletedZonesPaging.next = response.data.nextId;
+                updateAllDeletedZoneDisplay(response.data.zonesDeletedInfo);
+            })
+            .catch(function (error) {
+                handleError(error, 'zonesService::getDeletedZones-failure');
+            });
     };
 
     function updateMyDeletedZoneDisplay (myDeletedZones) {
@@ -267,19 +305,6 @@ angular.module('controller.zones', [])
             $("td.dataTables_empty").show();
         }
     }
-    $scope.validDomains=function getValidEmailDomains() {
-                function success(response) {
-                    $log.debug('zonesService::listEmailDomains-success', response);
-                    return $scope.validEmailDomains = response.data;
-                }
-
-                return groupsService
-                    .listEmailDomains($scope.ignoreAccess, $scope.query)
-                    .then(success)
-                    .catch(function (error) {
-                        handleError(error, 'zonesService::listEmailDomains-failure');
-                    });
-            }
 
     /* Set total number of zones  */
 
@@ -402,17 +427,17 @@ angular.module('controller.zones', [])
     }
 
     $scope.prevPageAllDeletedZones = function() {
-            var startFrom = pagingService.getPrevStartFrom(allDeletedZonesPaging);
-            return zonesService
-                .getDeletedZones(allDeletedZonesPaging.maxItems, startFrom, $scope.query, true)
-                .then(function(response) {
-                    allDeletedZonesPaging = pagingService.prevPageUpdate(response.data.nextId, allDeletedZonesPaging);
-                    updateAllDeletedZoneDisplay(response.data.zonesDeletedInfo);
-                })
-                .catch(function (error) {
-                    handleError(error,'zonesService::prevPage-failure');
-                });
-        }
+        var startFrom = pagingService.getPrevStartFrom(allDeletedZonesPaging);
+        return zonesService
+            .getDeletedZones(allDeletedZonesPaging.maxItems, startFrom, $scope.query, true)
+            .then(function(response) {
+                allDeletedZonesPaging = pagingService.prevPageUpdate(response.data.nextId, allDeletedZonesPaging);
+                updateAllDeletedZoneDisplay(response.data.zonesDeletedInfo);
+        })
+        .catch(function (error) {
+            handleError(error,'zonesService::prevPage-failure');
+        });
+    }
 
     $scope.nextPageMyZones = function () {
         return zonesService

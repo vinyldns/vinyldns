@@ -23,6 +23,8 @@ import org.junit.runner.RunWith
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
+import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.{AnyContent, BodyParser, ControllerComponents}
 import play.api.test.CSRFTokenHelper._
 import play.api.test.Helpers._
@@ -405,6 +407,74 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         val result =
           lockedUserUnderTest.viewBatchChange("some-id")(
             FakeRequest(GET, "/dnschanges/some-id")
+              .withSession("username" -> "lockedFbaggins")
+              .withCSRFToken
+          )
+        headers(result) must contain("Location" -> "/noaccess")
+      }
+    }
+
+    "Get for '/config/allowedDNSProviders'" should {
+      "redirect to the login page when a user is not logged in" in new WithApplication(app) {
+        val result = underTest.getAllowedDNSProviders()(FakeRequest(GET, "/config/allowedDNSProviders"))
+        status(result) must equalTo(SEE_OTHER)
+        headers(result) must contain("Location" -> "/login?target=/config/allowedDNSProviders")
+      }
+      "render the zone allowed providers for config when the user is logged in" in new WithApplication(app) {
+        val result =
+          underTest.getAllowedDNSProviders()(
+            FakeRequest(GET, "/config/allowedDNSProviders").withSession("username" -> "frodo").withCSRFToken
+          )
+        status(result) must beEqualTo(OK)
+        contentType(result) must beSome.which(_ == "application/json")
+        contentAsString(result) must contain("""{"allowedDNSProviders":["bind","powerdns"]}""")
+      }
+      "redirect to the no access page when a user is locked out" in new WithApplication(app) {
+        val result =
+          lockedUserUnderTest.viewAllBatchChanges()(
+            FakeRequest(GET, "/config/allowedDNSProviders")
+              .withSession("username" -> "lockedFbaggins")
+              .withCSRFToken
+          )
+        headers(result) must contain("Location" -> "/noaccess")
+      }
+    }
+
+    "Get for '/config/createZoneTemplate/:provider'" should {
+      "redirect to the login page when a user is not logged in" in new WithApplication(app) {
+        val result = underTest.getCreateZoneTemplate("some-id")(FakeRequest(GET, "/config/createZoneTemplate/powerdns"))
+        status(result) must equalTo(SEE_OTHER)
+        headers(result) must contain("Location" -> "/login?target=/config/createZoneTemplate/powerdns")
+      }
+      "render the zone template for config when the user is logged in" in new WithApplication(app) {
+        val result1 = {
+          underTest.getCreateZoneTemplate("powerdns")(
+            FakeRequest(GET, "/config/createZoneTemplate/powerdns")
+              .withSession("username" -> "frodo")
+              .withCSRFToken
+          )
+        }
+        val result2 = {
+          underTest.getCreateZoneTemplate("cloudfare")(
+            FakeRequest(GET, "/config/createZoneTemplate/cloudfare")
+              .withSession("username" -> "frodo")
+              .withCSRFToken
+          )
+        }
+        val requestTemplates = (contentAsJson(result1) \ "request-templates").as[Map[String, String]]
+        val parsedCreate = Json.parse(requestTemplates("create-zone"))
+
+        status(result1) must beEqualTo(OK)
+        contentType(result1) must beSome.which(_ == "application/json")
+        requestTemplates.keys must contain("create-zone")
+        requestTemplates.keys must contain("update-zone")
+        (parsedCreate \ "Kind" \ "type").as[String] must beEqualTo("Select")
+        contentAsString(result2) must contain("""{"error":"Missing request-templates or required-fields for provider 'cloudfare'"}""")
+      }
+      "redirect to the no access page when a user is locked out" in new WithApplication(app) {
+        val result =
+          lockedUserUnderTest.getCreateZoneTemplate("some-id")(
+            FakeRequest(GET, "/config/createZoneTemplate/powerdns")
               .withSession("username" -> "lockedFbaggins")
               .withCSRFToken
           )

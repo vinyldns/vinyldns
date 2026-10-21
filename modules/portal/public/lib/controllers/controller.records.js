@@ -191,7 +191,7 @@ angular.module('controller.records', [])
     }
 
     function getGroup(groupId) {
-        if (isValidGroupId(groupId)){
+        if (groupId != undefined && groupId != "null"){
             $log.debug('groupsService::getGroup-success');
             function success(response) {
                  $scope.recordSetRequestedOwnershipName = response.data.name;
