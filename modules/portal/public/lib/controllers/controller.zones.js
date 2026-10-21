@@ -54,9 +54,25 @@ angular.module('controller.zones', [])
         $scope.profile.active = 'zones';
     });
 
+    $scope.validDomains = function getValidEmailDomains() {
+        function success(response) {
+            $log.debug('zonesService::listEmailDomains-success', response);
+            return $scope.validEmailDomains = response.data;
+        }
+
+        return groupsService
+            .listEmailDomains($scope.ignoreAccess, $scope.query)
+            .then(success)
+            .catch(function (error) {
+                handleError(error, 'zonesService::listEmailDomains-failure');
+            });
+    };
+
     $scope.resetCurrentZone = function () {
         $scope.currentZone = {};
-        $scope.validDomains();
+        if (typeof $scope.validDomains === 'function') {
+            $scope.validDomains();
+        }
         if($scope.myGroups && $scope.myGroups.length) {
                 $scope.currentZone.adminGroupId = $scope.myGroups[0].id;
         }
@@ -135,7 +151,7 @@ angular.module('controller.zones', [])
             }
         });
 
-        vinyldnsAutocomplete.applyRenderer(zoneSearch);
+        vinyldnsAutocomplete.applyRenderer($(zoneSearch));
     };
 
     // Should be the default autocomplete search result option
@@ -175,7 +191,7 @@ angular.module('controller.zones', [])
               }
             });
 
-            vinyldnsAutocomplete.applyRenderer(zoneSearch);
+            vinyldnsAutocomplete.applyRenderer($(zoneSearch));
         } else {
             $.zoneAutocompleteSearch();
         }
@@ -289,19 +305,6 @@ angular.module('controller.zones', [])
             $("td.dataTables_empty").show();
         }
     }
-    $scope.validDomains=function getValidEmailDomains() {
-                function success(response) {
-                    $log.debug('zonesService::listEmailDomains-success', response);
-                    return $scope.validEmailDomains = response.data;
-                }
-
-                return groupsService
-                    .listEmailDomains($scope.ignoreAccess, $scope.query)
-                    .then(success)
-                    .catch(function (error) {
-                        handleError(error, 'zonesService::listEmailDomains-failure');
-                    });
-            }
 
     /* Set total number of zones  */
 
