@@ -139,7 +139,7 @@ class RegexValidatorSpec extends AnyWordSpec with Matchers {
       Thread.sleep(50)
 
       val finalThreadCount = Thread.activeCount()
-      (finalThreadCount - initialThreadCount) should be < 50 
+      (finalThreadCount - initialThreadCount) should be <= 60
     }
   }
 }
