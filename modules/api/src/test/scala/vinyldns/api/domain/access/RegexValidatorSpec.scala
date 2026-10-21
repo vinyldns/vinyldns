@@ -31,10 +31,24 @@ class RegexValidatorSpec extends AnyWordSpec with Matchers {
       RegexValidator.safeMatches("xyz.com", "example.*") shouldBe false
     }
 
-    "handle timeout on ReDoS patterns" in {
-      // At the end of the input string and not match:  "a"*60 doesn't end in 'x', so requires backtracking
-      val result = RegexValidator.safeMatches("a" * 60, "(a+)+x")
+    "handle timeout on ReDoS patterns and complete within deadline" in {
+      // Verify: (1) exception fires with short deadline, (2) safeMatches returns false, (3) timing < 500ms
+      val pattern = "(a+)+x"
+      val adversarialInput = "a" * 60
+      
+      // Prove RegexTimeoutException fires with 1ms deadline
+      val shortDeadlineNanos = System.nanoTime() + 1000000L
+      the[RegexTimeoutException] thrownBy {
+        RegexValidator.matchWithDeadlineNanos(adversarialInput, pattern, shortDeadlineNanos)
+      }
+      
+      // Verify safeMatches catches timeout and returns false quickly
+      val startMillis = System.currentTimeMillis()
+      val result = RegexValidator.safeMatches(adversarialInput, pattern)
+      val elapsedMillis = System.currentTimeMillis() - startMillis
+      
       result shouldBe false
+      elapsedMillis should be < 500L
     }
 
     "handle invalid patterns gracefully" in {
@@ -92,10 +106,40 @@ class RegexValidatorSpec extends AnyWordSpec with Matchers {
       }
     }
 
-    "timeout on dangerous patterns at runtime" in {
+    "timeout on dangerous patterns at runtime and complete within deadline" in {
+      // Verify runtime deadline catches patterns bypassing storage validation
+      val pattern = "(a+)+b"
+      val adversarialInput = "a" * 60 + "x"
+      
+      val shortDeadlineNanos = System.nanoTime() + 1000000L
+      the[RegexTimeoutException] thrownBy {
+        RegexValidator.matchWithDeadlineNanos(adversarialInput, pattern, shortDeadlineNanos)
+      }
+      
+      // Verify safeMatches catches and returns false within timeout
+      val startMillis = System.currentTimeMillis()
+      val result = RegexValidator.safeMatches(adversarialInput, pattern)
+      val elapsedMillis = System.currentTimeMillis() - startMillis
+      
+      result shouldBe false
+      elapsedMillis should be < 500L
+    }
+
+    "not leave background threads after repeated timeouts" in {
+      // Proves DeadlineCharSequence doesn't leak threads (unlike thread-based approach)
+      val initialThreadCount = Thread.activeCount()
       val dangerousPattern = "(a+)+b"
       val adversarialInput = "a" * 60 + "x"
-      RegexValidator.safeMatches(adversarialInput, dangerousPattern) shouldBe false
+
+      for(_ <- 1 to 50) {
+        RegexValidator.safeMatches(adversarialInput, dangerousPattern)
+      }
+
+      System.gc()
+      Thread.sleep(50)
+
+      val finalThreadCount = Thread.activeCount()
+      (finalThreadCount - initialThreadCount) should be < 50 
     }
   }
 }
