@@ -229,9 +229,8 @@ class RecordSetService(
                         auth: AuthPrincipal
                       ): Result[ZoneCommandResult] =
     for {
-      existing <- getRecordSet(recordSetId)
-      _ <- recordSetBelongsToZone(existing, zoneId).toResult
       zone <- getZone(zoneId)
+      existing <- getRecordSetInZone(recordSetId, zone)
       _ <- isNotHighValueDomain(existing, zone, highValueDomainConfig).toResult
       _ <- canDeleteRecordSet(auth, existing.name, existing.typ, zone, existing.ownerGroupId).toResult
       _ <- notPending(existing).toResult
@@ -527,14 +526,7 @@ class RecordSetService(
                         ): Result[RecordSetInfo] =
     for {
       zone <- getZone(zoneId)
-      recordSet <- getRecordSet(recordSetId)
-      _ <- if (recordSet.zoneId == zone.id) {
-        ().toResult
-      } else {
-        Left(RecordSetNotFoundError(
-          s"RecordSet with id $recordSetId does not exist."
-        )).toResult
-      }
+      recordSet <- getRecordSetInZone(recordSetId, zone)
       _ <- canViewRecordSet(
         authPrincipal,
         recordSet.name,
@@ -877,10 +869,13 @@ class RecordSetService(
     ownerGroup.value.toResult
   }
 
-  private def recordSetBelongsToZone(recordSet: RecordSet, zoneId: String): Either[Throwable, Unit] =
-    ensuring(
-      RecordSetNotFoundError(s"RecordSet with id ${recordSet.id} does not exist in zone $zoneId.")
-    )(recordSet.zoneId == zoneId)
+  private def getRecordSetInZone(recordSetId: String, zone: Zone): Result[RecordSet] =
+    for {
+      recordSet <- getRecordSet(recordSetId)
+      _ <- ensuring(
+        RecordSetNotFoundError(s"RecordSet with id $recordSetId does not exist in zone ${zone.id}.")
+      )(recordSet.zoneId == zone.id).toResult
+    } yield recordSet
 
   def recordSetDoesNotExist(
                              backendConnection: Zone => Backend,

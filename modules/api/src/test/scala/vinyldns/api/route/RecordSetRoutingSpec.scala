@@ -434,7 +434,8 @@ class RecordSetRoutingSpec
                 ): Either[Throwable, RecordSetChange] = zoneId match {
       case zoneNotFound.id => Left(ZoneNotFoundError(zoneId))
       case zoneDeleted.id => Left(ZoneInactiveError(zoneId))
-      case notAuthorizedZone.id => Left(NotAuthorizedError(zoneId))
+      case notAuthorizedZone.id =>
+        Left(NotAuthorizedError(zoneId))
       case syncingZone.id => Left(ZoneUnavailableError(zoneId))
       case invalidChangeZone.id =>
         Right(
@@ -526,14 +527,8 @@ class RecordSetRoutingSpec
       } else {
         recordSetId match {
           case rsError.id => Left(new RuntimeException("fail"))
-          case rsNotFound.id => Left(RecordSetNotFoundError(s"$zoneId"))
-          case rsOk.id =>
-            // Check if the recordSet belongs to the requested zone
-            if (rsOk.zoneId == zoneId) {
-              Right(rsOkSummary)
-            } else {
-              Left(RecordSetNotFoundError(s"RecordSet with id $recordSetId does not exist."))
-            }
+          case rsNotFound.id => Left(RecordSetNotFoundError(s"$recordSetId"))
+          case rsOk.id => Right(rsOkSummary)
           case _ => Left(RecordSetNotFoundError(s"RecordSet with id $recordSetId does not exist."))
         }
       }
@@ -999,12 +994,6 @@ class RecordSetRoutingSpec
 
     "return a 404 Not Found when the zone doesn't exist" in {
       Get(s"/zones/${zoneNotFound.id}/recordsets/${rsZoneNotFound.id}") ~> recordSetRoute ~> check {
-        status shouldBe StatusCodes.NotFound
-      }
-    }
-
-    "return a 404 Not Found when the recordSet belongs to a different zone" in {
-      Get(s"/zones/${notAuthorizedZone.id}/recordsets/${rsOk.id}") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
