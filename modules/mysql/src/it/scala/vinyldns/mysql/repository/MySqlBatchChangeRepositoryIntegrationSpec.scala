@@ -721,6 +721,30 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       batchChangeSummaries.batchChanges shouldBe empty
     }
 
+    "treat an injection payload in userName as a literal (no injection)" in {
+      val f =
+        for {
+          _ <- repo.save(change_one)
+          _ <- repo.save(otherUserBatchChange)
+          // An injectable userName would short-circuit the user filter and return all changes.
+          retrieved <- repo.getBatchChangeSummaries(None, userName = Some("x' OR '1'='1"))
+        } yield retrieved
+
+      f.unsafeRunSync().batchChanges shouldBe empty
+    }
+
+    "treat injection payloads in the date-time range as literals (no injection)" in {
+      val f = repo.getBatchChangeSummaries(
+        None,
+        dateTimeStartRange = Some("2024-01-01 00:00:00"),
+        dateTimeEndRange = Some("2024-12-31 23:59:59') OR ('1'='1")
+      )
+
+      // A malformed/injected range must not break out of the bound literal; the
+      // query runs and simply matches nothing in that (literal) window.
+      f.unsafeRunSync().batchChanges shouldBe empty
+    }
+
     "get batch change summaries by user ID" in {
       val f =
         for {

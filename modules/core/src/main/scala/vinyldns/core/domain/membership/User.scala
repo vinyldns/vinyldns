@@ -16,7 +16,8 @@
 
 package vinyldns.core.domain.membership
 
-import java.util.UUID
+import java.security.SecureRandom
+import java.util.{Random, UUID}
 
 import org.apache.commons.lang3.RandomStringUtils
 import java.time.Instant
@@ -73,5 +74,15 @@ final case class User(
 }
 
 object User {
-  def generateKey: String = RandomStringUtils.randomAlphanumeric(20)
+
+  private[membership] val CredentialKeyLength: Int = 20
+
+  // Cryptographically strong source for access/secret keys; randomAlphanumeric uses a
+  // predictable JVM-default PRNG and is unsuitable for credentials.
+  private[membership] val secureRandom: SecureRandom = new SecureRandom()
+
+  def generateKey: String = generateKey(secureRandom)
+
+  private[membership] def generateKey(random: Random): String =
+    RandomStringUtils.random(CredentialKeyLength, 0, 0, true, true, null, random)
 }

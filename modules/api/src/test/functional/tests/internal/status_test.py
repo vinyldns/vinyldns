@@ -1,8 +1,19 @@
 import copy
 
 import pytest
+import time
 
 from utils import *
+
+
+def wait_for_processing_disabled(client, expected):
+    for _ in range(20):
+        status = client.get_status()
+        if status["processingDisabled"] is expected:
+            return status
+        time.sleep(0.1)
+
+    return client.get_status()
 
 
 def test_get_status_success(shared_zone_test_context):
@@ -46,12 +57,12 @@ def test_post_status_pass_for_admin_users(shared_zone_test_context):
 
     client.post_status(True)
 
-    status = client.get_status()
+    status = wait_for_processing_disabled(client, True)
     assert_that(status["processingDisabled"], is_(True))
 
     client.post_status(False)
 
-    status = client.get_status()
+    status = wait_for_processing_disabled(client, False)
     assert_that(status["processingDisabled"], is_(False))
 
 
@@ -68,11 +79,11 @@ def test_toggle_processing(shared_zone_test_context):
     # disable processing
     admin_client.post_status(True)
 
-    status = client.get_status()
+    status = wait_for_processing_disabled(client, True)
     assert_that(status["processingDisabled"], is_(True))
 
     admin_client.post_status(False)
-    status = client.get_status()
+    status = wait_for_processing_disabled(client, False)
     assert_that(status["processingDisabled"], is_(False))
 
     # Create changes to make sure we can process after the toggle
