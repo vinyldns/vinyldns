@@ -272,6 +272,21 @@ vinyldns {
 }
 ```
 
+
+### JavaCrypto ciphertext format
+
+`JavaCrypto` encrypts new values with AES-256-GCM (authenticated encryption) and stores them as
+`ENC:v2:<base64(IV || ciphertext || tag)>`. Values written by earlier releases (`ENC:<base64(IV || AES-CBC ciphertext)>`)
+are still decrypted, so no data migration is required; they are replaced by the new format whenever the value is
+re-encrypted (for example, when user credentials are regenerated).
+
+Any modification of an `ENC:v2:` value is detected, and all decryption failures surface as the same generic error.
+Values supplied with an `ENC:` prefix (for example, a zone connection key in an API request) are only accepted if they are
+valid ciphertext for the configured secret; otherwise the API responds with `400 Bad Request`.
+
+Because older releases cannot read `ENC:v2:` values, upgrade the API and the portal together and do not roll back to an
+older release once new values have been written.
+
 ## Zone Connections
 
 VinylDNS has three ways of indicating zone connections:
