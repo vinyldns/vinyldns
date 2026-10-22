@@ -17,7 +17,9 @@
 package controllers
 
 import actions.{LegacySecuritySupport, SecuritySupport}
+import cats.data.EitherT
 import cats.effect.IO
+import com.nimbusds.jwt.JWTClaimsSet
 import controllers.VinylDNS.Alert
 import mockws.MockWS
 import org.junit.runner._
@@ -2758,6 +2760,90 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         contentAsString(result) must beEqualTo(
           s"User account for `${lockedFrodoUser.userName}` is locked."
         )
+      }
+    }
+
+    ".setOidcSession" should {
+      val loginId = "test-login-id"
+      val nonce = "test-nonce"
+      val state = "test-state"
+
+      "delegate state validation to authenticator and handle mismatch error" in new WithApplication(
+        app
+      ) {
+        val mockOidcAuth = mock[OidcAuthenticator]
+
+        mockOidcAuth
+          .getCodeFromAuthResponse(any[RequestHeader], any[String])
+          .returns(Left(OidcAuthenticator.ErrorResponse(400, "Invalid OIDC state")))
+
+        val client = mock[WSClient]
+        val underTest = TestVinylDNS(
+          config,
+          authenticator,
+          mockUserAccessor,
+          client,
+          components,
+          crypto,
+          mockOidcAuth
+        )
+
+        val result = underTest.setOidcSession(loginId)(
+          FakeRequest(GET, s"/set-oidc-session/$loginId?state=wrong-state&code=test-code")
+            .withSession("oidc_state" -> state, "oidc_nonce" -> nonce)
+        )
+
+        status(result) mustEqual 500
+        contentAsString(result) must contain("There was an issue when logging in")
+      }
+
+      "return an error when state is missing from session" in new WithApplication(app) {
+        val mockOidcAuth = mock[OidcAuthenticator]
+
+        val client = mock[WSClient]
+        val underTest = TestVinylDNS(
+          config,
+          authenticator,
+          mockUserAccessor,
+          client,
+          components,
+          crypto,
+          mockOidcAuth
+        )
+
+        val result = underTest.setOidcSession(loginId)(
+          FakeRequest(GET, s"/set-oidc-session/$loginId?state=$state&code=test-code")
+            .withSession("oidc_nonce" -> nonce)
+        )
+
+        status(result) mustEqual 500
+        contentAsString(result) must contain("There was an issue when logging in")
+      }
+
+      "return an error when callback is missing state" in new WithApplication(app) {
+        val mockOidcAuth = mock[OidcAuthenticator]
+        mockOidcAuth.getCodeFromAuthResponse(any[RequestHeader], any[String])
+          .returns(Left(OidcAuthenticator.ErrorResponse(400, "Missing OIDC state in callback")))
+
+        val client = mock[WSClient]
+        val underTest =
+          TestVinylDNS(
+            config,
+            authenticator,
+            mockUserAccessor,
+            client,
+            components,
+            crypto,
+            mockOidcAuth
+          )
+
+        val result = underTest.setOidcSession(loginId)(
+          FakeRequest(GET, s"/set-oidc-session/$loginId?code=test-code")
+            .withSession("oidc_state" -> state, "oidc_nonce" -> nonce)
+        )
+
+        status(result) mustEqual 500
+        contentAsString(result) must contain("There was an issue when logging in")
       }
     }
   }
