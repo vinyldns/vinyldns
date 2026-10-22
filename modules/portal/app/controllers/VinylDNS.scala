@@ -186,12 +186,19 @@ class VinylDNS @Inject() (
   def login(): Action[AnyContent] = Action { implicit request =>
     val userForm = Form(
       tuple(
-        "username" -> text,
-        "password" -> text
+        "username" -> nonEmptyText,
+        "password" -> nonEmptyText
       )
     )
-    val (username, password) = userForm.bindFromRequest.get
-    processLogin(username, password)
+    userForm.bindFromRequest.fold(
+      formWithErrors => {
+        logger.warn(s"Login form validation failed: ${formWithErrors.errors.map(e => s"${e.key}: ${e.messages}").mkString(", ")}")
+        Redirect("/login").flashing("danger" -> "Invalid username or password")
+      },
+      { case (username, password) =>
+        processLogin(username, password)
+      }
+    )
   }
 
   def newGroup(): Action[AnyContent] = userAction.async { implicit request =>

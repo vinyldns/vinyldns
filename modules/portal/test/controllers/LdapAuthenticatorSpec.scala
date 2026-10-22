@@ -391,6 +391,20 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
   }
 
   "LdapByDomainAuthenticator" should {
+    "reject empty passwords without attempting LDAP bind" in {
+      val mocks = createMocks
+      val response = mocks.byDomainAuthenticator.authenticate(testDomain1, "foo", "")
+
+      response must beLeft(InvalidCredentials("foo"))
+    }
+
+    "reject whitespace-only passwords without attempting LDAP bind" in {
+      val mocks = createMocks
+      val response = mocks.byDomainAuthenticator.authenticate(testDomain1, "foo", "   ")
+
+      response must beLeft(InvalidCredentials("foo"))
+    }
+
     "return an error message if authenticated but no LDAP record is found" in {
       val mocks = createMocks
       mocks.searchResults.hasMore.returns(false)
