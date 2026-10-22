@@ -154,19 +154,6 @@ class VinylDNS @Inject() (
           .toRight(ErrorResponse(400, "Missing OIDC state"))
       )
 
-      actualState <- EitherT.fromEither[IO](
-        request.getQueryString("state")
-          .toRight(ErrorResponse(400, "Missing OIDC state in callback"))
-      )
-
-      _ <- EitherT.fromEither[IO](
-        Either.cond(
-          expectedState == actualState,
-          (),
-          ErrorResponse(400, "Invalid OIDC state")
-        )
-      )
-
       code <- EitherT.fromEither[IO](
         oidcAuthenticator.getCodeFromAuthResponse(request, expectedState)
       )

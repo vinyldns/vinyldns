@@ -271,7 +271,7 @@ class OidcAuthenticator @Inject() (wsClient: WSClient, configuration: Configurat
 
   def handleCallbackResponse(
       response: HTTPResponse,
-      expectedNonce: Option[String] = None
+      expectedNonce: Option[String]
   ): Either[ErrorResponse, JWTClaimsSet] = {
     expectedNonce match {
       case None =>

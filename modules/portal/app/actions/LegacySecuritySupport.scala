@@ -53,10 +53,10 @@ class LegacySecuritySupport @Inject() (
             Redirect(
               oidcAuthenticator.getCodeCall(request.uri, state, nonce).toString,
               302
-            ).withSession(
+            ).addingToSession(
               "oidc_state" -> state,
               "oidc_nonce" -> nonce
-            )
+            )(request)
         }
       } else {
         request.session.get("username") match {
