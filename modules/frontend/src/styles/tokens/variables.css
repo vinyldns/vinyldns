@@ -1,0 +1,91 @@
+/**
+ * VinylDNS Design System Tokens: Variables
+ * Shared CSS variables (:root, typography, radii, shadows, semantic defaults)
+ */
+
+:root {
+  /**
+   * Design: Brand and core palette
+   */
+  --vds-blue: #3b82f6;
+  --vds-blue-glow: rgb(59 130 246 / 35%);
+  --vds-brand-primary: #1e5fa8;
+  --vds-brand-hover: #17497f;
+  --vds-accent: #1e5fa8;
+  --vds-accent-hover: #17497f;
+
+  /**
+   * Theme: Light mode neutrals and surfaces
+   */
+  --vds-bg-canvas: #fdfeff;
+  --vds-bg-surface: #fff;
+  --vds-bg-elevated: #fff;
+  --vds-border-color: #e2e8f0;
+  --vds-border-color-light: #f1f5f9;
+  --vds-border-color-subtle: #dce3ee;
+
+  /**
+   * Design: Typography
+   */
+  --vds-font-family:
+    -apple-system, blinkmacsystemfont, "Segoe UI", roboto, "Helvetica Neue",
+    arial, sans-serif;
+  --vds-font-mono:
+    ui-monospace, sfmono-regular, menlo, monaco, consolas, "Liberation Mono",
+    "Courier New", monospace;
+  --vds-text-primary: #1a1a2e;
+  --vds-text-secondary: #64748b;
+  --vds-text-disabled: #94a3b8;
+  --vds-text-muted: #8099b8;
+
+  /**
+   * Design: Border radius scale
+   */
+  --vds-radius-sm: 4px;
+  --vds-radius-md: 6px;
+  --vds-radius-lg: 8px;
+  --vds-radius-xl: 12px;
+  --vds-radius-pill: 999px;
+
+  /**
+   * Design: Elevation shadows
+   */
+  --vds-shadow-sm: 0 1px 3px rgb(0 0 0 / 6%);
+  --vds-shadow-md: 0 4px 12px rgb(0 0 0 / 8%);
+  --vds-shadow-lg: 0 8px 24px rgb(0 0 0 / 12%);
+  --vds-shadow-blue: 0 2px 8px rgb(30 95 168 / 18%);
+
+  /**
+   * Theme: Sidebar and topbar chrome, fixed black in all themes
+   */
+  --vds-sidebar-bg: #000;
+  --vds-sidebar-accent: #3b82f6;
+  --vds-sidebar-link-hover: rgb(255 255 255 / 6%);
+  --vds-sidebar-link-active: #1a1a1c;
+  --vds-nav-icon-size: 1rem;
+
+  /**
+   * UI Component: Discard modal (light theme)
+   */
+  --vds-dm-bg: #fff;
+  --vds-dm-border: #e8ecf0;
+  --vds-dm-header-bg: #f8fafc;
+  --vds-dm-footer-bg: #f8fafd;
+  --vds-dm-title: #0d1b3e;
+  --vds-dm-body: #475569;
+  --vds-dm-icon-bg: #fef2f2;
+  --vds-dm-btn-border: #d4dae3;
+  --vds-dm-btn-color: #5a6a85;
+
+  /**
+   * Design: Status colors
+   */
+  --vds-color-success: #16a34a;
+  --vds-color-success-bg: #e8faf2;
+  --vds-color-warning: #d97706;
+  --vds-color-warning-bg: #fff8e6;
+  --vds-color-danger: #dc2626;
+  --vds-color-danger-bg: #fef2f2;
+  --vds-color-info: #0284c7;
+  --vds-color-info-bg: #e0f2fe;
+}

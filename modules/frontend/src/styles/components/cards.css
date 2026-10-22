@@ -1,0 +1,1000 @@
+/**
+ * VinylDNS component styles: cards and panels
+ */
+
+/**
+ * UI Component: Page Header (Hero Banner)
+ */
+.vds-page-header {
+  background: #f0f4fa;
+  border: 1px solid rgb(0 0 0 / 8%);
+  box-shadow: 0 1px 6px rgb(0 0 0 / 7%);
+  padding: 0.5rem 1.5rem;
+}
+
+.vds-page-header--lg {
+  padding: 0.5rem 1.5rem;
+}
+
+.vds-page-header__icon {
+  width: 48px;
+  height: 48px;
+  background: #1e5fa8;
+  box-shadow:
+    0 4px 14px rgb(13 27 62 / 45%),
+    inset 0 1px 0 rgb(255 255 255 / 9%);
+  flex-shrink: 0;
+}
+
+.vds-page-header__title {
+  color: #0d1b2a;
+  letter-spacing: -0.01em;
+  margin-bottom: 0;
+  font-weight: 700;
+}
+
+/**
+ * UI Component: Insight Footnote Icon Helpers
+ */
+.vds-icon-blue-dim {
+  color: rgb(13 110 253 / 60%);
+}
+
+.vds-icon-purple-dim {
+  color: rgb(111 66 193 / 60%);
+}
+
+.vds-icon-amber {
+  color: #d97706;
+}
+
+.vds-icon-teal-dim {
+  color: rgb(12 166 120 / 60%);
+}
+
+/**
+ * UI Component: Form Cards (Create and Edit)
+ */
+.vds-form-card {
+  border: none !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 4px 20px rgb(13 110 253 / 12%);
+}
+
+.vds-form-card--edit {
+  box-shadow: 0 4px 20px rgb(255 193 7 / 20%);
+}
+
+.vds-form-card__header {
+  border: none !important;
+  font-weight: 600;
+}
+
+.vds-form-card__header--create {
+  background: #1e5fa8;
+  color: #fff;
+  border-radius: 0.75rem 0.75rem 0 0 !important;
+}
+
+.vds-form-card__header--edit {
+  background: #ffc107;
+  color: #212529;
+  border-radius: 0.75rem 0.75rem 0 0 !important;
+}
+
+.vds-form-card__body {
+  border-radius: 0 0 0.75rem 0.75rem !important;
+}
+
+/**
+ * UI Component: Insight Cards (Dashboard and Analytics)
+ */
+.vds-groups-insight-row {
+  margin-bottom: 0.5rem;
+}
+
+.vds-insight-card {
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+  max-height: 12rem;
+}
+
+.vds-insight-card:hover {
+  transform: translateY(-2px);
+}
+
+.vds-insight-card--blue {
+  background: #e8f0fe;
+  border: 1.5px solid #c7deff;
+  box-shadow: 0 2px 10px rgb(13 110 253 / 10%);
+}
+
+.vds-insight-card--blue:hover {
+  box-shadow: 0 6px 20px rgb(13 110 253 / 15.7%);
+}
+
+.vds-insight-card--purple {
+  background: #f0e8ff;
+  border: 1.5px solid #d5c5f5;
+  box-shadow: 0 2px 10px rgb(111 66 193 / 10%);
+}
+
+.vds-insight-card--purple:hover {
+  box-shadow: 0 6px 20px rgb(111 66 193 / 15.7%);
+}
+
+.vds-insight-card--amber {
+  background: #fff8e6;
+  border: 1.5px solid #ffe88a;
+  box-shadow: 0 2px 10px rgb(217 119 6 / 10%);
+}
+
+.vds-insight-card--amber:hover {
+  box-shadow: 0 6px 20px rgb(217 119 6 / 15.7%);
+}
+
+.vds-insight-card--teal {
+  background: #e6faf4;
+  border: 1.5px solid #a3e9d5;
+  box-shadow: 0 2px 10px rgb(12 166 120 / 10%);
+}
+
+.vds-insight-card--teal:hover {
+  box-shadow: 0 6px 20px rgb(12 166 120 / 15.7%);
+}
+
+.vds-insight-card--green {
+  background: #e8faf2;
+  border: 1.5px solid #a3e0b5;
+  box-shadow: 0 2px 10px rgb(22 163 74 / 10%);
+}
+
+.vds-insight-card--green:hover {
+  box-shadow: 0 6px 20px rgb(22 163 74 / 15.7%);
+}
+
+/**
+ * UI Component: Insight icon circle
+ */
+.vds-insight-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+}
+
+.vds-insight-icon--blue {
+  background: rgb(13 110 253 / 9.4%);
+  color: #0d6efd;
+}
+
+.vds-insight-icon--purple {
+  background: rgb(111 66 193 / 9.4%);
+  color: #6f42c1;
+}
+
+.vds-insight-icon--amber {
+  background: rgb(217 119 6 / 9.4%);
+  color: #d97706;
+}
+
+.vds-insight-icon--teal {
+  background: rgb(12 166 120 / 9.4%);
+  color: #0ca678;
+}
+
+.vds-insight-icon--green {
+  background: rgb(22 163 74 / 9.4%);
+  color: #16a34a;
+}
+
+/**
+ * UI Component: Insight label
+ */
+.vds-insight-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.vds-insight-label--blue {
+  color: #4a6fa5;
+}
+
+.vds-insight-label--purple {
+  color: rgb(111 66 193 / 66.7%);
+}
+
+.vds-insight-label--amber {
+  color: rgb(217 119 6 / 66.7%);
+}
+
+.vds-insight-label--teal {
+  color: rgb(12 166 120 / 66.7%);
+}
+
+.vds-insight-label--green {
+  color: rgb(22 163 74 / 70%);
+}
+
+/**
+ * UI Component: Insight value
+ */
+.vds-insight-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-left: auto;
+  letter-spacing: -0.04em;
+}
+
+.vds-insight-value--blue {
+  color: #0d6efd;
+}
+
+.vds-insight-value--purple {
+  color: #6f42c1;
+}
+
+.vds-insight-value--amber {
+  color: #d97706;
+}
+
+.vds-insight-value--teal {
+  color: #0ca678;
+}
+
+.vds-insight-value--green {
+  color: #16a34a;
+}
+
+/**
+ * UI Component: Insight skeleton
+ */
+.vds-insight-skeleton {
+  display: inline-block;
+  width: 32px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+.vds-insight-skeleton--blue {
+  background: rgb(13 110 253 / 13.3%);
+}
+
+.vds-insight-skeleton--purple {
+  background: rgb(111 66 193 / 13.3%);
+}
+
+.vds-insight-skeleton--amber {
+  background: rgb(217 119 6 / 13.3%);
+}
+
+.vds-insight-skeleton--teal {
+  background: rgb(12 166 120 / 13.3%);
+}
+
+.vds-insight-skeleton--green {
+  background: rgb(22 163 74 / 13.3%);
+}
+
+/**
+ * UI Component: Insight body and subgrid
+ */
+.vds-insight-body {
+  padding-top: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px 8px;
+  flex: 1;
+}
+
+.vds-insight-body--blue {
+  border-top: 1px solid #c7deff;
+}
+
+.vds-insight-body--purple {
+  border-top: 1px solid #d5c5f5;
+}
+
+.vds-insight-body--amber {
+  border-top: 1px solid #ffe88a;
+}
+
+.vds-insight-body--teal {
+  border-top: 1px solid #a3e9d5;
+}
+
+.vds-insight-body--green {
+  border-top: 1px solid #a3e0b5;
+}
+
+.vds-insight-body--single {
+  grid-template-columns: 1fr;
+}
+
+.vds-insight-body-amber-outer {
+  border-top: 1px solid #ffe88a;
+  padding-top: 6px;
+  flex: 1;
+}
+
+.vds-insight-body--inner {
+  border-top: none !important;
+  padding-top: 0 !important;
+}
+
+.vds-insight-stat-label {
+  font-size: 0.68rem;
+  color: #8099b8;
+}
+
+.vds-insight-stat-label--right {
+  text-align: right;
+}
+
+.vds-insight-stat-value {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.vds-insight-stat-value--right {
+  text-align: right;
+}
+
+.vds-insight-stat-value--blue {
+  color: #0d6efd;
+}
+
+.vds-insight-stat-value--purple {
+  color: #6f42c1;
+}
+
+.vds-insight-stat-value--amber {
+  color: #d97706;
+}
+
+.vds-insight-stat-value--teal {
+  color: #0ca678;
+}
+
+.vds-insight-stat-value--green {
+  color: #15803d;
+}
+
+.vds-insight-footnote {
+  font-size: 0.68rem;
+  color: #8099b8;
+  grid-column: 1 / -1;
+  margin-top: 3px;
+}
+
+.vds-insight-no-data {
+  font-size: 0.68rem;
+  color: #8099b8;
+  margin-top: 2px;
+}
+
+.vds-insight-progress {
+  height: 3px;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.vds-insight-progress--amber {
+  background: rgb(217 119 6 / 13.3%);
+}
+
+.vds-insight-progress--teal {
+  background: rgb(12 166 120 / 13.3%);
+}
+
+.vds-insight-progress--blue {
+  background: rgb(13 110 253 / 13.3%);
+}
+
+.vds-insight-progress__fill {
+  height: 100%;
+  border-radius: 99px;
+}
+
+.vds-insight-progress__fill--amber {
+  background: #d97706;
+}
+
+.vds-insight-progress__fill--teal {
+  background: #0ca678;
+}
+
+.vds-insight-progress__fill--blue {
+  background: #0d6efd;
+}
+
+.vds-insight-access-bar {
+  height: 6px;
+  border-radius: 99px;
+  overflow: hidden;
+  display: flex;
+  margin: 3px 0 2px;
+}
+
+.vds-insight-access-bar__shared {
+  background: #6f42c1;
+  flex-shrink: 0;
+  min-width: 4px;
+}
+
+.vds-insight-access-bar__private {
+  background: rgb(111 66 193 / 18%);
+  flex: 1;
+}
+
+/**
+ * Theme: Dark mode insight cards
+ */
+[data-vds-theme="dark"] .vds-insight-card--blue {
+  background: #111;
+  border-color: rgb(30 95 168 / 35%);
+}
+
+[data-vds-theme="dark"] .vds-insight-card--purple {
+  background: #111;
+  border-color: rgb(111 66 193 / 35%);
+}
+
+[data-vds-theme="dark"] .vds-insight-card--amber {
+  background: #111;
+  border-color: rgb(217 119 6 / 35%);
+}
+
+[data-vds-theme="dark"] .vds-insight-card--teal {
+  background: #111;
+  border-color: rgb(12 166 120 / 35%);
+}
+
+[data-vds-theme="dark"] .vds-insight-card--green {
+  background: #111;
+  border-color: rgb(22 163 74 / 35%);
+}
+
+/**
+ * Theme: Dark mode insight labels
+ */
+[data-vds-theme="dark"] .vds-insight-label--blue {
+  color: #a1a1aa;
+}
+
+[data-vds-theme="dark"] .vds-insight-label--purple {
+  color: #a1a1aa;
+}
+
+[data-vds-theme="dark"] .vds-insight-label--amber {
+  color: #a1a1aa;
+}
+
+[data-vds-theme="dark"] .vds-insight-label--teal {
+  color: #a1a1aa;
+}
+
+[data-vds-theme="dark"] .vds-insight-label--green {
+  color: #a1a1aa;
+}
+
+/**
+ * Design: Values stay white; colour is reserved for icons and borders
+ */
+[data-vds-theme="dark"] .vds-insight-value--blue {
+  color: #fff;
+}
+
+[data-vds-theme="dark"] .vds-insight-value--purple {
+  color: #fff;
+}
+
+[data-vds-theme="dark"] .vds-insight-value--amber {
+  color: #fff;
+}
+
+[data-vds-theme="dark"] .vds-insight-value--teal {
+  color: #fff;
+}
+
+[data-vds-theme="dark"] .vds-insight-value--green {
+  color: #fff;
+}
+
+/**
+ * Theme: Dark mode insight stat labels
+ */
+[data-vds-theme="dark"] .vds-insight-stat-label {
+  color: rgb(161 161 170 / 55%);
+}
+
+/**
+ * Theme: Dark mode insight stat values
+ */
+[data-vds-theme="dark"] .vds-insight-stat-value--blue {
+  color: #f5f5f5;
+}
+
+[data-vds-theme="dark"] .vds-insight-stat-value--purple {
+  color: #f5f5f5;
+}
+
+[data-vds-theme="dark"] .vds-insight-stat-value--amber {
+  color: #f5f5f5;
+}
+
+[data-vds-theme="dark"] .vds-insight-stat-value--green {
+  color: #f5f5f5;
+}
+
+/**
+ * Theme: Dark mode insight footnotes
+ */
+[data-vds-theme="dark"] .vds-insight-footnote {
+  color: rgb(161 161 170 / 40%);
+}
+
+[data-vds-theme="dark"] .vds-insight-body-amber-outer {
+  border-top-color: rgb(255 208 90 / 20%);
+}
+
+[data-vds-theme="dark"] .vds-insight-no-data {
+  color: rgb(161 161 170 / 35%);
+}
+
+/**
+ * Theme: Dark mode progress bar track
+ */
+[data-vds-theme="dark"] .vds-insight-progress--amber {
+  background: rgb(255 208 90 / 12%);
+}
+
+[data-vds-theme="dark"] .vds-insight-access-bar__private {
+  background: rgb(111 66 193 / 25%);
+}
+
+/**
+ * UI Component: Toolbar Cards and General Panels
+ */
+.vds-toolbar-card {
+  border: none !important;
+  border-radius: 0.65rem !important;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 7%);
+}
+
+.vds-panel {
+  border: 1px solid #e2e8f0;
+  background-color: #fff;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 6%);
+}
+
+[data-vds-theme="dark"] .vds-panel {
+  border-color: #2a2a2c;
+  background-color: #111;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+}
+
+.vds-panel-shadow-lg {
+  box-shadow: 0 3px 6px rgb(15 23 42 / 6%);
+}
+
+[data-vds-theme="dark"] .vds-panel-shadow-lg {
+  box-shadow: 0 3px 6px rgb(0 0 0 / 30%);
+}
+
+.vds-panel-header {
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+[data-vds-theme="dark"] .vds-panel-header {
+  background-color: #161618;
+  border-bottom-color: #2a2a2c;
+}
+
+.vds-panel-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1f2a44;
+}
+
+[data-vds-theme="dark"] .vds-panel-title {
+  color: #fff;
+}
+
+.vds-card-ctx-chip {
+  display: inline-block;
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.vds-card-ctx-chip--blue {
+  background: rgb(13 110 253 / 12%);
+  color: #3468c0;
+}
+
+.vds-card-ctx-chip--teal {
+  background: rgb(12 166 120 / 12%);
+  color: #0a9068;
+}
+
+.vds-card-ctx-chip--purple {
+  background: rgb(111 66 193 / 12%);
+  color: #5a30a0;
+}
+
+.vds-card-ctx-chip--amber {
+  background: rgb(217 119 6 / 12%);
+  color: #b06000;
+}
+
+.vds-card-ctx-chip--green {
+  background: rgb(22 163 74 / 12%);
+  color: #15803d;
+}
+
+.vds-dup-review-card {
+  background: #fff;
+  border: 1px solid #dfe7f1;
+  border-radius: 0.6rem;
+  padding: 0.85rem 1rem;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+  margin-bottom: 10px;
+}
+
+/**
+ * UI Component: Info Bar and Section Toolbars
+ */
+.vds-info-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.65rem;
+  background: #fff;
+  padding: 0.5rem 0.25rem;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 5%);
+}
+
+.vds-info-bar__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.25rem 1rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.vds-info-bar__item + .vds-info-bar__item {
+  border-left: 1px solid #eef2f7;
+}
+
+.vds-info-bar__label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.vds-info-bar__value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1f2a44;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vds-info-bar__value--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+}
+
+.vds-info-bar__item--id {
+  flex: 2 1 220px;
+}
+
+/**
+ * UI Component: Info tiles strip
+ */
+.vds-info-tiles {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.vds-info-tiles::-webkit-scrollbar {
+  height: 4px;
+}
+
+.vds-info-tiles::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.vds-info-tiles::-webkit-scrollbar-thumb {
+  background: rgb(30 95 168 / 20%);
+  border-radius: 4px;
+}
+
+/**
+ * UI Component: Info tile
+ */
+.vds-info-tile {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 160px;
+  padding: 0.65rem 1rem;
+  border-radius: 0.875rem;
+  background: #fff;
+  border: 1px solid #e4ecf7;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgb(30 95 168 / 7%);
+}
+
+.vds-info-tile::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #1e5fa8;
+}
+
+.vds-info-tile:hover {
+  box-shadow: 0 2px 8px rgb(30 95 168 / 12%);
+}
+
+.vds-info-tile__icon {
+  position: absolute;
+  bottom: -0.5rem;
+  right: 0.6rem;
+  font-size: 4rem;
+  color: #1e5fa8;
+  opacity: 0.05;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.vds-info-tile__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #1e5fa8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.3rem;
+}
+
+.vds-info-tile__value {
+  font-size: 0.9rem;
+  color: #111827;
+  font-weight: 600;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.vds-info-tile__copy {
+  color: #6b8fb5;
+}
+
+.vds-info-tile__copy:hover {
+  color: #1e5fa8;
+}
+
+.vds-section-toolbar {
+  background: #f5f9ff;
+}
+
+.vds-section-toolbar__title {
+  color: #0d4a9a;
+  font-size: 0.9rem;
+}
+
+[data-vds-theme="dark"] .vds-section-toolbar {
+  background: #252424;
+}
+
+[data-vds-theme="dark"] .vds-section-toolbar__title {
+  color: #a1a1aa;
+}
+
+/**
+ * UI Component: Dark Mode Card Overrides
+ */
+[data-vds-theme="dark"] .vds-page-header {
+  background: #111;
+  border-color: var(--vds-card-border);
+}
+
+[data-vds-theme="dark"] .vds-page-header__title {
+  color: #f5f5f5;
+}
+
+[data-vds-theme="dark"] .vds-page-header__icon {
+  background: #1e5fa8 !important;
+}
+
+[data-vds-theme="dark"] .vds-toolbar-card,
+[data-vds-theme="dark"] .vds-form-card {
+  background: var(--vds-card-bg) !important;
+  border-color: var(--vds-card-border) !important;
+  color: var(--vds-page-text);
+}
+
+[data-vds-theme="dark"] .vds-form-card__body {
+  background: #1a1a1a !important;
+  color: var(--vds-page-text);
+  border-color: var(--vds-card-border) !important;
+}
+
+[data-vds-theme="dark"] .vds-form-card__header--create {
+  background: #1a1a1a;
+  border-color: var(--vds-card-border) !important;
+  color: #90c2f0;
+}
+
+[data-vds-theme="dark"] .vds-form-card__header--edit {
+  background: #1a1a1a;
+  border-color: var(--vds-card-border) !important;
+  color: #b99fea;
+}
+
+[data-vds-theme="dark"] .vds-card-ctx-chip--blue {
+  background: rgb(13 110 253 / 20%);
+  color: #a1a1aa;
+}
+
+[data-vds-theme="dark"] .vds-card-ctx-chip--teal {
+  background: rgb(12 166 120 / 20%);
+  color: #4ecba8;
+}
+
+[data-vds-theme="dark"] .vds-card-ctx-chip--purple {
+  background: rgb(111 66 193 / 20%);
+  color: #b09ce8;
+}
+
+[data-vds-theme="dark"] .vds-card-ctx-chip--amber {
+  background: rgb(217 119 6 / 20%);
+  color: #f0b84a;
+}
+
+[data-vds-theme="dark"] .vds-card-ctx-chip--green {
+  background: rgb(22 163 74 / 20%);
+  color: #4ade80;
+}
+
+[data-vds-theme="dark"] .vds-dup-review-card {
+  background: #111827;
+  border-color: rgb(148 163 184 / 20%) !important;
+  color: #f8fafc;
+}
+
+[data-vds-theme="dark"] .vds-info-bar {
+  background: #111;
+  border-color: #333;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+}
+
+[data-vds-theme="dark"] .vds-info-bar__item + .vds-info-bar__item {
+  border-left-color: #2a2a2a;
+}
+
+[data-vds-theme="dark"] .vds-info-bar__label {
+  color: #94a3b8;
+}
+
+[data-vds-theme="dark"] .vds-info-bar__value {
+  color: #e2eaf6;
+}
+
+[data-vds-theme="dark"] .vds-info-tiles::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 25%);
+}
+
+[data-vds-theme="dark"] .vds-info-tile {
+  background: #111 !important;
+  border-color: rgb(255 255 255 / 15%) !important;
+  box-shadow:
+    0 1px 6px rgb(0 0 0 / 35%),
+    0 4px 16px rgb(0 0 0 / 30%) !important;
+}
+
+[data-vds-theme="dark"] .vds-info-tile::before {
+  background: #4fa6fe !important;
+}
+
+[data-vds-theme="dark"] .vds-info-tile:hover {
+  box-shadow:
+    0 6px 24px rgb(0 0 0 / 50%),
+    0 0 0 1px rgb(255 255 255 / 12%) !important;
+}
+
+[data-vds-theme="dark"] .vds-info-tile:hover::before {
+  background: #79c0ff !important;
+}
+
+[data-vds-theme="dark"] .vds-info-tile__icon {
+  color: #7fb8f0 !important;
+  opacity: 0.08 !important;
+}
+
+[data-vds-theme="dark"] .vds-info-tile:hover .vds-info-tile__icon {
+  opacity: 0.14 !important;
+}
+
+[data-vds-theme="dark"] .vds-info-tile__label {
+  color: #7fb8f0 !important;
+}
+
+[data-vds-theme="dark"] .vds-info-tile__value {
+  color: #e2eaf6 !important;
+}
+
+[data-vds-theme="dark"] .vds-info-tile__copy {
+  color: #a1a1aa !important;
+}
+
+[data-vds-theme="dark"] .vds-info-tile__copy:hover {
+  color: #b8d8ff !important;
+}
+
+[data-vds-theme="dark"] .vds-notice-panel {
+  background: rgb(13 202 240 / 10%) !important;
+  border-color: rgb(13 202 240 / 30%) !important;
+}
+
+[data-vds-theme="dark"] .vds-notice-icon {
+  color: #0dcaf0 !important;
+}
+
+/**
+ * UI Component: Manage Zone panel footer
+ */
+.vds-manage-zone-footer {
+  display: flex;
+  align-items: center;
+  padding: 6px 20px;
+  border-top: 1px solid rgb(91 143 232 / 16%);
+  background: #f4f7fb;
+  border-radius: 0 0 12px 12px;
+  gap: 10px;
+}
+
+[data-vds-theme="dark"] .vds-manage-zone-footer {
+  background: rgb(19 19 20 / 88%);
+  border-top-color: rgb(255 255 255 / 12%);
+}
+
+/**
+ * UI Component: Instructions card (RecordsPage)
+ */
+[data-vds-theme="dark"] .vds-instructions-card {
+  background: var(--vds-card-bg) !important;
+  border-color: var(--vds-card-border) !important;
+}

@@ -1,0 +1,392 @@
+/**
+ * VinylDNS feature styles: DNS changes and batch changes
+ */
+
+/**
+ * UI Component: New batch change modal
+ */
+.vds-nbatch-modal__card {
+  background: #fff;
+  border-radius: 0.85rem;
+  box-shadow: 0 25px 60px rgb(0 0 0 / 40%);
+  width: min(1100px, 100%);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.vds-nbatch-modal__header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.4rem;
+  border-bottom: 1px solid #e8ecf0;
+  background: #f0f4fa;
+  flex-shrink: 0;
+}
+
+.vds-nbatch-modal__title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #0d1b3e;
+}
+
+.vds-nbatch-modal__subtitle {
+  color: #64748b;
+}
+
+.vds-nbatch-modal__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem 1.4rem;
+  background: #fff;
+  color: #1e2d42;
+}
+
+/**
+ * UI Component: DNS changes table and detail table
+ */
+.vds-changes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.vds-dns-change-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.vds-dns-change-detail-table thead th {
+  padding: 14px 16px;
+  white-space: nowrap;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.vds-dns-change-detail-table thead th:nth-child(1),
+.vds-dns-change-detail-table tbody td:nth-child(1),
+.vds-dns-change-detail-table thead th:nth-child(5),
+.vds-dns-change-detail-table tbody td:nth-child(5),
+.vds-dns-change-detail-table thead th:nth-child(7),
+.vds-dns-change-detail-table tbody td:nth-child(7),
+.vds-dns-change-detail-table thead th:nth-child(8),
+.vds-dns-change-detail-table tbody td:nth-child(8) {
+  white-space: nowrap;
+  width: 1%;
+}
+
+.vds-dns-change-detail-table thead th:nth-child(2),
+.vds-dns-change-detail-table tbody td:nth-child(2),
+.vds-dns-change-detail-table thead th:nth-child(3),
+.vds-dns-change-detail-table tbody td:nth-child(3),
+.vds-dns-change-detail-table thead th:nth-child(4),
+.vds-dns-change-detail-table tbody td:nth-child(4),
+.vds-dns-change-detail-table thead th:nth-child(6),
+.vds-dns-change-detail-table tbody td:nth-child(6),
+.vds-dns-change-detail-table thead th:nth-child(9),
+.vds-dns-change-detail-table tbody td:nth-child(9) {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  min-width: 90px;
+}
+
+.vds-dns-change-detail-table tbody td {
+  padding: 6px 8px;
+  vertical-align: top;
+}
+
+/**
+ * UI Component: Duplicate review dialog
+ */
+.vds-dup-review-dialog {
+  max-width: 900px;
+  width: min(900px, 95vw);
+  margin: 0 auto;
+}
+
+.vds-dup-review-row {
+  background: #fff;
+  border-color: #dfe7f1;
+  color: #1f2937;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgb(148 163 184 / 8%);
+}
+
+.vds-dup-review-row--selected {
+  background: #eefaf2;
+  border-color: #7cc89a;
+  box-shadow: inset 0 0 0 1px rgb(34 197 94 / 12%);
+}
+
+.vds-dup-review-row .vds-dup-review-ttl {
+  background: #eaf2ff;
+  color: #1e5fa8;
+  border: 1px solid rgb(30 95 168 / 20%);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.vds-dup-review-record-value {
+  word-break: break-word;
+  font-family: var(--vds-font-mono);
+  font-size: 0.85rem;
+}
+
+.vds-dup-review-meta,
+.vds-dup-review-field-label,
+.vds-dup-review-field-value,
+.vds-dup-review-row-label {
+  color: inherit;
+}
+
+[data-vds-theme="dark"] .vds-dup-review-meta,
+[data-vds-theme="dark"] .vds-dup-review-field-label,
+[data-vds-theme="dark"] .vds-dup-review-field-value,
+[data-vds-theme="dark"] .vds-dup-review-row-label {
+  color: #e2e8f0;
+}
+
+/**
+ * UI Component: Review DNS change container and comments
+ */
+.vds-review-dns-change-container {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.vds-review-dns-change-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #f8fafc;
+  color: #1e293b;
+  border-bottom: 1px solid #e2e8f0;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  font-weight: 600;
+}
+
+.vds-review-dns-change-header-icon {
+  font-size: 1rem;
+  color: #1e5fa8;
+}
+
+.vds-review-dns-change-header-content {
+  flex: 1;
+}
+
+.vds-review-dns-change-header-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #1e293b;
+}
+
+.vds-review-dns-change-header-subtitle {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #475569;
+  margin-top: 2px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.vds-review-dns-change-body {
+  padding: 24px;
+  background: #fff;
+  color: #1e293b;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 2%);
+}
+
+.vds-review-dns-change-body-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #475569;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+}
+
+.vds-review-dns-change-body-text-area {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  border: 1px solid #c7deff;
+  border-radius: 6px;
+  background: #f8fbff;
+  color: #161618;
+  font-family: inherit;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+  outline: none;
+  resize: vertical;
+}
+
+.vds-review-dns-change-body-text-area:focus {
+  border-color: #4a6fa5;
+  box-shadow: 0 0 0 3px rgb(74 111 165 / 12%);
+}
+
+.vds-review-warning {
+  background-color: rgb(255 193 7 / 12%);
+  border: 1px solid rgb(255 193 7 / 35%);
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  color: #664d03;
+}
+
+.vds-review-warning-icon {
+  color: #d97706;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.vds-review-warning-text {
+  font-size: 0.85rem;
+  color: #334155;
+  font-weight: 500;
+}
+
+.vds-pending-review {
+  background: #f1f6fb;
+  border: 1px solid #d3e2f2;
+  color: #475569;
+}
+
+/**
+ * Theme: Dark mode batch overrides
+ */
+[data-vds-theme="dark"] .vds-nbatch-modal__card {
+  background: #111;
+  border: 1px solid rgb(255 255 255 / 12%);
+}
+
+[data-vds-theme="dark"] .vds-nbatch-modal__header {
+  background: #111;
+  border-bottom-color: rgb(255 255 255 / 10%);
+}
+
+[data-vds-theme="dark"] .vds-nbatch-modal__title {
+  color: var(--vds-page-text, #e0e0e0);
+}
+
+[data-vds-theme="dark"] .vds-nbatch-modal__subtitle {
+  color: rgb(161 161 170 / 55%);
+}
+
+[data-vds-theme="dark"] .vds-nbatch-modal__body {
+  background: #111;
+  color: var(--vds-page-text, #e0e0e0);
+}
+
+[data-vds-theme="dark"] .vds-dns-change-detail-table thead th {
+  color: #90b8e8;
+}
+
+[data-vds-theme="dark"] .vds-dup-review-row {
+  background: #111827 !important;
+  border-color: rgb(148 163 184 / 25%) !important;
+  color: #f8fafc;
+}
+
+[data-vds-theme="dark"] .vds-dup-review-row--selected {
+  background: #0f2f1a !important;
+  border-color: #16a34a !important;
+}
+
+[data-vds-theme="dark"] .vds-dup-review-row .badge.bg-danger {
+  background: #dc2626 !important;
+  color: #fff !important;
+}
+
+[data-vds-theme="dark"] .vds-dup-review-row .vds-dup-review-ttl {
+  color: #dfe9ff;
+  background: rgb(30 95 168 / 25%);
+}
+
+[data-vds-theme="dark"] .vds-review-dns-change-container {
+  border-color: #2a2a2c;
+}
+
+[data-vds-theme="dark"] .vds-review-dns-change-header {
+  background: #161618;
+  border-bottom: 1px solid #2a2a2c;
+  color: #fff;
+}
+
+[data-vds-theme="dark"] .vds-review-dns-change-header-icon,
+[data-vds-theme="dark"] .vds-review-dns-change-header-title {
+  color: #fff;
+}
+
+[data-vds-theme="dark"] .vds-review-dns-change-header-subtitle {
+  color: #94a3b8;
+}
+
+[data-vds-theme="dark"] .vds-review-warning-icon {
+  color: #fbbf24;
+}
+
+[data-vds-theme="dark"] .vds-review-warning-text {
+  color: #fff;
+}
+
+[data-vds-theme="dark"] .vds-review-warning {
+  background-color: rgb(255 193 7 / 8%);
+  color: #ffe082;
+}
+
+[data-vds-theme="dark"] .vds-review-dns-change-body {
+  background: #111;
+}
+
+[data-vds-theme="dark"] .vds-review-dns-change-body-label {
+  color: #f5f5f5;
+}
+
+[data-vds-theme="dark"] .vds-review-dns-change-body-text-area {
+  background: #111213;
+  color: #fff;
+  border: 1px solid #2a2a2c;
+}
+
+[data-vds-theme="dark"] .vds-review-dns-change-body-text-area:focus {
+  border-color: #4a6fa5;
+  box-shadow: 0 0 0 3px rgb(74 111 165 / 20%);
+}
+
+[data-vds-theme="dark"] .vds-pending-review {
+  background: rgb(30 95 168 / 12%);
+  border: 1px solid #2a2a2c;
+  color: #475569;
+}
+
+[data-vds-theme="light"] .vds-pending-review {
+  background: #f1f6fb;
+  border: 1px solid #d3e2f2;
+  color: #475569;
+}
+
+.vds-description-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #0f172a;
+}
+
+[data-vds-theme="dark"] .vds-description-text {
+  color: #f4f4f5;
+}

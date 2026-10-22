@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import React from 'react';
 import type { GroupMember } from '../../types/group';
 
 interface GroupMemberListProps {

@@ -20,7 +20,6 @@ import { recordsService } from "../../services/recordsService";
 import { copyToClipboard } from "../../utils/dateUtils";
 import { Pagination } from "../common/Pagination";
 import { LoadingSpinner } from "../common/LoadingSpinner";
-import { log } from "console";
 
 interface RecordHistoryModalProps {
   record: any;
@@ -246,7 +245,7 @@ export function RecordHistoryModal({
                     title="Refresh history"
                     onClick={() => void refetch()}
                     disabled={isFetching}
-                    className="rhm-header-btn"
+                    className="rhm-header-btn rhm-header-btn--refresh"
                   >
                     <i
                       className={`rhm-refresh-icon bi bi-arrow-clockwise ${isFetching ? "is-spinning" : ""}`}
@@ -413,7 +412,7 @@ export function RecordHistoryModal({
                             </th>
                             <th>USER</th>
                             <th>STATUS</th>
-                            <th style={{ width: 44, textAlign: "center" }}>
+                            <th style={{ width: 44 }}>
                               INFO
                             </th>
                           </tr>
@@ -472,7 +471,7 @@ export function RecordHistoryModal({
                                     {status || "—"}
                                   </span>
                                 </td>
-                                <td style={{ width: 44, textAlign: "center" }}>
+                                <td style={{ width: 44 }}>
                                   <button
                                     type="button"
                                     className="rhm-info-trigger"
