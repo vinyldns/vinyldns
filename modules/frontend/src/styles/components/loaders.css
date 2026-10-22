@@ -1,0 +1,106 @@
+/**
+ * VinylDNS component styles: loading spinners
+ */
+
+/**
+ * UI Component: VDS loader
+ */
+.vds-loader-backdrop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 48px 0;
+  background: transparent;
+}
+
+/**
+ * UI Component: Dual-ring spinner
+ */
+.vds-loader-ring {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+
+.vds-loader-ring::before,
+.vds-loader-ring::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.vds-loader-ring::before {
+  inset: 0;
+  border: 3px solid rgb(30 95 168 / 20%);
+  border-top-color: #1e5fa8;
+  border-right-color: #2a7fd4;
+  animation: vds-loader-spin 0.85s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.vds-loader-ring::after {
+  inset: 10px;
+  border: 2px solid rgb(13 27 62 / 20%);
+  border-bottom-color: #0d1b3e;
+  animation: vds-loader-spin 1.3s cubic-bezier(0.4, 0, 0.2, 1) infinite reverse;
+}
+
+@keyframes vds-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/**
+ * UI Component: Three-dot pulse
+ */
+.vds-loader-dots {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.vds-loader-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #1e5fa8;
+  animation: vds-dot-pulse 1.2s ease-in-out infinite;
+}
+
+.vds-loader-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.vds-loader-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes vds-dot-pulse {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.35;
+  }
+
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+.vds-loader-msg {
+  color: #1e5fa8;
+  opacity: 0.7;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.vds-spinner-xs {
+  width: 12px !important;
+  height: 12px !important;
+}

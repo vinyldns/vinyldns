@@ -1,10 +1,10 @@
-/*
- * VinylDNS Component Styles - Dropdowns & Popovers
+/**
+ * VinylDNS component styles: dropdowns and popovers
  */
 
-/* ============================================================
-   Base Dropdowns & Role Dropdown
-   ============================================================ */
+/**
+ * UI Component: Base dropdowns and role dropdown
+ */
 .vds-role-dropdown,
 .dropdown-menu {
   border-radius: var(--vds-radius-md);
@@ -85,68 +85,267 @@
   border-color: transparent !important;
 }
 
-/* ============================================================
-   Group Dropdown Panel
-   ============================================================ */
+/**
+ * UI Component: Group dropdown panel
+ */
 .vds-group-dropdown-panel {
   position: absolute;
   z-index: 1050;
   left: 0;
-  width: 100%;
+  right: 0;
+  top: 100%;
   background: #fff;
   border: 1px solid #ced4da;
   border-radius: 0.375rem;
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%);
-  overflow: hidden;
-  margin-top: 2px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 12%);
+  max-height: 240px;
+  display: flex;
+  flex-direction: column;
 }
 
 .vds-group-dropdown-search-wrap {
-  padding: 0.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 6px 8px;
+  border-bottom: 1px solid #e9ecef;
 }
 
 .vds-group-dropdown-list {
-  max-height: 200px;
   overflow-y: auto;
+  flex: 1;
 }
 
 .vds-group-dropdown-placeholder {
-  padding: 0.5rem;
-  color: #64748b;
-  font-size: 0.875rem;
+  padding: 6px 12px;
+  cursor: pointer;
+  color: #6c757d;
 }
 
 .vds-group-dropdown-empty {
-  padding: 0.75rem;
-  text-align: center;
-  color: #64748b;
-  font-size: 0.875rem;
+  padding: 6px 12px;
+  color: #6c757d;
+  font-style: italic;
 }
 
 .vds-group-dropdown-item {
-  padding: 0.5rem 0.75rem;
+  padding: 6px 12px;
   cursor: pointer;
-  font-size: 0.875rem;
-  color: #1e293b;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  color: #212529;
+  transition: background 0.1s ease;
 }
 
 .vds-group-dropdown-item:hover {
-  background-color: #f1f5f9;
+  background: #f8f9fa;
 }
 
 .vds-group-dropdown-item.selected {
-  background-color: #e0f2fe;
-  color: #0369a1;
-  font-weight: 500;
+  background: #e8f4ff;
+  color: #0d1b3e;
+  font-weight: 600;
 }
 
-/* ============================================================
-   Time Filter Panel & Dropdown
-   ============================================================ */
+/**
+ * UI Component: Ownership actions dropdown
+ */
+.vds-ownership-dropdown {
+  position: relative;
+  display: inline-flex;
+}
+
+.vds-ownership-dropdown__caret {
+  font-size: 0.58rem;
+  opacity: 0.8;
+}
+
+.vds-ownership-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 1050;
+  min-width: 172px;
+  background: #fff;
+  border: 1px solid #e0e7ff;
+  border-radius: 14px;
+  box-shadow:
+    0 12px 32px rgb(79 70 229 / 14%),
+    0 2px 8px rgb(0 0 0 / 7%);
+  overflow: hidden;
+  padding: 0 0 6px;
+  animation: vds-dropdown-in 0.13s ease;
+}
+
+@keyframes vds-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.vds-ownership-dropdown__header {
+  display: flex;
+  align-items: center;
+  padding: 9px 14px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #6366f1;
+  background: #eef2ff;
+  border-bottom: 1px solid #e0e7ff;
+  margin-bottom: 4px;
+}
+
+.vds-ownership-dropdown__header--pending {
+  color: #92400e;
+  background: #fffbeb;
+  border-bottom-color: #fde68a;
+}
+
+.vds-ownership-dropdown__divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 4px 10px;
+}
+
+.vds-ownership-dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 14px;
+  border: none;
+  background: transparent;
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    transform 0.1s ease;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.vds-ownership-dropdown__item:hover {
+  transform: translateX(2px);
+}
+
+.vds-ownership-dropdown__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.vds-ownership-dropdown__icon--approve {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.vds-ownership-dropdown__icon--reject {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.vds-ownership-dropdown__icon--cancel {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.vds-ownership-dropdown__item--approve {
+  color: #15803d;
+}
+
+.vds-ownership-dropdown__item--approve:hover {
+  background: #f0fdf4;
+}
+
+.vds-ownership-dropdown__item--reject {
+  color: #c2410c;
+}
+
+.vds-ownership-dropdown__item--reject:hover {
+  background: #fff7ed;
+}
+
+.vds-ownership-dropdown__item--cancel {
+  color: #475569;
+}
+
+.vds-ownership-dropdown__item--cancel:hover {
+  background: #f8fafc;
+}
+
+[data-vds-theme="dark"] .vds-ownership-dropdown__header--pending {
+  color: #fcd34d;
+  background: #1a1a1a;
+  border-bottom-color: #78350f;
+}
+
+[data-vds-theme="dark"] .vds-ownership-dropdown__menu {
+  background: #1a1a1a;
+  border-color: #333;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 55%);
+}
+
+[data-vds-theme="dark"] .vds-ownership-dropdown__header {
+  background: #1a1a1a;
+  color: #a5b4fc;
+  border-bottom-color: #3730a3;
+}
+
+[data-vds-theme="dark"] .vds-ownership-dropdown__divider {
+  background: #333;
+}
+
+[data-vds-theme="dark"] .vds-ownership-dropdown__icon--approve {
+  background: rgb(34 197 94 / 15%);
+  color: #86efac;
+}
+
+[data-vds-theme="dark"] .vds-ownership-dropdown__icon--reject {
+  background: rgb(239 68 68 / 15%);
+  color: #fca5a5;
+}
+
+[data-vds-theme="dark"] .vds-ownership-dropdown__icon--cancel {
+  background: rgb(100 116 139 / 20%);
+  color: #94a3b8;
+}
+
+[data-vds-theme="dark"] .vds-ownership-dropdown__item--approve {
+  color: #86efac;
+}
+
+[data-vds-theme="dark"] .vds-ownership-dropdown__item--approve:hover {
+  background: rgb(34 197 94 / 10%);
+}
+
+[data-vds-theme="dark"] .vds-ownership-dropdown__item--reject {
+  color: #fca5a5;
+}
+
+[data-vds-theme="dark"] .vds-ownership-dropdown__item--reject:hover {
+  background: rgb(239 68 68 / 10%);
+}
+
+[data-vds-theme="dark"] .vds-ownership-dropdown__item--cancel {
+  color: #94a3b8;
+}
+
+[data-vds-theme="dark"] .vds-ownership-dropdown__item--cancel:hover {
+  background: rgb(100 116 139 / 10%);
+}
+
+/**
+ * UI Component: Time filter panel and dropdown
+ */
 .vds-time-filter-panel {
   position: fixed;
   z-index: 1200;
@@ -345,9 +544,9 @@
   gap: 5px;
 }
 
-/* ============================================================
-   Suggestions List
-   ============================================================ */
+/**
+ * UI Component: Suggestions list
+ */
 .vds-suggestions-list {
   z-index: 1050;
   top: 100%;
@@ -366,13 +565,28 @@
 }
 
 .vds-suggestions-list .list-group-item {
+  border-radius: 0.45rem;
   border: none;
-  padding: 0.5rem 0.75rem;
+  background: transparent;
+  color: #1e3a5f;
+  font-size: 0.84rem;
+  padding: 6px 10px;
+  margin-bottom: 1px;
 }
 
-/* ============================================================
-   Dark Mode Dropdown Overrides
-   ============================================================ */
+.vds-suggestions-list .list-group-item:hover {
+  background: rgb(30 95 168 / 10%);
+  color: #1e5fa8;
+}
+
+.vds-suggestions-list .list-group-item.active {
+  background: rgb(30 95 168 / 10%);
+  color: #1e5fa8;
+}
+
+/**
+ * Theme: Dark mode dropdown overrides
+ */
 [data-vds-theme="dark"] .dropdown-menu {
   background-color: #1a1a1a;
   border-color: #333;
@@ -389,28 +603,30 @@
 }
 
 [data-vds-theme="dark"] .vds-group-dropdown-panel {
-  background: #1e293b;
-  border-color: #334155;
+  background: #111213;
+  border-color: #2a2a2c;
+  box-shadow: 0 4px 20px rgb(0 0 0 / 55%);
 }
 
 [data-vds-theme="dark"] .vds-group-dropdown-search-wrap {
-  border-bottom-color: #334155;
+  border-bottom-color: #2a2a2c;
 }
 
+[data-vds-theme="dark"] .vds-group-dropdown-placeholder,
 [data-vds-theme="dark"] .vds-group-dropdown-empty {
   color: #94a3b8;
 }
 
 [data-vds-theme="dark"] .vds-group-dropdown-item {
-  color: #f8fafc;
+  color: #e2e8f0;
 }
 
 [data-vds-theme="dark"] .vds-group-dropdown-item:hover {
-  background-color: #334155;
+  background: #161618;
 }
 
 [data-vds-theme="dark"] .vds-group-dropdown-item.selected {
-  background-color: #0369a1;
+  background: rgb(58 109 181 / 20%);
   color: #fff;
 }
 
@@ -454,7 +670,9 @@
   background: #242424;
 }
 
-[data-vds-theme="dark"] .vds-time-filter-opt--active .vds-time-filter-icon-wrap {
+[data-vds-theme="dark"]
+  .vds-time-filter-opt--active
+  .vds-time-filter-icon-wrap {
   background: #f5f5f5;
 }
 
@@ -522,7 +740,44 @@
   border-color: rgb(255 255 255 / 8%) !important;
 }
 
-[data-vds-theme="dark"] .vds-time-filter-input::-webkit-calendar-picker-indicator {
+[data-vds-theme="dark"] .vds-toolbar-filter-list .list-group-item:hover,
+[data-vds-theme="dark"] .vds-toolbar-filter-list .list-group-item-action:hover {
+  background: rgb(30 95 168 / 20%) !important;
+  color: #fff !important;
+}
+
+[data-vds-theme="dark"] .vds-toolbar-filter-list .vds-role-item--selected {
+  background: #1e5fa8 !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+
+[data-vds-theme="dark"] .vds-suggestions-list {
+  background: #1a1a1a;
+  border-color: rgb(255 255 255 / 20%);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 50%);
+}
+
+[data-vds-theme="dark"] .vds-suggestions-list .list-group-item {
+  background: transparent;
+  color: #e0e0e0;
+  border-color: rgb(255 255 255 / 8%);
+}
+
+[data-vds-theme="dark"] .vds-suggestions-list .list-group-item:hover {
+  background: rgb(30 95 168 / 18%);
+  color: #fff;
+}
+
+[data-vds-theme="dark"] .vds-suggestions-list .list-group-item.active {
+  background: #1e5fa8 !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+
+[data-vds-theme="dark"]
+  .vds-time-filter-input::-webkit-calendar-picker-indicator {
   background-color: transparent !important;
+  cursor: pointer;
   filter: invert(1) brightness(2) !important;
 }

@@ -1,10 +1,12 @@
-/*
- * VinylDNS Design System Tokens - Variables
- * Shared CSS variables (:root, spacing, typography, radii, shadows, semantic defaults)
+/**
+ * VinylDNS Design System Tokens: Variables
+ * Shared CSS variables (:root, typography, radii, shadows, semantic defaults)
  */
 
 :root {
-  /* Brand & Core Palette */
+  /**
+   * Design: Brand and core palette
+   */
   --vds-blue: #3b82f6;
   --vds-blue-glow: rgb(59 130 246 / 35%);
   --vds-brand-primary: #1e5fa8;
@@ -12,7 +14,9 @@
   --vds-accent: #1e5fa8;
   --vds-accent-hover: #17497f;
 
-  /* Neutrals & Surfaces (Light Mode) */
+  /**
+   * Theme: Light mode neutrals and surfaces
+   */
   --vds-bg-canvas: #fdfeff;
   --vds-bg-surface: #fff;
   --vds-bg-elevated: #fff;
@@ -20,35 +24,49 @@
   --vds-border-color-light: #f1f5f9;
   --vds-border-color-subtle: #dce3ee;
 
-  /* Typography */
-  --vds-font-family: -apple-system, blinkmacsystemfont, "Segoe UI", roboto, "Helvetica Neue", arial, sans-serif;
-  --vds-font-mono: ui-monospace, sfmono-regular, menlo, monaco, consolas, "Liberation Mono", "Courier New", monospace;
+  /**
+   * Design: Typography
+   */
+  --vds-font-family:
+    -apple-system, blinkmacsystemfont, "Segoe UI", roboto, "Helvetica Neue",
+    arial, sans-serif;
+  --vds-font-mono:
+    ui-monospace, sfmono-regular, menlo, monaco, consolas, "Liberation Mono",
+    "Courier New", monospace;
   --vds-text-primary: #1a1a2e;
   --vds-text-secondary: #64748b;
   --vds-text-disabled: #94a3b8;
   --vds-text-muted: #8099b8;
 
-  /* Radii */
+  /**
+   * Design: Border radius scale
+   */
   --vds-radius-sm: 4px;
   --vds-radius-md: 6px;
   --vds-radius-lg: 8px;
   --vds-radius-xl: 12px;
   --vds-radius-pill: 999px;
 
-  /* Shadows */
+  /**
+   * Design: Elevation shadows
+   */
   --vds-shadow-sm: 0 1px 3px rgb(0 0 0 / 6%);
   --vds-shadow-md: 0 4px 12px rgb(0 0 0 / 8%);
   --vds-shadow-lg: 0 8px 24px rgb(0 0 0 / 12%);
   --vds-shadow-blue: 0 2px 8px rgb(30 95 168 / 18%);
 
-  /* Sidebar/topbar chrome - always deep black regardless of theme */
+  /**
+   * Theme: Sidebar and topbar chrome, fixed black in all themes
+   */
   --vds-sidebar-bg: #000;
   --vds-sidebar-accent: #3b82f6;
   --vds-sidebar-link-hover: rgb(255 255 255 / 6%);
   --vds-sidebar-link-active: #1a1a1c;
   --vds-nav-icon-size: 1rem;
 
-  /* Modal & Discard Confirmation Light Variables */
+  /**
+   * UI Component: Discard modal (light theme)
+   */
   --vds-dm-bg: #fff;
   --vds-dm-border: #e8ecf0;
   --vds-dm-header-bg: #f8fafc;
@@ -59,7 +77,9 @@
   --vds-dm-btn-border: #d4dae3;
   --vds-dm-btn-color: #5a6a85;
 
-  /* Status Colors */
+  /**
+   * Design: Status colors
+   */
   --vds-color-success: #16a34a;
   --vds-color-success-bg: #e8faf2;
   --vds-color-warning: #d97706;

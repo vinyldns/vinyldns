@@ -1,10 +1,10 @@
-/*
- * VinylDNS Component Styles - Badges & Status Pills
+/**
+ * VinylDNS component styles: badges and status pills
  */
 
-/* ============================================================
-   Role Badges
-   ============================================================ */
+/**
+ * UI Component: Role Badges
+ */
 .vds-role-badge {
   display: inline-flex;
   align-items: center;
@@ -33,9 +33,140 @@
   border: 1px solid #dde3ea;
 }
 
-/* ============================================================
-   Status Badges (Records, Changes, Zones)
-   ============================================================ */
+/**
+ * UI Component: Member and Access Badges
+ */
+.vds-member-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid #c7deff;
+  background: #eaf2ff;
+  color: #0d6efd;
+}
+
+.vds-member-badge--admin {
+  background: #fff3cd;
+  color: #7d6000;
+  border-color: #ffe88a;
+}
+
+[data-vds-theme="dark"] .vds-member-badge {
+  background: rgb(58 109 181 / 20%);
+  backdrop-filter: blur(8px);
+  color: #c7deff;
+  border: 1px solid rgb(58 109 181 / 45%);
+  box-shadow:
+    0 4px 12px rgb(0 0 0 / 25%),
+    inset 0 1px 1px rgb(255 255 255 / 10%);
+}
+
+[data-vds-theme="dark"] .vds-member-badge--admin {
+  background: rgb(255 208 50 / 12%) !important;
+  color: #ffd84a !important;
+  border-color: rgb(255 208 50 / 22%) !important;
+}
+
+.vds-access-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.vds-access-badge--shared {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #7dd3fc;
+  box-shadow: 0 1px 3px rgb(3 105 161 / 12%);
+}
+
+.vds-access-badge--private {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 3px rgb(71 85 105 / 10%);
+}
+
+[data-vds-theme="dark"] .vds-access-badge--shared {
+  background: rgb(14 165 233 / 15%);
+  color: #7dd3fc;
+  border-color: rgb(14 165 233 / 30%);
+}
+
+[data-vds-theme="dark"] .vds-access-badge--private {
+  background: rgb(107 114 128 / 15%);
+  color: #9ca3af;
+  border-color: rgb(107 114 128 / 30%);
+}
+
+.vds-change-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.vds-change-badge--create {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+.vds-change-badge--delete {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.vds-change-badge--update {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
+.vds-change-badge--sync {
+  background: #f3e8ff;
+  color: #6d28d9;
+  border: 1px solid #c4b5fd;
+}
+
+[data-vds-theme="dark"] .vds-change-badge--create {
+  background: rgb(6 95 70 / 20%);
+  color: #6ee7b7;
+  border-color: rgb(6 95 70 / 35%);
+}
+
+[data-vds-theme="dark"] .vds-change-badge--delete {
+  background: rgb(153 27 27 / 20%);
+  color: #fca5a5;
+  border-color: rgb(153 27 27 / 35%);
+}
+
+[data-vds-theme="dark"] .vds-change-badge--update {
+  background: rgb(30 64 175 / 20%);
+  color: #93c5fd;
+  border-color: rgb(30 64 175 / 35%);
+}
+
+[data-vds-theme="dark"] .vds-change-badge--sync {
+  background: rgb(109 40 217 / 20%);
+  color: #c4b5fd;
+  border-color: rgb(109 40 217 / 35%);
+}
+
+/**
+ * UI Component: Status Badges (Records, Changes, Zones)
+ */
 .vds-status-badge {
   display: inline-flex;
   align-items: center;
@@ -76,36 +207,32 @@
   border: 1px solid #e2e8f0;
 }
 
-/* ============================================================
-   Change Type Badges
-   ============================================================ */
+/**
+ * UI Component: Change Type Badges
+ */
 .vds-change-type-badge {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .vds-change-type-badge--add {
-  background: #dcfce7;
-  color: #15803d;
-  border: 1px solid #bbf7d0;
+  background: #d1fae5;
+  color: #065f46;
 }
 
 .vds-change-type-badge--delete {
   background: #fee2e2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
+  color: #991b1b;
 }
 
 .vds-change-type-badge--update {
-  background: #e0f2fe;
-  color: #0369a1;
-  border: 1px solid #bae6fd;
+  background: #fbf0d3;
+  color: #f5b004;
 }
 
 .vds-change-type-badge--default {
@@ -113,9 +240,9 @@
   color: #475569;
 }
 
-/* ============================================================
-   Lock Status Pills
-   ============================================================ */
+/**
+ * UI Component: Lock Status Pills
+ */
 .vds-lock-status {
   display: inline-block;
   padding: 2px 10px;
@@ -134,9 +261,19 @@
   color: #065f46;
 }
 
-/* ============================================================
-   Filter Chips & Tags
-   ============================================================ */
+[data-vds-theme="dark"] .vds-lock-status--locked {
+  background: rgb(127 29 29 / 22%);
+  color: #fca5a5;
+}
+
+[data-vds-theme="dark"] .vds-lock-status--active {
+  background: rgb(6 78 59 / 24%);
+  color: #6ee7b7;
+}
+
+/**
+ * UI Component: Filter Chips and Tags
+ */
 .vds-filter-chip {
   display: inline-flex;
   align-items: center;
@@ -187,19 +324,24 @@
 }
 
 .vds-badge-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.2em 0.55em;
-  font-size: 0.75rem;
+  background-color: rgb(30 95 168 / 10%);
+  color: #1e5fa8;
+  font-size: 0.72rem;
   font-weight: 700;
-  line-height: 1;
-  color: #fff;
-  background-color: #1e5fa8;
-  border-radius: 10rem;
+  border-radius: 999px;
+  padding: 2px 9px;
+  border: 1px solid rgb(30 95 168 / 20%);
 }
 
-/* ── Record type badge (RecordsTable TYPE column) ── */
+[data-vds-theme="dark"] .vds-badge-count {
+  background-color: rgb(30 95 168 / 25%);
+  color: #fff;
+  border-color: rgb(30 95 168 / 40%);
+}
+
+/**
+ * UI Component: Record type badge (RecordsTable TYPE column)
+ */
 .vds-type-badge {
   display: inline-block;
   padding: 2px 9px;
@@ -212,7 +354,9 @@
   border: 1px solid #bfdbfe;
 }
 
-/* ── DNS change count badge (DnsChangesTable CHANGES column) ── */
+/**
+ * UI Component: DNS change count badge (DnsChangesTable CHANGES column)
+ */
 .vds-count-badge {
   display: inline-flex;
   align-items: center;
@@ -228,21 +372,20 @@
 }
 
 .vds-dark-modal-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  font-size: 0.72rem;
-  font-weight: 600;
+  color: #93c5fd;
   border-radius: 4px;
+  border: 1px solid rgb(58 109 181 / 40%);
 }
 
 .vds-dark-modal-badge.badge-fqdn {
-  background: #e0e7ff;
-  color: #3730a3;
+  font-size: 0.82rem;
 }
 
 .vds-dark-modal-badge.badge-type {
-  background: #f1f5f9;
-  color: #334155;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  letter-spacing: 0.04em;
 }
 
 .vds-record-data-chip {
@@ -256,9 +399,9 @@
   font-family: var(--vds-font-mono);
 }
 
-/* ============================================================
-   Dark Mode Overrides
-   ============================================================ */
+/**
+ * UI Component: Dark Mode Overrides
+ */
 [data-vds-theme="dark"] .vds-status-badge--success {
   background: rgb(6 78 59 / 25%);
   color: #34d399;
@@ -328,9 +471,19 @@
 }
 
 [data-vds-theme="dark"] .vds-active-filter-tag {
-  background: #1a1a1a;
-  border-color: #333;
-  color: #7eb0f5;
+  background: #1a1a1a !important;
+  color: #a8c8f0 !important;
+  border-color: rgb(255 255 255 / 22%) !important;
+}
+
+[data-vds-theme="dark"] .vds-active-filter-tag button {
+  color: #90c2f0 !important;
+  filter: invert(0.6) sepia(1) hue-rotate(180deg) saturate(1.5);
+}
+
+[data-vds-theme="dark"] .vds-active-filter-tag .btn-close {
+  color: #90c2f0 !important;
+  filter: invert(60%) sepia(30%) saturate(400%) hue-rotate(180deg) !important;
 }
 
 [data-vds-theme="dark"] .vds-type-badge {

@@ -1,10 +1,10 @@
-/*
- * VinylDNS Feature Styles - DNS Changes & Batch Changes
+/**
+ * VinylDNS feature styles: DNS changes and batch changes
  */
 
-/* ============================================================
-   New Batch Change Modal
-   ============================================================ */
+/**
+ * UI Component: New batch change modal
+ */
 .vds-nbatch-modal__card {
   background: #fff;
   border-radius: 0.85rem;
@@ -45,12 +45,13 @@
   color: #1e2d42;
 }
 
-/* ============================================================
-   DNS Changes Table & Detail Table
-   ============================================================ */
+/**
+ * UI Component: DNS changes table and detail table
+ */
 .vds-changes-table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 0.82rem;
 }
 
 .vds-dns-change-detail-table {
@@ -99,9 +100,9 @@
   vertical-align: top;
 }
 
-/* ============================================================
-   Duplicate Review Dialog
-   ============================================================ */
+/**
+ * UI Component: Duplicate review dialog
+ */
 .vds-dup-review-dialog {
   max-width: 900px;
   width: min(900px, 95vw);
@@ -110,15 +111,10 @@
 
 .vds-dup-review-row {
   background: #fff;
-  border: 1px solid #dfe7f1;
-  border-radius: 6px;
-  padding: 8px 12px;
-  margin-bottom: 6px;
+  border-color: #dfe7f1;
+  color: #1f2937;
   cursor: pointer;
   box-shadow: inset 0 0 0 1px rgb(148 163 184 / 8%);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .vds-dup-review-row--selected {
@@ -143,14 +139,23 @@
   font-size: 0.85rem;
 }
 
+.vds-dup-review-meta,
+.vds-dup-review-field-label,
+.vds-dup-review-field-value,
 .vds-dup-review-row-label {
-  font-weight: 600;
-  font-size: 0.8rem;
+  color: inherit;
 }
 
-/* ============================================================
-   Review DNS Change Container & Comments
-   ============================================================ */
+[data-vds-theme="dark"] .vds-dup-review-meta,
+[data-vds-theme="dark"] .vds-dup-review-field-label,
+[data-vds-theme="dark"] .vds-dup-review-field-value,
+[data-vds-theme="dark"] .vds-dup-review-row-label {
+  color: #e2e8f0;
+}
+
+/**
+ * UI Component: Review DNS change container and comments
+ */
 .vds-review-dns-change-container {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -236,24 +241,22 @@
 }
 
 .vds-review-warning {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background-color: #fffbeb;
-  border: 1px solid #fef3c7;
-  border-radius: 6px;
-  margin-bottom: 12px;
+  background-color: rgb(255 193 7 / 12%);
+  border: 1px solid rgb(255 193 7 / 35%);
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  color: #664d03;
 }
 
 .vds-review-warning-icon {
   color: #d97706;
-  font-size: 1rem;
+  font-size: 0.9rem;
+  flex-shrink: 0;
 }
 
 .vds-review-warning-text {
   font-size: 0.85rem;
-  color: #92400e;
+  color: #334155;
   font-weight: 500;
 }
 
@@ -263,9 +266,9 @@
   color: #475569;
 }
 
-/* ============================================================
-   Dark Mode Batch Overrides
-   ============================================================ */
+/**
+ * Theme: Dark mode batch overrides
+ */
 [data-vds-theme="dark"] .vds-nbatch-modal__card {
   background: #111;
   border: 1px solid rgb(255 255 255 / 12%);
@@ -302,6 +305,11 @@
 [data-vds-theme="dark"] .vds-dup-review-row--selected {
   background: #0f2f1a !important;
   border-color: #16a34a !important;
+}
+
+[data-vds-theme="dark"] .vds-dup-review-row .badge.bg-danger {
+  background: #dc2626 !important;
+  color: #fff !important;
 }
 
 [data-vds-theme="dark"] .vds-dup-review-row .vds-dup-review-ttl {
@@ -363,5 +371,22 @@
 [data-vds-theme="dark"] .vds-pending-review {
   background: rgb(30 95 168 / 12%);
   border: 1px solid #2a2a2c;
-  color: #cbd5e1;
+  color: #475569;
+}
+
+[data-vds-theme="light"] .vds-pending-review {
+  background: #f1f6fb;
+  border: 1px solid #d3e2f2;
+  color: #475569;
+}
+
+.vds-description-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #0f172a;
+}
+
+[data-vds-theme="dark"] .vds-description-text {
+  color: #f4f4f5;
 }

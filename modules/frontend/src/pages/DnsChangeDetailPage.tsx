@@ -746,21 +746,17 @@ export function DnsChangeDetailPage() {
       </div>
 
       {change.comments && (
-        <div
-          className="d-flex gap-2 align-items-start p-3 rounded-3 mb-3 vds-comment-panel"
-          style={{
-            background: "rgba(30,95,168,0.05)",
-            border: "1px solid #6f9ad1",
-          }}
-        >
-          <i
-            className="bi bi-chat-left-text text-primary mt-1"
-            style={{ fontSize: "0.85rem", flexShrink: 0 }}
-          />
-          <div>
-            <div className="vds-info-label mb-1">Description</div>
-            <p className="mb-0 small">{change.comments}</p>
+        <div className="vds-pending-review px-3 py-2 rounded-3 mb-3">
+          <div className="d-flex align-items-center gap-2 mb-1">
+            <i
+              className="bi bi-chat-left-text flex-shrink-0"
+              style={{ fontSize: "0.9rem", lineHeight: 1, color: "#1e5fa8" }}
+            />
+            <span className="vds-info-label">Description</span>
           </div>
+          <p className="mb-0 vds-description-text">
+            {change.comments}
+          </p>
         </div>
       )}
 

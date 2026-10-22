@@ -1,10 +1,10 @@
-/*
- * VinylDNS Component Styles - Buttons
+/**
+ * VinylDNS component styles: buttons
  */
 
-/* ============================================================
-   Table Action Icon Buttons
-   ============================================================ */
+/**
+ * UI Component: Table Action Icon Buttons
+ */
 .vds-action-btn {
   display: inline-flex;
   align-items: center;
@@ -88,31 +88,214 @@
   line-height: 1;
 }
 
-/* Primary button with shadow */
+[data-vds-theme="dark"] .vds-action-btn {
+  background: rgb(255 255 255 / 6%);
+  border-color: rgb(255 255 255 / 12%);
+}
+
+[data-vds-theme="dark"] .vds-action-btn:hover {
+  background: unset;
+  border-color: unset;
+}
+
+[data-vds-theme="dark"] .vds-action-btn--view {
+  background: #1e5fa8;
+  color: #fff;
+}
+
+[data-vds-theme="dark"] .vds-action-btn--view:hover {
+  background: #0274f7;
+  color: #fff;
+  box-shadow: 0 3px 8px rgb(13 27 62 / 40%);
+  border: 1px solid transparent;
+  margin-top: -1px;
+}
+
+[data-vds-theme="dark"] .vds-action-btn--edit {
+  background: #ffe88a;
+  color: #7d6000;
+  border: 1px solid transparent;
+}
+
+[data-vds-theme="dark"] .vds-action-btn--edit:hover {
+  background: #fcdb55;
+  color: #7d6000;
+  box-shadow: 0 3px 8px rgb(255 220 50 / 35%);
+  border: 1px solid transparent;
+  margin-top: -1px;
+}
+
+[data-vds-theme="dark"] .vds-action-btn--delete {
+  background: #dc3545;
+  color: #fff;
+  border: 1px solid transparent;
+}
+
+[data-vds-theme="dark"] .vds-action-btn--delete:hover {
+  background: #dc3545;
+  color: #fff;
+  box-shadow: 0 3px 8px rgb(220 53 69 / 35%);
+  border: 1px solid transparent;
+  margin-top: -1px;
+}
+
+/**
+ * Variant: Claim ownership (teal)
+ */
+.vds-action-btn--claim {
+  background: #0d9488;
+  color: #fff;
+  box-shadow: 0 3px 8px rgb(13 148 136 / 35%);
+}
+
+.vds-action-btn--claim:hover {
+  background: #0b7d77;
+  box-shadow: 0 4px 12px rgb(13 148 136 / 45%);
+}
+
+[data-vds-theme="dark"] .vds-action-btn--claim {
+  background: #0b7d77;
+  box-shadow: 0 4px 12px rgb(13 148 136 / 45%);
+  border: 1px solid transparent;
+}
+
+[data-vds-theme="dark"] .vds-action-btn--claim:hover {
+  background: #0f766e;
+  box-shadow: 0 4px 12px rgb(13 148 136 / 45%);
+  border: 1px solid transparent;
+  margin-top: -1px;
+}
+
+/**
+ * Variant: Request ownership transfer (indigo)
+ */
+.vds-action-btn--request {
+  background: #4f46e5;
+  color: #fff;
+  box-shadow: 0 3px 8px rgb(79 70 229 / 35%);
+}
+
+[data-vds-theme="dark"] .vds-action-btn--request,
+[data-vds-theme="dark"] .vds-action-btn--request:hover {
+  background: #4338ca;
+}
+
+/**
+ * Variant: Approve transfer (green)
+ */
+.vds-action-btn--approve {
+  background: #16a34a;
+  color: #fff;
+  box-shadow: 0 3px 8px rgb(22 163 74 / 35%);
+}
+
+[data-vds-theme="dark"] .vds-action-btn--approve,
+[data-vds-theme="dark"] .vds-action-btn--approve:hover {
+  background: #15803d;
+}
+
+/**
+ * Variant: Reject transfer (orange-red)
+ */
+.vds-action-btn--reject {
+  background: #ea580c;
+  color: #fff;
+  box-shadow: 0 3px 8px rgb(234 88 12 / 35%);
+}
+
+[data-vds-theme="dark"] .vds-action-btn--reject,
+[data-vds-theme="dark"] .vds-action-btn--reject:hover {
+  background: #c2410c;
+}
+
+/**
+ * Variant: Cancel or close request (slate gray)
+ */
+.vds-action-btn--cancel-req {
+  background: #64748b;
+  color: #fff;
+  box-shadow: 0 3px 8px rgb(100 116 139 / 30%);
+}
+
+[data-vds-theme="dark"] .vds-action-btn--cancel-req,
+[data-vds-theme="dark"] .vds-action-btn--cancel-req:hover {
+  background: #475569;
+}
+
+/**
+ * State: Pending (disabled appearance)
+ */
+.vds-action-btn--pending {
+  background: #e2e8f0;
+  color: #1a1a1a;
+  box-shadow: none;
+  cursor: default;
+}
+
+/**
+ * Variant: Ownership actions menu trigger
+ */
+.vds-action-btn--ownership-menu {
+  background: #0891b2;
+  color: #fff;
+  box-shadow: 0 3px 10px rgb(8 145 178 / 40%);
+  width: auto;
+  border-radius: 20px;
+  padding: 0 11px;
+  gap: 5px;
+  font-size: 0.85rem;
+}
+
+.vds-action-btn--ownership-menu:hover {
+  background: #0e7490;
+  box-shadow: 0 5px 14px rgb(8 145 178 / 55%);
+}
+
+[data-vds-theme="dark"] .vds-action-btn--ownership-menu {
+  background: #0e7490;
+}
+
+[data-vds-theme="dark"] .vds-action-btn--ownership-menu:hover {
+  background: #155e75;
+}
+
+/**
+ * Variant: Pending-mode menu trigger
+ */
+.vds-action-btn--pending-menu {
+  background: #d97706;
+  color: #fff;
+  box-shadow: 0 3px 10px rgb(217 119 6 / 35%);
+  width: auto;
+  border-radius: 20px;
+  padding: 0 11px;
+  gap: 5px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.vds-action-btn--pending-menu:hover {
+  background: #b45309;
+  box-shadow: 0 5px 14px rgb(217 119 6 / 50%);
+}
+
+[data-vds-theme="dark"] .vds-action-btn--pending-menu {
+  background: #b45309;
+}
+
+[data-vds-theme="dark"] .vds-action-btn--pending-menu:hover {
+  background: #92400e;
+}
+
 .vds-btn-primary-shadow {
   box-shadow: 0 3px 10px rgb(13 27 62 / 38%);
 }
 
-/* ============================================================
-   Nav & Header Action Buttons (vds-btn-nav)
-   ============================================================ */
+/**
+ * UI Component: Nav and Header Action Buttons (vds-btn-nav)
+ */
 .vds-btn-nav {
   background: #1e5fa8 !important;
-  border: 1px solid rgb(30 95 168 / 30%);
-  color: #fff !important;
-  box-shadow:
-    0 2px 8px rgb(13 27 62 / 45%),
-    inset 0 1px 0 rgb(255 255 255 / 10%);
-  transition:
-    box-shadow 0.22s ease,
-    transform 0.18s ease,
-    opacity 0.18s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.vds-btn-nav--add-member {
-  background: #1e5fa8;
   border: 1px solid rgb(30 95 168 / 30%);
   color: #fff !important;
   box-shadow:
@@ -144,16 +327,6 @@
     inset 0 1px 0 rgb(255 255 255 / 13%);
 }
 
-.vds-btn-nav--add-member:hover,
-.vds-btn-nav--add-member:focus {
-  color: #0d0b0b !important;
-  transform: translateY(-2px);
-  box-shadow:
-    0 6px 20px rgb(13 27 62 / 50%),
-    0 2px 8px rgb(30 95 168 / 30%),
-    inset 0 1px 0 rgb(255 255 255 / 13%);
-}
-
 .vds-btn-nav:active {
   transform: translateY(0);
   box-shadow: 0 1px 4px rgb(13 27 62 / 40%);
@@ -163,8 +336,7 @@
   outline: none;
 }
 
-.vds-btn-nav:focus,
-.vds-btn-nav-outline:focus {
+.vds-btn-nav:focus {
   box-shadow: none;
   outline: none;
 }
@@ -181,25 +353,9 @@
     inset 0 1px 0 rgb(255 255 255 / 10%) !important;
 }
 
-.vds-btn-nav-outline {
-  border: 1.5px solid #1e5fa8;
-  color: #1e5fa8;
-  background: transparent;
-  font-weight: 600;
-  font-size: 0.82rem;
-  border-radius: 8px;
-  padding: 0.35rem 0.85rem;
-  transition: background 0.15s, color 0.15s;
-}
-
-.vds-btn-nav-outline:hover {
-  background: #1e5fa8;
-  color: #fff;
-}
-
-/* ============================================================
-   Flat Toolbar Buttons
-   ============================================================ */
+/**
+ * UI Component: Flat Toolbar Buttons
+ */
 .vds-btn-flat {
   background: #edf1f7;
   border: 1px solid #d4dbe8;
@@ -253,13 +409,17 @@
   color: #1e5fa8;
 }
 
+[data-vds-theme="dark"] .vds-btn-flat__label {
+  color: #e7e7ef;
+}
+
 .vds-btn-group-sm {
   border-radius: 6px !important;
 }
 
-/* ============================================================
-   Cards Toggle & Delete Row Buttons
-   ============================================================ */
+/**
+ * UI Component: Cards Toggle and Delete Row Buttons
+ */
 .vds-cards-toggle-btn {
   display: inline-flex;
   align-items: center;
@@ -326,37 +486,59 @@
 }
 
 .vds-btn-delete-row {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid #fecaca;
-  background: #fef2f2;
-  color: #dc2626;
-  border-radius: 6px;
+  border: 1px solid #f1aeb5;
+  background-color: #fff5f5;
+  color: #dc3545;
+  border-radius: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  box-shadow: none;
+  transition: all 0.15s ease-in-out;
 }
 
-.vds-btn-delete-row:hover:not(:disabled) {
-  background: #fee2e2;
-  color: #b91c1c;
+[data-vds-theme="dark"] .vds-btn-delete-row {
+  border-color: #7f1d1d;
+  background-color: hsl(0deg 63% 31% / 25%);
+  color: #dc3545;
 }
 
+.vds-btn-delete-row:hover,
 .vds-btn-delete-row:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgb(220 38 38 / 20%);
+  background-color: #f8d7da;
+  border-color: #ea868f;
+  color: #b02a37;
 }
 
-.vds-btn-delete-row:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+[data-vds-theme="dark"] .vds-btn-delete-row:hover,
+[data-vds-theme="dark"] .vds-btn-delete-row:focus {
+  background-color: hsl(0deg 63% 31% / 45%);
+  border-color: #991b1b;
+  color: #f87171;
 }
 
+/**
+ * State: Disabled (light mode)
+ */
+.vds-btn-delete-row:disabled,
 .vds-btn-delete-row:disabled:hover {
-  background: #fef2f2;
-  color: #dc2626;
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+  color: #64748b;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/**
+ * State: Disabled (dark mode)
+ */
+[data-vds-theme="dark"] .vds-btn-delete-row:disabled,
+[data-vds-theme="dark"] .vds-btn-delete-row:disabled:hover {
+  border-color: #475569;
+  background-color: #161618;
+  color: #94a3b8;
+  opacity: 0.8;
 }
 
 .vds-copy-btn {
@@ -364,9 +546,9 @@
   line-height: 1;
 }
 
-/* ============================================================
-   Back Button & Cancel Action Button
-   ============================================================ */
+/**
+ * UI Component: Back Button and Cancel Action Button
+ */
 .vds-back-btn {
   display: inline-flex;
   align-items: center;
@@ -401,7 +583,9 @@
   box-shadow: 0 5px 12px rgb(220 38 38 / 45%);
 }
 
-/* ── Labeled action button (icon + text) ── */
+/**
+ * Variant: Labeled action button (icon and text)
+ */
 .vds-action-btn--labeled {
   width: auto;
   height: 30px;
@@ -420,9 +604,9 @@
   line-height: 1;
 }
 
-/* ============================================================
-   Unified Button System (vds-ubtn)
-   ============================================================ */
+/**
+ * UI Component: Unified Button System (vds-ubtn)
+ */
 .vds-ubtn {
   display: inline-flex;
   align-items: center;
@@ -539,68 +723,15 @@
   box-shadow: 0 2px 6px rgb(30 94 168 / 84%);
 }
 
-/* ============================================================
-   Dark Mode Button Overrides
-   ============================================================ */
-[data-vds-theme="dark"] .vds-action-btn {
-  background: rgb(255 255 255 / 6%);
-  border-color: rgb(255 255 255 / 12%);
-}
-
-[data-vds-theme="dark"] .vds-action-btn:hover {
-  background: unset;
-  border-color: unset;
-}
-
-[data-vds-theme="dark"] .vds-action-btn--view {
-  background: #1e5fa8;
-  color: #fff;
-}
-
-[data-vds-theme="dark"] .vds-action-btn--view:hover {
-  background: #0274f7;
-  color: #fff;
-  box-shadow: 0 3px 8px rgb(13 27 62 / 40%);
-  border: 1px solid transparent;
-  margin-top: -1px;
-}
-
-[data-vds-theme="dark"] .vds-action-btn--edit {
-  background: #ffe88a;
-  color: #7d6000;
-  border: 1px solid transparent;
-}
-
-[data-vds-theme="dark"] .vds-action-btn--edit:hover {
-  background: #fcdb55;
-  color: #7d6000;
-  box-shadow: 0 3px 8px rgb(255 220 50 / 35%);
-  border: 1px solid transparent;
-  margin-top: -1px;
-}
-
-[data-vds-theme="dark"] .vds-action-btn--delete {
-  background: #dc3545;
-  color: #fff;
-  border: 1px solid transparent;
-}
-
-[data-vds-theme="dark"] .vds-action-btn--delete:hover {
-  background: #dc3545;
-  color: #fff;
-  box-shadow: 0 3px 8px rgb(220 53 69 / 35%);
-  border: 1px solid transparent;
-  margin-top: -1px;
-}
-
+/**
+ * UI Component: Dark Mode Button Overrides
+ */
 [data-vds-theme="dark"] .vds-action-btn--cancel,
 [data-vds-theme="dark"] .vds-action-btn--cancel:hover {
   background: #dc2626;
   color: #fff;
 }
 
-[data-vds-theme="dark"] .vds-btn-nav--add-member:hover,
-[data-vds-theme="dark"] .vds-btn-nav--add-member:focus,
 [data-vds-theme="dark"] .vds-btn-nav:hover,
 [data-vds-theme="dark"] .vds-btn-nav:focus {
   color: #fff !important;
@@ -608,15 +739,27 @@
 
 [data-vds-theme="dark"] .vds-btn-flat {
   background: #1a1a1a;
-  border-color: #333;
-  color: #7eb0f5;
+  border-color: rgb(255 255 255 / 18%);
+  color: #ffffff97;
 }
 
-[data-vds-theme="dark"] .vds-btn-flat:hover,
+[data-vds-theme="dark"] .vds-btn-flat:hover {
+  background: #1f2f50;
+  border-color: rgb(255 255 255 / 35%);
+  color: #fff;
+}
+
 [data-vds-theme="dark"] .vds-btn-flat:focus {
-  background: #253550;
-  border-color: #3b82f6;
-  color: #a0c4f8;
+  background: #1f2f50;
+  border-color: rgb(255 255 255 / 35%);
+  color: #a8c8f0;
+}
+
+[data-vds-theme="dark"] .vds-btn-flat .vds-btn-flat__label {
+  background: none !important;
+  -webkit-text-fill-color: #ffffff97 !important;
+  background-clip: unset !important;
+  color: #ffffff97;
 }
 
 [data-vds-theme="dark"] .vds-btn-flat--cancel {
@@ -642,22 +785,18 @@
   color: #7eb0f5;
 }
 
-[data-vds-theme="dark"] .vds-btn-delete-row {
-  background: rgb(239 68 68 / 15%);
-  border-color: rgb(239 68 68 / 30%);
-  color: #f87171;
-}
-
-[data-vds-theme="dark"] .vds-btn-delete-row:hover:not(:disabled) {
-  background: rgb(239 68 68 / 25%);
-  color: #fca5a5;
-}
-
 [data-vds-theme="dark"] .vds-ubtn.vds-ubtn--primary {
   background-color: #1e5fa8 !important;
   color: #f0f6ff !important;
   border-color: #1e5fa8 !important;
   box-shadow: 0 1px 3px rgb(29 78 216 / 35%) !important;
+}
+
+[data-vds-theme="dark"] .vds-btn-submit-primary {
+  background-color: #3b82f6;
+  color: #f8fafc;
+  border-color: #3b82f6;
+  box-shadow: 0 1px 3px rgb(37 99 235 / 25%);
 }
 
 [data-vds-theme="dark"] .vds-ubtn--secondary {
@@ -710,4 +849,51 @@
 [data-vds-theme="dark"] .vds-ubtn--import-csv:hover:not(:disabled) {
   filter: brightness(1.08);
   box-shadow: 0 2px 6px rgb(30 94 168 / 84%);
+}
+
+/**
+ * Variant: Change history action pills
+ */
+.vds-history-btn {
+  font-size: 0.78rem !important;
+  border-radius: 20px !important;
+  width: fit-content;
+}
+
+/**
+ * Variant: Clear all (destructive action)
+ */
+.vds-btn-clear-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 12px 3px 9px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #c0392b;
+  border: 1.5px solid rgb(192 57 43 / 35%);
+  background: rgb(220 53 69 / 6%);
+  transition: all 0.15s;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.vds-btn-clear-all:hover {
+  background: rgb(220 53 69 / 14%);
+  border-color: #c0392b;
+  color: #922b21;
+  box-shadow: 0 1px 6px rgb(192 57 43 / 20%);
+}
+
+[data-vds-theme="dark"] .vds-btn-clear-all {
+  color: #f1948a;
+  border-color: rgb(241 148 138 / 35%);
+  background: rgb(220 53 69 / 8%);
+}
+
+[data-vds-theme="dark"] .vds-btn-clear-all:hover {
+  background: rgb(220 53 69 / 18%);
+  border-color: #f1948a;
+  color: #ffc1bb;
 }

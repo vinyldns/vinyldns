@@ -1,10 +1,10 @@
-/*
- * VinylDNS Feature Styles - Layout Shell & Navigation
+/**
+ * VinylDNS feature styles: layout shell and navigation
  */
 
-/* ============================================================
-   Root Layout & Main Content Container
-   ============================================================ */
+/**
+ * UI Component: Root layout and main content container
+ */
 .vds-layout {
   min-height: 100vh;
 }
@@ -27,9 +27,14 @@
     color 0.22s;
 }
 
-/* ============================================================
-   Topbar & Breadcrumbs
-   ============================================================ */
+[data-vds-theme="dark"] .vds-main {
+  background-color: var(--vds-page-bg);
+  color: var(--vds-page-text);
+}
+
+/**
+ * UI Component: Topbar and breadcrumbs
+ */
 .vds-topbar {
   display: flex;
   align-items: center;
@@ -101,9 +106,9 @@
   color: rgb(255 255 255 / 30%);
 }
 
-/* ============================================================
-   Sidebar Shell & Header
-   ============================================================ */
+/**
+ * UI Component: Sidebar shell and header
+ */
 .vds-sidebar {
   flex-shrink: 0;
   background: var(--vds-sidebar-bg);
@@ -204,6 +209,29 @@
   background: rgb(13 110 253 / 9%);
 }
 
+.vds-toggle-btn:hover .bi-chevron-double-left,
+.vds-toggle-btn:hover .bi-chevron-double-right {
+  animation: vds-chevron-bounce 0.35s ease;
+}
+
+@keyframes vds-chevron-bounce {
+  0% {
+    transform: translateX(0);
+  }
+
+  35% {
+    transform: translateX(-4px);
+  }
+
+  70% {
+    transform: translateX(2px);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
 .vds-toggle-inner {
   display: flex;
   align-items: center;
@@ -217,6 +245,10 @@
   text-transform: uppercase;
   opacity: 0.7;
   white-space: nowrap;
+}
+
+[data-vds-theme="dark"] .vds-toggle-label {
+  color: var(--vds-page-text) !important;
 }
 
 .vds-sidebar__scroll {
@@ -297,14 +329,22 @@
 
 .vds-nav-link--active,
 .vds-nav-link.active {
-  background: var(--vds-sidebar-link-active) !important;
+  background: rgb(30 95 168 / 55%) !important;
+  backdrop-filter: blur(12px) saturate(140%);
   color: #fff !important;
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 12%);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 18%),
+    inset 0 1px 0 rgb(255 255 255 / 25%),
+    0 4px 14px rgb(30 95 168 / 25%);
 }
 
 .vds-nav-link--active::before,
 .vds-nav-link.active::before {
   opacity: 1;
+}
+
+.vds-nav-list {
+  gap: 2px;
 }
 
 .vds-sidebar--collapsed .vds-nav-list {
@@ -342,9 +382,9 @@
   height: 12px;
 }
 
-/* ============================================================
-   User Popover & Menu Trigger
-   ============================================================ */
+/**
+ * UI Component: User popover and menu trigger
+ */
 .vds-user-menu {
   position: relative;
 }
@@ -478,9 +518,9 @@
   padding: 6px 0 4px;
 }
 
-/* ============================================================
-   Custom CSS Tooltips
-   ============================================================ */
+/**
+ * UI Component: Custom CSS tooltips
+ */
 .vds-tip {
   position: relative;
 }
@@ -540,9 +580,9 @@
   transform: translateY(-50%) translateX(0);
 }
 
-/* ============================================================
-   Theme Toggle Switch
-   ============================================================ */
+/**
+ * UI Component: Theme toggle switch
+ */
 .vds-theme-toggle {
   display: flex;
   align-items: center;
@@ -559,9 +599,67 @@
   height: 22px;
   background: #d4dbe8;
   border-radius: 999px;
-  transition: background 0.2s ease;
+  transition: background 0.22s;
+  flex-shrink: 0;
 }
 
-[data-vds-theme="dark"] .vds-theme-toggle__track {
-  background: #2a3a50;
+.vds-theme-toggle__track--dark {
+  background: #1e5fa8;
+}
+
+.vds-theme-toggle__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 18%);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: #f59e0b;
+}
+
+.vds-theme-toggle__track--dark .vds-theme-toggle__thumb {
+  transform: translateX(22px);
+  color: #212529;
+}
+
+.vds-theme-toggle__label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgb(255 255 255 / 80%);
+  min-width: 30px;
+}
+
+[data-vds-theme="dark"] .vds-theme-toggle__label {
+  color: rgb(255 255 255 / 75%);
+}
+
+.vds-sidebar__footer {
+  border-top: 1px solid rgb(13 110 253 / 15%);
+  flex-shrink: 0;
+}
+
+.vds-user-btn {
+  background: rgb(13 110 253 / 10%) !important;
+  border: 1px solid rgb(13 110 253 / 22%) !important;
+  border-radius: 8px !important;
+  color: rgb(255 255 255 / 80%) !important;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.vds-user-btn:hover {
+  background: rgb(13 110 253 / 22%) !important;
+  color: #fff !important;
+  box-shadow: 0 0 0 1px rgb(13 110 253 / 40%);
 }

@@ -1,5 +1,5 @@
-/*
- * VinylDNS Base Styles - Resets & Layout Defaults
+/**
+ * VinylDNS base styles: resets and layout defaults
  */
 
 *,
@@ -34,10 +34,12 @@ a {
 
 a:hover {
   color: var(--vds-accent-hover);
+}
+
+a:not(.nav-link):hover {
   text-decoration: underline;
 }
 
-/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

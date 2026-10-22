@@ -420,10 +420,10 @@ export function ZoneForm({
       </div>
 
       {/* ── Actions ── */}
-      <div className="vds-zone-form__actions">
+      <div className="vds-zone-form__actions d-flex justify-content-between align-items-center w-100 pt-2">
         <button
           type="button"
-          className="btn vds-zone-form__reset-btn"
+          className="vds-modal__btn vds-modal__btn--utility"
           onClick={() => {
             reset(initialData ? { ...initialData } : {
               name: '', email: '', adminGroupId: '', backendId: 'default',
@@ -435,19 +435,20 @@ export function ZoneForm({
             setTransferOpen(false);
           }}
         >
-          <i className="bi bi-arrow-counterclockwise me-1" />Clear Form
+          <i className="bi bi-arrow-counterclockwise me-1" />Clear
         </button>
-        <div className="d-flex gap-2">
+        <div className="d-flex align-items-center gap-2">
           <button
             type="button"
-            className="btn vds-btn-nav-outline"
+            className="vds-modal__btn vds-modal__btn--secondary"
             onClick={onCancel}
           >
+            <i className="bi bi-x-circle me-1" />
             Cancel
           </button>
           <button
             type="submit"
-            className="btn vds-btn-nav d-flex align-items-center gap-2"
+            className="vds-modal__btn vds-modal__btn--primary d-flex align-items-center gap-1"
             disabled={isSubmitting}
           >
             {isSubmitting ? (

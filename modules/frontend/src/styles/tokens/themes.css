@@ -1,6 +1,6 @@
-/*
- * VinylDNS Design System Tokens - Themes
- * Dark mode tokens & theme overrides ([data-vds-theme="dark"])
+/**
+ * VinylDNS Design System Tokens: Themes
+ * Dark mode tokens and theme overrides ([data-vds-theme="dark"])
  */
 
 [data-vds-theme="dark"],
@@ -28,7 +28,9 @@
   --vds-input-text: #f5f5f5;
   --vds-input-border: #333;
 
-  /* Discard Modal dark overrides */
+  /**
+   * UI Component: Discard modal (dark theme)
+   */
   --vds-dm-bg: #1a1a1a;
   --vds-dm-border: #333;
   --vds-dm-header-bg: #111;
@@ -39,7 +41,9 @@
   --vds-dm-btn-border: #333;
   --vds-dm-btn-color: #a1a1aa;
 
-  /* Status Colors Dark */
+  /**
+   * Design: Status colors (dark theme)
+   */
   --vds-color-success: #4ade80;
   --vds-color-success-bg: rgb(34 197 94 / 15%);
   --vds-color-warning: #fde047;

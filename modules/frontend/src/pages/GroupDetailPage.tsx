@@ -544,7 +544,7 @@ export function GroupDetailPage() {
                 </div>
               ) : (
                 <button
-                  className="btn btn-sm ms-auto d-flex align-items-center gap-1 vds-member-toggle-btn vds-btn-nav--add-member"
+                  className="vds-modal__btn vds-modal__btn--primary ms-auto d-flex align-items-center gap-1"
                   onClick={() => setShowAddForm(true)}
                 >
                   <i className="bi bi-person-plus-fill" /> Add Member
@@ -590,7 +590,7 @@ export function GroupDetailPage() {
                 onDateToChange={setChDateTo}
               />
               <button
-                className="btn btn-sm d-flex align-items-center gap-1 vds-member-toggle-btn vds-btn-flat"
+                className="btn btn-sm d-flex align-items-center gap-1 vds-btn-flat"
                 disabled={changesLoading || changesFetching}
                 onClick={() => void refetchChanges()}
               >

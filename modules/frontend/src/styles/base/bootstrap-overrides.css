@@ -1,8 +1,10 @@
-/*
- * VinylDNS Base Styles - Bootstrap 5 Primitive Overrides
+/**
+ * VinylDNS base styles: Bootstrap 5 primitive overrides
  */
 
-/* Cards */
+/**
+ * UI Component: Cards
+ */
 .card {
   border-radius: var(--vds-radius-md);
   border: 1px solid var(--vds-border-color);
@@ -21,7 +23,20 @@
   border-color: var(--vds-card-border) !important;
 }
 
-/* Headings */
+[data-vds-theme="dark"] .card-footer {
+  background: var(--vds-card-bg, #111) !important;
+  border-top-color: var(--vds-card-border, rgb(255 255 255 / 12%)) !important;
+  color: var(--vds-page-text, #e0e0e0);
+}
+
+[data-vds-theme="dark"] code {
+  background: rgb(30 95 168 / 20%) !important;
+  color: #7dd3fc !important;
+}
+
+/**
+ * UI Component: Headings
+ */
 h1.h3 {
   color: #2c3e50;
 }
@@ -30,7 +45,9 @@ h1.h3 {
   color: var(--vds-page-text);
 }
 
-/* Form Controls & Inputs */
+/**
+ * UI Component: Form Controls and Inputs
+ */
 .form-control,
 .form-select {
   border-color: var(--vds-border-color);
@@ -41,11 +58,23 @@ h1.h3 {
   z-index: 3;
 }
 
+/**
+ * Fix: WebKit hides number input spin buttons until hover; keep them visible
+ */
+.form-control[type="number"]::-webkit-inner-spin-button,
+.form-control[type="number"]::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
 [data-vds-theme="dark"] .form-control,
 [data-vds-theme="dark"] .form-select {
   background-color: var(--vds-input-bg) !important;
   color: var(--vds-input-text) !important;
   border-color: var(--vds-input-border) !important;
+}
+
+[data-vds-theme="dark"] .form-control[type="number"] {
+  color-scheme: dark;
 }
 
 [data-vds-theme="dark"] .form-control::placeholder {
@@ -104,11 +133,39 @@ h1.h3 {
   color: #ff9090;
 }
 
-/* Modals */
+[data-vds-theme="dark"] .input-group-text {
+  background: #1a1a1a !important;
+  border-color: rgb(255 255 255 / 20%) !important;
+  color: #a1a1aa !important;
+}
+
+[data-vds-theme="dark"] .list-group.position-absolute {
+  background: #1a1a1a !important;
+  border-color: rgb(255 255 255 / 20%) !important;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 55%) !important;
+}
+
+[data-vds-theme="dark"] .list-group.position-absolute .list-group-item {
+  background: transparent !important;
+  border-color: rgb(255 255 255 / 8%) !important;
+  color: #e0e0e0 !important;
+}
+
+[data-vds-theme="dark"]
+  .list-group.position-absolute
+  .list-group-item-action:hover,
+[data-vds-theme="dark"]
+  .list-group.position-absolute
+  .list-group-item-action:focus {
+  background: rgb(30 95 168 / 20%) !important;
+  color: #fff !important;
+}
+
+/**
+ * UI Component: Modals
+ */
 .modal-content {
-  border-radius: var(--vds-radius-lg);
-  border: 1px solid var(--vds-border-color);
-  box-shadow: var(--vds-shadow-lg);
+  border-radius: 10px;
 }
 
 [data-vds-theme="dark"] .modal-content {
@@ -127,7 +184,18 @@ h1.h3 {
   border-color: rgb(255 255 255 / 10%);
 }
 
-/* Alerts */
+[data-vds-theme="dark"] .modal-body {
+  background: #111;
+  color: var(--vds-page-text);
+}
+
+[data-vds-theme="dark"] .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%) !important;
+}
+
+/**
+ * UI Component: Alerts
+ */
 [data-vds-theme="dark"] .alert-danger {
   background: rgb(180 30 30 / 30%);
   border-color: rgb(220 60 60 / 55%);
@@ -152,7 +220,9 @@ h1.h3 {
   color: #a8d4ff;
 }
 
-/* Badges */
+/**
+ * UI Component: Badges
+ */
 [data-vds-theme="dark"] .badge.bg-secondary {
   background-color: #253550 !important;
   color: #90b8e8;
@@ -162,7 +232,26 @@ h1.h3 {
   background-color: #1e4a8a !important;
 }
 
-/* Utilities */
+/**
+ * UI Component: Utilities
+ */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.badge {
+  vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgb(0 123 255 / 5%);
+}
+
+.font-monospace {
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.85em;
+}
+
 [data-vds-theme="dark"] .text-muted {
   color: #6e8fb0 !important;
 }

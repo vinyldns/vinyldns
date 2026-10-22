@@ -1,43 +1,20 @@
-/*
- * VinylDNS Feature Styles - Zones Management & Lifecycle
+/**
+ * VinylDNS feature styles: zones management and lifecycle
  */
 
-/* ============================================================
-   Zones Table & Layout
-   ============================================================ */
-.vds-zones-table-wrap {
-  border-radius: 0.75rem;
-  overflow: auto;
-  max-height: 55vh;
-  box-shadow: 0 2px 12px rgb(13 110 253 / 7%);
-  border: 1px solid #e2e8f0;
-  max-width: 100%;
-}
-
+/**
+ * UI Component: Zones table and layout
+ */
 .vds-zones-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.vds-zones-table .col-info {
-  font-size: 0.85rem;
-  color: #334155;
-}
-
-.vds-zones-table .col-date {
-  font-size: 0.8rem;
-  color: #64748b;
-  white-space: nowrap;
-}
-
-/* ============================================================
-   Zone Form (Connect / Edit Zone)
-   ============================================================ */
+/**
+ * UI Component: Zone connect and edit form
+ */
 .vds-zone-connection-form {
-  padding: 1.5rem;
-  background: #fff;
-  border-radius: 0.75rem;
-  border: 1px solid #e2e8f0;
+  background: #f8fafc;
 }
 
 .vds-zone-form__intro {
@@ -107,6 +84,10 @@
   display: block;
 }
 
+[data-vds-theme="dark"] .vds-zone-form__label {
+  color: #a1a1aa;
+}
+
 .vds-zone-field-help {
   font-size: 0.74rem;
   color: #8099b8;
@@ -124,13 +105,30 @@
     box-shadow 0.18s;
 }
 
-.vds-zone-form__input:focus {
-  border-color: #86b7fe !important;
+[data-vds-theme="dark"] .vds-zone-form__input {
+  border-color: var(--vds-input-border) !important;
+  background-color: var(--vds-input-bg) !important;
+  color: var(--vds-input-text) !important;
 }
 
-/* ============================================================
-   Zone Lifecycle Cards & Stats
-   ============================================================ */
+.vds-zone-form__input:focus {
+  border-color: #86b7fe !important;
+  box-shadow: 0 0 0 3px rgb(30 95 168 / 10%) !important;
+}
+
+[data-vds-theme="dark"] .vds-zone-form__input:focus {
+  border-color: rgb(255 255 255 / 45%) !important;
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 12%) !important;
+}
+
+.vds-create-record-btn {
+  --bs-btn-padding-y: 0.25rem;
+  --bs-btn-padding-x: 0.25rem;
+}
+
+/**
+ * UI Component: Zone lifecycle cards and stats
+ */
 .vds-lifecycle-newest {
   display: flex;
   flex-direction: column;
@@ -186,23 +184,32 @@
   letter-spacing: 0.04em;
 }
 
-/* ============================================================
-   Dark Mode Zone Overrides
-   ============================================================ */
-[data-vds-theme="dark"] .vds-zones-table-wrap {
-  border-color: #2a2a2c;
-  background: var(--vds-card-bg);
+/**
+ * Theme: Dark mode zone overrides
+ */
+[data-vds-theme="dark"] .vds-zone-connection-form {
+  background: #111213;
 }
 
-[data-vds-theme="dark"] .vds-zone-connection-form {
-  background: #111;
-  border-color: #2a2a2c;
+[data-vds-theme="dark"] .vds-utc-converter-box {
+  background: #1a1a1a !important;
+  border-color: rgb(255 255 255 / 15%) !important;
+}
+
+[data-vds-theme="dark"] .vds-utc-output-box {
+  background: #1a1a1a !important;
+  color: #90c2f0 !important;
 }
 
 [data-vds-theme="dark"] .vds-zone-form__intro {
-  background: #1a2234;
-  border-color: #2a3a5a;
-  color: #c7deff;
+  background: #111;
+  border-color: rgb(30 95 168 / 35%);
+  border-left-color: #3b82f6;
+  color: #9ec4f0;
+}
+
+[data-vds-theme="dark"] .vds-zone-form__intro-icon {
+  color: #a1a1aa;
 }
 
 [data-vds-theme="dark"] .vds-zone-section-header {
@@ -232,4 +239,982 @@
 
 [data-vds-theme="dark"] .vds-lifecycle-newest__age {
   color: #f0b84a;
+}
+
+/**
+ * UI Component: Zone form domains toggle, collapsibles, and actions
+ */
+.vds-zone-form__domains-toggle {
+  background: none;
+  border: 1px solid #c7deff;
+  border-radius: 20px;
+  padding: 2px 12px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #1e5fa8;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.vds-zone-form__domains-toggle:hover {
+  background: #eaf2ff;
+}
+
+.vds-zone-form__domains-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 8px 0 2px;
+}
+
+.vds-zone-form__domain-chip {
+  background: #eaf2ff;
+  color: #0d6efd;
+  border: 1px solid #c7deff;
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.vds-zone-form__toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 0;
+}
+
+.vds-zone-form__toggle-input {
+  display: none;
+}
+
+.vds-zone-form__toggle-track {
+  position: relative;
+  width: 42px;
+  height: 22px;
+  background: #d4dbe8;
+  border-radius: 999px;
+  flex-shrink: 0;
+  transition: background 0.22s;
+}
+
+.vds-zone-form__toggle-input:checked + .vds-zone-form__toggle-track {
+  background: #1e5fa8;
+}
+
+.vds-zone-form__toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 20%);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vds-zone-form__toggle-input:checked
+  ~ .vds-zone-form__toggle-track
+  .vds-zone-form__toggle-thumb {
+  transform: translateX(20px);
+}
+
+.vds-zone-form__toggle-text {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.vds-zone-collapsible {
+  border: 1px solid #dce8fb;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgb(13 110 253 / 5%);
+  transition: box-shadow 0.18s;
+}
+
+.vds-zone-collapsible:has(.vds-zone-collapsible__trigger--open) {
+  box-shadow: 0 4px 16px rgb(13 110 253 / 10%);
+}
+
+.vds-zone-collapsible__trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f5f8ff;
+  border: none;
+  padding: 12px 18px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.vds-zone-collapsible__trigger:hover {
+  background: #edf2ff;
+}
+
+.vds-zone-collapsible__trigger--open {
+  background: #e8f0fe;
+}
+
+.vds-zone-collapsible__icon-wrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: #1e5fa8;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgb(13 27 62 / 28%);
+}
+
+.vds-zone-collapsible__icon-wrap--transfer {
+  background: #6f42c1;
+  box-shadow: 0 2px 6px rgb(63 29 140 / 30%);
+}
+
+.vds-zone-collapsible__title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0d1b3e;
+}
+
+.vds-zone-collapsible__subtitle {
+  font-size: 0.74rem;
+  color: #6e8aaa;
+}
+
+.vds-zone-collapsible__chevron {
+  font-size: 0.78rem;
+  color: #6e8aaa;
+  transition: transform 0.22s;
+}
+
+.vds-zone-collapsible__trigger--open .vds-zone-collapsible__chevron {
+  transform: rotate(180deg);
+}
+
+.vds-zone-collapsible__badge {
+  font-size: 0.67rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 20px;
+  background: #1e5fa8;
+  color: #fff;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.vds-zone-collapsible__badge--transfer {
+  background: #6f42c1;
+}
+
+.vds-zone-collapsible__body {
+  padding: 18px 20px;
+  background: #fff;
+  border-top: 1px solid #dce8fb;
+  animation: vds-collapse-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes vds-collapse-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.vds-zone-collapsible__help-banner {
+  display: flex;
+  align-items: flex-start;
+  background: #f0f6ff;
+  border: 1px solid #c7deff;
+  border-radius: 0.45rem;
+  padding: 7px 12px;
+  font-size: 0.78rem;
+  color: #2c4a70;
+  margin-bottom: 1rem;
+}
+
+.vds-zone-form__clear-btn {
+  background: #fff0f0;
+  border: 1px solid #ffc9c9;
+  color: #c0392b;
+  border-radius: 20px !important;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 14px;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.vds-zone-form__clear-btn:hover:not(:disabled) {
+  background: #ffe0e0;
+  border-color: #f5a5a5;
+  color: #991b1b;
+}
+
+.vds-zone-form__clear-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.vds-zone-form__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 1rem;
+  border-top: 1px solid #eaf2ff;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+[data-vds-theme="dark"] .vds-zone-form__domains-toggle {
+  border-color: rgb(255 255 255 / 25%);
+  color: #a1a1aa;
+  background: transparent;
+}
+
+[data-vds-theme="dark"] .vds-zone-form__domains-toggle:hover {
+  background: rgb(30 95 168 / 15%);
+}
+
+[data-vds-theme="dark"] .vds-zone-form__domain-chip {
+  background: rgb(30 95 168 / 18%);
+  color: #7fb8f8;
+  border-color: rgb(30 95 168 / 35%);
+}
+
+[data-vds-theme="dark"] .vds-zone-form__toggle-track {
+  background: #2a2a2c;
+}
+
+[data-vds-theme="dark"] .vds-zone-form__toggle-text {
+  color: #c0d4ee;
+}
+
+[data-vds-theme="dark"] .vds-zone-collapsible {
+  border-color: rgb(255 255 255 / 15%);
+}
+
+[data-vds-theme="dark"] .vds-zone-collapsible__trigger {
+  background: #1a1a1a;
+}
+
+[data-vds-theme="dark"] .vds-zone-collapsible__trigger:hover {
+  background: #111;
+}
+
+[data-vds-theme="dark"] .vds-zone-collapsible__trigger--open {
+  background: #111;
+}
+
+[data-vds-theme="dark"] .vds-zone-collapsible__title {
+  color: #c5dcff;
+}
+
+[data-vds-theme="dark"] .vds-zone-collapsible__subtitle {
+  color: #4e6a88;
+}
+
+[data-vds-theme="dark"] .vds-zone-collapsible__chevron {
+  color: #4e6a88;
+}
+
+[data-vds-theme="dark"] .vds-zone-collapsible__body {
+  background: #1a1a1a;
+  border-top-color: rgb(255 255 255 / 12%);
+}
+
+[data-vds-theme="dark"] .vds-zone-collapsible__help-banner {
+  background: rgb(30 95 168 / 12%);
+  border-color: rgb(30 95 168 / 25%);
+  color: #a1a1aa;
+}
+
+[data-vds-theme="dark"] .vds-zone-form__clear-btn {
+  background: rgb(220 53 69 / 12%);
+  border-color: rgb(220 53 69 / 30%);
+  color: #f5a8a8;
+}
+
+[data-vds-theme="dark"] .vds-zone-form__clear-btn:hover:not(:disabled) {
+  background: rgb(220 53 69 / 20%);
+  border-color: rgb(220 53 69 / 50%);
+  color: #ffb3b3;
+}
+
+[data-vds-theme="dark"] .vds-zone-form__actions {
+  border-top-color: rgb(255 255 255 / 12%);
+}
+
+.vds-zone-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.vds-zone-status-badge--active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.vds-zone-status-badge--deleted {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.vds-zone-status-badge--syncing {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.vds-zone-status-badge--pending {
+  background: #fff3cd;
+  color: #7d6000;
+}
+
+[data-vds-theme="dark"] .vds-zone-status-badge--active {
+  background: rgb(16 185 129 / 15%);
+  color: #6ee7b7;
+}
+
+[data-vds-theme="dark"] .vds-zone-status-badge--deleted {
+  background: rgb(239 68 68 / 15%);
+  color: #fca5a5;
+}
+
+[data-vds-theme="dark"] .vds-zone-status-badge--syncing {
+  background: rgb(59 130 246 / 15%);
+  color: #93c5fd;
+}
+
+[data-vds-theme="dark"] .vds-zone-status-badge--pending {
+  background: rgb(245 158 11 / 15%);
+  color: #fcd34d;
+}
+
+.vds-zone-detail-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  background: #1e5fa8;
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: -0.5px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgb(30 95 168 / 35%);
+}
+
+/**
+ * UI Component: Zone meta strip of info tiles
+ */
+.vds-zone-meta-strip {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.vds-zone-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--vds-card-bg, #fff);
+  border: 1px solid var(--vds-card-border, #e3e8f0);
+  border-radius: 10px;
+  padding: 3px 14px;
+  flex: 1;
+  min-width: 160px;
+}
+
+.vds-zone-meta-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.vds-zone-meta-icon--blue {
+  background: rgb(30 95 168 / 12%);
+  color: #1e5fa8;
+}
+
+.vds-zone-meta-icon--teal {
+  background: rgb(13 148 136 / 12%);
+  color: #0d9488;
+}
+
+.vds-zone-meta-icon--purple {
+  background: rgb(124 58 237 / 12%);
+  color: #7c3aed;
+}
+
+.vds-zone-meta-icon--amber {
+  background: rgb(217 119 6 / 12%);
+  color: #d97706;
+}
+
+.vds-zone-meta-icon--gray {
+  background: rgb(100 116 139 / 10%);
+  color: #64748b;
+}
+
+.vds-zone-meta-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8a9bb4;
+  margin-bottom: 1px;
+}
+
+.vds-zone-meta-value {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--vds-text, #1e2a3b);
+  line-height: 1.3;
+}
+
+.vds-zone-meta-mono {
+  font-family: SFMono-Regular, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #5b7a9d;
+  word-break: break-all;
+}
+
+.vds-record-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
+/**
+ * UI Component: Recent changes panel
+ */
+.vds-recent-changes-panel {
+  border: 1px solid var(--vds-card-border, #e3e8f0);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--vds-card-bg, #fff);
+}
+
+.vds-recent-changes-panel__header {
+  display: flex;
+  align-items: center;
+  padding: 3px 16px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #3c5a80;
+  background: #f0f4fb;
+  border-bottom: 1px solid var(--vds-card-border, #e3e8f0);
+  letter-spacing: 0.02em;
+}
+
+/**
+ * UI Component: Zone detail record changes table
+ * Balanced column widths; long additional-info text wraps without squeezing other columns.
+ */
+.vds-zone-record-changes-table {
+  table-layout: fixed;
+}
+
+.vds-zone-record-changes-table thead th,
+.vds-zone-record-changes-table tbody td {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.vds-zone-record-changes-table thead th:nth-child(1),
+.vds-zone-record-changes-table tbody td:nth-child(1) {
+  width: 14%;
+}
+
+.vds-zone-record-changes-table thead th:nth-child(2),
+.vds-zone-record-changes-table tbody td:nth-child(2) {
+  width: 17%;
+}
+
+.vds-zone-record-changes-table thead th:nth-child(3),
+.vds-zone-record-changes-table tbody td:nth-child(3) {
+  width: 10%;
+}
+
+.vds-zone-record-changes-table thead th:nth-child(4),
+.vds-zone-record-changes-table tbody td:nth-child(4) {
+  width: 14%;
+}
+
+.vds-zone-record-changes-table thead th:nth-child(5),
+.vds-zone-record-changes-table tbody td:nth-child(5) {
+  width: 10%;
+}
+
+.vds-zone-record-changes-table thead th:nth-child(6),
+.vds-zone-record-changes-table tbody td:nth-child(6) {
+  width: 10%;
+}
+
+.vds-zone-record-changes-table thead th:nth-child(7),
+.vds-zone-record-changes-table tbody td:nth-child(7) {
+  width: 25%;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/**
+ * UI Component: Zone change history table
+ * Responsive sizing with stacked date and time.
+ */
+.vds-zone-change-history-table {
+  table-layout: fixed;
+  min-width: 860px;
+}
+
+.vds-zone-change-history-table thead th:nth-child(1),
+.vds-zone-change-history-table tbody td:nth-child(1) {
+  width: 13%;
+}
+
+.vds-zone-change-history-table thead th:nth-child(2),
+.vds-zone-change-history-table tbody td:nth-child(2) {
+  width: 14%;
+}
+
+.vds-zone-change-history-table thead th:nth-child(3),
+.vds-zone-change-history-table tbody td:nth-child(3) {
+  width: 10%;
+}
+
+.vds-zone-change-history-table thead th:nth-child(4),
+.vds-zone-change-history-table tbody td:nth-child(4),
+.vds-zone-change-history-table thead th:nth-child(5),
+.vds-zone-change-history-table tbody td:nth-child(5) {
+  width: 11%;
+}
+
+.vds-zone-change-history-table thead th:nth-child(6),
+.vds-zone-change-history-table tbody td:nth-child(6) {
+  width: 14%;
+}
+
+.vds-zone-change-history-table thead th:nth-child(7),
+.vds-zone-change-history-table tbody td:nth-child(7) {
+  width: 14%;
+}
+
+.vds-zone-change-history-table thead th:nth-child(8),
+.vds-zone-change-history-table tbody td:nth-child(8) {
+  width: 13%;
+}
+
+.vds-zone-change-datetime {
+  display: inline-flex;
+  line-height: 1.25;
+}
+
+.vds-zone-change-datetime__date {
+  font-weight: 400;
+  color: #5f7592;
+}
+
+.vds-zone-change-datetime__time {
+  color: #5f7592;
+}
+
+[data-vds-theme="dark"] .vds-zone-change-datetime__date {
+  color: #8eabd2;
+}
+
+[data-vds-theme="dark"] .vds-zone-change-datetime__time {
+  color: #8eabd2;
+}
+
+/**
+ * Theme: Dark mode zone detail
+ */
+[data-vds-theme="dark"] .vds-zone-meta-item {
+  background: #1a1a1a;
+  border-color: rgb(255 255 255 / 12%);
+}
+
+[data-vds-theme="dark"] .vds-zone-meta-value {
+  color: #c8d8f0;
+}
+
+[data-vds-theme="dark"] .vds-zone-meta-mono {
+  color: #5b87b8;
+}
+
+[data-vds-theme="dark"] .vds-zone-meta-icon--blue {
+  background: rgb(30 95 168 / 20%);
+  color: #7fb3f5;
+}
+
+[data-vds-theme="dark"] .vds-zone-meta-icon--teal {
+  background: rgb(13 148 136 / 20%);
+  color: #5eead4;
+}
+
+[data-vds-theme="dark"] .vds-zone-meta-icon--purple {
+  background: rgb(124 58 237 / 20%);
+  color: #c4b5fd;
+}
+
+[data-vds-theme="dark"] .vds-zone-meta-icon--amber {
+  background: rgb(217 119 6 / 20%);
+  color: #fbbf24;
+}
+
+[data-vds-theme="dark"] .vds-zone-meta-icon--gray {
+  background: rgb(100 116 139 / 15%);
+  color: #94a3b8;
+}
+
+[data-vds-theme="dark"] .vds-record-type-badge {
+  background: rgb(30 64 175 / 25%);
+  color: #93c5fd;
+  border-color: rgb(30 64 175 / 40%);
+}
+
+[data-vds-theme="dark"] .vds-recent-changes-panel {
+  border-color: rgb(255 255 255 / 12%);
+  background: #1a1a1a;
+}
+
+[data-vds-theme="dark"] .vds-recent-changes-panel__header {
+  background: #1a1a1a;
+  border-color: rgb(255 255 255 / 12%);
+  color: #7fb3f5;
+}
+
+/**
+ * UI Component: Panel collapse toggle button
+ */
+.vds-panel-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid rgb(91 143 232 / 35%);
+  background: rgb(91 143 232 / 7%);
+  color: #3a6bc4;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    transform 0.15s;
+  flex-shrink: 0;
+  line-height: 1;
+  padding: 0;
+}
+
+.vds-panel-toggle-btn:hover {
+  background: rgb(91 143 232 / 18%);
+  border-color: #5b8fe8;
+  color: #1e4a8f;
+  transform: scale(1.08);
+}
+
+[data-vds-theme="dark"] .vds-panel-toggle-btn {
+  border-color: rgb(255 255 255 / 30%);
+  background: rgb(255 255 255 / 8%);
+  color: #7fb3f5;
+}
+
+[data-vds-theme="dark"] .vds-panel-toggle-btn:hover {
+  background: rgb(255 255 255 / 18%);
+  border-color: #7fb3f5;
+  color: #a8cfff;
+}
+
+/**
+ * UI Component: Fancy record count badge
+ */
+.vds-record-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px 4px 10px;
+  border-radius: 20px;
+  background: #1e3a5f;
+  color: #dce8fc;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 1px 6px rgb(30 58 95 / 30%);
+  border: 1px solid rgb(91 143 232 / 20%);
+}
+
+.vds-record-count-badge__icon {
+  font-size: 0.72rem;
+  opacity: 0.8;
+}
+
+.vds-record-count-badge__num {
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+}
+
+.vds-record-count-badge__label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.75;
+}
+
+[data-vds-theme="dark"] .vds-record-count-badge {
+  background: rgb(30 58 95 / 85%);
+  box-shadow: 0 1px 6px rgb(0 0 0 / 40%);
+}
+
+/**
+ * UI Component: Inline copy-ID button in table cells
+ */
+.vds-copy-id-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #8aaad4;
+  font-size: 0.68rem;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.55;
+  transition:
+    opacity 0.12s,
+    color 0.12s,
+    background 0.12s,
+    border-color 0.12s;
+  flex-shrink: 0;
+}
+
+.vds-copy-id-btn:hover {
+  opacity: 1;
+  color: #3a6bc4;
+  background: rgb(91 143 232 / 10%);
+  border-color: rgb(91 143 232 / 30%);
+}
+
+[data-vds-theme="dark"] .vds-copy-id-btn {
+  color: #6a9ecf;
+}
+
+[data-vds-theme="dark"] .vds-copy-id-btn:hover {
+  color: #7fb3f5;
+  background: rgb(255 255 255 / 12%);
+  border-color: rgb(255 255 255 / 30%);
+}
+
+/**
+ * UI Component: ACL record-type toggle chip
+ */
+.vds-acl-type-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  border: 1.5px solid #cbd5e1;
+  background: #f1f5f9;
+  color: #475569;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.vds-acl-type-chip:hover {
+  border-color: #3a6bc4;
+  color: #3a6bc4;
+  background: #eff6ff;
+}
+
+.vds-acl-type-chip--active {
+  background: #1e3a5f;
+  border-color: #2a4d7f;
+  color: #e2eaf8;
+  box-shadow: 0 1px 4px rgb(30 58 95 / 25%);
+}
+
+.vds-acl-type-chip--active:hover {
+  background: #1a3255;
+}
+
+[data-vds-theme="dark"] .vds-acl-type-chip {
+  background: rgb(255 255 255 / 6%);
+  border-color: rgb(255 255 255 / 20%);
+  color: #94afd1;
+}
+
+/**
+ * UI Component: ACL rule inline delete button
+ */
+.vds-acl-delete-btn {
+  font-size: 0.78rem;
+  color: #c0392b;
+  border: 1px solid rgb(192 57 43 / 25%);
+  border-radius: 6px;
+  background: transparent;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.vds-acl-delete-btn:hover {
+  background: rgb(220 53 69 / 8%);
+  border-color: #c0392b;
+  color: #922b21;
+}
+
+[data-vds-theme="dark"] .vds-acl-delete-btn {
+  color: #f1948a;
+  border-color: rgb(241 148 138 / 30%);
+}
+
+[data-vds-theme="dark"] .vds-acl-delete-btn:hover {
+  background: rgb(220 53 69 / 14%);
+}
+
+[data-vds-theme="dark"] .vds-acl-type-chip:hover {
+  border-color: #7fb3f5;
+  color: #a8cfff;
+  background: rgb(255 255 255 / 10%);
+}
+
+[data-vds-theme="dark"] .vds-acl-type-chip--active {
+  background: rgb(30 58 95 / 85%);
+  border-color: #4a7fcf;
+  color: #c5d9f5;
+}
+
+/**
+ * UI Component: Zone info card (read-only tiles for non-admin view)
+ */
+.vds-zone-info-card {
+  background: #fff;
+  border: 1px solid rgb(91 143 232 / 18%);
+  border-radius: 12px;
+  padding: 16px 18px 14px;
+  transition:
+    box-shadow 0.15s,
+    border-color 0.15s;
+  height: 100%;
+}
+
+.vds-zone-info-card:hover {
+  box-shadow: 0 3px 14px rgb(30 58 95 / 10%);
+  border-color: rgb(91 143 232 / 35%);
+}
+
+.vds-zone-info-card__icon {
+  font-size: 1rem;
+  color: #5b8fe8;
+  margin-bottom: 8px;
+  opacity: 0.75;
+}
+
+.vds-zone-info-card__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #8aaad4;
+  margin-bottom: 5px;
+}
+
+.vds-zone-info-card__value {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1e2d42;
+  word-break: break-all;
+}
+
+.vds-zone-info-card__value--clickable {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+  padding: 2px 4px;
+  transition: background 0.12s;
+}
+
+.vds-zone-info-card__value--clickable:hover {
+  background: #eff6ff;
+}
+
+[data-vds-theme="dark"] .vds-zone-info-card {
+  background: rgb(255 255 255 / 4%);
+  border-color: rgb(255 255 255 / 15%);
+}
+
+[data-vds-theme="dark"] .vds-zone-info-card:hover {
+  box-shadow: 0 3px 14px rgb(0 0 0 / 30%);
+  border-color: rgb(255 255 255 / 30%);
+}
+
+[data-vds-theme="dark"] .vds-zone-info-card__label {
+  color: #6a9ecf;
+}
+
+[data-vds-theme="dark"] .vds-zone-info-card__value {
+  color: #c5d9f5;
+}
+
+/**
+ * UI Component: Generic semantic status badges, shared by the records and DNS changes tables.
+ * Same pill shape as the zone status badge.
+ */
+.vds-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
 }
