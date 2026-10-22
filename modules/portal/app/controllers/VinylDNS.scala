@@ -186,7 +186,7 @@ class VinylDNS @Inject() (
   def login(): Action[AnyContent] = Action { implicit request =>
     val userForm = Form(
       tuple(
-        "username" -> text,
+        "username" -> nonEmptyText,
         "password" -> nonEmptyText
       )
     )
