@@ -9,6 +9,7 @@ WORKDIR /build
 RUN if [ -f artifacts/vinyldns-api.jar ]; then cp artifacts/vinyldns-api.jar /opt/vinyldns; fi && \
     if [ ! -f /opt/vinyldns/vinyldns-api.jar ]; then \
       env SBT_OPTS="-Xmx2G -Xms512M -Xss2M -XX:MaxMetaspaceSize=2G" \
+      VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING=true \
       sbt -Dbuild.scalafmtOnCompile=false -Dbuild.lintOnCompile=false ";project api;coverageOff;assembly" \
       && cp artifacts/vinyldns-api.jar /opt/vinyldns/; \
     fi
@@ -29,5 +30,8 @@ RUN mkdir -p /localstack && touch /localstack/localstack.log /opt/vinyldns/vinyl
 
 # Copy over the functional tests
 COPY  modules/api/src/test/functional /functional_test
+
+# Set environment variable to allow NoOpCrypto for testing
+ENV VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING=true
 
 ENTRYPOINT ["/bin/bash", "-c", "/initialize.sh bind localstack vinyldns-api mysql && { /functional_test/run.sh \"$@\" || { cat /opt/vinyldns/vinyldns.log && exit 1; }; }"]

@@ -29,11 +29,13 @@ class TestCrypto(config: Config) extends CryptoAlgebra {
   def encrypt(value: String): String = value
   def decrypt(value: String): String = value
 }
+
 class CryptoAlgebraSpec extends AnyWordSpec with Matchers {
 
   private val conf =
     """
       | type = "vinyldns.core.crypto.NoOpCrypto"
+      | allow-insecure-noop = true
       | test-me = "hello"
     """.stripMargin
 
@@ -61,6 +63,41 @@ class CryptoAlgebraSpec extends AnyWordSpec with Matchers {
         .load(badConfig)
         .unsafeRunSync()
       thrown.getCause shouldBe a[ConfigException]
+    }
+
+    "SECURITY: reject NoOpCrypto when allow-insecure-noop is not set" in {
+      val noOpCryptoConf = ConfigFactory.parseString("""
+        type = "vinyldns.core.crypto.NoOpCrypto"
+      """)
+
+      an[IllegalArgumentException] should be thrownBy CryptoAlgebra.load(noOpCryptoConf).unsafeRunSync()
+    }
+
+    "SECURITY: reject NoOpCrypto when allow-insecure-noop is false" in {
+      val noOpCryptoConf = ConfigFactory.parseString("""
+        type = "vinyldns.core.crypto.NoOpCrypto"
+        allow-insecure-noop = false
+      """)
+
+      an[IllegalArgumentException] should be thrownBy CryptoAlgebra.load(noOpCryptoConf).unsafeRunSync()
+    }
+
+    "SECURITY: allow NoOpCrypto when allow-insecure-noop is true" in {
+      val noOpCryptoConf = ConfigFactory.parseString("""
+        type = "vinyldns.core.crypto.NoOpCrypto"
+        allow-insecure-noop = true
+      """)
+
+      CryptoAlgebra.load(noOpCryptoConf).unsafeRunSync() shouldBe a[NoOpCrypto]
+    }
+
+    "JavaCrypto: reject config without secret key" in {
+      val missingSecretConf = ConfigFactory.parseString("""
+        type = "vinyldns.core.crypto.JavaCrypto"
+      """)
+
+      // Should fail because secret is required
+      an[Exception] should be thrownBy CryptoAlgebra.load(missingSecretConf).unsafeRunSync()
     }
   }
 }

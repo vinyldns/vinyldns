@@ -38,6 +38,7 @@ services:
         DOCKER_FILE_PATH: "build/docker/api"
     environment:
       WAIT_FOR_LOCALSTACK: "true"
+      VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING: "true"
     volumes:
       - ../build/docker/api/application.conf:/opt/vinyldns/conf/application.conf
       - ../build/docker/api/log4j2.xml:/opt/vinyldns/conf/log4j2.xml
@@ -59,6 +60,8 @@ services:
       args:
         DOCKER_FILE_PATH: "build/docker/portal"
         VINYLDNS_VERSION: "${VINYLDNS_IMAGE_VERSION}"
+    environment:
+      VINYLDNS_ALLOW_NOOP_CRYPTO_FOR_TESTING: "true"
     env_file:
       - "${ENV_FILE:-.env}"
     ports:
