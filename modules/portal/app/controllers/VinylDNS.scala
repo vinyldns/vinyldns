@@ -318,7 +318,11 @@ class VinylDNS @Inject() (
     }
   }
 
-  private def processCsv(user: User): Result = {
+  private def sanitizeFileName(fileName: String): String =
+    fileName.replaceAll("[^A-Za-z0-9._-]", "")
+
+  private def processCsv(user: User, fileName: String): Result = {
+    val sanitizedFileName = sanitizeFileName(fileName)
     logger.info(
       s"Sending credentials for user=${user.userName} with key accessKey=${user.accessKey}"
     )
@@ -335,14 +339,14 @@ class VinylDNS @Inject() (
         cacheHeaders: _*
       )
       .withHeaders(
-        "Content-Disposition" -> "attachment; filename=\"credentials.csv\""
+        "Content-Disposition" -> s"attachment; filename=\"$sanitizedFileName\""
       )
   }
 
   def serveCredsFile(fileName: String): Action[AnyContent] = frontendAction.async {
     implicit request =>
       logger.info(s"Serving credentials for file $fileName")
-      Future(processCsv(request.user))
+      Future(processCsv(request.user, fileName))
   }
 
   def regenerateCreds(): Action[AnyContent] = userAction.async { implicit request =>
