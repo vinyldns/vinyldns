@@ -136,3 +136,9 @@ singleBatchChangeIds |  array of SingleBatchChange ID objects  | If the recordse
   "singleBatchChangeIds": []
 }
 ```
+
+#### EXAMPLE ERROR RESPONSE
+
+```text
+RecordSet with id dd9c1120-0594-4e61-982e-8ddcbc8b2d21, name already-exists and type A currently has a pending change
+```

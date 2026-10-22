@@ -35,20 +35,8 @@ def test_create_zone_with_tsigs(shared_zone_test_context, key_name, key_secret, 
         }
     }
 
-    try:
-        zone_change = client.create_zone(zone, status=202)
-        zone = zone_change["zone"]
-        client.wait_until_zone_active(zone_change["zone"]["id"])
-
-        # Check that it was internally stored correctly using GET
-        zone_get = client.get_zone(zone["id"])["zone"]
-        assert_that(zone_get["name"], is_(zone_name))
-        assert_that("connection" in zone_get)
-        assert_that(zone_get["connection"]["keyName"], is_(key_name))
-        assert_that(zone_get["connection"]["algorithm"], is_(key_alg))
-    finally:
-        if "id" in zone:
-            client.abandon_zones([zone["id"]], status=202)
+    result = client.create_zone(zone, status=400)
+    assert_that(result, contains_string("Custom zone connections are not supported"))
 
 
 @pytest.mark.serial
@@ -145,35 +133,21 @@ def test_create_zone_without_transfer_connection_leaves_it_empty(shared_zone_tes
     """
     client = shared_zone_test_context.ok_vinyldns_client
     result_zone = None
-    try:
-        zone_name = f"one-time{shared_zone_test_context.partition_id}"
+    zone_name = f"one-time{shared_zone_test_context.partition_id}"
 
-        zone = {
-            "name": zone_name,
-            "email": "test@test.com",
-            "adminGroupId": shared_zone_test_context.ok_group["id"],
-            "connection": {
-                "name": "vinyldns.",
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            }
+    zone = {
+        "name": zone_name,
+        "email": "test@test.com",
+        "adminGroupId": shared_zone_test_context.ok_group["id"],
+        "connection": {
+            "name": "vinyldns.",
+            "keyName": VinylDNSTestContext.dns_key_name,
+            "key": VinylDNSTestContext.dns_key,
+            "primaryServer": VinylDNSTestContext.name_server_ip
         }
-        result = client.create_zone(zone, status=202)
-        result_zone = result["zone"]
-        client.wait_until_zone_active(result["zone"]["id"])
-
-        get_result = client.get_zone(result_zone["id"])
-
-        get_zone = get_result["zone"]
-        assert_that(get_zone["name"], is_(zone["name"] + "."))
-        assert_that(get_zone["email"], is_(zone["email"]))
-        assert_that(get_zone["adminGroupId"], is_(zone["adminGroupId"]))
-
-        assert_that(get_zone, is_not(has_key("transferConnection")))
-    finally:
-        if result_zone:
-            client.abandon_zones([result_zone["id"]], status=202)
+    }
+    result = client.create_zone(zone, status=400)
+    assert_that(result, contains_string("Custom zone connections are not supported"))
 
 
 def test_create_zone_fails_no_authorization(shared_zone_test_context):
@@ -287,6 +261,7 @@ def test_create_zone_with_connection_failure(shared_zone_test_context):
     zone = {
         "name": zone_name,
         "email": "test@test.com",
+        "adminGroupId": shared_zone_test_context.ok_group["id"],
         "connection": {
             "name": zone_name,
             "keyName": zone_name,
@@ -294,7 +269,8 @@ def test_create_zone_with_connection_failure(shared_zone_test_context):
             "primaryServer": VinylDNSTestContext.name_server_ip
         }
     }
-    client.create_zone(zone, status=400)
+    result = client.create_zone(zone, status=400)
+    assert_that(result, contains_string("Custom zone connections are not supported"))
 
 
 def test_create_zone_returns_409_if_already_exists(shared_zone_test_context):
@@ -302,8 +278,6 @@ def test_create_zone_returns_409_if_already_exists(shared_zone_test_context):
     Test creating a zone returns a 409 Conflict if the zone name already exists
     """
     create_conflict = dict(shared_zone_test_context.ok_zone)
-    create_conflict["connection"]["key"] = VinylDNSTestContext.dns_key  # necessary because we encrypt the key
-    create_conflict["transferConnection"]["key"] = VinylDNSTestContext.dns_key
 
     shared_zone_test_context.ok_vinyldns_client.create_zone(create_conflict, status=409)
 
@@ -378,39 +352,8 @@ def test_zone_connection_only(shared_zone_test_context):
         }
     }
 
-    expected_connection = {
-        "name": "vinyldns.",
-        "keyName": VinylDNSTestContext.dns_key_name,
-        "key": VinylDNSTestContext.dns_key,
-        "primaryServer": VinylDNSTestContext.name_server_ip
-    }
-
-    try:
-        zone_change = client.create_zone(zone, status=202)
-        zone = zone_change["zone"]
-        client.wait_until_zone_active(zone_change["zone"]["id"])
-
-        # Check response from create
-        assert_that(zone["name"], is_(zone_name + "."))
-        assert_that(zone["connection"]["name"], is_(expected_connection["name"]))
-        assert_that(zone["connection"]["keyName"], is_(expected_connection["keyName"]))
-        assert_that(zone["connection"]["primaryServer"], is_(expected_connection["primaryServer"]))
-        assert_that(zone["transferConnection"]["name"], is_(expected_connection["name"]))
-        assert_that(zone["transferConnection"]["keyName"], is_(expected_connection["keyName"]))
-        assert_that(zone["transferConnection"]["primaryServer"], is_(expected_connection["primaryServer"]))
-
-        # Check that it was internally stored correctly using GET
-        zone_get = client.get_zone(zone["id"])["zone"]
-        assert_that(zone_get["name"], is_(zone_name + "."))
-        assert_that(zone["connection"]["name"], is_(expected_connection["name"]))
-        assert_that(zone["connection"]["keyName"], is_(expected_connection["keyName"]))
-        assert_that(zone["connection"]["primaryServer"], is_(expected_connection["primaryServer"]))
-        assert_that(zone["transferConnection"]["name"], is_(expected_connection["name"]))
-        assert_that(zone["transferConnection"]["keyName"], is_(expected_connection["keyName"]))
-        assert_that(zone["transferConnection"]["primaryServer"], is_(expected_connection["primaryServer"]))
-    finally:
-        if "id" in zone:
-            client.abandon_zones([zone["id"]], status=202)
+    result = client.create_zone(zone, status=400)
+    assert_that(result, contains_string("Custom zone connections are not supported"))
 
 
 @pytest.mark.serial
@@ -422,6 +365,7 @@ def test_zone_bad_connection(shared_zone_test_context):
     zone = {
         "name": zone_name,
         "email": "test@test.com",
+        "adminGroupId": shared_zone_test_context.ok_group["id"],
         "connection": {
             "name": zone_name,
             "keyName": VinylDNSTestContext.dns_key_name,
@@ -430,7 +374,8 @@ def test_zone_bad_connection(shared_zone_test_context):
         }
     }
 
-    client.create_zone(zone, status=400)
+    result = client.create_zone(zone, status=400)
+    assert_that(result, contains_string("Custom zone connections are not supported"))
 
 
 @pytest.mark.serial
@@ -442,6 +387,7 @@ def test_zone_bad_transfer_connection(shared_zone_test_context):
     zone = {
         "name": zone_name,
         "email": "test@test.com",
+        "adminGroupId": shared_zone_test_context.ok_group["id"],
         "connection": {
             "name": zone_name,
             "keyName": VinylDNSTestContext.dns_key_name,
@@ -456,7 +402,8 @@ def test_zone_bad_transfer_connection(shared_zone_test_context):
         }
     }
 
-    client.create_zone(zone, status=400)
+    result = client.create_zone(zone, status=400)
+    assert_that(result, contains_string("Custom zone connections are not supported"))
 
 
 @pytest.mark.serial
@@ -483,39 +430,8 @@ def test_zone_transfer_connection(shared_zone_test_context):
         }
     }
 
-    expected_connection = {
-        "name": zone_name,
-        "keyName": VinylDNSTestContext.dns_key_name,
-        "key": VinylDNSTestContext.dns_key,
-        "primaryServer": VinylDNSTestContext.name_server_ip
-    }
-
-    try:
-        zone_change = client.create_zone(zone, status=202)
-        zone = zone_change["zone"]
-        client.wait_until_zone_active(zone_change["zone"]["id"])
-
-        # Check response from create
-        assert_that(zone["name"], is_(zone_name + "."))
-        assert_that(zone["connection"]["name"], is_(expected_connection["name"]))
-        assert_that(zone["connection"]["keyName"], is_(expected_connection["keyName"]))
-        assert_that(zone["connection"]["primaryServer"], is_(expected_connection["primaryServer"]))
-        assert_that(zone["transferConnection"]["name"], is_(expected_connection["name"]))
-        assert_that(zone["transferConnection"]["keyName"], is_(expected_connection["keyName"]))
-        assert_that(zone["transferConnection"]["primaryServer"], is_(expected_connection["primaryServer"]))
-
-        # Check that it was internally stored correctly using GET
-        zone_get = client.get_zone(zone["id"])["zone"]
-        assert_that(zone_get["name"], is_(zone_name + "."))
-        assert_that(zone["connection"]["name"], is_(expected_connection["name"]))
-        assert_that(zone["connection"]["keyName"], is_(expected_connection["keyName"]))
-        assert_that(zone["connection"]["primaryServer"], is_(expected_connection["primaryServer"]))
-        assert_that(zone["transferConnection"]["name"], is_(expected_connection["name"]))
-        assert_that(zone["transferConnection"]["keyName"], is_(expected_connection["keyName"]))
-        assert_that(zone["transferConnection"]["primaryServer"], is_(expected_connection["primaryServer"]))
-    finally:
-        if "id" in zone:
-            client.abandon_zones([zone["id"]], status=202)
+    result = client.create_zone(zone, status=400)
+    assert_that(result, contains_string("Custom zone connections are not supported"))
 
 
 @pytest.mark.serial
@@ -527,18 +443,7 @@ def test_user_cannot_create_zone_with_nonmember_admin_group(shared_zone_test_con
         "name": f"one-time{shared_zone_test_context.partition_id}.",
         "email": "test@test.com",
         "adminGroupId": shared_zone_test_context.dummy_group["id"],
-        "connection": {
-            "name": "vinyldns.",
-            "keyName": VinylDNSTestContext.dns_key_name,
-            "key": VinylDNSTestContext.dns_key,
-            "primaryServer": VinylDNSTestContext.name_server_ip
-        },
-        "transferConnection": {
-            "name": "vinyldns.",
-            "keyName": VinylDNSTestContext.dns_key_name,
-            "key": VinylDNSTestContext.dns_key,
-            "primaryServer": VinylDNSTestContext.name_server_ip
-        }
+        "backendId": "func-test-backend"
     }
 
     shared_zone_test_context.ok_vinyldns_client.create_zone(zone, status=403)
@@ -557,19 +462,11 @@ def test_user_cannot_create_zone_with_failed_validations(shared_zone_test_contex
             "keyName": VinylDNSTestContext.dns_key_name,
             "key": VinylDNSTestContext.dns_key,
             "primaryServer": VinylDNSTestContext.name_server_ip
-        },
-        "transferConnection": {
-            "name": "vinyldns.",
-            "keyName": VinylDNSTestContext.dns_key_name,
-            "key": VinylDNSTestContext.dns_key,
-            "primaryServer": VinylDNSTestContext.name_server_ip
         }
     }
 
     result = shared_zone_test_context.ok_vinyldns_client.create_zone(zone, status=400)
-    assert_that(result["errors"], contains_inanyorder(
-        contains_string("not-approved.thing.com. is not an approved name server")
-    ))
+    assert_that(result, contains_string("Custom zone connections are not supported"))
 
 
 def test_normal_user_cannot_create_shared_zone(shared_zone_test_context):
