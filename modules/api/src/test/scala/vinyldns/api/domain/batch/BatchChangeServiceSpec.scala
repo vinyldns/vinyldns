@@ -2579,6 +2579,221 @@ class BatchChangeServiceSpec
     }
   }
 
+  "getBatchChangeCount" should {
+    def saveBatch(
+        ownerAuth: AuthPrincipal,
+        approvalStatus: BatchChangeApprovalStatus.BatchChangeApprovalStatus,
+        offsetMillis: Long = 0L,
+        userNameOverride: Option[String] = None
+    ): BatchChange = {
+      val bc = BatchChange(
+        ownerAuth.userId,
+        userNameOverride.getOrElse(ownerAuth.signedInUser.userName),
+        None,
+        Instant.ofEpochMilli(Instant.now.truncatedTo(ChronoUnit.MILLIS).toEpochMilli + offsetMillis),
+        List(),
+        approvalStatus = approvalStatus
+      )
+      batchChangeRepo.save(bc).unsafeRunSync()
+      bc
+    }
+
+    "return zero counts when the user has no batch changes" in {
+      val result = underTest.getBatchChangeCount(auth).value.unsafeRunSync().toOption.get
+
+      result.total shouldBe 0
+      result.complete shouldBe 0
+      result.failed shouldBe 0
+      result.partialFailure shouldBe 0
+      result.rejected shouldBe 0
+      result.cancelled shouldBe 0
+      result.pendingReview shouldBe 0
+      result.scheduled shouldBe 0
+      result.pendingProcessing shouldBe 0
+    }
+
+    "return counts grouped by status for the authenticated user's batch changes" in {
+      saveBatch(auth, BatchChangeApprovalStatus.AutoApproved)
+      saveBatch(auth, BatchChangeApprovalStatus.AutoApproved, offsetMillis = 1)
+      saveBatch(auth, BatchChangeApprovalStatus.PendingReview, offsetMillis = 2)
+      saveBatch(auth, BatchChangeApprovalStatus.ManuallyRejected, offsetMillis = 3)
+      saveBatch(auth, BatchChangeApprovalStatus.Cancelled, offsetMillis = 4)
+
+      val result = underTest.getBatchChangeCount(auth).value.unsafeRunSync().toOption.get
+
+      // AutoApproved with no changes derives to Complete
+      result.complete shouldBe 2
+      result.pendingReview shouldBe 1
+      result.rejected shouldBe 1
+      result.cancelled shouldBe 1
+      result.failed shouldBe 0
+      result.partialFailure shouldBe 0
+      result.scheduled shouldBe 0
+      result.pendingProcessing shouldBe 0
+      result.total shouldBe 5
+    }
+
+    "exclude other users' batch changes when ignoreAccess is false" in {
+      saveBatch(auth, BatchChangeApprovalStatus.AutoApproved)
+      saveBatch(notAuth, BatchChangeApprovalStatus.AutoApproved, offsetMillis = 1)
+      saveBatch(notAuth, BatchChangeApprovalStatus.PendingReview, offsetMillis = 2)
+
+      val result = underTest.getBatchChangeCount(auth).value.unsafeRunSync().toOption.get
+
+      result.total shouldBe 1
+      result.complete shouldBe 1
+    }
+
+    "return counts for all users when ignoreAccess is true and the requester is a system admin" in {
+      saveBatch(auth, BatchChangeApprovalStatus.AutoApproved)
+      saveBatch(notAuth, BatchChangeApprovalStatus.AutoApproved, offsetMillis = 1)
+      saveBatch(notAuth, BatchChangeApprovalStatus.PendingReview, offsetMillis = 2)
+
+      val result =
+        underTest
+          .getBatchChangeCount(superUserAuth, ignoreAccess = true)
+          .value
+          .unsafeRunSync()
+          .toOption
+          .get
+
+      result.total shouldBe 3
+      result.complete shouldBe 2
+      result.pendingReview shouldBe 1
+    }
+
+    "scope counts to the requester's own batches when ignoreAccess is true but requester is not a system admin" in {
+      saveBatch(auth, BatchChangeApprovalStatus.AutoApproved)
+      saveBatch(notAuth, BatchChangeApprovalStatus.AutoApproved, offsetMillis = 1)
+
+      val result =
+        underTest
+          .getBatchChangeCount(auth, ignoreAccess = true)
+          .value
+          .unsafeRunSync()
+          .toOption
+          .get
+
+      result.total shouldBe 1
+      result.complete shouldBe 1
+    }
+
+    "filter counts by approvalStatus when provided" in {
+      saveBatch(auth, BatchChangeApprovalStatus.AutoApproved)
+      saveBatch(auth, BatchChangeApprovalStatus.PendingReview, offsetMillis = 1)
+      saveBatch(auth, BatchChangeApprovalStatus.PendingReview, offsetMillis = 2)
+
+      val result = underTest
+        .getBatchChangeCount(
+          auth,
+          approvalStatus = Some(BatchChangeApprovalStatus.PendingReview)
+        )
+        .value
+        .unsafeRunSync()
+        .toOption
+        .get
+
+      result.total shouldBe 2
+      result.pendingReview shouldBe 2
+      result.complete shouldBe 0
+    }
+
+    "filter counts by userName when provided" in {
+      saveBatch(auth, BatchChangeApprovalStatus.AutoApproved)
+      saveBatch(
+        auth,
+        BatchChangeApprovalStatus.AutoApproved,
+        offsetMillis = 1,
+        userNameOverride = Some("anotherUser")
+      )
+
+      val result = underTest
+        .getBatchChangeCount(superUserAuth, userName = Some("anotherUser"), ignoreAccess = true)
+        .value
+        .unsafeRunSync()
+        .toOption
+        .get
+
+      result.total shouldBe 1
+      result.complete shouldBe 1
+    }
+
+    "normalize an empty-string userName to no filter" in {
+      saveBatch(auth, BatchChangeApprovalStatus.AutoApproved)
+      saveBatch(auth, BatchChangeApprovalStatus.PendingReview, offsetMillis = 1)
+
+      val result = underTest
+        .getBatchChangeCount(auth, userName = Some(""))
+        .value
+        .unsafeRunSync()
+        .toOption
+        .get
+
+      result.total shouldBe 2
+    }
+
+    "normalize empty-string date range bounds to no filter" in {
+      saveBatch(auth, BatchChangeApprovalStatus.AutoApproved)
+      saveBatch(auth, BatchChangeApprovalStatus.AutoApproved, offsetMillis = 1)
+
+      val result = underTest
+        .getBatchChangeCount(
+          auth,
+          dateTimeStartRange = Some(""),
+          dateTimeEndRange = Some("")
+        )
+        .value
+        .unsafeRunSync()
+        .toOption
+        .get
+
+      result.total shouldBe 2
+    }
+
+    "filter counts by an inclusive date range when provided" in {
+      val now = Instant.now.truncatedTo(ChronoUnit.MILLIS)
+      val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+      // saved batch is in the future; range bounded to a past window should exclude it
+      saveBatch(auth, BatchChangeApprovalStatus.AutoApproved, offsetMillis = 60000L)
+
+      val past =
+        LocalDateTime.ofInstant(now.minusSeconds(120), ZoneId.of("UTC")).format(formatter)
+      val pastEnd =
+        LocalDateTime.ofInstant(now.minusSeconds(60), ZoneId.of("UTC")).format(formatter)
+
+      val excluded = underTest
+        .getBatchChangeCount(
+          auth,
+          dateTimeStartRange = Some(past),
+          dateTimeEndRange = Some(pastEnd)
+        )
+        .value
+        .unsafeRunSync()
+        .toOption
+        .get
+
+      excluded.total shouldBe 0
+
+      // open-ended range encompassing the saved batch should include it
+      val futureEnd =
+        LocalDateTime.ofInstant(now.plusSeconds(600), ZoneId.of("UTC")).format(formatter)
+
+      val included = underTest
+        .getBatchChangeCount(
+          auth,
+          dateTimeStartRange = Some(past),
+          dateTimeEndRange = Some(futureEnd)
+        )
+        .value
+        .unsafeRunSync()
+        .toOption
+        .get
+
+      included.total shouldBe 1
+      included.complete shouldBe 1
+    }
+  }
+
   "getOwnerGroup" should {
     "return None if owner group ID is None" in {
       underTest.getOwnerGroup(None).value.unsafeRunSync().toOption.get shouldBe None

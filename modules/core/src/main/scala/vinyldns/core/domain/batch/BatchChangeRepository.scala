@@ -39,6 +39,14 @@ trait BatchChangeRepository extends Repository {
       approvalStatus: Option[BatchChangeApprovalStatus] = None
   ): IO[BatchChangeSummaryList]
 
+  def getBatchChangeCount(
+      userId: Option[String],
+      userName: Option[String] = None,
+      dateTimeStartRange: Option[String] = None,
+      dateTimeEndRange: Option[String] = None,
+      approvalStatus: Option[BatchChangeApprovalStatus] = None
+  ): IO[BatchChangeCount]
+
   // updateSingleChanges updates status, recordSetId, recordChangeId and systemMessage (in data).
   def updateSingleChanges(singleChanges: List[SingleChange]): IO[Option[BatchChange]]
 

@@ -97,3 +97,15 @@ case class BatchChangeSummaryList(
     dateTimeStartRange: Option[String] = None,
     dateTimeEndRange: Option[String] = None,
 )
+
+case class BatchChangeCount(
+    total: Int = 0,
+    complete: Int = 0,
+    failed: Int = 0,
+    partialFailure: Int = 0,
+    rejected: Int = 0,
+    cancelled: Int = 0,
+    pendingReview: Int = 0,
+    scheduled: Int = 0,
+    pendingProcessing: Int = 0
+)
