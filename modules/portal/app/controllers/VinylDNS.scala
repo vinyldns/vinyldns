@@ -250,6 +250,17 @@ class VinylDNS @Inject() (
     })
   }
 
+  def searchUsers(pattern: String): Action[AnyContent] = userAction.async { implicit request =>
+    val params = new java.util.HashMap[String, java.util.List[String]]()
+    params.put("pattern", java.util.Arrays.asList(pattern))
+    val vinyldnsRequest = VinylDNSRequest("GET", s"$vinyldnsServiceBackend", "users/search", parameters = params)
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      logger.info(s"user search [$pattern] retrieved with status [${response.status}]")
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+  }
+
   def deleteGroup(id: String): Action[AnyContent] = userAction.async { implicit request =>
     val vinyldnsRequest = VinylDNSRequest("DELETE", s"$vinyldnsServiceBackend", s"groups/$id")
     executeRequest(vinyldnsRequest, request.user).map(response => {
@@ -394,15 +405,25 @@ class VinylDNS @Inject() (
   def getUserDataByUsername(username: String): Action[AnyContent] = userAction.async {
     implicit request =>
       {
-        for {
-          userDetails <- IO.fromEither(authenticator.lookup(username))
-          existingAccount <- userAccountAccessor.get(userDetails.username)
-          userAccount <- existingAccount match {
-            case Some(user) => IO(VinylDNS.UserInfo.fromUser(user))
-            case None =>
-              createNewUser(userDetails).map(VinylDNS.UserInfo.fromUser)
-          }
-        } yield userAccount
+        authenticator.lookup(username) match {
+          case Right(userDetails) =>
+            for {
+              existingAccount <- userAccountAccessor.get(userDetails.username)
+              userAccount <- existingAccount match {
+                case Some(user) => IO(VinylDNS.UserInfo.fromUser(user))
+                case None =>
+                  createNewUser(userDetails).map(VinylDNS.UserInfo.fromUser)
+              }
+            } yield userAccount
+          case Left(LdapServiceException("LDAP not configured")) =>
+            // NoOpAuthenticator (OIDC-only mode) — fall back to database lookup
+            userAccountAccessor.get(username).flatMap {
+              case Some(user) => IO(VinylDNS.UserInfo.fromUser(user))
+              case None => IO.raiseError(UserDoesNotExistException(username))
+            }
+          case Left(err) =>
+            IO.raiseError(err)
+        }
       }.unsafeToFuture()
         .map(Json.toJson(_))
         .map(Ok(_).withHeaders(cacheHeaders: _*))
