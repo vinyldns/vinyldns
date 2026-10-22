@@ -350,7 +350,7 @@ class VinylDNS @Inject() (
         cacheHeaders: _*
       )
       .withHeaders(
-        "Content-Disposition" -> s"attachment; filename=\"$sanitizedFileName\""
+        "Content-Disposition" -> s"""attachment; filename="$sanitizedFileName""""
       )
   }
 
