@@ -234,3 +234,112 @@ def test_list_batch_change_summaries_with_pending_status(shared_zone_test_contex
         if pending_bc:
             rejecter = shared_zone_test_context.support_user_client
             rejecter.reject_batch_change(pending_bc["id"], status=200)
+
+
+def test_list_batch_change_summaries_with_is_my_group_access_returns_group_owned_changes(shared_zone_test_context):
+    """
+    Test that listing batch changes with isMyGroupAccess=True returns batch changes owned by the user's groups,
+    including changes submitted by other users as long as the ownerGroup belongs to the requesting user.
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    group = shared_zone_test_context.shared_record_group
+    shared_zone_name = shared_zone_test_context.shared_zone["name"]
+
+    ok_record_to_delete = set()
+    shared_record_to_delete = set()
+
+    try:
+        # Create a batch change from ok_user with the shared group as owner
+        ok_batch_input = {
+            "comments": "ok user batch owned by shared group",
+            "changes": [
+                get_change_A_AAAA_json(f"is-my-group-ok.{shared_zone_name}", address="1.2.3.4")
+            ],
+            "ownerGroupId": group["id"]
+        }
+        ok_batch = client.create_batch_change(ok_batch_input, status=202)
+        ok_completed = client.wait_until_batch_change_completed(ok_batch)
+        ok_record_to_delete = set([(c["zoneId"], c["recordSetId"]) for c in ok_completed["changes"]])
+
+        # Create a batch change from shared_user with the same shared group as owner
+        shared_batch_input = {
+            "comments": "shared user batch owned by shared group",
+            "changes": [
+                get_change_A_AAAA_json(f"is-my-group-shared.{shared_zone_name}", address="2.3.4.5")
+            ],
+            "ownerGroupId": group["id"]
+        }
+        shared_batch = shared_client.create_batch_change(shared_batch_input, status=202)
+        shared_completed = shared_client.wait_until_batch_change_completed(shared_batch)
+        shared_record_to_delete = set([(c["zoneId"], c["recordSetId"]) for c in shared_completed["changes"]])
+
+        # ok_user is a member of shared_record_group; listing with isMyGroupAccess=True should return
+        # batch changes owned by that group regardless of who submitted them
+        result = client.list_batch_change_summaries(is_my_group_access=True, status=200)
+
+        ids_in_result = [bc["id"] for bc in result["batchChanges"]]
+        assert_that(ok_completed["id"], is_in(ids_in_result))
+        assert_that(shared_completed["id"], is_in(ids_in_result))
+        assert_that(result["isMyGroupAccess"], is_(True))
+
+    finally:
+        for rs in ok_record_to_delete:
+            d = client.delete_recordset(rs[0], rs[1], status=202)
+            client.wait_until_recordset_change_status(d, "Complete")
+        for rs in shared_record_to_delete:
+            d = client.delete_recordset(rs[0], rs[1], status=202)
+            client.wait_until_recordset_change_status(d, "Complete")
+
+
+def test_list_batch_change_summaries_with_is_my_group_access_false_returns_only_own_changes(shared_zone_test_context):
+    """
+    Test that listing batch changes without isMyGroupAccess returns only the requesting user's own batch changes.
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    shared_client = shared_zone_test_context.shared_zone_vinyldns_client
+    group = shared_zone_test_context.shared_record_group
+    shared_zone_name = shared_zone_test_context.shared_zone["name"]
+
+    ok_record_to_delete = set()
+    shared_record_to_delete = set()
+
+    try:
+        # Create a batch change from ok_user
+        ok_batch_input = {
+            "comments": "ok user batch without group access flag",
+            "changes": [
+                get_change_A_AAAA_json(f"no-group-flag-ok.{shared_zone_name}", address="3.4.5.6")
+            ],
+            "ownerGroupId": group["id"]
+        }
+        ok_batch = client.create_batch_change(ok_batch_input, status=202)
+        ok_completed = client.wait_until_batch_change_completed(ok_batch)
+        ok_record_to_delete = set([(c["zoneId"], c["recordSetId"]) for c in ok_completed["changes"]])
+
+        # Create a batch change from shared_user with the same group
+        shared_batch_input = {
+            "comments": "shared user batch without group access flag",
+            "changes": [
+                get_change_A_AAAA_json(f"no-group-flag-shared.{shared_zone_name}", address="4.5.6.7")
+            ],
+            "ownerGroupId": group["id"]
+        }
+        shared_batch = shared_client.create_batch_change(shared_batch_input, status=202)
+        shared_completed = shared_client.wait_until_batch_change_completed(shared_batch)
+        shared_record_to_delete = set([(c["zoneId"], c["recordSetId"]) for c in shared_completed["changes"]])
+
+        # Without isMyGroupAccess, ok_user should only see their own batch changes
+        result = client.list_batch_change_summaries(status=200)
+
+        ids_in_result = [bc["id"] for bc in result["batchChanges"]]
+        assert_that(ok_completed["id"], is_in(ids_in_result))
+        assert_that(shared_completed["id"], not_(is_in(ids_in_result)))
+
+    finally:
+        for rs in ok_record_to_delete:
+            d = client.delete_recordset(rs[0], rs[1], status=202)
+            client.wait_until_recordset_change_status(d, "Complete")
+        for rs in shared_record_to_delete:
+            d = client.delete_recordset(rs[0], rs[1], status=202)
+            client.wait_until_recordset_change_status(d, "Complete")
