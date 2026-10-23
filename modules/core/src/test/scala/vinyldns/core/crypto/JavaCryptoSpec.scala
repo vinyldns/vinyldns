@@ -22,6 +22,8 @@ import com.typesafe.config._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import scala.util.{Success, Try}
+
 class JavaCryptoSpec extends AnyWordSpec with Matchers {
 
   val unencryptedString =
@@ -85,8 +87,8 @@ class JavaCryptoSpec extends AnyWordSpec with Matchers {
     "encrypt only the exact UTF-8 bytes of the plaintext" in {
       val plaintext = "exactBytes"
       val ciphertext = javaCrypto.encrypt(plaintext)
-      // Ciphertext embeds a 16-byte IV prefix; AES-CBC pads to block boundary.
-      // For 10 chars (10 bytes) the padded block is 16 bytes -> 32 bytes total (IV + ciphertext)
+      // The 16-byte IV is followed by one AES block: 10 plaintext bytes are PKCS5-padded to 16 bytes.
+      // Total length is 32 bytes (IV + ciphertext).
       val rawBytes = java.util.Base64.getDecoder.decode(ciphertext.stripPrefix("ENC:"))
       rawBytes.length shouldBe (16 + 16) // 16-byte IV + one 16-byte AES block
     }
@@ -120,6 +122,37 @@ class JavaCryptoSpec extends AnyWordSpec with Matchers {
       javaCrypto.decrypt(javaCrypto.encrypt(exactly32)) shouldBe exactly32
     }
 
+    "preserve trailing and leading whitespace in plaintext" in {
+      val values = Seq("trailing ", "trailing\t", "trailing\n", " leading", "\tboth\n ")
+      values.foreach { v =>
+        javaCrypto.decrypt(javaCrypto.encrypt(v)) shouldBe v
+      }
+    }
+
+    "strip trailing NUL padding from ciphertext" in {
+      // Simulates ciphertext that was encrypted over a buffer with trailing NUL bytes.
+      val plaintext = "paddedValue"
+      val iv = new Array[Byte](16)
+      new java.security.SecureRandom().nextBytes(iv)
+      val key = new javax.crypto.spec.SecretKeySpec(
+        javax.xml.bind.DatatypeConverter.parseHexBinary(
+          "8B06A7F3BC8A2497736F1916A123AA40E88217BE9264D8872597EF7A6E5DCE61"
+        ),
+        "AES"
+      )
+      val cipher = javax.crypto.Cipher.getInstance("AES/CBC/PKCS5Padding")
+      cipher.init(
+        javax.crypto.Cipher.ENCRYPT_MODE,
+        key,
+        new javax.crypto.spec.IvParameterSpec(iv)
+      )
+      val padded = (plaintext + "\u0000\u0000\u0000").getBytes(java.nio.charset.StandardCharsets.UTF_8)
+      val encrypted = cipher.doFinal(padded)
+      val encoded = "ENC:" + java.util.Base64.getEncoder.encodeToString(iv ++ encrypted)
+
+      javaCrypto.decrypt(encoded) shouldBe plaintext
+    }
+
     "always prefix ciphertext with ENC:" in {
       javaCrypto.encrypt("anything") should startWith("ENC:")
     }
@@ -140,13 +173,16 @@ class JavaCryptoSpec extends AnyWordSpec with Matchers {
     }
 
     "throw when decrypting a ciphertext that has invalid PKCS5 padding" in {
-      // 32 bytes of 0xFF: 16-byte IV + 16-byte block that will not decode to valid PKCS5 padding.
+      // Fixed 32-byte payload: a 16-byte IV followed by a block that fails PKCS5 padding validation.
       val fakeCiphertext =
         "ENC:" + java.util.Base64.getEncoder.encodeToString(Array.fill[Byte](32)(0xff.toByte))
       a[GeneralSecurityException] should be thrownBy javaCrypto.decrypt(fakeCiphertext)
     }
 
-    "throw when decrypting a valid ciphertext with the wrong key" in {
+    "not recover the plaintext when decrypting with the wrong key" in {
+      // With the wrong key, CBC decryption either fails padding validation or returns garbage bytes.
+      // Random bytes occasionally pass padding validation (about 0.4% of runs), so the test asserts that
+      // the plaintext is not recovered rather than expecting an exception.
       val enc = javaCrypto.encrypt(unencryptedString)
       val altConf = ConfigFactory.parseString(
         """
@@ -154,7 +190,7 @@ class JavaCryptoSpec extends AnyWordSpec with Matchers {
         """.stripMargin
       )
       val altCrypto = new JavaCrypto(altConf)
-      a[GeneralSecurityException] should be thrownBy altCrypto.decrypt(enc)
+      Try(altCrypto.decrypt(enc)) should not be Success(unencryptedString)
     }
   }
 }

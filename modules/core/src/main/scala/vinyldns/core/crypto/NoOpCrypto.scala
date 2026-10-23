@@ -29,12 +29,6 @@ import org.slf4j.LoggerFactory
   */
 class NoOpCrypto(val config: Config) extends CryptoAlgebra {
 
-  private val logger = LoggerFactory.getLogger(classOf[NoOpCrypto])
-  logger.warn(
-    "NoOpCrypto is active: secret values will be stored as plaintext. " +
-      "This configuration is not safe for production use."
-  )
-
   def this() {
     this(ConfigFactory.load())
   }

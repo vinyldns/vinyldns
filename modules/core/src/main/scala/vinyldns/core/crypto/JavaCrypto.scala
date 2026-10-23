@@ -113,9 +113,11 @@ class JavaCrypto(cryptoConfig: Config) extends CryptoAlgebra {
           .doFinal(cipherText.toArray)
 
       try {
-        // trim() removes trailing null bytes that may remain from ciphertext produced by older versions
-        // of this class (which over-allocated the plaintext byte array via ByteBuffer.array()).
-        new String(plainTextBytes, StandardCharsets.UTF_8).trim
+        // Ciphertext may contain trailing NUL padding from the earlier encoding, so strip only NUL characters.
+        // Whitespace is preserved because it can be part of the stored value.
+        new String(plainTextBytes, StandardCharsets.UTF_8).reverse
+          .dropWhile(_ == zeroChar)
+          .reverse
       } finally {
         // Clean up memory
         nullCharArray(actualString.toCharArray)
