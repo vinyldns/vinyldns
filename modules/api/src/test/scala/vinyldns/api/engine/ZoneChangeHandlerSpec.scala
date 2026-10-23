@@ -28,6 +28,7 @@ import vinyldns.core.TestZoneData.zoneChangePending
 import vinyldns.core.domain.record.{RecordSetCacheRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.ZoneRepository.DuplicateZoneError
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.Encrypted
 import vinyldns.api.engine.ZoneSyncHandler.executeWithinTransaction
 
 
@@ -45,6 +46,7 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
 
   "ZoneChangeHandler" should {
     "save the zone change and zone" in new Fixture {
+      doReturn(IO.pure(Some(change.zone))).when(mockZoneRepo).getZone(change.zone.id)
       doReturn(IO.pure(Right(change.zone))).when(mockZoneRepo).save(change.zone)
       doReturn(IO.pure(change)).when(mockChangeRepo).save(any[ZoneChange])
 
@@ -59,6 +61,7 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
   }
 
   "save the zone change as failed if the zone does not save" in new Fixture {
+    doReturn(IO.pure(Some(change.zone))).when(mockZoneRepo).getZone(change.zone.id)
     doReturn(IO.pure(Left(DuplicateZoneError("message")))).when(mockZoneRepo).save(change.zone)
     doReturn(IO.pure(change)).when(mockChangeRepo).save(any[ZoneChange])
 
@@ -75,7 +78,8 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
   "save a delete zone change as synced if recordset delete succeeds" in new Fixture {
     val deleteChange = change.copy(changeType = ZoneChangeType.Delete)
 
-    doReturn(IO.pure(Right(deleteChange.zone))).when(mockZoneRepo).save(deleteChange.zone)
+    doReturn(IO.pure(Some(deleteChange.zone))).when(mockZoneRepo).getZone(deleteChange.zone.id)
+    doReturn(IO.pure(Right(deleteChange.zone))).when(mockZoneRepo).save(any[Zone])
     executeWithinTransaction { db: DB =>
       doReturn(IO.pure(()))
         .when(mockRecordSetRepo)
@@ -97,7 +101,8 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
   "save a delete zone change as synced if recordset delete fails" in new Fixture {
     val deleteChange = change.copy(changeType = ZoneChangeType.Delete)
 
-    doReturn(IO.pure(Right(deleteChange.zone))).when(mockZoneRepo).save(deleteChange.zone)
+    doReturn(IO.pure(Some(deleteChange.zone))).when(mockZoneRepo).getZone(deleteChange.zone.id)
+    doReturn(IO.pure(Right(deleteChange.zone))).when(mockZoneRepo).save(any[Zone])
     executeWithinTransaction { db: DB =>
       doReturn(IO.raiseError(new Throwable("error")))
         .when(mockRecordSetRepo)
@@ -114,5 +119,112 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
 
     val savedChange = changeCaptor.getValue
     savedChange.status shouldBe ZoneChangeStatus.Synced
+  }
+
+  "fail a zone change when the zone is not found in the repository" in new Fixture {
+    doReturn(IO.pure(None)).when(mockZoneRepo).getZone(change.zone.id)
+    doReturn(IO.pure(change)).when(mockChangeRepo).save(any[ZoneChange])
+
+    test(change).unsafeRunSync()
+
+    val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
+    verify(mockChangeRepo).save(changeCaptor.capture())
+    changeCaptor.getValue.status shouldBe ZoneChangeStatus.Failed
+    changeCaptor.getValue.systemMessage.get should include("not found in repository")
+  }
+  "use the DB zone id and name for Delete scoping, not message-supplied values" in new Fixture {
+    // Zone scoping for deletion uses authoritative zone configuration
+    val dbZone = change.zone
+    val modifiedZone = change.zone.copy(name = "modified.zone.")
+    val deleteChange = change.copy(changeType = ZoneChangeType.Delete, zone = modifiedZone)
+
+    doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(change.zone.id)
+    doReturn(IO.pure(Right(dbZone))).when(mockZoneRepo).save(any[Zone])
+    doReturn(IO.pure(deleteChange)).when(mockChangeRepo).save(any[ZoneChange])
+
+    test(deleteChange).unsafeRunSync()
+
+    // zone save must use the deleted DB zone (not the attacker-supplied name)
+    val zoneCaptor = ArgumentCaptor.forClass(classOf[Zone])
+    verify(mockZoneRepo).save(zoneCaptor.capture())
+    zoneCaptor.getValue.status shouldBe ZoneStatus.Deleted
+    zoneCaptor.getValue.id shouldBe dbZone.id
+    zoneCaptor.getValue.name shouldBe dbZone.name
+    val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
+    verify(mockChangeRepo).save(changeCaptor.capture())
+    changeCaptor.getValue.status shouldBe ZoneChangeStatus.Synced
+  }
+  "fail an Update zone change when the zone is not found in the repository" in new Fixture {
+    val updateChange = change.copy(changeType = ZoneChangeType.Update)
+    doReturn(IO.pure(None)).when(mockZoneRepo).getZone(updateChange.zone.id)
+    doReturn(IO.pure(updateChange)).when(mockChangeRepo).save(any[ZoneChange])
+
+    test(updateChange).unsafeRunSync()
+
+    val changeCaptor = ArgumentCaptor.forClass(classOf[ZoneChange])
+    verify(mockChangeRepo).save(changeCaptor.capture())
+    changeCaptor.getValue.status shouldBe ZoneChangeStatus.Failed
+    // zone save must NOT be called when zone does not exist
+    verify(mockZoneRepo, never()).save(any[Zone])
+  }
+  "persist requested ownership, ACL, sharing, backend and connection updates" in new Fixture {
+    val dbZone = change.zone
+    val modifiedZone = change.zone.copy(
+      adminGroupId = "modified-group",
+      shared = true,
+      backendId = Some("modified-backend"),
+      connection = Some(ZoneConnection("modified.server", "key", Encrypted("xyz"), "10.2.2.2")),
+      transferConnection =
+        Some(ZoneConnection("transfer.server", "transfer-key", Encrypted("abc"), "10.2.2.3")),
+      acl = ZoneACL(Set(ACLRule(AccessLevel.Delete)))
+    )
+    val updateChange = change.copy(changeType = ZoneChangeType.Update, zone = modifiedZone)
+
+    doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(change.zone.id)
+    doReturn(IO.pure(Right(modifiedZone))).when(mockZoneRepo).save(any[Zone])
+    doReturn(IO.pure(updateChange)).when(mockChangeRepo).save(any[ZoneChange])
+
+    test(updateChange).unsafeRunSync()
+
+    verify(mockZoneRepo).save(modifiedZone)
+    verify(mockChangeRepo).save(updateChange.copy(status = ZoneChangeStatus.Synced))
+  }
+
+  "remove explicit connections when switching to a configured backend" in new Fixture {
+    val dbZone = change.zone.copy(transferConnection = change.zone.connection)
+    val modifiedZone = dbZone.copy(
+      backendId = Some("configured-backend"),
+      connection = None,
+      transferConnection = None
+    )
+    val updateChange = change.copy(changeType = ZoneChangeType.Update, zone = modifiedZone)
+
+    doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(change.zone.id)
+    doReturn(IO.pure(Right(modifiedZone))).when(mockZoneRepo).save(any[Zone])
+    doReturn(IO.pure(updateChange)).when(mockChangeRepo).save(any[ZoneChange])
+
+    test(updateChange).unsafeRunSync()
+
+    verify(mockZoneRepo).save(modifiedZone)
+    verify(mockChangeRepo).save(updateChange.copy(status = ZoneChangeStatus.Synced))
+  }
+
+  "remove the backend selection when switching to explicit connections" in new Fixture {
+    val dbZone = change.zone.copy(backendId = Some("configured-backend"), connection = None)
+    val modifiedZone = dbZone.copy(
+      backendId = None,
+      connection = change.zone.connection,
+      transferConnection = change.zone.connection
+    )
+    val updateChange = change.copy(changeType = ZoneChangeType.Update, zone = modifiedZone)
+
+    doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(change.zone.id)
+    doReturn(IO.pure(Right(modifiedZone))).when(mockZoneRepo).save(any[Zone])
+    doReturn(IO.pure(updateChange)).when(mockChangeRepo).save(any[ZoneChange])
+
+    test(updateChange).unsafeRunSync()
+
+    verify(mockZoneRepo).save(modifiedZone)
+    verify(mockChangeRepo).save(updateChange.copy(status = ZoneChangeStatus.Synced))
   }
 }

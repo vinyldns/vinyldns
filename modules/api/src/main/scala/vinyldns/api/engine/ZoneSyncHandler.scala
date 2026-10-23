@@ -116,7 +116,11 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
             )
             IO.pure(
               zoneChange.copy(
-                zone.copy(status = ZoneStatus.Active, latestSync = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))),
+                zone = zoneChange.zone.copy(
+                  status = ZoneStatus.Active,
+                  updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)),
+                  latestSync = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
+                ),
                 status = ZoneChangeStatus.Synced
               )
             )
@@ -163,7 +167,11 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
                 _ <- saveRecordSets
                 _ <- saveRecordSetDatas
               } yield zoneChange.copy(
-                zone.copy(status = ZoneStatus.Active, latestSync = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))),
+                zone = zoneChange.zone.copy(
+                  status = ZoneStatus.Active,
+                  updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS)),
+                  latestSync = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
+                ),
                 status = ZoneChangeStatus.Synced
               )
             }
