@@ -390,7 +390,7 @@ class MembershipService(
     // Validate pattern: reject empty, bare wildcards, or too short to prevent full table scans
     if (trimmedPattern.isEmpty) {
       SearchValidationError("Search pattern must be at least 2 characters").asLeft.toResult
-    } else if (trimmedPattern == "%" || trimmedPattern == "*") {
+    } else if (trimmedPattern.matches("[*%]+")) {
       SearchValidationError("Search pattern cannot be a bare wildcard").asLeft.toResult
     } else if (trimmedPattern.length < 2) {
       SearchValidationError("Search pattern must be at least 2 characters").asLeft.toResult
