@@ -17,7 +17,6 @@
 package vinyldns.core.crypto
 
 import com.typesafe.config.{Config, ConfigFactory}
-import org.slf4j.LoggerFactory
 
 /**
   * Provides a no-op implementation of Crypto that performs no encryption.
