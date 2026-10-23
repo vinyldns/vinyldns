@@ -24,6 +24,9 @@ COPY quickstart/bind9/etc/named.conf.* /etc/bind/
 COPY quickstart/bind9/zones/ /var/bind/
 RUN named-checkconf
 
+# Create log files before startup to avoid tail race.
+RUN mkdir -p /localstack && touch /localstack/localstack.log /opt/vinyldns/vinyldns.log
+
 # Copy over the functional tests
 COPY  modules/api/src/test/functional /functional_test
 
