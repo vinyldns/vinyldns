@@ -35,7 +35,6 @@ object ZoneChangeHandler {
 
   ): ZoneChange => IO[ZoneChange] =
     zoneChange =>
-      // Load authoritative zone configuration from repository before processing
       zoneRepository.getZone(zoneChange.zone.id).flatMap {
         case None =>
           zoneChangeRepository.save(
@@ -58,13 +57,8 @@ object ZoneChangeHandler {
               zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
             }
           }
-        case Some(dbZone) =>
-          val trustedZone = zoneChange.zone.copy(
-            backendId = dbZone.backendId,
-            connection = dbZone.connection,
-            transferConnection = dbZone.transferConnection
-          )
-          zoneRepository.save(trustedZone).flatMap {
+        case Some(_) =>
+          zoneRepository.save(zoneChange.zone).flatMap {
             case Left(duplicateZoneError) =>
               zoneChangeRepository.save(
                 zoneChange.copy(
@@ -74,7 +68,7 @@ object ZoneChangeHandler {
               )
             case Right(_) =>
               logger.info(s"Saving zone change with id: '${zoneChange.id}', zone name: '${zoneChange.zone.name}'")
-              zoneChangeRepository.save(zoneChange.copy(zone = trustedZone, status = ZoneChangeStatus.Synced))
+              zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
           }
       }
 }

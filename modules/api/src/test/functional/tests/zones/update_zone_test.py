@@ -1046,21 +1046,21 @@ def test_normal_user_cannot_update_shared_zone_flag(shared_zone_test_context):
 @pytest.mark.serial
 def test_update_connection_info_success(shared_zone_test_context):
     """
-    Test user can update zone to backendId instead of connection info
+    Test a backend switch is persisted and subsequent record changes succeed.
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    zone = shared_zone_test_context.system_test_zone
+    zone = client.get_zone(shared_zone_test_context.system_test_zone["id"])["zone"]
 
-    to_update = client.get_zone(zone["id"])["zone"]
-    assert_that(to_update, has_key("backendId"))
-    to_update["backendId"] = "func-test-backend"
+    to_update = copy.deepcopy(zone)
+    assert_that(to_update["backendId"], is_("func-test-backend"))
+    to_update["backendId"] = "default"
     test_rs = None
     try:
         change = client.update_zone(to_update, status=202)
         client.wait_until_zone_change_status_synced(change)
-        new_zone = change["zone"]
+        new_zone = client.get_zone(zone["id"])["zone"]
 
-        assert_that(new_zone["backendId"], is_("func-test-backend"))
+        assert_that(new_zone["backendId"], is_("default"))
 
         # test adding a recordset - validates the key
         new_rs = create_recordset(new_zone, "test-update-connection-info-success", "CNAME",
@@ -1068,11 +1068,15 @@ def test_update_connection_info_success(shared_zone_test_context):
         create_rs = client.create_recordset(new_rs, status=202)
         test_rs = client.wait_until_recordset_change_status(create_rs, "Complete")["recordSet"]
     finally:
-        revert = client.update_zone(zone, status=202)
-        client.wait_until_zone_change_status_synced(revert)
-        if test_rs:
-            delete_result = client.delete_recordset(test_rs["zoneId"], test_rs["id"], status=202)
-            client.wait_until_recordset_change_status(delete_result, "Complete")
+        try:
+            if test_rs:
+                delete_result = client.delete_recordset(test_rs["zoneId"], test_rs["id"], status=202)
+                client.wait_until_recordset_change_status(delete_result, "Complete")
+        finally:
+            revert = client.update_zone(zone, status=202)
+            client.wait_until_zone_change_status_synced(revert)
+            restored_zone = client.get_zone(zone["id"])["zone"]
+            assert_that(restored_zone["backendId"], is_(zone["backendId"]))
 
 
 @pytest.mark.serial

@@ -167,72 +167,64 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     // zone save must NOT be called when zone does not exist
     verify(mockZoneRepo, never()).save(any[Zone])
   }
-  "allow adminGroupId and shared updates from message while preserving DB backendId and connection; retain ACL update" in new Fixture {
+  "persist requested ownership, ACL, sharing, backend and connection updates" in new Fixture {
     val dbZone = change.zone
     val modifiedZone = change.zone.copy(
       adminGroupId = "modified-group",
       shared = true,
       backendId = Some("modified-backend"),
       connection = Some(ZoneConnection("modified.server", "key", Encrypted("xyz"), "10.2.2.2")),
+      transferConnection =
+        Some(ZoneConnection("transfer.server", "transfer-key", Encrypted("abc"), "10.2.2.3")),
       acl = ZoneACL(Set(ACLRule(AccessLevel.Delete)))
     )
-    val updateChange = change.copy(zone = modifiedZone)
+    val updateChange = change.copy(changeType = ZoneChangeType.Update, zone = modifiedZone)
 
     doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(change.zone.id)
-    doReturn(IO.pure(Right(dbZone))).when(mockZoneRepo).save(any[Zone])
+    doReturn(IO.pure(Right(modifiedZone))).when(mockZoneRepo).save(any[Zone])
     doReturn(IO.pure(updateChange)).when(mockChangeRepo).save(any[ZoneChange])
 
     test(updateChange).unsafeRunSync()
 
-    val zoneCaptor = ArgumentCaptor.forClass(classOf[Zone])
-    verify(mockZoneRepo).save(zoneCaptor.capture())
-    val saved = zoneCaptor.getValue
-    saved.adminGroupId shouldBe modifiedZone.adminGroupId
-    saved.shared shouldBe modifiedZone.shared
-    saved.backendId shouldBe dbZone.backendId
-    saved.connection shouldBe dbZone.connection
-    saved.acl shouldBe modifiedZone.acl
+    verify(mockZoneRepo).save(modifiedZone)
+    verify(mockChangeRepo).save(updateChange.copy(status = ZoneChangeStatus.Synced))
   }
-  "persist ACL update through a follow-up zone read while preserving protected connection fields" in new Fixture {
-    val dbZone = change.zone
-    val modifiedZone = change.zone.copy(
-      adminGroupId = "modified-group",
-      shared = true,
-      backendId = Some("modified-backend"),
-      connection = Some(ZoneConnection("modified.server", "key", Encrypted("xyz"), "10.2.2.2")),
-      acl = ZoneACL(Set(ACLRule(AccessLevel.Delete)))
-    )
-    val updateChange = change.copy(zone = modifiedZone)
 
-    val savedZone = dbZone.copy(
-      adminGroupId = modifiedZone.adminGroupId,
-      shared = modifiedZone.shared,
-      backendId = dbZone.backendId,
-      connection = dbZone.connection,
-      acl = modifiedZone.acl
+  "remove explicit connections when switching to a configured backend" in new Fixture {
+    val dbZone = change.zone.copy(transferConnection = change.zone.connection)
+    val modifiedZone = dbZone.copy(
+      backendId = Some("configured-backend"),
+      connection = None,
+      transferConnection = None
     )
+    val updateChange = change.copy(changeType = ZoneChangeType.Update, zone = modifiedZone)
 
     doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(change.zone.id)
-    doReturn(IO.pure(Right(savedZone))).when(mockZoneRepo).save(any[Zone])
+    doReturn(IO.pure(Right(modifiedZone))).when(mockZoneRepo).save(any[Zone])
     doReturn(IO.pure(updateChange)).when(mockChangeRepo).save(any[ZoneChange])
 
     test(updateChange).unsafeRunSync()
 
-    val zoneCaptor = ArgumentCaptor.forClass(classOf[Zone])
-    verify(mockZoneRepo).save(zoneCaptor.capture())
-    val saved = zoneCaptor.getValue
+    verify(mockZoneRepo).save(modifiedZone)
+    verify(mockChangeRepo).save(updateChange.copy(status = ZoneChangeStatus.Synced))
+  }
 
-    saved.adminGroupId shouldBe modifiedZone.adminGroupId
-    saved.shared shouldBe modifiedZone.shared
-    saved.backendId shouldBe dbZone.backendId
-    saved.connection shouldBe dbZone.connection
-    saved.acl shouldBe modifiedZone.acl
+  "remove the backend selection when switching to explicit connections" in new Fixture {
+    val dbZone = change.zone.copy(backendId = Some("configured-backend"), connection = None)
+    val modifiedZone = dbZone.copy(
+      backendId = None,
+      connection = change.zone.connection,
+      transferConnection = change.zone.connection
+    )
+    val updateChange = change.copy(changeType = ZoneChangeType.Update, zone = modifiedZone)
 
-    val reloaded = saved.copy(acl = saved.acl)
-    reloaded.acl shouldBe modifiedZone.acl
-    reloaded.adminGroupId shouldBe modifiedZone.adminGroupId
-    reloaded.shared shouldBe modifiedZone.shared
-    reloaded.backendId shouldBe dbZone.backendId
-    reloaded.connection shouldBe dbZone.connection
+    doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(change.zone.id)
+    doReturn(IO.pure(Right(modifiedZone))).when(mockZoneRepo).save(any[Zone])
+    doReturn(IO.pure(updateChange)).when(mockChangeRepo).save(any[ZoneChange])
+
+    test(updateChange).unsafeRunSync()
+
+    verify(mockZoneRepo).save(modifiedZone)
+    verify(mockChangeRepo).save(updateChange.copy(status = ZoneChangeStatus.Synced))
   }
 }
