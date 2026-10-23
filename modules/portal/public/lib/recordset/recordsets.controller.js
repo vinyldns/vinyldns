@@ -217,7 +217,6 @@
                     recordsPaging.totalCount = response.data.totalCount;
                     recordsPaging.next = response.data.nextId;
                     updateRecordDisplay(response.data['recordSets']);
-                    $scope.$apply();
                     getMembership();
                 }
                 return recordsService
