@@ -212,7 +212,7 @@ class RecordSetServiceSpec
       result shouldBe a[ZoneNotFoundError]
     }
     "fail when the account is not authorized" in {
-      doReturn(IO.pure(Some(aaaa)))
+      doReturn(IO.pure(Some(aaaa.copy(zoneId = zoneNotAuthorized.id))))
         .when(mockRecordRepo)
         .getRecordSet(aaaa.id)
       val result =
@@ -1693,7 +1693,7 @@ class RecordSetServiceSpec
     }
 
     "fail when the account is not authorized to access the zone" in {
-      doReturn(IO.pure(Some(aaaa)))
+      doReturn(IO.pure(Some(aaaa.copy(zoneId = zoneNotAuthorized.id))))
         .when(mockRecordRepo)
         .getRecordSet(aaaa.id)
 
@@ -1762,6 +1762,28 @@ class RecordSetServiceSpec
           .getRecordSetByZone(notSharedZoneRecordWithOwnerGroup.id, zoneNotAuthorized.id, okAuth)
           .value.unsafeRunSync().swap.toOption.get
       result shouldBe a[NotAuthorizedError]
+    }
+
+    "fail with RecordSetNotFoundError when the recordSet belongs to a different zone" in {
+      val recordSetFromOkZone = aaaa.copy(zoneId = okZone.id)
+      
+      doReturn(IO.pure(Some(recordSetFromOkZone)))
+        .when(mockRecordRepo)
+        .getRecordSet(aaaa.id)
+      
+      doReturn(IO.pure(Some(zoneNotAuthorized)))
+        .when(mockZoneRepo)
+        .getZone(zoneNotAuthorized.id)
+
+      doReturn(IO.pure(None)).when(mockGroupRepo).getGroup(any[String])
+
+      val result =
+        underTest
+          .getRecordSetByZone(aaaa.id, zoneNotAuthorized.id, okAuth)
+          .value.unsafeRunSync().swap.toOption.get
+      
+      result shouldBe a[RecordSetNotFoundError]
+      result.asInstanceOf[RecordSetNotFoundError].getMessage should include("does not exist")
     }
   }
 

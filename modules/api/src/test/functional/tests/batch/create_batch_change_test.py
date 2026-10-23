@@ -3713,7 +3713,7 @@ def test_create_batch_with_global_acl_rule_applied_succeeds(shared_zone_test_con
             shared_client.wait_until_recordset_change_status(delete_a_rs, "Complete")
 
         if create_ptr_rs:
-            retrieved = dummy_client.get_recordset(shared_zone["id"], create_ptr_rs["recordSet"]["id"])
+            retrieved = ok_client.get_recordset(classless_base_zone["id"], create_ptr_rs["recordSet"]["id"])
             retrieved_rs = retrieved["recordSet"]
 
             assert_that(retrieved_rs, is_not(has_key("ownerGroupId")))

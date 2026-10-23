@@ -434,7 +434,8 @@ class RecordSetRoutingSpec
                 ): Either[Throwable, RecordSetChange] = zoneId match {
       case zoneNotFound.id => Left(ZoneNotFoundError(zoneId))
       case zoneDeleted.id => Left(ZoneInactiveError(zoneId))
-      case notAuthorizedZone.id => Left(NotAuthorizedError(zoneId))
+      case notAuthorizedZone.id =>
+        Left(NotAuthorizedError(zoneId))
       case syncingZone.id => Left(ZoneUnavailableError(zoneId))
       case invalidChangeZone.id =>
         Right(
@@ -526,8 +527,9 @@ class RecordSetRoutingSpec
       } else {
         recordSetId match {
           case rsError.id => Left(new RuntimeException("fail"))
-          case rsNotFound.id => Left(RecordSetNotFoundError(s"$zoneId"))
+          case rsNotFound.id => Left(RecordSetNotFoundError(s"$recordSetId"))
           case rsOk.id => Right(rsOkSummary)
+          case _ => Left(RecordSetNotFoundError(s"RecordSet with id $recordSetId does not exist."))
         }
       }
     }.toResult
