@@ -1539,6 +1539,35 @@ class MembershipServiceSpec
         error.getMessage should include("bare wildcard")
       }
 
+      "reject consecutive wildcard-only patterns" in {
+        List("**", "***", "*%", " ** ").foreach { pattern =>
+          val resultEither = underTest.searchUsers(pattern, None, 100, okAuth).value.unsafeRunSync()
+
+          val error = resultEither match {
+            case Left(err)    => err
+            case Right(value) => fail(s"Expected error for '$pattern' but got success: $value")
+          }
+
+          error shouldBe a[SearchValidationError]
+          error.getMessage should include("bare wildcard")
+        }
+      }
+
+      "accept consecutive wildcards following a prefix" in {
+        doReturn(IO.pure(List(okUser))).when(mockUserRepo).searchUsersByName("ab**", None, 100)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+        val resultEither = underTest.searchUsers("ab**", None, 100, okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results should have size 1
+      }
+
       "accept two-character pattern" in {
         doReturn(IO.pure(List(okUser))).when(mockUserRepo).searchUsersByName("ab", None, 100)
         doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
