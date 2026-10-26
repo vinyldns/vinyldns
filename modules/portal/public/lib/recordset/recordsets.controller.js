@@ -203,6 +203,7 @@
 
             $scope.refreshRecords = function() {
             $scope.isRecordSearchTriggered = true;
+            $scope.recordSetCount = undefined;
             if($scope.query.includes("|")) {
                 const queryRecord = $scope.query.split('|');
                 recordName = queryRecord[0].trim();
