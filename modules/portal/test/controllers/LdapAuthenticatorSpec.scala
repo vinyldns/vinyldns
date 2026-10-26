@@ -71,17 +71,15 @@ class LdapAuthenticatorSpec extends Specification with Mockito {
   "LdapAuthenticator" should {
     "apply method must create an LDAP Authenticator" in {
       val testConfig: Configuration =
-        Configuration.load(Environment.simple()) ++ Configuration.from(
-          Map("portal.test_login" -> false)
-        )
+        Configuration.from(Map("portal.test_login" -> false)).withFallback(Configuration.load(Environment.simple()))
+
       val underTest = LdapAuthenticator.apply(new Settings(testConfig))
       underTest must beAnInstanceOf[LdapAuthenticator]
     }
     "apply method must create a Test Authenticator if selected" in {
-      val testConfig: Configuration =
-        Configuration.load(Environment.simple()) ++ Configuration.from(
-          Map("portal.test_login" -> true)
-        )
+      val testConfig =
+        Configuration.from(Map("portal.test_login" -> true)).withFallback(Configuration.load(Environment.simple()))
+
       val underTest = LdapAuthenticator.apply(new Settings(testConfig))
       underTest must beAnInstanceOf[TestAuthenticator]
     }

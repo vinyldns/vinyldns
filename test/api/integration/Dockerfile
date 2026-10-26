@@ -21,6 +21,13 @@ FROM vinyldns/build:base-test-integration-${VINYLDNS_BASE_VERSION}
 SHELL ["/bin/bash","-c"]
 ARG DOCKERFILE_PATH
 COPY --from=base-build /opt/vinyldns /opt/vinyldns
+COPY utils/manage_vinyldns_zones_bind_api.py utils/
+
+# Start create zones api
+RUN pip install --no-cache-dir fastapi uvicorn "pydantic[email]" --ignore-installed --force-reinstall --no-warn-script-location
+
+RUN sed -i '/if \[\[ \$START_BIND -eq 1 \]\]; then/a\
+         \  echo -n "Starting create zones API.." & python3 utils/manage_vinyldns_zones_bind_api.py &' /initialize.sh
 
 # Copy the project contents
 COPY . /build/

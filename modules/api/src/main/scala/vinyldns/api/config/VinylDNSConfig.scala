@@ -28,6 +28,7 @@ import vinyldns.api.metrics.APIMetricsSettings
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.backend.BackendConfigs
 import vinyldns.core.domain.zone.ConfiguredDnsConnections
+import vinyldns.core.domain.zone.generate.DnsProviderApiConnection
 import vinyldns.core.notifier.NotifierConfig
 import vinyldns.core.queue.MessageQueueConfig
 import vinyldns.core.repository.DataStoreConfig
@@ -50,6 +51,7 @@ final case class VinylDNSConfig(
     backendConfigs: BackendConfigs,
     dottedHostsConfig: DottedHostsConfig,
     configuredDnsConnections: ConfiguredDnsConnections,
+    dnsProviderApiConnection: DnsProviderApiConnection,
     apiMetricSettings: APIMetricsSettings,
     crypto: CryptoAlgebra,
     globalAcls: GlobalAcls
@@ -99,6 +101,7 @@ object VinylDNSConfig {
       crypto <- CryptoAlgebra.load(cryptoConfig)
       manualReviewConfig <- loadIO[ManualReviewConfig](config, "vinyldns")
       connections <- ConfiguredDnsConnections.load(config, cryptoConfig)
+      dnsProviderApiConnection <- IO(DnsProviderApiConnection.load(config, crypto))
       metricSettings <- loadIO[APIMetricsSettings](config, "vinyldns.metrics")
       globalAcls <- loadIO[List[GlobalAcl]](config, "vinyldns.global-acl-rules")
         .map(GlobalAcls.apply)
@@ -117,6 +120,7 @@ object VinylDNSConfig {
       backendConfigs,
       dottedHostsConfig,
       connections,
+      dnsProviderApiConnection,
       metricSettings,
       crypto,
       globalAcls

@@ -31,6 +31,7 @@ import vinyldns.core.domain.{EncryptFromJson, Encrypted, Fqdn}
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate._
 import vinyldns.core.Messages._
 import vinyldns.core.domain.record.OwnershipTransferStatus
 import vinyldns.core.domain.record.OwnershipTransferStatus.OwnershipTransferStatus
@@ -84,7 +85,8 @@ trait DnsJsonProtocol extends JsonValidation {
     ).tupled
 
   val dnsSerializers = Seq(
-    CreateZoneInputSerializer,
+    ConnectZoneInputSerializer,
+    ZoneGenerationInputSerializer,
     UpdateZoneInputSerializer,
     CreateRecordSetInputSerializer,
     ZoneConnectionSerializer,
@@ -103,6 +105,7 @@ trait DnsJsonProtocol extends JsonValidation {
     JsonEnumV(RecordSetChangeStatus),
     JsonEnumV(RecordType),
     JsonEnumV(ZoneChangeType),
+    JsonEnumV(GenerateZoneChangeType),
     JsonEnumV(RecordSetChangeType),
     JsonEnumV(NameSort),
     JsonEnumV(RecordTypeSort),
@@ -151,8 +154,8 @@ trait DnsJsonProtocol extends JsonValidation {
         ("singleBatchChangeIds" -> Extraction.decompose(rs.singleBatchChangeIds))
   }
 
-  case object CreateZoneInputSerializer extends ValidationSerializer[CreateZoneInput] {
-    override def fromJson(js: JValue): ValidatedNel[String, CreateZoneInput] =
+  case object ConnectZoneInputSerializer extends ValidationSerializer[ConnectZoneInput] {
+    override def fromJson(js: JValue): ValidatedNel[String, ConnectZoneInput] =
       (
         (js \ "name")
           .required[String]("Missing Zone.name")
@@ -167,9 +170,39 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "backendId").optional[String],
         (js \ "recurrenceSchedule").optional[String],
         (js \ "scheduleRequestor").optional[String],
-        ).mapN(CreateZoneInput.apply)
+        ).mapN(ConnectZoneInput.apply)
   }
 
+  case object ZoneGenerationInputSerializer extends ValidationSerializer[ZoneGenerationInput] {
+    override def fromJson(js: JValue): ValidatedNel[String, ZoneGenerationInput] = {
+      // Validate providerParams: it is optional, but if present it must be a JSON object.
+      // A present-but-malformed value is rejected rather than silently collapsed to an empty map.
+      val providerParams: ValidatedNel[String, Map[String, JValue]] = (js \ "providerParams") match {
+        case JNothing | JNull => Map.empty[String, JValue].validNel
+        case JObject(fields) => fields.toMap.validNel
+        case _ => "providerParams must be a JSON object".invalidNel
+      }
+
+      // Validate standard fields (not provider specific)
+      // Server-owned fields (id, status, response) are deliberately not read from the request
+      // body so clients cannot set them; the server assigns them.
+      (
+        (js \ "groupId").required[String]("Missing group id"),
+        (js \ "email").required[String]("Missing email"),
+        (js \ "provider").required[String]("Missing provider"),
+        (js \ "zoneName").required[String]("Missing zone name"),
+        providerParams
+      ).mapN { (groupId, email, provider, zoneName, params) =>
+        ZoneGenerationInput(
+          groupId = groupId,
+          email = email,
+          provider = provider,
+          zoneName = zoneName,
+          providerParams = params
+        )
+      }
+    }
+  }
   case object UpdateZoneInputSerializer extends ValidationSerializer[UpdateZoneInput] {
     override def fromJson(js: JValue): ValidatedNel[String, UpdateZoneInput] =
       (
