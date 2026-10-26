@@ -25,6 +25,10 @@
   filter: none;
 }
 
+a.vds-action-btn:hover {
+  text-decoration: none;
+}
+
 .vds-action-btn:active {
   transform: none;
 }
