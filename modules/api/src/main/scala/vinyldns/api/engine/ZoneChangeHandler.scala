@@ -35,30 +35,47 @@ object ZoneChangeHandler {
 
   ): ZoneChange => IO[ZoneChange] =
     zoneChange =>
-      zoneRepository.save(zoneChange.zone).flatMap {
-        case Left(duplicateZoneError) =>
+      // Load authoritative zone configuration from repository before processing
+      zoneRepository.getZone(zoneChange.zone.id).flatMap {
+        case None =>
           zoneChangeRepository.save(
             zoneChange.copy(
               status = ZoneChangeStatus.Failed,
-              systemMessage = Some(duplicateZoneError.message)
+              systemMessage = Some(s"Zone ${zoneChange.zone.id} not found in repository")
             )
           )
-        case Right(_) if zoneChange.changeType == ZoneChangeType.Delete =>
-
-          executeWithinTransaction { db: DB =>
-            for {
-              _ <- recordSetRepository
-              .deleteRecordSetsInZone(db,zoneChange.zone.id, zoneChange.zone.name)
-              _ <- recordSetCacheRepository
-            .deleteRecordSetDataInZone(db,zoneChange.zone.id, zoneChange.zone.name)}
-            yield ()
-          }
-            .attempt
-            .flatMap { _ =>
+        case Some(dbZone) if zoneChange.changeType == ZoneChangeType.Delete =>
+          val deletedZone = dbZone.copy(status = ZoneStatus.Deleted)
+          zoneRepository.save(deletedZone).flatMap { _ =>
+            executeWithinTransaction { db: DB =>
+              for {
+                _ <- recordSetRepository
+                  .deleteRecordSetsInZone(db, dbZone.id, dbZone.name)
+                _ <- recordSetCacheRepository
+                  .deleteRecordSetDataInZone(db, dbZone.id, dbZone.name)
+              } yield ()
+            }.attempt.flatMap { _ =>
               zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
             }
-        case Right(_) =>
-          logger.info(s"Saving zone change with id: '${zoneChange.id}', zone name: '${zoneChange.zone.name}'")
-          zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
+          }
+        case Some(dbZone) =>
+          // Ownership, ACL and sharing come from the DB; connection and backend settings come from the message
+          val trustedZone = zoneChange.zone.copy(
+            adminGroupId = dbZone.adminGroupId,
+            shared = dbZone.shared,
+            acl = dbZone.acl
+          )
+          zoneRepository.save(trustedZone).flatMap {
+            case Left(duplicateZoneError) =>
+              zoneChangeRepository.save(
+                zoneChange.copy(
+                  status = ZoneChangeStatus.Failed,
+                  systemMessage = Some(duplicateZoneError.message)
+                )
+              )
+            case Right(_) =>
+              logger.info(s"Saving zone change with id: '${zoneChange.id}', zone name: '${zoneChange.zone.name}'")
+              zoneChangeRepository.save(zoneChange.copy(zone = trustedZone, status = ZoneChangeStatus.Synced))
+          }
       }
 }
