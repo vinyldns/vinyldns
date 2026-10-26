@@ -167,7 +167,7 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     // zone save must NOT be called when zone does not exist
     verify(mockZoneRepo, never()).save(any[Zone])
   }
-  "persist requested ownership, ACL, sharing, backend and connection updates" in new Fixture {
+  "preserve DB ownership, ACL and sharing while persisting message backend and connection updates" in new Fixture {
     val dbZone = change.zone
     val modifiedZone = change.zone.copy(
       adminGroupId = "modified-group",
@@ -181,15 +181,21 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     val updateChange = change.copy(changeType = ZoneChangeType.Update, zone = modifiedZone)
 
     doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(change.zone.id)
-    doReturn(IO.pure(Right(modifiedZone))).when(mockZoneRepo).save(any[Zone])
+    doReturn(IO.pure(Right(dbZone))).when(mockZoneRepo).save(any[Zone])
     doReturn(IO.pure(updateChange)).when(mockChangeRepo).save(any[ZoneChange])
 
     test(updateChange).unsafeRunSync()
 
-    verify(mockZoneRepo).save(modifiedZone)
-    verify(mockChangeRepo).save(updateChange.copy(status = ZoneChangeStatus.Synced))
+    val zoneCaptor = ArgumentCaptor.forClass(classOf[Zone])
+    verify(mockZoneRepo).save(zoneCaptor.capture())
+    val saved = zoneCaptor.getValue
+    saved.adminGroupId shouldBe dbZone.adminGroupId
+    saved.shared shouldBe dbZone.shared
+    saved.acl shouldBe dbZone.acl
+    saved.backendId shouldBe modifiedZone.backendId
+    saved.connection shouldBe modifiedZone.connection
+    saved.transferConnection shouldBe modifiedZone.transferConnection
   }
-
   "remove explicit connections when switching to a configured backend" in new Fixture {
     val dbZone = change.zone.copy(transferConnection = change.zone.connection)
     val modifiedZone = dbZone.copy(
@@ -208,7 +214,6 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     verify(mockZoneRepo).save(modifiedZone)
     verify(mockChangeRepo).save(updateChange.copy(status = ZoneChangeStatus.Synced))
   }
-
   "remove the backend selection when switching to explicit connections" in new Fixture {
     val dbZone = change.zone.copy(backendId = Some("configured-backend"), connection = None)
     val modifiedZone = dbZone.copy(
