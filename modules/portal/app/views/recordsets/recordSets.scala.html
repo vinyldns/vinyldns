@@ -118,7 +118,7 @@
                         <button id="refresh-records-button" class="btn btn-default" ng-click="refreshRecords()"><span class="fa fa-refresh"></span> Refresh</button>
                         <button id="create-record-button" class="btn btn-default" ng-if="canCreateRecords" ng-click="createRecord(defaultTtl)"><span class="fa fa-plus"></span> Create Record Set</button>
                     </div>
-                    <div style="font-size: medium;" class="bolder-font-weight dataTables_paginate" ng-show="isRecordSearchTriggered">
+                    <div style="font-size: medium;" class="bolder-font-weight dataTables_paginate" ng-show="isRecordSearchTriggered && recordSetCount !== undefined">
                         {{recordSetCount}} {{recordSetCount === 1 ? 'match' : 'matches'}} found
                         <button class="export-btn" ng-show="isRecordSearchTriggered && records && records.length > 0" ng-click="exportToCSV()">Export CSV</button>
                     </div>
