@@ -203,6 +203,7 @@
 
             $scope.refreshRecords = function() {
             $scope.isRecordSearchTriggered = true;
+            $scope.recordSetCount = undefined;
             if($scope.query.includes("|")) {
                 const queryRecord = $scope.query.split('|');
                 recordName = queryRecord[0].trim();
@@ -323,7 +324,6 @@
                         const safeRecordName = (recordName || '')
                             .replace(/\*/g, '')
                             .replace(/[^a-zA-Z0-9.-]/g, '_');
-                        const recordLabel = recordType ? 'recordset_search' : 'recordsets_search';
                         
                         // Generate timestamp in format YYYY-MM-DD_HH-mm-ss
                         const now = new Date();
@@ -335,7 +335,7 @@
                             String(now.getSeconds()).padStart(2, '0');
                         
                         filename = safeRecordName
-                            ? `${safeRecordName}-${recordLabel}-${timestamp}.csv`
+                            ? `${safeRecordName}-recordsets_search-${timestamp}.csv`
                             : `recordsets_search-${timestamp}.csv`;
                     }
 
