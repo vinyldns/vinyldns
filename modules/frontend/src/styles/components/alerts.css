@@ -1,0 +1,12 @@
+/**
+ * VinylDNS component styles: alerts
+ */
+
+.alert-wrapper {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  min-width: 320px;
+  max-width: 480px;
+}

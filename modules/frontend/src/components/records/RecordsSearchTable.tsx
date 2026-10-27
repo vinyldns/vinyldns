@@ -80,6 +80,17 @@ function FqdnTooltipSpan({ fqdn }: { fqdn: string }) {
  * Single key-value row used inside multi-field record cells (SOA, MX, SRV, etc.)
  * so each field is on its own line rather than one long pipe-separated string.
  */
+function RecordFieldRow({ label, value }: { label: string; value: unknown }) {
+  return (
+    <div className="vds-record-kv-row">
+      <span className="vds-record-kv-label">{label}</span>
+      <span className="vds-table-secondary vds-record-kv-value">
+        {String(value ?? "—")}
+      </span>
+    </div>
+  );
+}
+
 function KVRow({ label, value }: { label: string; value: unknown }) {
   return (
     <div
@@ -136,17 +147,9 @@ function renderRecordValue(
       return <span>{String(r.nsdname ?? "—")}</span>;
     case "MX":
       return (
-        <div
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(30,95,168,0.06), rgba(13,27,62,0.03))",
-            border: "1px solid rgba(30,95,168,0.13)",
-            borderRadius: 6,
-            padding: "3px 8px",
-          }}
-        >
-          <KVRow label="Pref" value={r.preference} />
-          <KVRow label="Exchange" value={r.exchange} />
+        <div className="d-flex flex-column gap-1">
+          <RecordFieldRow label="Pref:" value={r.preference} />
+          <RecordFieldRow label="Exchange:" value={r.exchange} />
         </div>
       );
     case "SRV":
@@ -204,22 +207,14 @@ function renderRecordValue(
       );
     case "SOA":
       return (
-        <div
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(30,95,168,0.06), rgba(13,27,62,0.03))",
-            border: "1px solid rgba(30,95,168,0.13)",
-            borderRadius: 6,
-            padding: "3px 8px",
-          }}
-        >
-          <KVRow label="Mname" value={r.mname} />
-          <KVRow label="Rname" value={r.rname} />
-          <KVRow label="Serial" value={r.serial} />
-          <KVRow label="Refresh" value={r.refresh} />
-          <KVRow label="Retry" value={r.retry} />
-          <KVRow label="Expire" value={r.expire} />
-          <KVRow label="Min" value={r.minimum} />
+        <div className="d-flex flex-column gap-1">
+          <RecordFieldRow label="Mname:" value={r.mname} />
+          <RecordFieldRow label="Rname:" value={r.rname} />
+          <RecordFieldRow label="Serial:" value={r.serial} />
+          <RecordFieldRow label="Refresh:" value={r.refresh} />
+          <RecordFieldRow label="Retry:" value={r.retry} />
+          <RecordFieldRow label="Expire:" value={r.expire} />
+          <RecordFieldRow label="Minimum:" value={r.minimum} />
         </div>
       );
     case "SSHFP":
@@ -274,7 +269,10 @@ function RecordDataCell({ rec }: { rec: any }) {
   const hasMore = records.length > SHOW_MAX;
 
   return (
-    <ul className="mb-0 ps-3 small" style={{ listStyle: "disc", margin: 0 }}>
+    <ul
+      className="mb-0 ps-3 small vds-record-data-list"
+      style={{ listStyle: "disc", margin: 0 }}
+    >
       {visibleRecords.map((r, i) => (
         <li key={i} 
         style={{ 

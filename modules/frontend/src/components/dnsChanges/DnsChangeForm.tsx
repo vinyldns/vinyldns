@@ -671,7 +671,7 @@ function ChangeRow({
       {/* Remove */}
       <td
         className={`vds-table-cell ${hasErrors ? "vds-table-cell-error" : ""}`}
-        style={{ width: 90, textAlign: "center" }}
+        style={{ width: 90 }}
       >
         <button
           type="button"
@@ -1131,6 +1131,7 @@ export function DnsChangeForm({
                         appearance: "none",
                         WebkitAppearance: "none",
                         MozAppearance: "none",
+                        backgroundImage: "none",
                         paddingRight: "2rem",
                       }}
                       {...register("ownerGroupId")}

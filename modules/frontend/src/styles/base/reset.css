@@ -1,0 +1,67 @@
+/**
+ * VinylDNS base styles: resets and layout defaults
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--vds-font-family);
+  background-color: var(--vds-bg-canvas);
+  color: var(--vds-text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[data-vds-theme="dark"],
+[data-vds-theme="dark"] body {
+  background-color: var(--vds-page-bg) !important;
+  color: var(--vds-page-text) !important;
+}
+
+a {
+  color: var(--vds-accent);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+a:hover {
+  color: var(--vds-accent-hover);
+}
+
+a:not(.nav-link):hover {
+  text-decoration: underline;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(100 116 139 / 20%);
+  border-radius: var(--vds-radius-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(100 116 139 / 40%);
+}
+
+[data-vds-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 15%);
+}
+
+[data-vds-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 25%);
+}

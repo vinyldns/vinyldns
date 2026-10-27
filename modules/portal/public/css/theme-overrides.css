@@ -135,7 +135,7 @@ ul.bar_tabs {
 
 ul.bar_tabs>li.active {
   border: 1px solid #E6E9ED;
-  border-bottom: 10px solid #1ABB9C;
+  border-bottom: none;
   margin-top: -15px;
 }
 

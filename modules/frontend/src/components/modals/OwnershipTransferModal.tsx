@@ -59,7 +59,7 @@ export function OwnershipTransferModal({
           style={{ borderRadius: "1rem", overflow: "hidden" }}
         >
           <div
-            className={`rhm-header ${modal.mode === "claim" ? "rhm-header--claim-records" : ""}`}
+            className={`rhm-header ${modal.mode === "claim" ? "rhm-header--claim-records" : "rhm-header--request-transfer"}`}
           >
             <div className="d-flex align-items-center justify-content-between gap-3 min-h-100">
               <div className="d-flex align-items-center gap-3 min-w-0">
