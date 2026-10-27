@@ -30,6 +30,14 @@
 [data-vds-theme="dark"] .vds-main {
   background-color: var(--vds-page-bg);
   color: var(--vds-page-text);
+  background-image: linear-gradient(var(--vds-border-color), var(--vds-border-color));
+  background-repeat: no-repeat;
+  background-position: left top;
+  background-size: 0.5px 100%;
+}
+
+[data-vds-theme="dark"] .vds-topbar {
+  border-bottom: 0.5px solid var(--vds-border-color);
 }
 
 /**

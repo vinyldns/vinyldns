@@ -269,7 +269,10 @@ function RecordDataCell({ rec }: { rec: any }) {
   const hasMore = records.length > SHOW_MAX;
 
   return (
-    <ul className="mb-0 ps-3 small" style={{ listStyle: "disc", margin: 0 }}>
+    <ul
+      className="mb-0 ps-3 small vds-record-data-list"
+      style={{ listStyle: "disc", margin: 0 }}
+    >
       {visibleRecords.map((r, i) => (
         <li key={i} 
         style={{ 

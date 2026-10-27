@@ -587,6 +587,10 @@
   color: #e0e0e0;
 }
 
+[data-vds-theme="dark"] ul.vds-record-data-list {
+  color: #a1a1aa;
+}
+
 [data-vds-theme="dark"] .vds-record-data-row {
   background: #1e293b;
   border-color: #334155;
