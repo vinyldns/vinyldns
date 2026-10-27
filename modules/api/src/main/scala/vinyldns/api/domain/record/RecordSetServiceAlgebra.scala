@@ -56,7 +56,7 @@ trait RecordSetServiceAlgebra {
                       recordOwnerGroupId: Option[String],
                       nameSort: NameSort,
                       authPrincipal: AuthPrincipal,
-                      recordTypeSort: RecordTypeSort
+                      recordTypeSort: RecordTypeSort,
                     ): Result[ListGlobalRecordSetsResponse]
 
   /**
@@ -79,7 +79,8 @@ trait RecordSetServiceAlgebra {
                         recordOwnerGroupId: Option[String],
                         nameSort: NameSort,
                         authPrincipal: AuthPrincipal,
-                        recordTypeSort: RecordTypeSort
+                        recordTypeSort: RecordTypeSort,
+                        zoneId: Option[String]
                       ): Result[ListGlobalRecordSetsResponse]
 
   def listRecordSetsByZone(
