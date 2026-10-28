@@ -17,6 +17,7 @@
 describe('Service: recordsService', function () {
     beforeEach(module('ngMock'));
     beforeEach(module('service.utility'));
+    beforeEach(module('service.portalEvent'));
     beforeEach(module('service.records'));
     beforeEach(inject(function ($httpBackend, recordsService, utilityService) {
         this.recordsService = recordsService;

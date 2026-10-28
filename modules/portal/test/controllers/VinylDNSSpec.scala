@@ -75,7 +75,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       wsClient: WSClient = ws,
       components: ControllerComponents = components,
       crypto: CryptoAlgebra = crypto,
-      oidcAuthenticator: OidcAuthenticator = mockOidcAuth
+      oidcAuthenticator: OidcAuthenticator = mockOidcAuth,
+      portalEventService: PortalEventService = new PortalEventService()
   ): VinylDNS =
     new VinylDNS(
       configuration,
@@ -85,7 +86,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       components,
       crypto,
       oidcAuthenticator,
-      new LegacySecuritySupport(components, userAccountAccessor, config, oidcAuthenticator)
+      new LegacySecuritySupport(components, userAccountAccessor, config, oidcAuthenticator),
+      portalEventService
     )
 
   val vinyldnsPortal: VinylDNS = TestVinylDNS()
@@ -127,6 +129,83 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
   }
 
   "VinylDNS" should {
+    ".createPortalEvent" should {
+      "accept a valid event using the authenticated session user" in new WithApplication(app) {
+        val appComponents = app.injector.instanceOf[ControllerComponents]
+        val eventController = TestVinylDNS(config, mockLdapAuthenticator, mockUserAccessor, ws, appComponents, crypto)
+        val result = call(eventController.createPortalEvent,
+          FakeRequest(POST, "/api/portal-events")
+            .withJsonBody(Json.obj(
+              "feature" -> "zone_records",
+              "action" -> "csv_export",
+              "status" -> "success"
+            ))
+            .withSession("username" -> frodoUser.userName)
+        )
+
+        status(result) must beEqualTo(NO_CONTENT)
+      }
+
+      "accept a completed export event from the authenticated user session" in new WithApplication(app) {
+        val appComponents = app.injector.instanceOf[ControllerComponents]
+        val eventController = TestVinylDNS(config, mockLdapAuthenticator, mockUserAccessor, ws, appComponents, crypto)
+        val result = call(eventController.createPortalEvent,
+          FakeRequest(POST, "/api/export-events")
+            .withJsonBody(Json.obj(
+              "type" -> "zone",
+              "zoneId" -> "zone-123",
+              "recordTypes" -> "A",
+              "query" -> "host",
+              "rows" -> 3
+            ))
+            .withSession("username" -> frodoUser.userName)
+        )
+
+        status(result) must beEqualTo(NO_CONTENT)
+      }
+
+      "reject export payloads with unrecognized fields" in new WithApplication(app) {
+        val appComponents = app.injector.instanceOf[ControllerComponents]
+        val eventController = TestVinylDNS(config, mockLdapAuthenticator, mockUserAccessor, ws, appComponents, crypto)
+        val result = call(eventController.createPortalEvent,
+          FakeRequest(POST, "/api/export-events")
+            .withJsonBody(Json.obj("type" -> "search", "rows" -> 3, "user" -> "spoofed"))
+            .withSession("username" -> frodoUser.userName)
+        )
+
+        status(result) must beEqualTo(BAD_REQUEST)
+      }
+
+      "reject unknown and removed event fields" in new WithApplication(app) {
+        val appComponents = app.injector.instanceOf[ControllerComponents]
+        val eventController = TestVinylDNS(config, mockLdapAuthenticator, mockUserAccessor, ws, appComponents, crypto)
+        val invalidEvents = Seq(
+          Json.obj("feature" -> "record_search", "action" -> "csv_export", "status" -> "success", "username" -> "spoofed"),
+          Json.obj("feature" -> "record_search", "action" -> "csv_export", "status" -> "success", "metadata" -> Json.obj())
+        )
+        val results = invalidEvents.map { event =>
+          call(eventController.createPortalEvent,
+            FakeRequest(POST, "/api/portal-events")
+              .withJsonBody(event)
+              .withSession("username" -> frodoUser.userName)
+          )
+        }
+
+        results.map(status) must beEqualTo(Seq(BAD_REQUEST, BAD_REQUEST))
+      }
+
+      "require an authenticated session" in new WithApplication(app) {
+        val appComponents = app.injector.instanceOf[ControllerComponents]
+        val eventController = TestVinylDNS(config, mockLdapAuthenticator, mockUserAccessor, ws, appComponents, crypto)
+        val result = call(eventController.createPortalEvent,
+          FakeRequest(POST, "/api/portal-events")
+            .withJsonBody(Json.obj("feature" -> "record_search", "action" -> "csv_export", "status" -> "success"))
+        )
+
+        status(result) must beEqualTo(UNAUTHORIZED)
+      }
+    }
+
     "send 404 on a bad request" in new WithApplication(app) {
       route(app, FakeRequest(GET, "/boum")) must beSome.which(status(_) == NOT_FOUND)
     }

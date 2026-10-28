@@ -17,7 +17,8 @@
 'use strict';
 
 angular.module('service.records', [])
-    .service('recordsService', function ($http, utilityService) {
+    angular.module('service.records', ['service.portalEvent'])
+    .service('recordsService', function ($http, utilityService, portalEventService) {
 
         this.listRecordSetData = function (limit, startFrom, nameFilter, typeFilter, nameSort, ownerGroupFilter, skipLoader) {
             if (typeFilter == "") {
@@ -121,6 +122,10 @@ angular.module('service.records', [])
 
         this.syncZone = function (zid) {
             return $http.post("/api/zones/"+zid+"/sync", {}, {headers: utilityService.getCsrfHeader()});
+        };
+
+        this.logExportEvent = function(payload) {
+            return portalEventService.trackExport(payload);
         };
 
         this.listRecordSetChanges = function (zid, maxItems, startFrom) {

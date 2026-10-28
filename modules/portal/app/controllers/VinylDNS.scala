@@ -106,7 +106,8 @@ class VinylDNS @Inject() (
                            components: ControllerComponents,
                            crypto: CryptoAlgebra,
                            oidcAuthenticator: OidcAuthenticator,
-                           securitySupport: SecuritySupport
+                           securitySupport: SecuritySupport,
+                           portalEventService: PortalEventService
                          ) extends AbstractController(components)
   with CacheHeader {
 
@@ -135,6 +136,17 @@ class VinylDNS @Inject() (
 
   private val userAction = securitySupport.apiAction
   private val frontendAction = securitySupport.frontendAction
+
+  def createPortalEvent: Action[JsValue] = userAction.async(parse.json(8192)) { implicit request =>
+    portalEventService.record(
+      request.user.userName,
+      request.body,
+      exportEvent = request.path == "/api/export-events"
+    ) match {
+      case Right(_) => Future.successful(NoContent)
+      case Left(error) => Future.successful(BadRequest(Json.obj("error" -> error)))
+    }
+  }
 
   def oidcCallback(loginId: String): Action[AnyContent] = Action.async { implicit request =>
     logger.info(s"Received callback for LoginId [$loginId]")
