@@ -22,10 +22,11 @@ describe('Controller: RecordsController', function () {
         module('service.paging'),
         module('service.profile'),
         module('service.utility'),
+        module('service.portalEvent'),
         module('directives.modals.record.module'),
         module('controller.records')
     });
-    beforeEach(inject(function ($rootScope, $controller, $httpBackend, $q, groupsService, recordsService, pagingService, profileService) {
+    beforeEach(inject(function ($rootScope, $controller, $httpBackend, $q, groupsService, recordsService, pagingService, profileService, portalEventService) {
         this.rootScope = $rootScope;
         this.scope = this.rootScope.$new();
         this.$httpBackend = $httpBackend;
@@ -34,6 +35,7 @@ describe('Controller: RecordsController', function () {
         this.recordsService = recordsService;
         this.pagingService = pagingService;
         this.profileService = profileService;
+        this.portalEventService = portalEventService;
         this.q = $q;
     }));
 
@@ -432,6 +434,62 @@ describe('Controller: RecordsController', function () {
         expect(listRecordSetsByZone.calls.count()).toBe(1);
         expect(listRecordSetsByZone.calls.mostRecent().args).toEqual(
             [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, expectedRecordTypeFilter, expectedNameSort, expectedRecordTypeSort]);
+    });
+
+    it('tracks a record-set deletion through the shared portal event endpoint', function() {
+        var record = {id: 'record-set-123'};
+        var response = {
+            statusText: 'OK',
+            status: 200,
+            data: {recordSet: {name: 'host.example.', type: 'A', status: 'Active'}}
+        };
+        spyOn(this.recordsService, 'delRecordSet').and.returnValue(this.q.when(response));
+        spyOn(this.scope, 'refreshRecords');
+        spyOn(this.scope, 'refreshRecordChangesPreview');
+        spyOn(this.scope, 'refreshRecordChanges');
+        this.$httpBackend.when('GET', '/api/users/currentuser').respond(200, {});
+        this.$httpBackend.expectPOST('/api/portal-events', function(body) {
+            var event = JSON.parse(body);
+            return event.feature === 'zone_records' &&
+                event.action === 'delete' &&
+                event.status === 'success' &&
+                event.entityType === 'record_set' &&
+                event.entityId === undefined &&
+                typeof event.durationMs === 'number';
+        }).respond(204);
+
+        this.scope.submitDeleteRecord(record);
+        this.scope.$digest();
+        this.$httpBackend.flush();
+        this.scope.$digest();
+
+        expect(this.recordsService.delRecordSet).toHaveBeenCalledWith(this.scope.zoneId, record.id);
+    });
+
+    it('tracks a zone sync failure through the shared portal event endpoint', function() {
+        var zoneId = 'zone-123';
+        var error = {status: 500, statusText: 'Server Error', data: 'sync failed'};
+        this.scope.zoneId = zoneId;
+        spyOn(this.recordsService, 'syncZone').and.returnValue(this.q.reject(error));
+        this.$httpBackend.when('GET', '/api/users/currentuser').respond(200, {});
+        this.$httpBackend.expectPOST('/api/portal-events', function(body) {
+            var event = JSON.parse(body);
+            return event.feature === 'zone' &&
+                event.action === 'sync' &&
+                event.status === 'failure' &&
+                event.entityType === 'zone' &&
+                event.entityId === undefined &&
+                event.errorCode === 'OPERATION_FAILED' &&
+                typeof event.durationMs === 'number';
+        }).respond(204);
+
+        this.scope.syncZone();
+        this.scope.$digest();
+        this.$httpBackend.flush();
+        this.scope.$digest();
+
+        expect(this.recordsService.syncZone).toHaveBeenCalledWith(zoneId);
+        expect(this.scope.alerts.length).toBe(1);
     });
 
     it('recordSetGroupOwnershipStatus does not fetch members when the group id is the string "null"', function () {

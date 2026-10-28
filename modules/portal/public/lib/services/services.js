@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-angular.module('services.module', ['service.profile', 'service.groups', 'service.zones', 'service.records', 'service.utility', 'service.paging']);
+angular.module('services.module', ['service.profile', 'service.groups', 'service.zones', 'service.records', 'service.utility', 'service.paging', 'service.portalEvent']);

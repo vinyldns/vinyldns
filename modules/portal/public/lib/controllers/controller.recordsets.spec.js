@@ -21,6 +21,7 @@ describe('Controller: RecordSetsController', function () {
         module('service.groups'),
         module('service.utility'),
         module('service.paging'),
+        module('service.portalEvent'),
         module('recordset')
     });
 
