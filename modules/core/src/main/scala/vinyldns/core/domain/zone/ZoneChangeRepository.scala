@@ -35,11 +35,20 @@ trait ZoneChangeRepository extends Repository {
                         zoneNameFilter: Option[String] = None,
                         startFrom: Option[String] = None,
                         maxItems: Int = 100,
-                        ignoreAccess: Boolean = false
+                        ignoreAccess: Boolean = false,
+                        accessFilter: Option[Int] = None
                       ): IO[ListDeletedZonesChangeResults]
 
   def listFailedZoneChanges(
                              maxItems: Int = 100,
                              startFrom: Int= 0
                            ): IO[ListFailedZoneChangesResults]
+
+  /* Returns (abandoned, abandonedPtr, abandonedShared) in 1 SQL round-trip. */
+  def countAllAbandonedStats(): IO[(Int, Int, Int)]
+
+  /** Returns (myAbandoned, myAbandonedPtr, myAbandonedShared) in 1 SQL round-trip.
+    * For super/support callers ZoneService substitutes the global abandoned stats instead.
+    */
+  def countAllAbandonedStatsForUser(authPrincipal: AuthPrincipal): IO[(Int, Int, Int)]
 }

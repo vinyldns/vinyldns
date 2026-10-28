@@ -329,6 +329,28 @@ case class ListZonesResponse(
 
 case class RecordSetCount( count: Int = 0 )
 
+case class ZoneCount(
+  totalCount: Int = 0,
+  myZonesCount: Int = 0,
+  sharedCount: Int = 0,
+  privateCount: Int = 0,
+  activeCount: Int = 0,
+  syncingCount: Int = 0,
+  abandonedCount: Int = 0,
+  ptrCount: Int = 0,
+  sharedPtrCount: Int = 0,
+  privatePtrCount: Int = 0,
+  abandonedPtrCount: Int = 0,
+  abandonedSharedCount: Int = 0,
+  myActiveCount: Int = 0,
+  mySyncingCount: Int = 0,
+  mySharedCount: Int = 0,
+  myPrivateCount: Int = 0,
+  myPtrCount: Int = 0,
+  myAbandonedCount: Int = 0,
+  myAbandonedPtrCount: Int = 0,
+  myAbandonedSharedCount: Int = 0
+)
 // Errors
 case class InvalidRequest(msg: String) extends Throwable(msg)
 
