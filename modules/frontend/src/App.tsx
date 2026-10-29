@@ -34,6 +34,7 @@ import { DnsChangeDetailPage } from "./pages/DnsChangeDetailPage";
 import { DnsChangeNewPage } from "./pages/DnsChangeNewPage";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
+import "font-awesome/css/font-awesome.min.css";
 import "./styles/vinyldns.css";
 
 const queryClient = new QueryClient({
