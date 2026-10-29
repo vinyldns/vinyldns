@@ -80,6 +80,48 @@ describe('BatchChange', function(){
             }));
         });
 
+        describe('$scope.sortBy', function() {
+            it('should sort by the selected column in ascending order', function() {
+                this.scope.sortBy('inputName');
+
+                expect(this.scope.sortColumn).toBe('inputName');
+                expect(this.scope.reverseSort).toBe(false);
+            });
+
+            it('should reverse the sort order when the same column is selected again', function() {
+                this.scope.sortBy('inputName');
+                this.scope.sortBy('inputName');
+
+                expect(this.scope.sortColumn).toBe('inputName');
+                expect(this.scope.reverseSort).toBe(true);
+            });
+
+            it('should reset to ascending order when a different column is selected', function() {
+                this.scope.sortBy('inputName');
+                this.scope.sortBy('zoneName');
+
+                expect(this.scope.sortColumn).toBe('zoneName');
+                expect(this.scope.reverseSort).toBe(false);
+            });
+
+            it('should support sorting by all sortable columns', function() {
+                var sortableColumns = [
+                    'changeType',
+                    'inputName',
+                    'recordName',
+                    'zoneName',
+                    'type',
+                    'status'
+                ];
+                sortableColumns.forEach(function(column) {
+                    this.scope.sortBy(column);
+
+                    expect(this.scope.sortColumn).toBe(column);
+                    expect(this.scope.reverseSort).toBe(false);
+                }, this);
+            });
+        });
+
         describe('$scope.confirmApprove', function() {
             it('should resolve the promise', inject(function(dnsChangeService) {
 
