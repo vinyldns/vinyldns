@@ -590,6 +590,7 @@ class RecordSetService(
    * @param recordOwnerGroupId The owner group identifier
    * @param nameSort           The sort direction
    * @param authPrincipal      The authenticated principal
+   * @param zoneAccess         Limits results to shared or private zones; None returns both
    * @return A {@link ListGlobalRecordSetsResponse}
    */
   def searchRecordSets(
@@ -600,7 +601,8 @@ class RecordSetService(
                         recordOwnerGroupFilter: Option[String],
                         nameSort: NameSort,
                         authPrincipal: AuthPrincipal,
-                        recordTypeSort: RecordTypeSort
+                        recordTypeSort: RecordTypeSort,
+                        zoneAccess: Option[ZoneAccess.ZoneAccess] = None
                       ): Result[ListGlobalRecordSetsResponse] = {
     for {
       _ <- validRecordNameFilterLength(recordNameFilter).toResult
@@ -615,7 +617,8 @@ class RecordSetService(
           recordTypeFilter,
           recordOwnerGroupFilter,
           nameSort,
-          Some(authPrincipal)
+          Some(authPrincipal),
+          zoneAccess
         ).toResult[ListRecordSetResults]
       } else {
         // Search the record table directly
@@ -628,7 +631,8 @@ class RecordSetService(
           recordOwnerGroupFilter,
           nameSort,
           recordTypeSort,
-          Some(authPrincipal)
+          Some(authPrincipal),
+          zoneAccess
         ).toResult[ListRecordSetResults]
       }
       rsOwnerGroupIds = recordSetResults.recordSets.flatMap(_.ownerGroupId).toSet
@@ -672,6 +676,7 @@ class RecordSetService(
           recordOwnerGroupFilter,
           nameSort,
           recordTypeSort,
+          None,
           None
         )
         .toResult[ListRecordSetResults]

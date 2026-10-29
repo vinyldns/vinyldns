@@ -284,7 +284,8 @@ class MySqlRecordSetCacheRepository
                           recordTypeFilter: Option[Set[RecordType]],
                           recordOwnerGroupFilter: Option[String],
                           nameSort: NameSort,
-                          authPrincipal: Option[AuthPrincipal]
+                          authPrincipal: Option[AuthPrincipal],
+                          zoneAccess: Option[ZoneAccess.ZoneAccess] = None
                         ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSetData") {
       IO {
@@ -339,8 +340,13 @@ class MySqlRecordSetCacheRepository
         val ownerGroupFilter =
           recordOwnerGroupFilter.map(owner => sqls"recordset.owner_group_id = $owner ")
 
+        val zoneAccessFilter = zoneAccess.map {
+          case ZoneAccess.Shared => sqls"recordset.zone_id IN (SELECT z.id FROM zone z WHERE INSTR(z.data, X'4801') > 0) "
+          case _ => sqls"recordset.zone_id IN (SELECT z.id FROM zone z WHERE INSTR(z.data, X'4801') = 0) "
+        }
+
         val opts =
-          (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter ++ authFilter).toList
+          (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter ++ zoneAccessFilter ++ authFilter).toList
 
         val qualifiers = if (nameSort == ASC) {
           sqls"ORDER BY recordset.fqdn ASC, recordset.type ASC "

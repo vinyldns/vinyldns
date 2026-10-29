@@ -324,6 +324,7 @@ class ZoneSyncHandlerSpec
         any[NameSort],
         any[RecordTypeSort],
         any[Option[vinyldns.core.domain.auth.AuthPrincipal]],
+        any[Option[ZoneAccess.ZoneAccess]]
       )
 
     doReturn(IO(testChangeSet)).when(recordSetRepo).apply(any[DB], any[ChangeSet])

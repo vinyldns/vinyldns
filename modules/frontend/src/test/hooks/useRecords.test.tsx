@@ -126,6 +126,82 @@ describe("useRecords", () => {
           "CNAME",
           "",
           "",
+          undefined,
+        ),
+      );
+    });
+  });
+
+  describe("zoneAccess", () => {
+    it("defaults to null and sends no zoneAccess to the service", async () => {
+      const { result } = renderHook(() => useRecords(), {
+        wrapper: makeWrapper(),
+      });
+      act(() => result.current.search({ name: "web" }));
+      await waitFor(() =>
+        expect(mockService.listRecordSetData).toHaveBeenCalled(),
+      );
+
+      expect(result.current.zoneAccess).toBeNull();
+      expect(mockService.listRecordSetData).toHaveBeenLastCalledWith(
+        expect.any(Number),
+        undefined,
+        "web",
+        "",
+        "",
+        "",
+        undefined,
+      );
+    });
+
+    it("forwards the selected access value to the service query", async () => {
+      const { result } = renderHook(() => useRecords(), {
+        wrapper: makeWrapper(),
+      });
+      act(() => result.current.search({ name: "web" }));
+      await waitFor(() =>
+        expect(mockService.listRecordSetData).toHaveBeenCalled(),
+      );
+
+      act(() => result.current.setZoneAccess("shared"));
+
+      await waitFor(() =>
+        expect(mockService.listRecordSetData).toHaveBeenLastCalledWith(
+          expect.any(Number),
+          undefined,
+          "web",
+          "",
+          "",
+          "",
+          "shared",
+        ),
+      );
+      expect(result.current.zoneAccess).toBe("shared");
+    });
+
+    it("sends no zoneAccess again once cleared", async () => {
+      const { result } = renderHook(() => useRecords(), {
+        wrapper: makeWrapper(),
+      });
+      act(() => result.current.search({ name: "web" }));
+      await waitFor(() =>
+        expect(mockService.listRecordSetData).toHaveBeenCalled(),
+      );
+
+      act(() => result.current.setZoneAccess("private"));
+      await waitFor(() => expect(result.current.zoneAccess).toBe("private"));
+
+      act(() => result.current.setZoneAccess(null));
+
+      await waitFor(() =>
+        expect(mockService.listRecordSetData).toHaveBeenLastCalledWith(
+          expect.any(Number),
+          undefined,
+          "web",
+          "",
+          "",
+          "",
+          undefined,
         ),
       );
     });

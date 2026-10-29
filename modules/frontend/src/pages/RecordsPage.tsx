@@ -56,9 +56,6 @@ export function RecordsPage() {
   const [ownerGroupFilter, setOwnerGroupFilter] = useState("");
 
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [accessFilter, setAccessFilter] = useState<"shared" | "private" | null>(
-    null,
-  );
   const [zoneFilter, setZoneFilter] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>("all");
   const [dateFrom, setDateFrom] = useState("");
@@ -109,6 +106,8 @@ export function RecordsPage() {
     isFetching,
     nameFilter,
     search,
+    zoneAccess: accessFilter,
+    setZoneAccess: setAccessFilter,
     nextPage,
     prevPage,
     nextPageEnabled,
@@ -259,9 +258,6 @@ export function RecordsPage() {
         .sort() as string[],
     [records],
   );
-  const hasShared = records.some((r: any) => r.zoneShared === true);
-  const hasPrivate = records.some((r: any) => r.zoneShared === false);
-
   /**
    * Returns true when `dateStr` falls inside the requested time window.
    *
@@ -295,21 +291,15 @@ export function RecordsPage() {
   );
 
   // Client-side filters run only when at least one is active to avoid
-  // re-allocating the records array on every render.
+  // re-allocating the records array on every render. Access is server-side.
   const anyClientFilterActive = !!(
     statusFilter ||
-    accessFilter ||
     zoneFilter ||
     timeRange !== "all"
   );
   const displayedRecords = anyClientFilterActive
     ? records.filter((r: any) => {
         const matchesStatus = !statusFilter || r.status === statusFilter;
-        const matchesAccess =
-          !accessFilter ||
-          (accessFilter === "shared"
-            ? r.zoneShared === true
-            : r.zoneShared === false);
         const matchesZone = !zoneFilter || r.zoneName === zoneFilter;
         const matchesTime = isWithinRange(
           (r.updated ?? r.created) as string | undefined, // prefer updated, fall back to created
@@ -317,7 +307,7 @@ export function RecordsPage() {
           dateFrom,
           dateTo,
         );
-        return matchesStatus && matchesAccess && matchesZone && matchesTime;
+        return matchesStatus && matchesZone && matchesTime;
       })
     : records;
 
@@ -923,7 +913,7 @@ export function RecordsPage() {
                   style={{ fontSize: "0.65rem", color: "#506080" }}
                 />
               </button>
-              {accessDropdownOpen && (hasShared || hasPrivate) && (
+              {accessDropdownOpen && (
                 <ul
                   className="list-group position-absolute shadow vds-toolbar-filter-list"
                   style={{
@@ -936,34 +926,30 @@ export function RecordsPage() {
                     border: "1px solid #d4dbe8",
                   }}
                 >
-                  {hasShared && (
-                    <li
-                      className={`list-group-item list-group-item-action py-2 px-3 d-flex align-items-center gap-2 vds-suggestion-item${accessFilter === "shared" ? " vds-role-item--selected" : ""}`}
-                      style={{ cursor: "pointer", fontSize: "0.85rem" }}
-                      onMouseDown={() => {
-                        setAccessFilter(
-                          accessFilter === "shared" ? null : "shared",
-                        );
-                        setAccessDropdownOpen(false);
-                      }}
-                    >
-                      <i className="bi bi-share-fill" /> Shared
-                    </li>
-                  )}
-                  {hasPrivate && (
-                    <li
-                      className={`list-group-item list-group-item-action py-2 px-3 d-flex align-items-center gap-2 vds-suggestion-item${accessFilter === "private" ? " vds-role-item--selected" : ""}`}
-                      style={{ cursor: "pointer", fontSize: "0.85rem" }}
-                      onMouseDown={() => {
-                        setAccessFilter(
-                          accessFilter === "private" ? null : "private",
-                        );
-                        setAccessDropdownOpen(false);
-                      }}
-                    >
-                      <i className="bi bi-lock-fill text-secondary" /> Private
-                    </li>
-                  )}
+                  <li
+                    className={`list-group-item list-group-item-action py-2 px-3 d-flex align-items-center gap-2 vds-suggestion-item${accessFilter === "shared" ? " vds-role-item--selected" : ""}`}
+                    style={{ cursor: "pointer", fontSize: "0.85rem" }}
+                    onMouseDown={() => {
+                      setAccessFilter(
+                        accessFilter === "shared" ? null : "shared",
+                      );
+                      setAccessDropdownOpen(false);
+                    }}
+                  >
+                    <i className="bi bi-share-fill" /> Shared
+                  </li>
+                  <li
+                    className={`list-group-item list-group-item-action py-2 px-3 d-flex align-items-center gap-2 vds-suggestion-item${accessFilter === "private" ? " vds-role-item--selected" : ""}`}
+                    style={{ cursor: "pointer", fontSize: "0.85rem" }}
+                    onMouseDown={() => {
+                      setAccessFilter(
+                        accessFilter === "private" ? null : "private",
+                      );
+                      setAccessDropdownOpen(false);
+                    }}
+                  >
+                    <i className="bi bi-lock-fill text-secondary" /> Private
+                  </li>
                 </ul>
               )}
             </div>
