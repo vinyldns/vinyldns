@@ -34,6 +34,7 @@ export const recordsService = {
     typeFilter?: string,
     nameSort?: string,
     ownerGroupFilter?: string,
+    zoneAccess?: string,
   ) {
     const params = {
       maxItems: limit,
@@ -42,6 +43,7 @@ export const recordsService = {
       recordTypeFilter: typeFilter || undefined,
       nameSort: nameSort || undefined,
       recordOwnerGroupFilter: ownerGroupFilter || undefined,
+      zoneAccess: zoneAccess || undefined,
     };
     return api.get<RecordSetListResponse>(urlBuilder("/recordsets", params));
   },

@@ -603,7 +603,8 @@ class RecordSetRoutingSpec
                            recordOwnerGroupFilter: Option[String],
                            nameSort: NameSort,
                            authPrincipal: AuthPrincipal,
-                           recordTypeSort: RecordTypeSort
+                           recordTypeSort: RecordTypeSort,
+                           zoneAccess: Option[ZoneAccess.ZoneAccess]
                          ): Result[ListGlobalRecordSetsResponse] = {
       if (recordTypeFilter.contains(Set(CNAME))) {
         Right(
@@ -1169,6 +1170,18 @@ class RecordSetRoutingSpec
         val resultRs = responseAs[ListGlobalRecordSetsResponse]
         (resultRs.recordSets.map(_.id) should contain)
           .only(rs2.id)
+      }
+    }
+
+    "accept a zoneAccess filter" in {
+      Get(s"/recordsets?recordNameFilter=rs*&zoneAccess=shared") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.OK
+      }
+    }
+
+    "reject an invalid zoneAccess value" in {
+      Get(s"/recordsets?recordNameFilter=rs*&zoneAccess=bogus") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.BadRequest
       }
     }
   }

@@ -10,7 +10,7 @@ Retrieves a list of RecordSets globally in the VinylDNS database based on search
 
 #### HTTP REQUEST
 
-> GET /recordsets?startFrom={response.nextId}&maxItems={1 - 100}&recordNameFilter={recordNameFilter}&recordTypeFilter={recordTypeFilter}&recordOwnerGroupFilter={recordOwnerGroupFilter}&nameSort={nameSort}
+> GET /recordsets?startFrom={response.nextId}&maxItems={1 - 100}&recordNameFilter={recordNameFilter}&recordTypeFilter={recordTypeFilter}&recordOwnerGroupFilter={recordOwnerGroupFilter}&nameSort={nameSort}&zoneAccess={zoneAccess}
 
 #### HTTP REQUEST PARAMS
 
@@ -19,6 +19,7 @@ name          | type          | required?   | description |
 recordNameFilter | string     | yes         | Characters that are part of the record name to search for.  The wildcard character `*` is supported, for example `www*`.  Omit the wildcard when searching for an exact record name. At least two alphanumeric characters are **required** for searching. |
 recordTypeFilter | Array of RecordType | no | An array of record types to filter for listing record sets.  Refer to [recordset mode](recordset-model.html) for supported types.  Invalid record types will be ignored.  If left empty or no valid record types are provided, then all record types will be returned. |
 recordOwnerGroupFilter | string | no        | Owner group ID for record set. |
+zoneAccess    | string        | no          | Limits results to record sets in zones that are `shared` (visible to everyone) or `private`. Valid values are `shared` and `private`. If omitted, record sets from both shared and private zones are returned. Filtering happens before pagination, so `nextId` and the page contents reflect the filtered results. |
 nameSort      | string        | no          | Name sort order for record sets returned by list record set response.  Valid values are `ASC` (ascending; default) and `DESC` (descending). |
 startFrom     | string        | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
 maxItems      | integer       | no          | The number of items to return in the page.  Valid values are 1 to 100. Defaults to 100 if not provided. |
@@ -28,6 +29,7 @@ maxItems      | integer       | no          | The number of items to return in t
 Code          | description |
  ------------ | :---------- |
 200           | **OK** - The record sets are returned in the response body |
+400           | **Bad Request** - `zoneAccess` was provided but is not `shared` or `private` |
 422           | **Unprocessable Entity** - `recordNameFilter` was either omitted or provided but does not contain at least two alphanumeric characters |
 
 #### HTTP RESPONSE ATTRIBUTES

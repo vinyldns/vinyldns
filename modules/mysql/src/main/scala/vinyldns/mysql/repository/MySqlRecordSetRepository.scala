@@ -181,6 +181,7 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
                        nameSort: NameSort,
                        recordTypeSort: RecordTypeSort,
                       authPrincipal: Option[AuthPrincipal],
+                      zoneAccess: Option[ZoneAccess.ZoneAccess] = None,
                      ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
       IO {
@@ -228,8 +229,13 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           val ownerGroupFilter =
             recordOwnerGroupFilter.map(owner => sqls"owner_group_id = $owner ")
 
+          val zoneAccessFilter = zoneAccess.map {
+            case ZoneAccess.Shared => sqls"zone_id IN (SELECT z.id FROM zone z WHERE INSTR(z.data, X'4801') > 0) "
+            case _ => sqls"zone_id IN (SELECT z.id FROM zone z WHERE INSTR(z.data, X'4801') = 0) "
+          }
+
           val opts =
-            (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter ++ authFilter).toList
+            (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter ++ zoneAccessFilter ++ authFilter).toList
 
           val nameSortQualifiers = nameSort match {
             case NameSort.ASC => sqls"ORDER BY fqdn ASC, type ASC "
