@@ -181,12 +181,13 @@ class MembershipService(
       group <- getExistingGroup(groupId)
       _ <- canSeeGroup(groupId, authPrincipal).toResult
       result <- getUsers(group.memberIds, startFrom, Some(maxItems))
-    } yield ListMembersResponse(
+    } yield {
+        ListMembersResponse(
       result.users.map(MemberInfo(_, group)),
       startFrom,
       result.lastEvaluatedId,
       maxItems
-    )
+    )}
 
   def listAdmins(groupId: String, authPrincipal: AuthPrincipal): Result[ListAdminsResponse] =
     for {

@@ -34,7 +34,7 @@
                 }
 
                 return dnsChangeService
-                    .getBatchChanges(maxItems, startFrom, $scope.ignoreAccess, $scope.approvalStatus, $scope.submitterName, $scope.filter.dateTimeRangeStart, $scope.filter.dateTimeRangeEnd)
+                    .getBatchChanges(maxItems, startFrom, $scope.ignoreAccess, $scope.approvalStatus, $scope.submitterName, $scope.groupName, $scope.filter.dateTimeRangeStart, $scope.filter.dateTimeRangeEnd)
                     .then(success)
                     .catch(function(error) {
                         handleError(error, 'dnsChangesService::getBatchChanges-failure');
@@ -65,7 +65,13 @@
 
             $scope.refreshBatchChanges = function() {
                 batchChangePaging = pagingService.resetPaging(batchChangePaging);
-
+                $scope.groupName = null;
+                $scope.submitterName = null;
+                 if ($scope.searchByGroup) {
+                    $scope.groupName = $scope.searchName;
+                 } else {
+                    $scope.submitterName = $scope.searchName;
+                 }
                 function success(response) {
                     batchChangePaging.next = response.data.nextId;
                     $scope.batchChanges = response.data.batchChanges;
@@ -75,7 +81,7 @@
                 }
 
                 return dnsChangeService
-                    .getBatchChanges(batchChangePaging.maxItems, undefined, $scope.ignoreAccess, $scope.approvalStatus, $scope.submitterName, $scope.filter.dateTimeRangeStart, $scope.filter.dateTimeRangeEnd)
+                    .getBatchChanges(batchChangePaging.maxItems, undefined, $scope.ignoreAccess, $scope.approvalStatus, $scope.submitterName, $scope.groupName, $scope.filter.dateTimeRangeStart, $scope.filter.dateTimeRangeEnd)
                     .then(success)
                     .catch(function (error){
                         handleError(error, 'dnsChangesService::getBatchChanges-failure');
@@ -108,7 +114,7 @@
             $scope.prevPage = function() {
                 var startFrom = pagingService.getPrevStartFrom(batchChangePaging);
                 return $scope
-                    .getBatchChanges(batchChangePaging.maxItems, startFrom, $scope.ignoreAccess, $scope.approvalStatus, $scope.submitterName, $scope.filter.dateTimeRangeStart, $scope.filter.dateTimeRangeEnd)
+                    .getBatchChanges(batchChangePaging.maxItems, startFrom, $scope.ignoreAccess, $scope.approvalStatus, $scope.submitterName, $scope.groupName, $scope.filter.dateTimeRangeStart, $scope.filter.dateTimeRangeEnd)
                     .then(function(response) {
                         batchChangePaging = pagingService.prevPageUpdate(response.data.nextId, batchChangePaging);
                         $scope.batchChanges = response.data.batchChanges;
@@ -120,7 +126,7 @@
 
             $scope.nextPage = function() {
                 return $scope
-                    .getBatchChanges(batchChangePaging.maxItems, batchChangePaging.next, $scope.ignoreAccess, $scope.approvalStatus, $scope.submitterName, $scope.filter.dateTimeRangeStart, $scope.filter.dateTimeRangeEnd)
+                    .getBatchChanges(batchChangePaging.maxItems, batchChangePaging.next, $scope.ignoreAccess, $scope.approvalStatus, $scope.submitterName, $scope.groupName, $scope.filter.dateTimeRangeStart, $scope.filter.dateTimeRangeEnd)
                     .then(function(response) {
                         var batchChanges = response.data.batchChanges;
                         batchChangePaging = pagingService.nextPageUpdate(batchChanges, response.data.nextId, batchChangePaging);
