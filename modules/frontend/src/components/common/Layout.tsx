@@ -20,6 +20,7 @@ import { useBreadcrumbs, type Crumb } from "../../contexts/BreadcrumbContext";
 import { useProfile } from "../../contexts/ProfileContext";
 import { useAlerts } from "../../contexts/AlertContext";
 import { AlertBanner } from "./AlertBanner";
+import { portalConfig } from "../../config/portalConfig";
 
 const ROUTE_LABELS: Record<string, string> = {
   "/dnschanges": "DNS Changes",
@@ -213,17 +214,21 @@ export function Layout({ children }: LayoutProps) {
             {collapsed && <div className="vds-spacer-help" />}
 
             <ul className="nav flex-column px-2 vds-nav-list">
-              <li className="nav-item">
-                <a
-                  href="https://www.vinyldns.io/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`nav-link vds-nav-link d-flex align-items-center px-3 py-2 rounded-2${collapsed ? " vds-nav-link--collapsed flex-column" : ""}`}
-                >
-                  <i className="bi bi-book-half vds-nav-icon" />
-                  <span className="vds-nav-text">User Guide</span>
-                </a>
-              </li>
+              {portalConfig.links
+                .filter((link) => link.displayOnSidebar)
+                .map((link) => (
+                  <li className="nav-item" key={`${link.href}-${link.title}`}>
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`nav-link vds-nav-link d-flex align-items-center px-3 py-2 rounded-2${collapsed ? " vds-nav-link--collapsed flex-column" : ""}`}
+                    >
+                      <i className={`${link.icon} vds-nav-icon`} aria-hidden="true" />
+                      <span className="vds-nav-text">{link.title}</span>
+                    </a>
+                  </li>
+                ))}
             </ul>
           </div>
 

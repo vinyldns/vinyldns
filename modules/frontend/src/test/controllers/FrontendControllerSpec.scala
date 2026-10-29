@@ -90,6 +90,8 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
           underTest.index()(FakeRequest(GET, "/").withSession("username" -> "frodo").withCSRFToken)
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
+        contentAsString(result) must contain("window.__VINYLDNS_PORTAL_LINKS__")
+        contentAsString(result) must contain("test link sidebar")
         contentAsString(result) must contain(s"Are you sure you want to log out")
       }
     }

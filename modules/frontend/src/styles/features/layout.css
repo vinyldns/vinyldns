@@ -305,6 +305,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   margin-left: 0.6rem;
+  font-size: 15px;
 }
 
 .vds-nav-link {
