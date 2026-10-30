@@ -81,7 +81,10 @@ jobs:
   docker-release-api:
     name: Release API Docker Image
     needs: [ verify, create-gh-release ]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     if: github.event.inputs.publish-images == 'true'
 
     steps:
@@ -101,22 +104,20 @@ jobs:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Import Content Trust Key
-        run: docker trust key load <(echo "${SIGNING_KEY}") --name vinyldns_svc
-        env:
-          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-          DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
 
       # This will publish the latest release
-      - name: Publish API Docker Image
+      - name: Publish and Sign API Docker Image
         run: make -C build/docker/api publish
-        env:
-          DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
 
   docker-release-portal:
     name: Release Portal Docker Image
     needs: [ verify, create-gh-release ]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     if: github.event.inputs.publish-images == 'true'
 
     steps:
@@ -136,14 +137,9 @@ jobs:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Import Content Trust Key
-        run: docker trust key load <(echo "${SIGNING_KEY}") --name vinyldns_svc
-        env:
-          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-          DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
 
       # This will publish the latest release
-      - name: Publish Portal Docker Image
+      - name: Publish and Sign Portal Docker Image
         run: make -C build/docker/portal publish
-        env:
-          DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}

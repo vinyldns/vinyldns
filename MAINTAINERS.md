@@ -2,30 +2,36 @@
 
 ## Table of Contents
 
-* [Docker Content Trust](#docker-content-trust)
+* [Image Signing](#image-signing)
 * [Release Process](#release-process)
 
-## Docker Content Trust
+## Image Signing
 
-Official VinylDNS Docker images are signed when being pushed to Docker Hub. Docs for Docker Content Trust can be found
-at <https://docs.docker.com/engine/security/trust/>.
+Official VinylDNS Docker images are signed with [Sigstore cosign](https://docs.sigstore.dev/cosign/signing/overview/)
+using keyless signing: the release workflows sign each image with a short-lived certificate issued to the GitHub Actions
+workflow through OIDC, so there are no signing keys or secrets to manage. Consumer verification steps are in the
+[operator guide](modules/docs/src/main/mdoc/operator/verify-images.md).
 
-Content trust is enabled through the `DOCKER_CONTENT_TRUST` environment variable, which must be set to `1`. It is
-recommended that in your `~/.bashrc`, you have `export DOCKER_CONTENT_TRUST=1` by default, and if you ever want to turn
-it off for a Docker command, add the `--disable-content-trust` flag to the command,
-e.g. `docker pull --disable-content-trust ...`.
+Publishing is handled by `build/docker/publish_signed_image.sh`, called from `make publish` and `make publish-vnext`. It:
 
-There are multiple Docker repositories on Docker Hub under
-the [vinyldns organization](https://hub.docker.com/u/vinyldns/dashboard/). Namely:
+1. pushes the version tag (`<version>` or `vnext-<date>`) and resolves its digest
+2. signs that digest with cosign
+3. verifies the signature against the trusted release identity, and checks that an unexpected identity is rejected
+4. only then points the floating tag (`latest` or `vnext`) at the same digest
 
-* vinyldns/api: images for vinyldns core api engine
-* vinyldns/portal: images for vinyldns web client
+Any failure fails the release job, and the floating tag is not moved. Each run records the published digest in the
+job summary. Because signing needs a GitHub Actions OIDC token, images can only be published from the release workflows.
 
-The offline root key and repository keys are managed by the core maintainer team. The keys managed are:
+The trusted identity is defined in three places that must be kept in sync:
 
-* root key: also known as the offline key, used to create the separate repository signing keys
-* api key: used to sign tagged images in vinyldns/api
-* portal key: used to sign tagged images in vinyldns/portal
+* `build/docker/publish_signed_image.sh` (`COSIGN_IDENTITY_REGEXP` default)
+* `.github/workflows/test-image-signing.yml` (`RELEASE_IDENTITY_REGEXP`)
+* `modules/docs/src/main/mdoc/operator/verify-images.md`
+
+`.github/workflows/test-image-signing.yml` exercises the same script against a throwaway image on `ttl.sh`. It runs on
+pull requests that touch the signing code, and can be run manually.
+
+Images released before the switch to cosign were signed with Docker Content Trust, which Docker is retiring.
 
 ## Release Process
 
