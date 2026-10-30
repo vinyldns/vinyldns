@@ -38,5 +38,8 @@ class NoOpCryptoSpec extends AnyWordSpec with Matchers {
       val e = underTest.encrypt("foo")
       underTest.decrypt(e) shouldBe e
     }
+    "instantiate successfully via the companion object" in {
+      NoOpCrypto.instance should not be null
+    }
   }
 }
