@@ -91,10 +91,9 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
   )
 
   "VinylDNSZoneViewLoader" should {
-    "load the DNS Zones" in {
+    "load all records in a single page" in {
       val mockRecordSetRepo = mock[RecordSetRepository]
       val mockRecordSetDataRepo = mock[RecordSetCacheRepository]
-
 
       doReturn(IO(ListRecordSetResults(records, None, None, None, None, None, None, NameSort.ASC, RecordTypeSort.NONE)))
         .when(mockRecordSetRepo)
@@ -116,6 +115,125 @@ class ZoneViewLoaderSpec extends AnyWordSpec with Matchers with MockitoSugar wit
       val actual = underTest.load().unsafeRunSync()
 
       actual shouldBe expected
+    }
+
+    "paginate through multiple pages and accumulate all records" in {
+      val mockRecordSetRepo = mock[RecordSetRepository]
+      val mockRecordSetDataRepo = mock[RecordSetCacheRepository]
+
+      val page1Records = records.take(2)
+      val page2Records = records.drop(2)
+
+      // First call (startFrom = None) returns page 1 with a nextId
+      doReturn(IO(ListRecordSetResults(page1Records, Some("nextCursor1"), None, Some(2), None, None, None, NameSort.ASC, RecordTypeSort.NONE)))
+        .when(mockRecordSetRepo)
+        .listRecordSets(
+          any[Option[String]],
+          org.mockito.Matchers.eq(None: Option[String]),
+          any[Option[Int]],
+          any[Option[String]],
+          any[Option[Set[RecordType]]],
+          any[Option[String]],
+          any[NameSort],
+          any[RecordTypeSort]
+        )
+
+      // Second call (startFrom = Some("nextCursor1")) returns page 2 with no nextId
+      doReturn(IO(ListRecordSetResults(page2Records, None, Some("nextCursor1"), Some(2), None, None, None, NameSort.ASC, RecordTypeSort.NONE)))
+        .when(mockRecordSetRepo)
+        .listRecordSets(
+          any[Option[String]],
+          org.mockito.Matchers.eq(Some("nextCursor1")),
+          any[Option[Int]],
+          any[Option[String]],
+          any[Option[Set[RecordType]]],
+          any[Option[String]],
+          any[NameSort],
+          any[RecordTypeSort]
+        )
+
+      val underTest = VinylDNSZoneViewLoader(testZone, mockRecordSetRepo, mockRecordSetDataRepo, pageSize = 2)
+
+      val expected = ZoneView(testZone, records)
+
+      val actual = underTest.load().unsafeRunSync()
+
+      actual shouldBe expected
+
+      verify(mockRecordSetRepo, times(2)).listRecordSets(
+        any[Option[String]],
+        any[Option[String]],
+        any[Option[Int]],
+        any[Option[String]],
+        any[Option[Set[RecordType]]],
+        any[Option[String]],
+        any[NameSort],
+        any[RecordTypeSort]
+      )
+    }
+
+    "return an empty ZoneView for an empty zone" in {
+      val mockRecordSetRepo = mock[RecordSetRepository]
+      val mockRecordSetDataRepo = mock[RecordSetCacheRepository]
+
+      doReturn(IO(ListRecordSetResults(List.empty, None, None, None, None, None, None, NameSort.ASC, RecordTypeSort.NONE)))
+        .when(mockRecordSetRepo)
+        .listRecordSets(
+          any[Option[String]],
+          any[Option[String]],
+          any[Option[Int]],
+          any[Option[String]],
+          any[Option[Set[RecordType]]],
+          any[Option[String]],
+          any[NameSort],
+          any[RecordTypeSort]
+        )
+
+      val underTest = VinylDNSZoneViewLoader(testZone, mockRecordSetRepo, mockRecordSetDataRepo)
+
+      val actual = underTest.load().unsafeRunSync()
+
+      actual.recordSetsMap shouldBe empty
+    }
+
+    "propagate errors that occur during pagination" in {
+      val mockRecordSetRepo = mock[RecordSetRepository]
+      val mockRecordSetDataRepo = mock[RecordSetCacheRepository]
+
+      val page1Records = records.take(2)
+
+      // First page succeeds
+      doReturn(IO(ListRecordSetResults(page1Records, Some("nextCursor1"), None, Some(2), None, None, None, NameSort.ASC, RecordTypeSort.NONE)))
+        .when(mockRecordSetRepo)
+        .listRecordSets(
+          any[Option[String]],
+          org.mockito.Matchers.eq(None: Option[String]),
+          any[Option[Int]],
+          any[Option[String]],
+          any[Option[Set[RecordType]]],
+          any[Option[String]],
+          any[NameSort],
+          any[RecordTypeSort]
+        )
+
+      // Second page fails
+      doReturn(IO.raiseError(new RuntimeException("database connection lost")))
+        .when(mockRecordSetRepo)
+        .listRecordSets(
+          any[Option[String]],
+          org.mockito.Matchers.eq(Some("nextCursor1")),
+          any[Option[Int]],
+          any[Option[String]],
+          any[Option[Set[RecordType]]],
+          any[Option[String]],
+          any[NameSort],
+          any[RecordTypeSort]
+        )
+
+      val underTest = VinylDNSZoneViewLoader(testZone, mockRecordSetRepo, mockRecordSetDataRepo, pageSize = 2)
+
+      val thrown = the[RuntimeException] thrownBy underTest.load().unsafeRunSync()
+      thrown.getMessage shouldBe "database connection lost"
     }
   }
 
