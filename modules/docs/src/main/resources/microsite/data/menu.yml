@@ -96,6 +96,11 @@ options:
       - title: Portal Configuration Guide
         url: operator/config-portal.html
 
+  - title: Verify Docker Images
+    url: operator/verify-images.html
+    menu_type: operator_menu
+    menu_section: operator_section
+
   - title: API documentation
     url: api/index.html
     menu_type: api

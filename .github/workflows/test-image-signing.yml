@@ -1,0 +1,54 @@
+name: Test Image Signing
+
+# Exercises build/docker/publish_signed_image.sh against a throwaway image on ttl.sh (anonymous, expiring registry),
+# so signing changes can be validated without publishing to Docker Hub.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'build/docker/publish_signed_image.sh'
+      - 'build/docker/*/Makefile'
+      - '.github/workflows/release*.yml'
+      - '.github/workflows/test-image-signing.yml'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  sign-and-verify:
+    name: Sign and Verify Test Image
+    runs-on: ubuntu-latest
+    # Fork PRs cannot request an OIDC token
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      IMAGE: ttl.sh/vinyldns-signing-test-${{ github.run_id }}-${{ github.run_attempt }}
+      ISSUER: https://token.actions.githubusercontent.com
+      # Must match the default trusted identity in build/docker/publish_signed_image.sh
+      RELEASE_IDENTITY_REGEXP: '^https://github\.com/vinyldns/vinyldns/\.github/workflows/(release|release-beta|release-vnext)\.yml@refs/(heads/main|tags/v.+)$'
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: sigstore/cosign-installer@v3
+
+      - name: Build throwaway image
+        run: printf 'FROM busybox\nLABEL run="%s"\n' "${GITHUB_RUN_ID}" | docker build -t "${IMAGE}:1h" -
+
+      - name: Publish, sign and verify with this workflow's identity
+        run: |
+          IDENTITY="${GITHUB_SERVER_URL}/${GITHUB_WORKFLOW_REF}"
+          export COSIGN_IDENTITY_REGEXP="^$(sed 's/[.[\*^$()+?{|]/\\&/g' <<< "${IDENTITY}")$"
+          build/docker/publish_signed_image.sh "${IMAGE}" 1h 2h
+
+      - name: Release identity policy rejects this workflow
+        run: |
+          if cosign verify "${IMAGE}:1h" \
+            --certificate-oidc-issuer "${ISSUER}" \
+            --certificate-identity-regexp "${RELEASE_IDENTITY_REGEXP}" > /dev/null 2>&1; then
+            echo "ERROR: release identity policy accepted a non-release workflow" >&2
+            exit 1
+          fi
+          echo "Release identity policy rejected ${GITHUB_WORKFLOW_REF}" | tee -a "${GITHUB_STEP_SUMMARY}"
