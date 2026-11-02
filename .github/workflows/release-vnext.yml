@@ -36,7 +36,7 @@ jobs:
   docker-release-api:
     name: Release API vNext Image
     needs: [ verify ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout current branch (full)
@@ -64,7 +64,7 @@ jobs:
   docker-release-portal:
     name: Release Portal vNext Image
     needs: [ verify ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout current branch (full)
