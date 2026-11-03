@@ -312,17 +312,28 @@ class BatchChangeRoutingSpec()
     def listBatchChangeSummaries(
         auth: AuthPrincipal,
         userName: Option[String] = None,
+        groupName: Option[String] = None,
         dateTimeStartRange: Option[String] = None,
         dateTimeEndRange: Option[String] = None,
         startFrom: Option[Int],
         maxItems: Int,
         ignoreAccess: Boolean = false,
+        isSearchByGroup: Boolean = false,
         batchStatus: Option[BatchChangeStatus] = None,
         approvalStatus: Option[BatchChangeApprovalStatus] = None
     ): EitherT[IO, BatchChangeErrorResponse, BatchChangeSummaryList] =
       if (auth.userId == okAuth.userId)
-        (auth, userName, dateTimeStartRange, dateTimeEndRange, startFrom, maxItems, ignoreAccess, approvalStatus) match {
-          case (_, None, None, None, None, 100, _, None) =>
+        (auth, userName, groupName, dateTimeStartRange, dateTimeEndRange, startFrom, maxItems, ignoreAccess, isSearchByGroup, approvalStatus) match {
+          case (_, None, Some("group-filter"), None, None, None, 100, _, true, None) =>
+            EitherT.rightT(
+              BatchChangeSummaryList(
+                batchChanges = List(batchChangeSummaryInfo1),
+                startFrom = None,
+                nextId = None
+              )
+            )
+
+          case (_, None, _, None, None, None, 100, _, _, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges =
@@ -332,7 +343,7 @@ class BatchChangeRoutingSpec()
               )
             )
 
-          case (_, None, None, None, None, 1, _, None) =>
+          case (_, None, _, None, None, None, 1, _, _, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo1),
@@ -342,7 +353,7 @@ class BatchChangeRoutingSpec()
               )
             )
 
-          case (_, None, None, None, Some(1), 100, _, None) =>
+          case (_, None, _, None, None, Some(1), 100, _, _, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo2),
@@ -351,7 +362,7 @@ class BatchChangeRoutingSpec()
               )
             )
 
-          case (_, None, None, None, Some(1), 1, _, None) =>
+          case (_, None, _, None, None, Some(1), 1, _, _, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo2),
@@ -361,7 +372,7 @@ class BatchChangeRoutingSpec()
               )
             )
 
-          case (_, None, None, None, None, 100, _, Some(BatchChangeApprovalStatus.PendingReview)) =>
+          case (_, None, _, None, None, None, 100, _, _, Some(BatchChangeApprovalStatus.PendingReview)) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo2),
@@ -371,7 +382,7 @@ class BatchChangeRoutingSpec()
               )
             )
 
-          case (_, Some(okAuth.signedInUser.userName), Some("2023-11-14 00:00:00"), Some("2023-11-15 00:00:00"), None, 100, _, None) =>
+          case (_, Some(okAuth.signedInUser.userName), _, Some("2023-11-14 00:00:00"), Some("2023-11-15 00:00:00"), None, 100, _, _, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo2),
@@ -386,8 +397,18 @@ class BatchChangeRoutingSpec()
           case _ => EitherT.rightT(BatchChangeSummaryList(List()))
         }
       else if (auth.userId == superUserAuth.userId)
-        (auth, userName, dateTimeStartRange, dateTimeEndRange, startFrom, maxItems, ignoreAccess, approvalStatus) match {
-          case (_, None, None, None, None, 100, true, None) =>
+        (auth, userName, groupName, dateTimeStartRange, dateTimeEndRange, startFrom, maxItems, ignoreAccess, isSearchByGroup, approvalStatus) match {
+          case (_, None, Some("group-filter"), None, None, None, 100, true, true, None) =>
+            EitherT.rightT(
+              BatchChangeSummaryList(
+                batchChanges = List(batchChangeSummaryInfo1),
+                startFrom = None,
+                nextId = None,
+                ignoreAccess = true
+              )
+            )
+
+          case (_, None, _, None, None, None, 100, true, _, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(
@@ -402,7 +423,7 @@ class BatchChangeRoutingSpec()
               )
             )
 
-          case (_, None, None, None, None, 100, true, Some(BatchChangeApprovalStatus.PendingReview)) => {
+          case (_, None, _, None, None, None, 100, true, _, Some(BatchChangeApprovalStatus.PendingReview)) => {
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(batchChangeSummaryInfo2, batchChangeSummaryInfo4),
@@ -414,7 +435,7 @@ class BatchChangeRoutingSpec()
             )
           }
 
-          case (_, None, None, None, None, 100, false, None) =>
+          case (_, None, _, None, None, None, 100, false, _, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(),
@@ -423,7 +444,7 @@ class BatchChangeRoutingSpec()
               )
             )
 
-          case (_, None, None, None, None, 100, false, Some(BatchChangeApprovalStatus.PendingReview)) =>
+          case (_, None, _, None, None, None, 100, false, _, Some(BatchChangeApprovalStatus.PendingReview)) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(),
@@ -433,7 +454,7 @@ class BatchChangeRoutingSpec()
               )
             )
 
-          case (_, Some(superUserAuth.signedInUser.userName), Some("2023-11-14 00:00:00"), Some("2023-11-15 00:00:00"), None, 100, false, None) =>
+          case (_, Some(superUserAuth.signedInUser.userName), _, Some("2023-11-14 00:00:00"), Some("2023-11-15 00:00:00"), None, 100, false, _, None) =>
             EitherT.rightT(
               BatchChangeSummaryList(
                 batchChanges = List(),
@@ -742,6 +763,21 @@ class BatchChangeRoutingSpec()
         resp.nextId shouldBe None
         resp.approvalStatus.toString() shouldBe Some(BatchChangeApprovalStatus.PendingReview)
           .toString()
+      }
+    }
+
+    "respect groupName and isSearchByGroup query params for all-groups requests" in {
+      Get("/zones/batchrecordchanges?ignoreAccess=true&groupName=group-filter&isSearchByGroup=true") ~>
+        superUserRoute ~> check {
+        status shouldBe OK
+
+        val resp = responseAs[BatchChangeSummaryList]
+
+        resp.batchChanges.length shouldBe 1
+        resp.maxItems shouldBe 100
+        resp.startFrom shouldBe None
+        resp.nextId shouldBe None
+        resp.ignoreAccess shouldBe true
       }
     }
 

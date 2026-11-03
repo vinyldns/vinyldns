@@ -31,6 +31,8 @@ trait BatchChangeRepository extends Repository {
   def getBatchChangeSummaries(
       userId: Option[String],
       userName: Option[String] = None,
+      groupId: Option[String] = None,
+      isSearchByGroup: Boolean = false,
       dateTimeStartRange: Option[String] = None,
       dateTimeEndRange: Option[String] = None,
       startFrom: Option[Int] = None,

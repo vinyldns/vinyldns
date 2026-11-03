@@ -20,7 +20,8 @@ import java.util.UUID
 
 import cats.effect._
 import java.time.temporal.ChronoUnit
-import java.time.Instant
+import java.time.{Instant, LocalDateTime, ZoneId}
+import java.time.format.DateTimeFormatter
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -489,6 +490,84 @@ class MySqlBatchChangeRepositoryIntegrationSpec
       )
 
       areSame(f.unsafeRunSync(), expectedChanges)
+    }
+
+    "get batch change summaries by date time range" in {
+      val inRangeChange = change_one.copy(
+        id = UUID.randomUUID().toString,
+        createdTimestamp = Instant.now.truncatedTo(ChronoUnit.SECONDS)
+      )
+      val outOfRangeChange = change_two.copy(
+        id = UUID.randomUUID().toString,
+        createdTimestamp = inRangeChange.createdTimestamp.plusSeconds(30)
+      )
+
+      val zoneId = ZoneId.of("UTC")
+      val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+      val startDateTimeRange =
+        LocalDateTime.ofInstant(inRangeChange.createdTimestamp.minusSeconds(5), zoneId).format(formatter)
+      val endDateTimeRange =
+        LocalDateTime.ofInstant(inRangeChange.createdTimestamp.plusSeconds(5), zoneId).format(formatter)
+
+      val f =
+        for {
+          _ <- repo.save(inRangeChange)
+          _ <- repo.save(outOfRangeChange)
+
+          retrieved <- repo.getBatchChangeSummaries(
+            None,
+            dateTimeStartRange = Some(startDateTimeRange),
+            dateTimeEndRange = Some(endDateTimeRange)
+          )
+        } yield retrieved
+
+      val expectedChanges = BatchChangeSummaryList(List(BatchChangeSummary(inRangeChange)))
+
+      areSame(f.unsafeRunSync(), expectedChanges)
+    }
+
+    "get batch change summaries by owner group when searching by group" in {
+      val targetGroupId = "target-owner-group"
+      val groupMatchingOne =
+        change_one.copy(id = UUID.randomUUID().toString, ownerGroupId = Some(targetGroupId))
+      val groupMatchingTwo =
+        change_two.copy(id = UUID.randomUUID().toString, ownerGroupId = Some(targetGroupId))
+      val groupNonMatching =
+        change_three.copy(id = UUID.randomUUID().toString, ownerGroupId = Some("other-owner-group"))
+
+      val f =
+        for {
+          _ <- repo.save(groupMatchingOne)
+          _ <- repo.save(groupMatchingTwo)
+          _ <- repo.save(groupNonMatching)
+
+          retrieved <- repo.getBatchChangeSummaries(
+            None,
+            groupId = Some(targetGroupId),
+            isSearchByGroup = true
+          )
+        } yield retrieved
+
+      val expectedChanges = BatchChangeSummaryList(
+        List(
+          BatchChangeSummary(groupMatchingTwo),
+          BatchChangeSummary(groupMatchingOne)
+        )
+      )
+
+      areSame(f.unsafeRunSync(), expectedChanges)
+    }
+
+    "return empty list when searching by group and no group id is provided" in {
+      val f =
+        for {
+          _ <- repo.save(change_one.copy(id = UUID.randomUUID().toString, ownerGroupId = Some("owner-group-a")))
+          _ <- repo.save(change_two.copy(id = UUID.randomUUID().toString, ownerGroupId = Some("owner-group-b")))
+
+          retrieved <- repo.getBatchChangeSummaries(None, isSearchByGroup = true)
+        } yield retrieved
+
+      f.unsafeRunSync().batchChanges shouldBe empty
     }
 
     "get batch change summaries by approval status" in {

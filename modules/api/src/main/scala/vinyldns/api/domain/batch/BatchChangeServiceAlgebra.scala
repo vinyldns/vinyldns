@@ -35,11 +35,13 @@ trait BatchChangeServiceAlgebra {
   def listBatchChangeSummaries(
       auth: AuthPrincipal,
       userName: Option[String] = None,
+      groupName: Option[String] = None,
       dateTimeStartRange: Option[String] = None,
       dateTimeEndRange: Option[String] = None,
       startFrom: Option[Int],
       maxItems: Int,
       ignoreAccess: Boolean,
+      isSearchByGroup : Boolean,
       batchStatus: Option[BatchChangeStatus],
       approvalStatus: Option[BatchChangeApprovalStatus]
   ): BatchResult[BatchChangeSummaryList]
