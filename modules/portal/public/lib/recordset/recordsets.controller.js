@@ -99,6 +99,8 @@
             var recordsPaging = pagingService.getNewPagingParams(100);
             var recordType = [];
             var recordName = [];
+            var recordSetName = [];
+
 
             // Initialize Bootstrap tooltips
             $(document).ready(function() {
@@ -107,20 +109,26 @@
 
             $( "#record-search-text" ).autocomplete({
               source: function( request, response ) {
-                $.ajax({
+              $.ajax({
                   url: "/api/recordsets?maxItems=100",
                   dataType: "json",
-                  data: {recordNameFilter: request.term, nameSort: $scope.nameSort},
+                  data: {recordNameFilter: request.term, nameSort: $scope.nameSort, zoneId: $scope.zoneId},
                   success: function( data ) {
                       const recordSearch =  JSON.parse(JSON.stringify(data));
                       response($.map(recordSearch.recordSets, function(item) {
-                      return {value: item.fqdn +' | '+ item.type , label: 'name: ' + item.fqdn + ' | type: ' + item.type }}))}
+
+                      return { label: 'name: ' + item.fqdn +' | type: ' + item.type + ' | zone_name: ' + item.zoneName,
+                             value: item.fqdn +' | '+ item.type +' | '+ item.zoneName ,
+                             fqdn: item.fqdn, type: item.type, zoneName: item.zoneName, zoneId: item.zoneId,
+                             recordName: item.name}}))}
                 });
               },
               minLength: 2,
               select: function (event, ui) {
-                  $scope.query = ui.item.value;
-                  $("#record-search-text").val(ui.item.value);
+                  recordSetName = ui.item.recordName;
+                  const customQueryValue = ui.item.fqdn + ' | ' + ui.item.type + ' | ' + ui.item.zoneId;
+                  $scope.query = customQueryValue;
+                  $("#record-search-text").val($scope.query);
                   return false;
                 },
               open: function() {
@@ -148,10 +156,13 @@
             };
 
             $scope.refreshRecords = function() {
+            var zoneId = [];
             if($scope.query.includes("|")) {
                 const queryRecord = $scope.query.split('|');
-                recordName = queryRecord[0].trim();
-                recordType = queryRecord[1].trim(); }
+                //recordName = queryRecord[0].trim();
+                recordName = recordSetName;
+                recordType = queryRecord[1].trim();
+                zoneId = queryRecord[2].trim(); }
             else { recordName = $scope.query;
                    recordType = $scope.selectedRecordTypes.toString(); }
 
@@ -161,8 +172,9 @@
                     updateRecordDisplay(response.data['recordSets']);
                     getMembership();
                 }
+
                 return recordsService
-                    .listRecordSetData(recordsPaging.maxItems, undefined, recordName, recordType, $scope.nameSort, $scope.ownerGroupFilter)
+                    .listRecordSetData(recordsPaging.maxItems, undefined, recordName, recordType, $scope.nameSort, $scope.ownerGroupFilter, zoneId)
                     .then(success)
                     .catch(function (error) {
                         handleError(error, 'dnsChangesService::getRecordSet-failure');

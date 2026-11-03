@@ -19,7 +19,7 @@
 angular.module('service.records', [])
     .service('recordsService', function ($http, utilityService) {
 
-        this.listRecordSetData = function (limit, startFrom, nameFilter, typeFilter, nameSort, ownerGroupFilter) {
+        this.listRecordSetData = function (limit, startFrom, nameFilter, typeFilter, nameSort, ownerGroupFilter,zoneId) {
             if (typeFilter == "") {
                 typeFilter = null;
             }
@@ -30,15 +30,27 @@ angular.module('service.records', [])
             if (ownerGroupFilter == "") {
                 ownerGroupFilter = null;
             }
+            if (zoneId && zoneId.length > 0){
+               var params = {
+                    "maxItems": limit,
+                    "startFrom": startFrom,
+                    "recordNameFilter": nameFilter,
+                    "recordTypeFilter": typeFilter,
+                    "nameSort": nameSort,
+                    "recordOwnerGroupFilter": ownerGroupFilter,
+                    "zoneId": zoneId,
+                };
+            } else {
+               var params = {
+                    "maxItems": limit,
+                    "startFrom": startFrom,
+                    "recordNameFilter": nameFilter,
+                    "recordTypeFilter": typeFilter,
+                    "nameSort": nameSort,
+                    "recordOwnerGroupFilter": ownerGroupFilter,
+                };
+            }
 
-            var params = {
-                "maxItems": limit,
-                "startFrom": startFrom,
-                "recordNameFilter": nameFilter,
-                "recordTypeFilter": typeFilter,
-                "nameSort": nameSort,
-                "recordOwnerGroupFilter": ownerGroupFilter
-            };
             var url = utilityService.urlBuilder("/api/recordsets", params);
 
 
