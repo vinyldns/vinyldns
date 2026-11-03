@@ -372,6 +372,7 @@ class RecordSetServiceIntegrationSpec
       vinyldnsConfig.dottedHostsConfig,
       vinyldnsConfig.serverConfig.approvedNameServers,
       useRecordSetCache = true,
+      globalRecordSetSearchAccessAllZones = true,
       mockNotifiers
     )
   }

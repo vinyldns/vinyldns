@@ -35,8 +35,6 @@ class MySqlZoneChangeRepository
     with Monitored {
   private final val logger = LoggerFactory.getLogger(classOf[MySqlZoneChangeRepository])
 
-  private final val MAX_ACCESSORS = 30
-
   private final val PUT_ZONE_CHANGE =
     sql"""
       |REPLACE INTO zone_change (change_id, zone_id, data, created_timestamp, zone_name, zone_status)
@@ -146,7 +144,7 @@ class MySqlZoneChangeRepository
     } else {
       // User is not super or support,
       // let's join across to the zone access table so we return only zones a user has access to
-      val accessors = buildZoneSearchAccessorList(user, groupIds)
+      val accessors = MySqlAccessors.buildZoneSearchAccessorList(user, groupIds, logger)
       val questionMarks = List.fill(accessors.size)("?").mkString(",")
       val withAccessorCheck = BASE_ZONE_CHANGE_SEARCH_SQL +
         s"""
@@ -155,20 +153,6 @@ class MySqlZoneChangeRepository
         """.stripMargin
       (withAccessorCheck, accessors)
     }
-
-  /* Limit the accessors so that we don't have boundless parameterized queries */
-  private def buildZoneSearchAccessorList(user: User, groupIds: Seq[String]): Seq[String] = {
-    val allAccessors = user.id +: groupIds
-
-    if (allAccessors.length > MAX_ACCESSORS) {
-      logger.warn(
-        s"User ${user.userName} with id ${user.id} is in more than $MAX_ACCESSORS groups, no all zones maybe returned!"
-      )
-    }
-
-    // Take the top 30 accessors, but add "EVERYONE" to the list so that we include zones that have everyone access
-    allAccessors.take(MAX_ACCESSORS) :+ "EVERYONE"
-  }
 
   def listDeletedZones(
                         authPrincipal: AuthPrincipal,
