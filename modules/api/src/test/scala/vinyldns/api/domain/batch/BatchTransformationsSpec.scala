@@ -19,7 +19,14 @@ package vinyldns.api.domain.batch
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.domain.batch.BatchTransformations.ExistingZones
+import vinyldns.api.domain.batch.BatchTransformations._
+import vinyldns.core.domain.Fqdn
+import vinyldns.core.domain.record._
+import vinyldns.core.domain.record.RecordType._
 import vinyldns.core.domain.zone.Zone
+
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 class BatchTransformationsSpec extends AnyWordSpec with Matchers {
 
@@ -92,6 +99,73 @@ class BatchTransformationsSpec extends AnyWordSpec with Matchers {
       "return match regardless of capitalization" in {
         existingZones.getByName("forward.COM") shouldBe Some(forwardMatch1)
       }
+    }
+  }
+
+  "ValidationChanges" should {
+    "treat mixed valid and non-existent delete data as a full delete when all existing records are removed" in {
+      val zone = Zone("ok.", "test")
+      val existingData = PTRData(Fqdn("vinyldns.io."))
+      val nonExistentData = PTRData(Fqdn("test.vinyldns.io."))
+      val existingRecordSet = RecordSet(
+        zone.id,
+        "ptr-record",
+        PTR,
+        7200L,
+        RecordSetStatus.Active,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
+        None,
+        List(existingData)
+      )
+
+      val changes = List(
+        DeleteRRSetChangeForValidation(
+          zone,
+          "ptr-record",
+          DeleteRRSetChangeInput("ptr-record.ok.", PTR, None, Some(existingData))
+        ),
+        DeleteRRSetChangeForValidation(
+          zone,
+          "ptr-record",
+          DeleteRRSetChangeInput("ptr-record.ok.", PTR, None, Some(nonExistentData))
+        )
+      )
+
+      val validationChanges = ValidationChanges(changes, Some(existingRecordSet))
+
+      validationChanges.proposedDeletes shouldBe Set(existingData)
+      validationChanges.proposedRecordData shouldBe Set.empty
+      validationChanges.logicalChangeType shouldBe LogicalChangeType.FullDelete
+    }
+
+    "treat delete-only requests with non-existent record data as no-op for existing record sets" in {
+      val zone = Zone("ok.", "test")
+      val existingData = AData("1.1.1.1")
+      val requestedData = AData("1.1.1.2")
+      val existingRecordSet = RecordSet(
+        zone.id,
+        "a-record",
+        A,
+        7200L,
+        RecordSetStatus.Active,
+        Instant.now.truncatedTo(ChronoUnit.MILLIS),
+        None,
+        List(existingData)
+      )
+
+      val changes = List(
+        DeleteRRSetChangeForValidation(
+          zone,
+          "a-record",
+          DeleteRRSetChangeInput("a-record.ok.", A, None, Some(requestedData))
+        )
+      )
+
+      val validationChanges = ValidationChanges(changes, Some(existingRecordSet))
+
+      validationChanges.proposedDeletes shouldBe Set.empty
+      validationChanges.proposedRecordData shouldBe Set(existingData)
+      validationChanges.logicalChangeType shouldBe LogicalChangeType.NotEditedInBatch
     }
   }
 }
