@@ -145,7 +145,7 @@ object Boot extends App {
         vinyldnsConfig.scheduledChangesConfig,
         vinyldnsConfig.serverConfig.approvedNameServers
       )
-      val membershipService = MembershipService(repositories,vinyldnsConfig.validEmailConfig)
+      val membershipService = MembershipService(repositories,vinyldnsConfig.validEmailConfig, notifiers)
 
       val connectionValidator =
         new ZoneConnectionValidator(

@@ -190,6 +190,18 @@ class VinylDNSClient(object):
 
         return data
 
+    def access_group(self, group_id, group, **kwargs):
+        """
+        Update an existing group
+        :param group_id: The id of the group being updated
+        :param group: A group dictionary that can be serialized to json
+        :return: the content of the response, which should be a group json
+        """
+        url = urljoin(self.index_url, "/groups/{0}/access".format(group_id))
+        response, data = self.make_request(url, "PUT", self.headers, json.dumps(group), not_found_ok=True, **kwargs)
+
+        return data
+
     def get_group(self, group_id, **kwargs):
         """
         Gets a group
