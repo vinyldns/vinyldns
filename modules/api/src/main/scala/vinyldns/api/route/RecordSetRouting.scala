@@ -27,7 +27,7 @@ import vinyldns.api.domain.zone._
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
-import vinyldns.core.domain.record.{NameSort, OwnershipTransferStatus, RecordSet, RecordType, RecordTypeSort}
+import vinyldns.core.domain.record.{NameSort, OwnershipTransferStatus, RecordSet, RecordType, RecordTypeSort, ZoneAccess}
 import vinyldns.core.domain.zone.ZoneCommandResult
 import akka.http.scaladsl.model.HttpEntity
 import spray.json._
@@ -152,7 +152,8 @@ class RecordSetRoute(
           "recordTypeFilter".?,
           "recordOwnerGroupFilter".?,
           "nameSort".as[String].?("ASC"),
-          "recordTypeSort".as[String].?("NONE")
+          "recordTypeSort".as[String].?("NONE"),
+          "zoneAccess".as[String].?
         ) {
           (
             startFrom: Option[String],
@@ -161,28 +162,36 @@ class RecordSetRoute(
             recordTypeFilter: Option[String],
             recordOwnerGroupFilter: Option[String],
             nameSort: String,
-            recordTypeSort: String
+            recordTypeSort: String,
+            zoneAccess: Option[String]
           ) =>
             val convertedRecordTypeFilter = convertRecordTypeFilter(recordTypeFilter)
+            val convertedZoneAccess = zoneAccess.flatMap(ZoneAccess.find)
             handleRejections(invalidQueryHandler) {
               validate(
                 0 < maxItems && maxItems <= DEFAULT_MAX_ITEMS,
                 s"maxItems was $maxItems, maxItems must be between 0 and $DEFAULT_MAX_ITEMS"
               ) {
-                authenticateAndExecute(
-                  recordSetService
-                    .searchRecordSets(
-                      startFrom,
-                      Some(maxItems),
-                      recordNameFilter,
-                      convertedRecordTypeFilter,
-                      recordOwnerGroupFilter,
-                      NameSort.find(nameSort),
-                      _,
-                      RecordTypeSort.find(recordTypeSort)
-                    )
-                ) { rsResponse =>
-                  complete(StatusCodes.OK, rsResponse)
+                validate(
+                  zoneAccess.forall(_ => convertedZoneAccess.isDefined),
+                  s"zoneAccess was ${zoneAccess.getOrElse("")}, zoneAccess must be one of: shared, private"
+                ) {
+                  authenticateAndExecute(
+                    recordSetService
+                      .searchRecordSets(
+                        startFrom,
+                        Some(maxItems),
+                        recordNameFilter,
+                        convertedRecordTypeFilter,
+                        recordOwnerGroupFilter,
+                        NameSort.find(nameSort),
+                        _,
+                        RecordTypeSort.find(recordTypeSort),
+                        convertedZoneAccess
+                      )
+                  ) { rsResponse =>
+                    complete(StatusCodes.OK, rsResponse)
+                  }
                 }
               }
             }

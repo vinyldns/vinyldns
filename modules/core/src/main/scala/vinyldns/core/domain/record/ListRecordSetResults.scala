@@ -43,6 +43,17 @@ object RecordTypeSort extends Enumeration {
   }
 }
 
+object ZoneAccess extends Enumeration {
+  type ZoneAccess = Value
+  val Shared, Private = Value
+
+  def find(value: String): Option[Value] = value.toLowerCase match {
+    case "shared" => Some(ZoneAccess.Shared)
+    case "private" => Some(ZoneAccess.Private)
+    case _ => None
+  }
+}
+
 case class ListRecordSetResults(
                                  recordSets: List[RecordSet] = List[RecordSet](),
                                  nextId: Option[String] = None,

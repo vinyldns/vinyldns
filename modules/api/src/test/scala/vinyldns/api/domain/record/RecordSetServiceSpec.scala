@@ -1809,7 +1809,8 @@ class RecordSetServiceSpec
           recordOwnerGroupFilter = any[Option[String]],
           nameSort = any[NameSort.NameSort],
           recordTypeSort = any[RecordTypeSort.RecordTypeSort],
-          authPrincipal = any[Option[AuthPrincipal]]
+          authPrincipal = any[Option[AuthPrincipal]],
+          zoneAccess = any[Option[ZoneAccess.ZoneAccess]]
         )
 
       val result: ListGlobalRecordSetsResponse =
@@ -1885,7 +1886,8 @@ class RecordSetServiceSpec
           recordTypeFilter = any[Option[Set[RecordType.RecordType]]],
           recordOwnerGroupFilter = any[Option[String]],
           nameSort = any[NameSort.NameSort],
-          authPrincipal = any[Option[AuthPrincipal]]
+          authPrincipal = any[Option[AuthPrincipal]],
+          zoneAccess = any[Option[ZoneAccess.ZoneAccess]]
         )
 
       val result =
@@ -1958,7 +1960,8 @@ class RecordSetServiceSpec
           recordTypeFilter = any[Option[Set[RecordType.RecordType]]],
           recordOwnerGroupFilter = any[Option[String]],
           nameSort = any[NameSort.NameSort],
-          authPrincipal = any[Option[AuthPrincipal]]
+          authPrincipal = any[Option[AuthPrincipal]],
+          zoneAccess = any[Option[ZoneAccess.ZoneAccess]]
         )
 
       val result =
@@ -2011,7 +2014,8 @@ class RecordSetServiceSpec
           recordOwnerGroupFilter = None,
           nameSort = NameSort.ASC,
           recordTypeSort = RecordTypeSort.ASC,
-          authPrincipal = None
+          authPrincipal = None,
+          zoneAccess = None
         )
 
       val result: ListRecordSetsByZoneResponse =
@@ -2057,7 +2061,8 @@ class RecordSetServiceSpec
           recordOwnerGroupFilter = None,
           nameSort = NameSort.ASC,
           recordTypeSort = RecordTypeSort.ASC,
-          authPrincipal = None
+          authPrincipal = None,
+          zoneAccess = None
         )
 
       val result: ListRecordSetsByZoneResponse =

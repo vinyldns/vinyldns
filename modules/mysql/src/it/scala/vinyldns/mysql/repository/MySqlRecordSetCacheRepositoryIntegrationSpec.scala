@@ -545,6 +545,54 @@ class MySqlRecordSetCacheRepositoryIntegrationSpec
 
       found.recordSets should contain theSameElementsAs List(recordSetDataWithFQDN(allAccessChange.recordSet, allAccessZone))
     }
+    "filter global record set search by zone access when zoneAccess is provided" in {
+      val sharedZone = okZone.copy(
+        name = "zone-access-shared-cache.",
+        id = UUID.randomUUID().toString,
+        shared = true,
+        acl = ZoneACL(rules = Set(ACLRule(accessLevel = AccessLevel.Read, userId = None, groupId = None)))
+      )
+      val privateZone = abcZone.copy(
+        name = "zone-access-private-cache.",
+        id = UUID.randomUUID().toString,
+        shared = false,
+        adminGroupId = okGroup.id,
+        acl = ZoneACL(rules = Set(ACLRule(accessLevel = AccessLevel.Read, userId = None, groupId = None)))
+      )
+
+      val sharedChange =
+        makeTestAddChange(aaaa.copy(zoneId = sharedZone.id, name = "zone-access-cache-record", id = UUID.randomUUID().toString), sharedZone)
+      val privateChange =
+        makeTestAddChange(aaaa.copy(zoneId = privateZone.id, name = "zone-access-cache-record", id = UUID.randomUUID().toString), privateZone)
+
+      saveZones(Seq(sharedZone, privateZone))
+      insert(List(sharedChange, privateChange))
+
+      def search(zoneAccess: Option[ZoneAccess.ZoneAccess]) =
+        recordSetCacheRepo
+          .listRecordSetData(
+            None,
+            None,
+            None,
+            Some("*zone-access-cache-record*"),
+            None,
+            None,
+            NameSort.ASC,
+            Some(AuthPrincipal(okUser, Seq.empty)),
+            zoneAccess
+          )
+          .unsafeRunSync()
+          .recordSets
+
+      search(Some(ZoneAccess.Shared)) should contain theSameElementsAs
+        List(recordSetDataWithFQDN(sharedChange.recordSet, sharedZone))
+      search(Some(ZoneAccess.Private)) should contain theSameElementsAs
+        List(recordSetDataWithFQDN(privateChange.recordSet, privateZone))
+      search(None) should contain theSameElementsAs List(
+        recordSetDataWithFQDN(sharedChange.recordSet, sharedZone),
+        recordSetDataWithFQDN(privateChange.recordSet, privateZone)
+      )
+    }
     "return no recordsets when no zoneId or recordNameFilter are given" in {
       val found =
         recordSetCacheRepo.listRecordSetData(None, None, None, None, None, None, NameSort.ASC).unsafeRunSync()

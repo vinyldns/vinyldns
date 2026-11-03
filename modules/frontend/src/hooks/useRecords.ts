@@ -55,6 +55,9 @@ export function useRecords() {
   const [typeFilter, setTypeFilter] = useState("");
   const [nameSort, setNameSort] = useState("");
   const [ownerGroupFilter, setOwnerGroupFilter] = useState("");
+  const [zoneAccess, setZoneAccessState] = useState<
+    "shared" | "private" | null
+  >(null);
   const {
     paging,
     setMaxItems,
@@ -76,6 +79,7 @@ export function useRecords() {
       typeFilter,
       nameSort,
       ownerGroupFilter,
+      zoneAccess,
       paging.maxItems,
       paging.next,
     ],
@@ -87,6 +91,7 @@ export function useRecords() {
         typeFilter,
         nameSort,
         ownerGroupFilter,
+        zoneAccess ?? undefined,
       );
       return res.data;
     },
@@ -158,6 +163,15 @@ export function useRecords() {
     },
   });
 
+  // Access is filtered server-side, so a change must restart from the first page.
+  const setZoneAccess = useCallback(
+    (value: "shared" | "private" | null) => {
+      setZoneAccessState(value);
+      resetPaging();
+    },
+    [resetPaging],
+  );
+
   // Resetting pagination on every new search prevents the cursor from
   // a previous query leaking into the new one and returning an off-page result.
   const search = useCallback(
@@ -196,6 +210,8 @@ export function useRecords() {
     isFetching,
     nameFilter,
     typeFilter,
+    zoneAccess,
+    setZoneAccess,
     search,
     nextPage,
     prevPage,
