@@ -137,7 +137,6 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
                     s"dotted host records: [$dottedGroupString]"
                 )
               }
-
             logger.info(
               s"zone.sync.changes; zoneName='${zone.name}'; " +
                 s"changeCount=${changesWithUserIds.size}; zoneChange='${zoneChange.id}'"
@@ -173,14 +172,21 @@ object ZoneSyncHandler extends DnsConversions with Monitored with TransactionPro
         case Left(e: Throwable) =>
           val errorMessage = new StringWriter
           e.printStackTrace(new PrintWriter(errorMessage))
+
           logger.error(
-            s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'. Error: ${errorMessage.toString.replaceAll("\n",";").replaceAll("\t"," ")}"
+            s"Encountered error syncing ; zoneName='${zoneChange.zone.name}'; zoneChange='${zoneChange.id}'. Error: ${errorMessage.toString.replaceAll("\n", ";").replaceAll("\t", " ")}"
           )
+
+          val systemMessage =
+            Option(e.getMessage).filter(_.nonEmpty).getOrElse("Zone synchronization failed")
+
           // We want to just move back to an active status, do not update latest sync
           zoneChange.copy(
             zone = zoneChange.zone.copy(status = ZoneStatus.Active),
-            status = ZoneChangeStatus.Failed
+            status = ZoneChangeStatus.Failed,
+            systemMessage = Some(systemMessage)
           )
+
         case Right(ok) => ok
       }
     }
