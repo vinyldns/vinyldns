@@ -152,10 +152,8 @@ export function ZoneDetailPage() {
   const [recordToDelete, setRecordToDelete] = useState<RecordSet | null>(null);
   const [nameFilter, setNameFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
   const [ttlFilter, setTtlFilter] = useState<number | null>(null);
   const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
-  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [ttlDropdownOpen, setTtlDropdownOpen] = useState(false);
   const [copiedZoneId, setCopiedZoneId] = useState(false);
   const [availableTypes, setAvailableTypes] = useState<string[]>([]);
@@ -233,7 +231,6 @@ export function ZoneDetailPage() {
   const [zcUpdatedSort, setZcUpdatedSort] = useState<SortDir>(null);
 
   const typeDropdownRef = useRef<HTMLDivElement>(null);
-  const statusDropdownRef = useRef<HTMLDivElement>(null);
   const ttlDropdownRef = useRef<HTMLDivElement>(null);
 
   const serializeFormState = useCallback((root: HTMLElement | null) => {
@@ -896,12 +893,6 @@ export function ZoneDetailPage() {
         setTypeDropdownOpen(false);
       }
       if (
-        statusDropdownRef.current &&
-        !statusDropdownRef.current.contains(e.target as Node)
-      ) {
-        setStatusDropdownOpen(false);
-      }
-      if (
         ttlDropdownRef.current &&
         !ttlDropdownRef.current.contains(e.target as Node)
       ) {
@@ -1268,6 +1259,7 @@ export function ZoneDetailPage() {
                     <i className="bi bi-clock-history me-2" />
                     Recent Record Changes
                     <div className="ms-auto d-flex align-items-center gap-2 flex-wrap">
+                      {/* TODO: Time filter hidden from UI. Uncomment this block to restore it.
                       <TimeFilterDropdown
                         value={recentRcTimeRange}
                         dateFrom={recentRcDateFrom}
@@ -1276,6 +1268,7 @@ export function ZoneDetailPage() {
                         onDateFromChange={setRecentRcDateFrom}
                         onDateToChange={setRecentRcDateTo}
                       />
+                      */}
                       <button
                         className="btn btn-sm vds-btn-flat d-flex align-items-center gap-1"
                         onClick={() =>
@@ -1481,9 +1474,7 @@ export function ZoneDetailPage() {
                       <span className="vds-record-count-badge__num">
                         {
                           records.filter(
-                            (r) =>
-                              (!statusFilter || r.status === statusFilter) &&
-                              (ttlFilter === null || r.ttl === ttlFilter),
+                            (r) => ttlFilter === null || r.ttl === ttlFilter,
                           ).length
                         }
                       </span>
@@ -1565,60 +1556,6 @@ export function ZoneDetailPage() {
                               }}
                             >
                               {t}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-
-                    {/* Status filter dropdown */}
-                    <div ref={statusDropdownRef} className="position-relative">
-                      <button
-                        className="btn btn-sm d-flex align-items-center gap-1 vds-btn-flat"
-                        onClick={() => setStatusDropdownOpen((o) => !o)}
-                      >
-                        <i className="bi bi-circle-half" />
-                        <span className="vds-btn-flat__label">Status</span>
-                        {statusFilter && (
-                          <span className="vds-filter-chip--accent">
-                            {statusFilter}
-                          </span>
-                        )}
-                        <i
-                          className={`bi bi-chevron-${statusDropdownOpen ? "up" : "down"} ms-1`}
-                          style={{ fontSize: "0.65rem", color: "#506080" }}
-                        />
-                      </button>
-                      {statusDropdownOpen && (
-                        <ul
-                          className="list-group position-absolute shadow"
-                          style={{
-                            zIndex: 1050,
-                            top: "calc(100% + 4px)",
-                            left: 0,
-                            minWidth: "130px",
-                            borderRadius: "0.55rem",
-                            overflow: "hidden",
-                            border: "1px solid #d4dbe8",
-                          }}
-                        >
-                          {Array.from(
-                            new Set(records.map((r) => r.status)),
-                          ).map((s) => (
-                            <li
-                              key={s}
-                              className={`list-group-item list-group-item-action py-2 px-3 vds-suggestion-item${statusFilter === s ? " vds-role-item--selected" : ""}`}
-                              style={{
-                                cursor: "pointer",
-                                fontSize: "0.83rem",
-                                fontWeight: 600,
-                              }}
-                              onMouseDown={() => {
-                                setStatusFilter(statusFilter === s ? "" : s);
-                                setStatusDropdownOpen(false);
-                              }}
-                            >
-                              {s}
                             </li>
                           ))}
                         </ul>
@@ -1710,7 +1647,6 @@ export function ZoneDetailPage() {
                           runWithRecordFormGuard(() => {
                             setNameFilter("");
                             setTypeFilter("");
-                            setStatusFilter("");
                             setTtlFilter(null);
                             searchRecords({ name: "", type: "" });
                             void refetchRecords();
@@ -1730,10 +1666,7 @@ export function ZoneDetailPage() {
               </div>
 
               {/* Active filter tags */}
-              {(nameFilter ||
-                typeFilter ||
-                statusFilter ||
-                ttlFilter !== null) && (
+              {(nameFilter || typeFilter || ttlFilter !== null) && (
                 <div className="d-flex flex-wrap align-items-center gap-2 mb-2 px-1">
                   {nameFilter && (
                     <span className="vds-active-filter-tag">
@@ -1769,20 +1702,6 @@ export function ZoneDetailPage() {
                       />
                     </span>
                   )}
-                  {statusFilter && (
-                    <span className="vds-active-filter-tag">
-                      <i
-                        className="bi bi-circle-half me-1"
-                        style={{ fontSize: "0.7rem" }}
-                      />
-                      Status: <strong className="ms-1">{statusFilter}</strong>
-                      <button
-                        className="btn-close ms-2"
-                        style={{ fontSize: "0.6rem" }}
-                        onClick={() => setStatusFilter("")}
-                      />
-                    </span>
-                  )}
                   {ttlFilter !== null && (
                     <span className="vds-active-filter-tag">
                       <i
@@ -1802,7 +1721,6 @@ export function ZoneDetailPage() {
                     onClick={() => {
                       setNameFilter("");
                       setTypeFilter("");
-                      setStatusFilter("");
                       setTtlFilter(null);
                       searchRecords({ name: "", type: "" });
                     }}
@@ -1832,9 +1750,7 @@ export function ZoneDetailPage() {
                 )}
                 <RecordsTable
                   records={records.filter(
-                    (r) =>
-                      (!statusFilter || r.status === statusFilter) &&
-                      (ttlFilter === null || r.ttl === ttlFilter),
+                    (r) => ttlFilter === null || r.ttl === ttlFilter,
                   )}
                   onEdit={(rec) => {
                     setEditRecord(rec);
@@ -1967,6 +1883,7 @@ export function ZoneDetailPage() {
               <i className="bi bi-clock-history me-2" />
               All Record Changes
               <div className="ms-auto d-flex align-items-center gap-2 flex-wrap">
+                {/* TODO: Time filter hidden from UI. Uncomment this block to restore it.
                 <TimeFilterDropdown
                   value={rcTimeRange}
                   dateFrom={rcDateFrom}
@@ -1975,6 +1892,7 @@ export function ZoneDetailPage() {
                   onDateFromChange={setRcDateFrom}
                   onDateToChange={setRcDateTo}
                 />
+                */}
                 <button
                   className="btn btn-sm vds-btn-flat d-flex align-items-center gap-1"
                   onClick={() =>
@@ -2184,6 +2102,7 @@ export function ZoneDetailPage() {
               <i className="bi bi-journal-text me-2" />
               Zone Change History
               <div className="ms-auto d-flex align-items-center gap-2 flex-wrap">
+                {/* TODO: Time filter hidden from UI. Uncomment this block to restore it.
                 <TimeFilterDropdown
                   value={zcTimeRange}
                   dateFrom={zcDateFrom}
@@ -2192,6 +2111,7 @@ export function ZoneDetailPage() {
                   onDateFromChange={setZcDateFrom}
                   onDateToChange={setZcDateTo}
                 />
+                */}
                 <button
                   className="btn btn-sm vds-btn-flat d-flex align-items-center gap-1"
                   onClick={() =>
@@ -3364,30 +3284,6 @@ export function ZoneDetailPage() {
                         Run on Days
                       </label>
                       <div className="d-flex gap-2 flex-wrap mt-2">
-                        {[
-                          { short: "MON", label: "Mon" },
-                          { short: "TUE", label: "Tue" },
-                          { short: "WED", label: "Wed" },
-                          { short: "THU", label: "Thu" },
-                          { short: "FRI", label: "Fri" },
-                          { short: "SAT", label: "Sat" },
-                          { short: "SUN", label: "Sun" },
-                        ].map(({ short, label }) => {
-                          const active = syncDays.includes(short);
-                          return (
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-secondary px-2 py-0"
-                              style={{ fontSize: "0.75rem", height: 28 }}
-                              disabled={syncScheduleRemove}
-                              onClick={() =>
-                                setSyncDays(["MON", "TUE", "WED", "THU", "FRI"])
-                              }
-                            >
-                              Weekdays
-                            </button>
-                          );
-                        })}
                         <button
                           type="button"
                           className="btn btn-sm btn-outline-secondary px-2 py-0"

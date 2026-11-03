@@ -33,18 +33,9 @@ import { TimeFilterDropdown } from "../components/common/TimeFilterDropdown";
 import type { TimeRange } from "../components/common/TimeFilterDropdown";
 import { RecordHistoryModal } from "../components/modals/RecordHistoryModal";
 
-// Status display labels shared by the filter dropdown and active-chip row.
-const STATUS_LABELS: Record<string, string> = {
-  Active: "Active",
-  Inactive: "Inactive",
-  Pending: "Pending",
-  PendingDelete: "Pending Delete",
-  PendingUpdate: "Pending Update",
-};
-
 /**
  * Global RecordSet Search page — read-only cross-zone view of all records.
- * API filters: FQDN, type, owner group, sort. Client-side filters: status, access, zone, time.
+ * API filters: FQDN, type, owner group, sort. Client-side filters: access, zone, time.
  */
 export function RecordsPage() {
   const queryClient = useQueryClient();
@@ -55,7 +46,6 @@ export function RecordsPage() {
   const [nameSort, setNameSort] = useState("ASC");
   const [ownerGroupFilter, setOwnerGroupFilter] = useState("");
 
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [zoneFilter, setZoneFilter] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>("all");
   const [dateFrom, setDateFrom] = useState("");
@@ -63,7 +53,6 @@ export function RecordsPage() {
 
   const [showInstructions, setShowInstructions] = useState(false);
   const [typeDropdownOpen, setTypeDropdownOpen] = useState(false);
-  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [accessDropdownOpen, setAccessDropdownOpen] = useState(false);
   const [zoneDropdownOpen, setZoneDropdownOpen] = useState(false);
   const [ownerGroupDropdownOpen, setOwnerGroupDropdownOpen] = useState(false);
@@ -81,7 +70,6 @@ export function RecordsPage() {
   const typeDropdownRef = useRef<HTMLDivElement>(null);
   // Each dropdown has its own ref so the global mousedown handler can
   // distinguish clicks inside vs. outside a specific popover.
-  const statusDropdownRef = useRef<HTMLDivElement>(null);
   const accessDropdownRef = useRef<HTMLDivElement>(null);
   const zoneDropdownRef = useRef<HTMLDivElement>(null);
   const ownerGroupDropdownRef = useRef<HTMLDivElement>(null);
@@ -116,8 +104,8 @@ export function RecordsPage() {
     currentPage,
   } = useRecords();
 
-  // Type and Owner Group filters require an active FQDN search with results.
-  const apiFiltersDisabled = !nameFilter || records.length === 0;
+  // Filters are disabled until an FQDN search returns results.
+  const filtersDisabled = !nameFilter || records.length === 0;
 
   // Collect unique zone IDs from non-shared records to back-fill ownerGroupName
   // via GET /zones/:id/details.
@@ -171,8 +159,6 @@ export function RecordsPage() {
         setShowSuggestions(false);
       if (typeDropdownRef.current && !typeDropdownRef.current.contains(t))
         setTypeDropdownOpen(false);
-      if (statusDropdownRef.current && !statusDropdownRef.current.contains(t))
-        setStatusDropdownOpen(false);
       if (accessDropdownRef.current && !accessDropdownRef.current.contains(t))
         setAccessDropdownOpen(false);
       if (zoneDropdownRef.current && !zoneDropdownRef.current.contains(t))
@@ -244,13 +230,6 @@ export function RecordsPage() {
     }
   }, [nameFilter, typeFilters, records]);
 
-  const availableStatuses = useMemo(
-    () =>
-      Array.from(new Set(records.map((r: any) => r.status as string))).filter(
-        Boolean,
-      ) as string[],
-    [records],
-  );
   const availableZones = useMemo(
     () =>
       Array.from(new Set(records.map((r: any) => r.zoneName as string)))
@@ -292,14 +271,9 @@ export function RecordsPage() {
 
   // Client-side filters run only when at least one is active to avoid
   // re-allocating the records array on every render. Access is server-side.
-  const anyClientFilterActive = !!(
-    statusFilter ||
-    zoneFilter ||
-    timeRange !== "all"
-  );
+  const anyClientFilterActive = !!(zoneFilter || timeRange !== "all");
   const displayedRecords = anyClientFilterActive
     ? records.filter((r: any) => {
-        const matchesStatus = !statusFilter || r.status === statusFilter;
         const matchesZone = !zoneFilter || r.zoneName === zoneFilter;
         const matchesTime = isWithinRange(
           (r.updated ?? r.created) as string | undefined, // prefer updated, fall back to created
@@ -307,7 +281,7 @@ export function RecordsPage() {
           dateFrom,
           dateTo,
         );
-        return matchesStatus && matchesZone && matchesTime;
+        return matchesZone && matchesTime;
       })
     : records;
 
@@ -403,7 +377,6 @@ export function RecordsPage() {
     setFrozenTypes([]);
     setNameSort("ASC");
     setOwnerGroupFilter("");
-    setStatusFilter(null);
     setAccessFilter(null);
     setZoneFilter(null);
     setTimeRange("all");
@@ -432,13 +405,9 @@ export function RecordsPage() {
 
   // Count active filters for the toolbar indicator.
   const activeFilterCount =
-    [
-      typeFilters.length > 0,
-      ownerGroupFilter,
-      statusFilter,
-      accessFilter,
-      zoneFilter,
-    ].filter(Boolean).length + (timeRange !== "all" ? 1 : 0);
+    [typeFilters.length > 0, ownerGroupFilter, accessFilter, zoneFilter].filter(
+      Boolean,
+    ).length + (timeRange !== "all" ? 1 : 0);
 
   return (
     <div>
@@ -593,12 +562,10 @@ export function RecordsPage() {
               ref={typeDropdownRef}
               className="position-relative"
               title={
-                apiFiltersDisabled
-                  ? "Search for a record name first"
-                  : undefined
+                filtersDisabled ? "Search for a record name first" : undefined
               }
               style={
-                apiFiltersDisabled
+                filtersDisabled
                   ? { opacity: 0.45, pointerEvents: "none" }
                   : undefined
               }
@@ -695,208 +662,161 @@ export function RecordsPage() {
             </div>
 
             {/* Owner Group combobox — disabled until a FQDN search returns results */}
-            {groups.length > 0 && (
+            <div
+              ref={ownerGroupDropdownRef}
+              className="position-relative"
+              style={{ width: 190 }}
+            >
               <div
-                ref={ownerGroupDropdownRef}
-                className="position-relative"
-                style={{ width: 190 }}
+                className="input-group input-group-sm vds-search-group"
+                title={
+                  filtersDisabled ? "Search for a record name first" : undefined
+                }
+                style={
+                  filtersDisabled
+                    ? { opacity: 0.45, pointerEvents: "none" }
+                    : undefined
+                }
               >
-                <div
-                  className="input-group input-group-sm vds-search-group"
-                  title={
-                    apiFiltersDisabled
-                      ? "Search for a record name first"
-                      : undefined
-                  }
-                  style={
-                    apiFiltersDisabled
-                      ? { opacity: 0.45, pointerEvents: "none" }
-                      : undefined
-                  }
+                <span
+                  className="input-group-text border-0 bg-transparent ps-2 pe-1"
+                  style={{ color: "#506080" }}
                 >
-                  <span
-                    className="input-group-text border-0 bg-transparent ps-2 pe-1"
-                    style={{ color: "#506080" }}
-                  >
-                    <i
-                      className="bi bi-people"
-                      style={{ fontSize: "0.8rem" }}
-                    />
-                  </span>
-                  <input
-                    type="text"
-                    className="form-control border-0 ps-0 shadow-none bg-transparent"
-                    placeholder="Owner Group"
-                    value={ownerGroupInput}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setOwnerGroupInput(val);
-                      setOwnerGroupDropdownOpen(true);
-                      // If the user clears the box, remove the filter immediately
-                      if (!val.trim()) {
-                        setOwnerGroupFilter("");
-                        search({
-                          name: nameInput,
-                          type: typeFilters.join(","),
-                          sort: nameSort,
-                          ownerGroup: "",
-                        });
-                      }
-                    }}
-                    onFocus={() => setOwnerGroupDropdownOpen(true)}
-                  />
-                  {ownerGroupInput && (
-                    <button
-                      type="button"
-                      className="btn btn-sm border-0 vds-table-secondary px-1"
-                      tabIndex={-1}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setOwnerGroupInput("");
-                        setOwnerGroupFilter("");
-                        setOwnerGroupDropdownOpen(false);
-                        search({
-                          name: nameInput,
-                          type: typeFilters.join(","),
-                          sort: nameSort,
-                          ownerGroup: "",
-                        });
-                      }}
-                    >
-                      <i className="bi bi-x" style={{ fontSize: "0.8rem" }} />
-                    </button>
-                  )}
+                  <i className="bi bi-people" style={{ fontSize: "0.8rem" }} />
+                </span>
+                <input
+                  type="text"
+                  className="form-control vds-filter-input border-0 ps-0 shadow-none bg-transparent"
+                  placeholder="Owner Group"
+                  value={ownerGroupInput}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setOwnerGroupInput(val);
+                    setOwnerGroupDropdownOpen(true);
+                    // If the user clears the box, remove the filter immediately
+                    if (!val.trim()) {
+                      setOwnerGroupFilter("");
+                      search({
+                        name: nameInput,
+                        type: typeFilters.join(","),
+                        sort: nameSort,
+                        ownerGroup: "",
+                      });
+                    }
+                  }}
+                  onFocus={() => setOwnerGroupDropdownOpen(true)}
+                />
+                {ownerGroupInput && (
                   <button
                     type="button"
                     className="btn btn-sm border-0 vds-table-secondary px-1"
                     tabIndex={-1}
                     onMouseDown={(e) => {
                       e.preventDefault();
-                      setOwnerGroupDropdownOpen((o) => !o);
+                      setOwnerGroupInput("");
+                      setOwnerGroupFilter("");
+                      setOwnerGroupDropdownOpen(false);
+                      search({
+                        name: nameInput,
+                        type: typeFilters.join(","),
+                        sort: nameSort,
+                        ownerGroup: "",
+                      });
                     }}
                   >
-                    <i
-                      className={`bi bi-chevron-${ownerGroupDropdownOpen ? "up" : "down"}`}
-                      style={{ fontSize: "0.65rem" }}
-                    />
+                    <i className="bi bi-x" style={{ fontSize: "0.8rem" }} />
                   </button>
-                </div>
-                {ownerGroupDropdownOpen && (
-                  <ul
-                    className="list-group position-absolute shadow vds-toolbar-filter-list"
-                    style={{
-                      zIndex: 1050,
-                      top: "calc(100% + 4px)",
-                      left: 0,
-                      right: 0,
-                      maxHeight: "220px",
-                      overflowY: "auto",
-                      borderRadius: "0.55rem",
-                      border: "1px solid #d4dbe8",
-                    }}
-                  >
-                    {[...groups]
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .filter(
-                        (g) =>
-                          !ownerGroupInput.trim() ||
-                          g.name
-                            .toLowerCase()
-                            .includes(ownerGroupInput.toLowerCase()),
-                      )
-                      .map((g) => (
-                        <li
-                          key={g.id}
-                          className={`list-group-item list-group-item-action py-2 px-3 vds-suggestion-item${ownerGroupFilter === g.id ? " vds-role-item--selected" : ""}`}
-                          style={{ cursor: "pointer", fontSize: "0.85rem" }}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            setOwnerGroupInput(g.name);
-                            setOwnerGroupFilter(g.id);
-                            setOwnerGroupDropdownOpen(false);
-                            search({
-                              name: nameInput,
-                              type: typeFilters.join(","),
-                              sort: nameSort,
-                              ownerGroup: g.id,
-                            });
-                          }}
-                        >
-                          {g.name}
-                        </li>
-                      ))}
-                    {[...groups].filter(
-                      (g) =>
-                        !ownerGroupInput.trim() ||
-                        g.name
-                          .toLowerCase()
-                          .includes(ownerGroupInput.toLowerCase()),
-                    ).length === 0 && (
-                      <li
-                        className="list-group-item py-2 px-3 text-muted"
-                        style={{ fontSize: "0.85rem" }}
-                      >
-                        No groups match
-                      </li>
-                    )}
-                  </ul>
                 )}
+                <button
+                  type="button"
+                  className="btn btn-sm border-0 vds-table-secondary px-1"
+                  tabIndex={-1}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setOwnerGroupDropdownOpen((o) => !o);
+                  }}
+                >
+                  <i
+                    className={`bi bi-chevron-${ownerGroupDropdownOpen ? "up" : "down"}`}
+                    style={{ fontSize: "0.65rem" }}
+                  />
+                </button>
               </div>
-            )}
-
-            {/* Status filter dropdown */}
-            <div ref={statusDropdownRef} className="position-relative">
-              <button
-                className="btn btn-sm d-flex align-items-center gap-1 vds-btn-flat"
-                onClick={() => setStatusDropdownOpen((o) => !o)}
-              >
-                <i className="bi bi-activity" />
-                <span className="vds-btn-flat__label">Status</span>
-                {statusFilter && (
-                  <span className="vds-filter-chip--accent">
-                    {STATUS_LABELS[statusFilter] ?? statusFilter}
-                  </span>
-                )}
-                <i
-                  className={`bi bi-chevron-${statusDropdownOpen ? "up" : "down"} ms-1`}
-                  style={{ fontSize: "0.65rem", color: "#506080" }}
-                />
-              </button>
-              {statusDropdownOpen && availableStatuses.length > 0 && (
+              {ownerGroupDropdownOpen && (
                 <ul
                   className="list-group position-absolute shadow vds-toolbar-filter-list"
                   style={{
                     zIndex: 1050,
                     top: "calc(100% + 4px)",
                     left: 0,
-                    minWidth: "155px",
+                    right: 0,
+                    maxHeight: "220px",
+                    overflowY: "auto",
                     borderRadius: "0.55rem",
-                    overflow: "hidden",
                     border: "1px solid #d4dbe8",
                   }}
                 >
-                  {availableStatuses.map((s) => (
+                  {[...groups]
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .filter(
+                      (g) =>
+                        !ownerGroupInput.trim() ||
+                        g.name
+                          .toLowerCase()
+                          .includes(ownerGroupInput.toLowerCase()),
+                    )
+                    .map((g) => (
+                      <li
+                        key={g.id}
+                        className={`list-group-item list-group-item-action py-2 px-3 vds-suggestion-item${ownerGroupFilter === g.id ? " vds-role-item--selected" : ""}`}
+                        style={{ cursor: "pointer", fontSize: "0.85rem" }}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setOwnerGroupInput(g.name);
+                          setOwnerGroupFilter(g.id);
+                          setOwnerGroupDropdownOpen(false);
+                          search({
+                            name: nameInput,
+                            type: typeFilters.join(","),
+                            sort: nameSort,
+                            ownerGroup: g.id,
+                          });
+                        }}
+                      >
+                        {g.name}
+                      </li>
+                    ))}
+                  {[...groups].filter(
+                    (g) =>
+                      !ownerGroupInput.trim() ||
+                      g.name
+                        .toLowerCase()
+                        .includes(ownerGroupInput.toLowerCase()),
+                  ).length === 0 && (
                     <li
-                      key={s}
-                      className={`list-group-item list-group-item-action py-2 px-3 d-flex align-items-center gap-2 vds-suggestion-item${statusFilter === s ? " vds-role-item--selected" : ""}`}
-                      style={{ cursor: "pointer", fontSize: "0.85rem" }}
-                      onMouseDown={() => {
-                        setStatusFilter(statusFilter === s ? null : s);
-                        setStatusDropdownOpen(false);
-                      }}
+                      className="list-group-item py-2 px-3 text-muted"
+                      style={{ fontSize: "0.85rem" }}
                     >
-                      <i
-                        className={`bi ${s === "Active" ? "bi-check-circle-fill text-success" : s.startsWith("Pending") ? "bi-clock text-warning" : "bi-dash-circle text-secondary"}`}
-                      />
-                      {STATUS_LABELS[s] ?? s}
+                      No groups match
                     </li>
-                  ))}
+                  )}
                 </ul>
               )}
             </div>
 
-            {/* Zone Access filter dropdown */}
-            <div ref={accessDropdownRef} className="position-relative">
+            {/* Zone Access filter dropdown — disabled until a FQDN search returns results */}
+            <div
+              ref={accessDropdownRef}
+              className="position-relative"
+              title={
+                filtersDisabled ? "Search for a record name first" : undefined
+              }
+              style={
+                filtersDisabled
+                  ? { opacity: 0.45, pointerEvents: "none" }
+                  : undefined
+              }
+            >
               <button
                 className="btn btn-sm d-flex align-items-center gap-1 vds-btn-flat"
                 onClick={() => setAccessDropdownOpen((o) => !o)}
@@ -954,7 +874,7 @@ export function RecordsPage() {
               )}
             </div>
 
-            {/* Last Updated time filter */}
+            {/* TODO: Time filter hidden from UI. Uncomment this block to restore it.
             <TimeFilterDropdown
               value={timeRange}
               dateFrom={dateFrom}
@@ -963,6 +883,7 @@ export function RecordsPage() {
               onDateFromChange={setDateFrom}
               onDateToChange={setDateTo}
             />
+            */}
 
             {/* Refresh */}
             <button
@@ -1025,22 +946,6 @@ export function RecordsPage() {
                     ownerGroup: "",
                   });
                 }}
-              />
-            </span>
-          )}
-          {statusFilter && (
-            <span className="vds-active-filter-tag d-flex align-items-center gap-1">
-              <i className="bi bi-activity" /> Status:{" "}
-              {STATUS_LABELS[statusFilter] ?? statusFilter}
-              <button
-                type="button"
-                className="btn-close ms-1"
-                style={{
-                  fontSize: "0.5rem",
-                  filter:
-                    "invert(30%) sepia(80%) saturate(500%) hue-rotate(190deg)",
-                }}
-                onClick={() => setStatusFilter(null)}
               />
             </span>
           )}
@@ -1114,7 +1019,6 @@ export function RecordsPage() {
               setTypeFilters([]);
               setOwnerGroupFilter("");
               setOwnerGroupInput("");
-              setStatusFilter(null);
               setAccessFilter(null);
               setZoneFilter(null);
               setTimeRange("all");

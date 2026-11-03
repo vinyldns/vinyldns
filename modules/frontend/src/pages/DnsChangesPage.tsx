@@ -322,6 +322,7 @@ export function DnsChangesPage() {
                 )}
               </button>
 
+              {/* TODO: Time filter hidden from UI. Uncomment this block to restore it.
               <TimeFilterDropdown
                 value={changeTimeRange}
                 dateFrom={changeDateFrom}
@@ -330,6 +331,7 @@ export function DnsChangesPage() {
                 onDateFromChange={setChangeDateFrom}
                 onDateToChange={setChangeDateTo}
               />
+              */}
 
               {canReview && (
                 <button
