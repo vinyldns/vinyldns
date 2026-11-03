@@ -35,7 +35,7 @@ import vinyldns.core.domain.record.{
   RecordSetRepository
 }
 import vinyldns.core.domain.zone._
-import vinyldns.core.queue.{CommandMessage, MessageCount, MessageQueue}
+import vinyldns.core.queue.{CommandExecutionGuard, CommandExecutionRepository, CommandMessage, MessageCount, MessageQueue}
 
 import scala.concurrent.duration._
 import vinyldns.core.notifier.AllNotifiers
@@ -53,6 +53,7 @@ object CommandHandler {
   }
   final case class DeleteMessage(message: CommandMessage) extends MessageOutcome
   final case class RetryMessage(message: CommandMessage) extends MessageOutcome
+  final case class DeferMessage(message: CommandMessage) extends MessageOutcome
 
   def mainFlow(
       zoneChangeHandler: ZoneChange => IO[ZoneChange],
@@ -65,6 +66,7 @@ object CommandHandler {
       pauseSignal: SignallingRef[IO, Boolean],
       backendResolver: BackendResolver,
       zoneRepo: ZoneRepository,
+      executionRepository: CommandExecutionRepository,
       maxOpen: Int = 4
   )(implicit timer: Timer[IO]): Stream[IO, Unit] = {
 
@@ -81,7 +83,8 @@ object CommandHandler {
         zoneSyncHandler,
         batchChangeHandler,
         backendResolver,
-        zoneRepo
+        zoneRepo,
+        new CommandExecutionGuard(executionRepository)
       )
 
     // Delete messages from message queue when complete
@@ -161,10 +164,11 @@ object CommandHandler {
       zoneSyncProcessor: ZoneChange => IO[ZoneChange],
       batchChangeProcessor: BatchChangeCommand => IO[Option[BatchChange]],
       backendResolver: BackendResolver,
-      zoneRepo: ZoneRepository
+      zoneRepo: ZoneRepository,
+      executionGuard: CommandExecutionGuard
   ): Pipe[IO, CommandMessage, MessageOutcome] =
     _.evalMap[IO, MessageOutcome] { message =>
-      message.command match {
+      def dispatch: IO[MessageOutcome] = message.command match {
         // Zone creation bypasses repository validation as zone does not exist in DB
         case sync: ZoneChange if sync.changeType == ZoneChangeType.Create =>
           outcomeOf(message)(zoneSyncProcessor(sync))
@@ -196,6 +200,26 @@ object CommandHandler {
         case bcc: BatchChangeCommand =>
           outcomeOf(message)(batchChangeProcessor(bcc))
       }
+      message.authenticatedIdentity match {
+        case Some(identity) if identity.commandId == message.command.id =>
+          executionGuard.execute(identity)(IO.suspend(dispatch)) {
+            case DeleteMessage(_) => true
+            case RetryMessage(_) => false
+            case DeferMessage(_) => false
+          }.map {
+            case CommandExecutionGuard.Executed(outcome) => outcome
+            case CommandExecutionGuard.InProgress => DeferMessage(message)
+            case CommandExecutionGuard.AlreadyCompleted =>
+              logger.info(s"Discarding completed queue command ${identity.commandId}")
+              DeleteMessage(message)
+            case CommandExecutionGuard.IdentityConflict =>
+              logger.error(s"Discarding queue command ${identity.commandId}: signed command ID reused with different content")
+              DeleteMessage(message)
+          }
+        case _ =>
+          logger.error(s"Discarding unauthenticated queue message ${message.id.value}")
+          IO.pure(DeleteMessage(message))
+      }
     }
 
   def outcomeOf[A](message: CommandMessage)(p: => IO[A]): IO[MessageOutcome] =
@@ -224,6 +248,8 @@ object CommandHandler {
         // Nothing to do here, the message will be retried after visibility timeout
         logger.error(s"Message failed, retrying; $msg")
         mq.requeue(msg)
+      case DeferMessage(msg) =>
+        mq.changeMessageTimeout(msg, 1.minute)
     }.as(())
 
   def run(
@@ -239,7 +265,8 @@ object CommandHandler {
            batchChangeRepo: BatchChangeRepository,
            notifiers: AllNotifiers,
            backendResolver: BackendResolver,
-           maxZoneSize: Int
+           maxZoneSize: Int,
+           executionRepository: CommandExecutionRepository
   )(implicit timer: Timer[IO]): IO[Unit] = {
     // Handlers for each type of change request
     val zoneChangeHandler =
@@ -270,7 +297,8 @@ object CommandHandler {
         pollingInterval,
         processingSignal,
         backendResolver,
-        zoneRepo
+        zoneRepo,
+        executionRepository
       )
       .compile
       .drain

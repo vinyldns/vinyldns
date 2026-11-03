@@ -16,13 +16,14 @@
 
 package vinyldns.sqs.queue
 import java.util.Base64
+import java.nio.charset.StandardCharsets.UTF_8
 
 import cats.implicits._
 import com.amazonaws.services.sqs.model.Message
 import vinyldns.core.domain.batch.BatchChangeCommand
 import vinyldns.core.domain.zone.ZoneCommand
 import vinyldns.core.protobuf.ProtobufConversions
-import vinyldns.core.queue.{CommandMessage, MessageId}
+import vinyldns.core.queue.{CommandIdentity, CommandMessage, MessageId, QueueMessageSigning}
 import vinyldns.proto.VinylDNSProto
 import vinyldns.sqs.queue.SqsMessageType.{
   SqsBatchChangeMessage,
@@ -30,7 +31,11 @@ import vinyldns.sqs.queue.SqsMessageType.{
   SqsZoneChangeMessage
 }
 
-final case class SqsMessage(id: MessageId, command: ZoneCommand) extends CommandMessage
+final case class SqsMessage(
+    id: MessageId,
+    command: ZoneCommand,
+    override val authenticatedIdentity: Option[CommandIdentity] = None
+) extends CommandMessage
 object SqsMessage extends ProtobufConversions {
   sealed abstract class SqsMessageError(message: String) extends Throwable(message)
   final case class InvalidSqsMessageContents(messageId: String)
@@ -40,7 +45,10 @@ object SqsMessage extends ProtobufConversions {
   final case class InvalidMessageType(className: String)
       extends SqsMessageError(s"Invalid command message type '$className'")
 
-  def parseSqsMessage(message: Message): Either[Throwable, SqsMessage] =
+  def parseSqsMessage(
+      message: Message,
+      signing: QueueMessageSigning
+  ): Either[Throwable, SqsMessage] =
     for {
       messageType <- SqsMessageType.fromMessage(message)
       messageBytes <- Either.fromOption(
@@ -48,15 +56,21 @@ object SqsMessage extends ProtobufConversions {
         EmptySqsMessageContents(message.getMessageId)
       )
       contents <- Either.catchNonFatal(Base64.getDecoder.decode(messageBytes))
+      verified <- signing.verify(messageType.code, contents)
       cmd <- Either
         .catchNonFatal {
           messageType match {
             case SqsRecordSetChangeMessage =>
-              fromPB(VinylDNSProto.RecordSetChange.parseFrom(contents))
-            case SqsZoneChangeMessage => fromPB(VinylDNSProto.ZoneChange.parseFrom(contents))
+              fromPB(VinylDNSProto.RecordSetChange.parseFrom(verified.bytes))
+            case SqsZoneChangeMessage => fromPB(VinylDNSProto.ZoneChange.parseFrom(verified.bytes))
             case SqsBatchChangeMessage =>
-              BatchChangeCommand(new String(contents))
+              BatchChangeCommand(new String(verified.bytes, UTF_8))
           }
         }
-    } yield SqsMessage(MessageId(message.getReceiptHandle), cmd)
+      _ <- Either.cond(
+        cmd.id == verified.identity.commandId,
+        (),
+        QueueMessageSigning.InvalidSignature("Payload ID does not match signed command ID")
+      )
+    } yield SqsMessage(MessageId(message.getReceiptHandle), cmd, Some(verified.identity))
 }

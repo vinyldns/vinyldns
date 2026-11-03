@@ -27,6 +27,8 @@ import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.batch.BatchChangeCommand
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.protobuf.ProtobufConversions
+import vinyldns.core.queue.TestQueueSigning.signing
+import org.scalatest.EitherValues
 import vinyldns.proto.VinylDNSProto
 import vinyldns.sqs.queue.SqsMessageType._
 
@@ -40,6 +42,7 @@ class SqsMessageQueueSpec
     extends AnyWordSpec
     with Matchers
     with MockitoSugar
+    with EitherValues
     with ProtobufConversions {
 
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
@@ -59,7 +62,7 @@ class SqsMessageQueueSpec
 
   "toSendMessageBatchRequest" should {
     "create a single batch request if total message payload is under 256KB" in {
-      val messageSize = messageData(largeRsChange).getBytes().length
+      val messageSize = messageData(largeRsChange, signing).getBytes().length
       val requestMaxChanges = MAXIMUM_BATCH_SIZE / messageSize
       val recordSetChanges =
         for (_ <- 1 until requestMaxChanges)
@@ -68,11 +71,11 @@ class SqsMessageQueueSpec
           )
       val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
 
-      toSendMessageBatchRequest(commands).length shouldBe 1
+      toSendMessageBatchRequest(commands, signing).length shouldBe 1
     }
 
     "create multiple batch requests if total message payload is over 256KB" in {
-      val messageSize = messageData(largeRsChange).getBytes().length
+      val messageSize = messageData(largeRsChange, signing).getBytes().length
       val requestMaxChanges = MAXIMUM_BATCH_SIZE / messageSize
       val requestTotalChanges = requestMaxChanges * 4 // Create four batches
       val recordSetChanges =
@@ -81,7 +84,7 @@ class SqsMessageQueueSpec
             singleBatchChangeIds = largeRsChange.singleBatchChangeIds
           )
       val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
-      toSendMessageBatchRequest(commands).length shouldBe 4
+      toSendMessageBatchRequest(commands, signing).length shouldBe 4
     }
 
     "send a single batch if batch contains fewer than ten items and total payload size is less than 256KB" in {
@@ -91,7 +94,7 @@ class SqsMessageQueueSpec
           yield makeTestAddChange(rsOk, okZone)
       val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
 
-      val result = toSendMessageBatchRequest(commands)
+      val result = toSendMessageBatchRequest(commands, signing)
 
       result.length shouldBe 1
       result.head.getEntries.size shouldBe requestTotalChanges
@@ -103,14 +106,14 @@ class SqsMessageQueueSpec
           yield makeTestAddChange(rsOk, okZone)
       val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
 
-      val result = toSendMessageBatchRequest(commands)
+      val result = toSendMessageBatchRequest(commands, signing)
       result.length shouldBe 10
       result.foreach(_.getEntries.size() shouldBe SqsMessageQueue.MAXIMUM_BATCH_ENTRY_COUNT)
     }
 
     "allow up to ten items in a batch" in {
       val rsChange = makeTestAddChange(rsOk, okZone).copy(singleBatchChangeIds = List("a" * 1800))
-      val messageSize = messageData(rsChange).getBytes().length
+      val messageSize = messageData(rsChange, signing).getBytes().length
 
       val requestMaxChanges = MAXIMUM_BATCH_SIZE / messageSize
       val requestTotalChanges = requestMaxChanges * 2
@@ -121,7 +124,7 @@ class SqsMessageQueueSpec
           )
       val commands = NonEmptyList.fromListUnsafe(recordSetChanges.toList)
 
-      val result = toSendMessageBatchRequest(commands)
+      val result = toSendMessageBatchRequest(commands, signing)
       result.head.getEntries.size() shouldBe 10
       result.foreach(_.getEntries.size() should be <= SqsMessageQueue.MAXIMUM_BATCH_ENTRY_COUNT)
     }
@@ -129,41 +132,41 @@ class SqsMessageQueueSpec
 
   "toSendMessageRequest" should {
     "build the message correctly for record set changes" in {
-      val result = toSendMessageRequest(pendingCreateAAAA)
+      val result = toSendMessageRequest(pendingCreateAAAA, signing)
 
       result.getMessageAttributes
         .get("message-type")
         .getStringValue shouldBe SqsRecordSetChangeMessage.name
 
       val messageBytes = Base64.getDecoder.decode(result.getMessageBody)
-      val decoded = fromPB(VinylDNSProto.RecordSetChange.parseFrom(messageBytes))
+      val decoded = fromPB(VinylDNSProto.RecordSetChange.parseFrom(signing.verify(1, messageBytes).right.value.bytes))
 
       decoded shouldBe pendingCreateAAAA
     }
 
     "build the message correctly for zone changes" in {
-      val result = toSendMessageRequest(zoneChangePending)
+      val result = toSendMessageRequest(zoneChangePending, signing)
 
       result.getMessageAttributes
         .get("message-type")
         .getStringValue shouldBe SqsZoneChangeMessage.name
 
       val messageBytes = Base64.getDecoder.decode(result.getMessageBody)
-      val decoded = fromPB(VinylDNSProto.ZoneChange.parseFrom(messageBytes))
+      val decoded = fromPB(VinylDNSProto.ZoneChange.parseFrom(signing.verify(2, messageBytes).right.value.bytes))
 
       decoded shouldBe zoneChangePending
     }
 
     "build the message correctly for batch changes" in {
       val batchChangeCommand = BatchChangeCommand("some-id")
-      val result = toSendMessageRequest(batchChangeCommand)
+      val result = toSendMessageRequest(batchChangeCommand, signing)
 
       result.getMessageAttributes
         .get("message-type")
         .getStringValue shouldBe SqsBatchChangeMessage.name
 
       val messageBytes = Base64.getDecoder.decode(result.getMessageBody)
-      val decoded = BatchChangeCommand(new String(messageBytes))
+      val decoded = BatchChangeCommand(new String(signing.verify(3, messageBytes).right.value.bytes))
 
       decoded shouldBe batchChangeCommand
     }

@@ -29,6 +29,7 @@ import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.{DataAccessorProvider, DataStore, DataStoreConfig}
 import vinyldns.core.repository.DataStoreLoader.getRepoOf
 import vinyldns.core.repository.RepositoryName._
+import vinyldns.core.queue.CommandExecutionRepository
 
 object ApiDataAccessorProvider extends DataAccessorProvider[ApiDataAccessor] {
   def repoNames: List[RepositoryName] =
@@ -42,7 +43,8 @@ object ApiDataAccessorProvider extends DataAccessorProvider[ApiDataAccessor] {
       recordSetCache,
       zoneChange,
       zone,
-      batchChange
+      batchChange,
+      commandExecution
     )
 
   def create(
@@ -58,6 +60,7 @@ object ApiDataAccessorProvider extends DataAccessorProvider[ApiDataAccessor] {
       getRepoOf[RecordSetCacheRepository](dataStores, recordSetCache),
       getRepoOf[ZoneChangeRepository](dataStores, zoneChange),
       getRepoOf[ZoneRepository](dataStores, zone),
-      getRepoOf[BatchChangeRepository](dataStores, batchChange)
+      getRepoOf[BatchChangeRepository](dataStores, batchChange),
+      getRepoOf[CommandExecutionRepository](dataStores, commandExecution)
     ).mapN(ApiDataAccessor)
 }

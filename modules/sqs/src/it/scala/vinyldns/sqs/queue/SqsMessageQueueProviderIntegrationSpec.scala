@@ -19,7 +19,7 @@ package vinyldns.sqs.queue
 import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import vinyldns.core.queue.{MessageQueueConfig, MessageQueueLoader}
+import vinyldns.core.queue.{MessageQueueConfig, MessageQueueLoader, TestQueueSigning}
 import vinyldns.sqs.queue.SqsMessageQueueProvider.InvalidQueueName
 import pureconfig._
 import pureconfig.generic.auto._
@@ -70,7 +70,7 @@ class SqsMessageQueueProviderIntegrationSpec extends AnyWordSpec with Matchers {
              |    """.stripMargin)
 
       val messageConfig =
-        ConfigSource.fromConfig(nonExistentQueueConfig).loadOrThrow[MessageQueueConfig]
+        ConfigSource.fromConfig(nonExistentQueueConfig).loadOrThrow[MessageQueueConfig].copy(signing = TestQueueSigning.config)
       val messageQueue = underTest.load(messageConfig).unsafeRunSync()
 
       noException should be thrownBy messageQueue
@@ -98,7 +98,7 @@ class SqsMessageQueueProviderIntegrationSpec extends AnyWordSpec with Matchers {
              |    """.stripMargin)
 
       val messageConfig =
-        ConfigSource.fromConfig(invalidQueueNameConfig).loadOrThrow[MessageQueueConfig]
+        ConfigSource.fromConfig(invalidQueueNameConfig).loadOrThrow[MessageQueueConfig].copy(signing = TestQueueSigning.config)
       assertThrows[InvalidQueueName](underTest.load(messageConfig).unsafeRunSync())
     }
 
@@ -120,7 +120,7 @@ class SqsMessageQueueProviderIntegrationSpec extends AnyWordSpec with Matchers {
              |    }
              |    """.stripMargin)
 
-      val messageConfig = ConfigSource.fromConfig(fifoQueueName).loadOrThrow[MessageQueueConfig]
+      val messageConfig = ConfigSource.fromConfig(fifoQueueName).loadOrThrow[MessageQueueConfig].copy(signing = TestQueueSigning.config)
       assertThrows[InvalidQueueName](underTest.load(messageConfig).unsafeRunSync())
     }
   }
@@ -145,7 +145,7 @@ class SqsMessageQueueProviderIntegrationSpec extends AnyWordSpec with Matchers {
              |    """.stripMargin)
 
       val messageConfig =
-        ConfigSource.fromConfig(nonExistentQueueConfig).loadOrThrow[MessageQueueConfig]
+        ConfigSource.fromConfig(nonExistentQueueConfig).loadOrThrow[MessageQueueConfig].copy(signing = TestQueueSigning.config)
       val queue = MessageQueueLoader.load(messageConfig).unsafeRunSync()
 
       queue shouldBe a[SqsMessageQueue]

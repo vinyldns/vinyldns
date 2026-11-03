@@ -76,7 +76,8 @@ class MySqlDataStoreProvider extends DataStoreProvider {
       membershipRepository = membership,
       groupChangeRepository = groupChanges,
       userChangeRepository = userChanges,
-      taskRepository = task
+      taskRepository = task,
+      commandExecutionRepository = Some(new MySqlCommandExecutionRepository())
     )
   }
 

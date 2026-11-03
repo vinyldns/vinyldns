@@ -20,6 +20,7 @@ import cats.data._
 import cats.effect._
 import cats.implicits._
 import java.time.Instant
+import java.nio.charset.StandardCharsets.UTF_8
 import org.slf4j.LoggerFactory
 import scalikejdbc._
 import vinyldns.core.domain.batch.BatchChangeCommand
@@ -47,7 +48,11 @@ object MySqlMessageQueue {
   final val QUEUE_CONNECTION_NAME = 'queue
 }
 
-class MySqlMessageQueue(maxRetries: Int)
+class MySqlMessageQueue(
+    maxRetries: Int,
+    signing: QueueMessageSigning,
+    connectionPoolName: Symbol = MySqlMessageQueue.QUEUE_CONNECTION_NAME
+)
     extends MessageQueue
     with Monitored
     with ProtobufConversions {
@@ -83,19 +88,7 @@ class MySqlMessageQueue(maxRetries: Int)
       | WHERE in_flight = 0
       |    OR updated < DATE_SUB(NOW(),INTERVAL timeout_seconds SECOND)
       | LIMIT ?
-    """.stripMargin
-
-  private val DELETE_MESSAGES =
-    sql"""
-      |DELETE FROM message_queue WHERE id IN (?)
-    """.stripMargin
-
-  // Important!  Make sure to update the updated timestamp to current, and increment the attempts!
-  private val CLAIM_MESSAGES =
-    sql"""
-      |UPDATE message_queue
-      |   SET in_flight=1, updated=NOW(), attempts=attempts+1
-      | WHERE id in (?)
+      | FOR UPDATE
     """.stripMargin
 
   private final val HEALTH_CHECK =
@@ -115,13 +108,24 @@ class MySqlMessageQueue(maxRetries: Int)
     // parse the type, if it cannot parse we fail with the message id, same with the data
     for {
       messageType <- MessageType.fromInt(typ)
+      verified <- signing.verify(typ, data)
+      _ <- Either.cond(
+        verified.identity.commandId == id.value,
+        (),
+        QueueMessageSigning.InvalidSignature("Queue row ID does not match signed command ID")
+      )
       cmd <- Either.catchNonFatal {
         messageType match {
-          case ZoneChangeMessageType => fromPB(VinylDNSProto.ZoneChange.parseFrom(data))
-          case RecordChangeMessageType => fromPB(VinylDNSProto.RecordSetChange.parseFrom(data))
-          case BatchChangeMessageType => BatchChangeCommand(new String(data))
+          case ZoneChangeMessageType => fromPB(VinylDNSProto.ZoneChange.parseFrom(verified.bytes))
+          case RecordChangeMessageType => fromPB(VinylDNSProto.RecordSetChange.parseFrom(verified.bytes))
+          case BatchChangeMessageType => BatchChangeCommand(new String(verified.bytes, UTF_8))
         }
       }
+      _ <- Either.cond(
+        cmd.id == verified.identity.commandId,
+        (),
+        QueueMessageSigning.InvalidSignature("Payload ID does not match signed command ID")
+      )
       _ <- Either.cond(
         attempts < maxRetries,
         (),
@@ -132,7 +136,7 @@ class MySqlMessageQueue(maxRetries: Int)
         (),
         MySqlMessageQueue.InvalidMessageTimeout(timeoutSeconds)
       )
-    } yield MySqlMessage(id, attempts, timeoutSeconds.seconds, cmd)
+    } yield MySqlMessage(id, attempts, timeoutSeconds.seconds, cmd, Some(verified.identity))
   }.leftMap { e =>
     (e, id)
   }
@@ -154,19 +158,25 @@ class MySqlMessageQueue(maxRetries: Int)
       .apply()
 
   def deleteMessages(ids: List[MessageId])(implicit s: DBSession): Int = {
-    val messages = ids.map(_.value).mkString(",")
-    DELETE_MESSAGES.bind(messages).update().apply()
+    if (ids.isEmpty) 0
+    else sql"DELETE FROM message_queue WHERE id IN (${ids.map(_.value)})".update().apply()
   }
 
   def claimMessages(ids: List[MessageId])(implicit s: DBSession): Unit = {
-    val messages = ids.map(_.value).mkString(",")
-    CLAIM_MESSAGES.bind(messages).update().apply()
+    if (ids.nonEmpty) {
+      sql"""UPDATE message_queue SET in_flight=1, updated=NOW(), attempts=attempts+1
+            WHERE id IN (${ids.map(_.value)})""".update().apply()
+    }
+    ()
   }
 
-  def getBytes(cmd: ZoneCommand): Array[Byte] = cmd match {
-    case zc: ZoneChange => toPB(zc).toByteArray
-    case rc: RecordSetChange => toPB(rc).toByteArray
-    case bcc: BatchChangeCommand => bcc.id.getBytes
+  def getBytes(cmd: ZoneCommand): Array[Byte] = {
+    val payload = cmd match {
+      case zc: ZoneChange => toPB(zc).toByteArray
+      case rc: RecordSetChange => toPB(rc).toByteArray
+      case bcc: BatchChangeCommand => bcc.id.getBytes(UTF_8)
+    }
+    signing.sign(MessageType.fromCommand(cmd).value, cmd.id, payload)
   }
 
   /* Generate params for insertion of messages */
@@ -204,7 +214,7 @@ class MySqlMessageQueue(maxRetries: Int)
         // Need a max count so the user doesn't try to take 1MM messages, 10 is sufficient
         val limit = Math.min(10, count.value)
 
-        NamedDB(QUEUE_CONNECTION_NAME).localTx { implicit s =>
+        NamedDB(connectionPoolName).localTx { implicit s =>
           // get unclaimed messages, note these could fail during retrieval
           val claimed = fetchUnclaimed(limit)
 
@@ -233,7 +243,7 @@ class MySqlMessageQueue(maxRetries: Int)
   def requeue(message: CommandMessage): IO[Unit] =
     monitor("queue.JDBC.requeue") {
       IO {
-        NamedDB(QUEUE_CONNECTION_NAME).localTx { implicit s =>
+        NamedDB(connectionPoolName).localTx { implicit s =>
           REQUEUE_MESSAGE.bind(message.id.value).update().apply()
         }
       }
@@ -242,7 +252,7 @@ class MySqlMessageQueue(maxRetries: Int)
   def remove(message: CommandMessage): IO[Unit] =
     monitor("queue.JDBC.remove") {
       IO {
-        NamedDB(QUEUE_CONNECTION_NAME).localTx { implicit s =>
+        NamedDB(connectionPoolName).localTx { implicit s =>
           deleteMessages(List(message.id))
         }
       }.as(())
@@ -251,7 +261,7 @@ class MySqlMessageQueue(maxRetries: Int)
   def changeMessageTimeout(message: CommandMessage, duration: FiniteDuration): IO[Unit] =
     monitor("queue.JDBC.changeMessageTimeout") {
       IO {
-        NamedDB(QUEUE_CONNECTION_NAME).localTx { implicit s =>
+        NamedDB(connectionPoolName).localTx { implicit s =>
           CHANGE_TIMEOUT.bind(duration.toSeconds, message.id.value).update().apply()
         }
       }.as(())
@@ -260,7 +270,7 @@ class MySqlMessageQueue(maxRetries: Int)
   def sendBatch[A <: ZoneCommand](messages: NonEmptyList[A]): IO[SendBatchResult[A]] =
     monitor("queue.JDBC.sendBatch") {
       IO {
-        NamedDB(QUEUE_CONNECTION_NAME).localTx { implicit s =>
+        NamedDB(connectionPoolName).localTx { implicit s =>
           // Note, these really cannot fail, they all succeed or all fail
           // Other note, not doing a size check on the messages, but we should chunk these,
           // assuming a small number for right now which is not ideal
@@ -273,7 +283,7 @@ class MySqlMessageQueue(maxRetries: Int)
   def send[A <: ZoneCommand](command: A): IO[Unit] =
     monitor("queue.JDBC.send") {
       IO {
-        NamedDB(QUEUE_CONNECTION_NAME).localTx { implicit s =>
+        NamedDB(connectionPoolName).localTx { implicit s =>
           INSERT_MESSAGE.bindByName(insertParams(command): _*).update().apply()
         }
       }
@@ -281,7 +291,7 @@ class MySqlMessageQueue(maxRetries: Int)
 
   def healthCheck(): HealthCheck =
     IO {
-      NamedDB(QUEUE_CONNECTION_NAME).readOnly { implicit s =>
+      NamedDB(connectionPoolName).readOnly { implicit s =>
         HEALTH_CHECK.map(_ => ()).first.apply()
       }
     }.attempt.asHealthCheck(classOf[MySqlMessageQueue])

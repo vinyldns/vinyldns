@@ -28,6 +28,7 @@ final case class MessageId(value: String)
 trait CommandMessage {
   def command: ZoneCommand
   def id: MessageId
+  def authenticatedIdentity: Option[CommandIdentity] = None
 }
 
 // need to encode the possibility of one or more commands failing to send

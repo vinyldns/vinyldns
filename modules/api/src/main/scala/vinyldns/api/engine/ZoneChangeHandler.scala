@@ -19,24 +19,26 @@ package vinyldns.api.engine
 import cats.effect.IO
 import org.slf4j.{Logger, LoggerFactory}
 import scalikejdbc.DB
-import vinyldns.api.engine.ZoneSyncHandler.executeWithinTransaction
 import vinyldns.core.domain.record.{RecordSetCacheRepository, RecordSetRepository}
 import vinyldns.core.domain.zone._
+import vinyldns.mysql.TransactionProvider
 
 object ZoneChangeHandler {
 
   private implicit val logger: Logger = LoggerFactory.getLogger("vinyldns.engine.ZoneChangeHandler")
 
   def apply(
-             zoneRepository: ZoneRepository,
-             zoneChangeRepository: ZoneChangeRepository,
-             recordSetRepository: RecordSetRepository,
-             recordSetCacheRepository: RecordSetCacheRepository,
-
+      zoneRepository: ZoneRepository,
+      zoneChangeRepository: ZoneChangeRepository,
+      recordSetRepository: RecordSetRepository,
+      recordSetCacheRepository: RecordSetCacheRepository,
+      transactions: TransactionProvider = ZoneSyncHandler
   ): ZoneChange => IO[ZoneChange] =
     zoneChange =>
-      // Load authoritative zone configuration from repository before processing
       zoneRepository.getZone(zoneChange.zone.id).flatMap {
+        case None if zoneChange.changeType == ZoneChangeType.Delete =>
+          // A retry may arrive after deletion committed but before the change was acknowledged.
+          zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
         case None =>
           zoneChangeRepository.save(
             zoneChange.copy(
@@ -46,16 +48,18 @@ object ZoneChangeHandler {
           )
         case Some(dbZone) if zoneChange.changeType == ZoneChangeType.Delete =>
           val deletedZone = dbZone.copy(status = ZoneStatus.Deleted)
-          zoneRepository.save(deletedZone).flatMap { _ =>
-            executeWithinTransaction { db: DB =>
-              for {
-                _ <- recordSetRepository
-                  .deleteRecordSetsInZone(db, dbZone.id, dbZone.name)
-                _ <- recordSetCacheRepository
-                  .deleteRecordSetDataInZone(db, dbZone.id, dbZone.name)
-              } yield ()
-            }.attempt.flatMap { _ =>
-              zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
+          transactions.executeWithinTransaction { db: DB =>
+            for {
+              _ <- recordSetRepository.deleteRecordSetsInZone(db, dbZone.id, dbZone.name)
+              _ <- recordSetCacheRepository.deleteRecordSetDataInZone(db, dbZone.id, dbZone.name)
+            } yield ()
+          }.flatMap { _ =>
+            zoneRepository.save(deletedZone).flatMap {
+              case Left(error) => IO.raiseError(new IllegalStateException(error.message))
+              case Right(_) =>
+                zoneChangeRepository.save(
+                  zoneChange.copy(zone = deletedZone, status = ZoneChangeStatus.Synced)
+                )
             }
           }
         case Some(dbZone) =>
@@ -75,7 +79,7 @@ object ZoneChangeHandler {
               )
             case Right(_) =>
               logger.info(s"Saving zone change with id: '${zoneChange.id}', zone name: '${zoneChange.zone.name}'")
-              zoneChangeRepository.save(zoneChange.copy(zone = trustedZone, status = ZoneChangeStatus.Synced))
+              zoneChangeRepository.save(zoneChange.copy(status = ZoneChangeStatus.Synced))
           }
       }
 }

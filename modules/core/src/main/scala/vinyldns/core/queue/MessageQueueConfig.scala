@@ -16,7 +16,7 @@
 
 package vinyldns.core.queue
 
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -25,5 +25,6 @@ final case class MessageQueueConfig(
     pollingInterval: FiniteDuration,
     messagesPerPoll: Int,
     settings: Config,
-    maxRetries: Int
+    maxRetries: Int,
+    signing: Config = ConfigFactory.empty()
 )

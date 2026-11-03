@@ -82,7 +82,7 @@ class MySqlMessageQueueIntegrationSpec
 
   private val rsChange: RecordSetChange = pendingCreateAAAA
 
-  private val rsChangeBytes = toPB(rsChange).toByteArray
+  private val rsChangeBytes = underTest.getBytes(rsChange)
 
   private val testMessage: MySqlMessage =
     MySqlMessage(MessageId(rsChange.id), 0, 20.seconds, rsChange)
@@ -229,23 +229,23 @@ class MySqlMessageQueueIntegrationSpec
     }
     "fail if attempts exceeds 100" in {
       val result = underTest.parseMessage(
-        MessageId("foo"),
+        MessageId(rsChange.id),
         RecordChangeMessageType.value,
         rsChangeBytes,
         200,
         10
       )
-      result.left.value shouldBe (MessageAttemptsExceeded("foo"), MessageId("foo"))
+      result.left.value shouldBe (MessageAttemptsExceeded(rsChange.id), MessageId(rsChange.id))
     }
     "fail on invalid timeout" in {
       val result = underTest.parseMessage(
-        MessageId("foo"),
+        MessageId(rsChange.id),
         RecordChangeMessageType.value,
         rsChangeBytes,
         1,
         -1
       )
-      result.left.value shouldBe (InvalidMessageTimeout(-1), MessageId("foo"))
+      result.left.value shouldBe (InvalidMessageTimeout(-1), MessageId(rsChange.id))
     }
   }
 

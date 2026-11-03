@@ -16,7 +16,7 @@
 
 package vinyldns.mysql.queue
 import vinyldns.core.domain.zone.ZoneCommand
-import vinyldns.core.queue.{CommandMessage, MessageId}
+import vinyldns.core.queue.{CommandIdentity, CommandMessage, MessageId}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -25,5 +25,6 @@ final case class MySqlMessage(
     id: MessageId,
     attempts: Int,
     timeout: FiniteDuration,
-    command: ZoneCommand
+    command: ZoneCommand,
+    override val authenticatedIdentity: Option[CommandIdentity] = None
 ) extends CommandMessage

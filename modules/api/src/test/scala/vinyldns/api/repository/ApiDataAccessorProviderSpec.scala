@@ -35,6 +35,7 @@ import vinyldns.core.domain.record.{
 }
 import vinyldns.core.domain.zone.{ZoneChangeRepository, ZoneRepository}
 import vinyldns.core.repository.{DataStore, DataStoreConfig, RepositoriesConfig}
+import vinyldns.core.queue.CommandExecutionRepository
 
 class ApiDataAccessorProviderSpec
     extends AnyWordSpec
@@ -59,7 +60,8 @@ class ApiDataAccessorProviderSpec
       enabled,
       enabled,
       enabled,
-      None
+      None,
+      commandExecution = enabled
     )
 
     val user = mock[UserRepository]
@@ -89,7 +91,8 @@ class ApiDataAccessorProviderSpec
         Some(zoneChange),
         Some(zone),
         Some(batchChange),
-        None
+        None,
+        commandExecutionRepository = Some(mock[CommandExecutionRepository])
       ) // API doesn't use Task repository
 
       ApiDataAccessorProvider.create(List((enabledConfig, enabledDataStore))) should be(valid)

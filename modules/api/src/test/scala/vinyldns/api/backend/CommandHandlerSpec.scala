@@ -37,7 +37,7 @@ import vinyldns.core.domain.record.{
   RecordSetRepository
 }
 import vinyldns.core.domain.zone._
-import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId, MessageQueue}
+import vinyldns.core.queue.{CommandExecutionGuard, CommandExecutionRepository, CommandIdentity, CommandMessage, MessageCount, MessageId, MessageQueue}
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
@@ -58,6 +58,8 @@ class CommandHandlerSpec
   private case class TestCommandMessage(command: ZoneCommand, value: String)
       extends CommandMessage {
     def id: MessageId = MessageId(value)
+    override def authenticatedIdentity: Option[CommandIdentity] =
+      Some(CommandIdentity(command.id, command.id, "test-digest"))
   }
 
   private val mq = mock[MessageQueue]
@@ -77,6 +79,7 @@ class CommandHandlerSpec
   private val mockBatchChangeProcessor = mock[BatchChangeCommand => IO[Option[BatchChange]]]
   private val mockBackendResolver = mock[BackendResolver]
   private val mockZoneRepo = mock[ZoneRepository]
+  private val executionRepo = mock[CommandExecutionRepository]
   private val processor =
     CommandHandler.processChangeRequests(
       mockZoneChangeProcessor,
@@ -84,11 +87,18 @@ class CommandHandlerSpec
       mockZoneSyncProcessor,
       mockBatchChangeProcessor,
       mockBackendResolver,
-      mockZoneRepo
+      mockZoneRepo,
+      new CommandExecutionGuard(executionRepo)
     )
 
-  override protected def beforeEach(): Unit =
-    Mockito.reset(mq, mockZoneChangeProcessor, mockRecordChangeProcessor, mockZoneSyncProcessor, mockZoneRepo, mockBackendResolver)
+  override protected def beforeEach(): Unit = {
+    Mockito.reset(mq, mockZoneChangeProcessor, mockRecordChangeProcessor, mockZoneSyncProcessor, mockZoneRepo, mockBackendResolver, executionRepo)
+    doReturn(IO.pure(CommandExecutionRepository.Acquired)).when(executionRepo)
+      .claim(any[CommandIdentity], anyString(), any[FiniteDuration])
+    doReturn(IO.unit).when(executionRepo).renew(any[CommandIdentity], anyString(), any[FiniteDuration])
+    doReturn(IO.unit).when(executionRepo).complete(any[CommandIdentity], anyString())
+    doReturn(IO.unit).when(executionRepo).release(any[CommandIdentity], anyString())
+  }
 
   "polling" should {
     "poll for messages" in {
@@ -338,6 +348,18 @@ class CommandHandlerSpec
   }
 
   "main flow" should {
+    "defer a command owned by another worker without dispatching or immediately requeuing it" in {
+      val cmd = TestCommandMessage(pendingCreateAAAA, "concurrent")
+      doReturn(IO.pure(CommandExecutionRepository.Busy)).when(executionRepo)
+        .claim(any[CommandIdentity], anyString(), any[FiniteDuration])
+      doReturn(IO.unit).when(mq).changeMessageTimeout(cmd, 1.minute)
+      Stream.emit(cmd).covary[IO].through(processor)
+        .through(CommandHandler.messageSink(mq)).compile.drain.unsafeRunSync()
+      verify(mq).changeMessageTimeout(cmd, 1.minute)
+      verify(mq, never()).requeue(any[CommandMessage])
+      verify(mockRecordChangeProcessor, never()).apply(any[Backend], any[RecordSetChange])
+    }
+
     "process successfully" in {
       val stop = fs2.concurrent.SignallingRef[IO, Boolean](false).unsafeRunSync()
       val cmd = TestCommandMessage(pendingCreateAAAA, "foo")
@@ -371,6 +393,7 @@ class CommandHandlerSpec
             stop,
             mockBackendResolver,
             mockZoneRepo,
+            executionRepo,
             1
           )
           .take(1)
@@ -419,7 +442,8 @@ class CommandHandlerSpec
             100.millis,
             stop,
             mockBackendResolver,
-            mockZoneRepo
+            mockZoneRepo,
+            executionRepo
           )
           .take(1)
 
@@ -484,7 +508,8 @@ class CommandHandlerSpec
             batchChangeRepo,
             AllNotifiers(List.empty),
             mockBackendResolver,
-            10000
+            10000,
+            executionRepo
           )
 
       // kick off processing of messages

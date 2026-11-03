@@ -80,6 +80,71 @@ The most important configuration is around your system dependencies. Presently, 
 
 VinylDNS supports both SQS and MySQL queue implementations.
 
+### Message authentication and replay protection
+
+Both queue implementations require HMAC-SHA256 authentication. The API signs every command,
+including batch sends and scheduled synchronization, and verifies the envelope before decoding
+the command. Unsigned, malformed, unknown-key, wrong-audience, or altered messages are logged
+and removed without executing them. There is no unsigned compatibility mode.
+Custom queue providers must also authenticate messages and supply their verified command
+identity; the worker rejects messages without it.
+
+Configure the same dedicated key ring on every API producer and consumer:
+
+```hocon
+vinyldns.queue.signing {
+  active-key-id = "k1"
+  audience = ${QUEUE_SIGNING_AUDIENCE}
+  keys {
+    k1 = ${QUEUE_SIGNING_KEY_K1}
+  }
+}
+```
+
+`QUEUE_SIGNING_KEY_K1` must be a securely generated 256-bit secret encoded as 64 hexadecimal
+characters. Do not use the example keys from test configurations, `crypto.secret`, a TSIG key,
+or AWS credentials. Keep the key outside the database and queue. Use a distinct audience and
+key for each deployment. Missing or invalid signing configuration prevents API startup.
+The default configuration also accepts `QUEUE_SIGNING_ACTIVE_KEY_ID`; additional rotation
+keys must be declared explicitly in `keys`.
+
+The versioned envelope authenticates the key ID, audience, command type, command ID, and exact
+payload bytes. SQS receipt handles, MySQL attempt counters, and visibility timeouts are not
+authorization identities. Signed envelopes add some overhead to the SQS message-size limit.
+
+The API also requires the `command-execution` repository, supplied by the MySQL data store:
+
+```hocon
+vinyldns.mysql.repositories.command-execution {}
+```
+
+The `V3.33__QueueCommandExecution.sql` database migration creates `queue_command_execution`.
+This is required even when SQS is the transport. Workers atomically claim a command ID and
+payload digest, renew a one-minute processing lease every twenty seconds, and persist terminal
+completion before acknowledging the queue message. Completed duplicates are acknowledged
+without repeating the operation; reuse of an ID with different content is rejected. Concurrent
+deliveries are deferred. Retryable failures release the claim, and a crashed worker's lease
+can expire so another worker can recover the command.
+
+Keep this repository and the zone/record data outside the permissions of queue-only writers.
+Queue signing does not protect against an attacker who can also rewrite application data,
+erase replay history, or obtain the signing key. Execution entries have no automatic expiry:
+do not purge them while the corresponding signed commands could still be accepted.
+DNS effects and SQL completion are not one distributed transaction. Recovery of an unfinished
+command retains the existing at-least-once behavior; this does not promise exactly-once DNS
+execution across crashes or loss of a processing lease.
+
+**Deployment change:** pause new submissions and schedulers, drain outstanding commands using
+the existing trusted deployment, and stop the old producers and consumers. Apply the schema
+migration, configure dedicated keys, and upgrade all API nodes before resuming submissions.
+Do not mix old unsigned consumers with the new format, or automatically sign an untrusted
+backlog. If a backlog is suspect, review and resubmit intended operations through the authorized
+API instead. The portal does not need the signing key.
+
+For key rotation, first distribute both the old and new verification keys to all API nodes.
+Then switch `active-key-id` to the new key. Remove the old verification key only after outstanding
+commands signed by it have drained. The replay identity remains unchanged by key rotation.
+
 There are a couple of implementation-dependent settings that need to be specified:
 
 * `messages-per-poll`: Number of messages retrieved in a single queue receive request. Valid values are 1 through 10 (
