@@ -27,6 +27,15 @@ class RegexTimeoutException(message: String = "Regex matching exceeded deadline"
     extends Exception(message)
 
 /**
+  * Result type for regex matching with timeout detection.
+  */
+sealed trait RegexMatchResult
+object RegexMatchResult {
+  case object TimedOut extends RegexMatchResult
+  final case class Matched(result: Boolean) extends RegexMatchResult
+}
+
+/**
   * Wraps a CharSequence to enforce deadline checks during regex matching.
   * Throws RegexTimeoutException if deadline exceeded during charAt(), length(), or subSequence().
   * This is a practical mitigation against catastrophic backtracking without thread overhead.
@@ -93,6 +102,27 @@ object RegexValidator {
         false
       case NonFatal(_) =>
         false
+    }
+  }
+
+  /**
+    * Match bounded by both the per-match timeout and a caller-supplied request deadline, whichever
+    * comes first. Unlike safeMatches, a timeout is reported as TimedOut instead of false so callers
+    * can fail closed. An invalid pattern is reported as Matched(false).
+    */
+  def matchDetectingTimeout(
+      subject: String,
+      pattern: String,
+      requestDeadlineNanos: Long
+  ): RegexMatchResult = {
+    val deadlineNanos = math.min(System.nanoTime() + REGEX_MATCH_TIMEOUT.toNanos, requestDeadlineNanos)
+    try {
+      RegexMatchResult.Matched(matchWithDeadlineNanos(subject, pattern, deadlineNanos))
+    } catch {
+      case _: RegexTimeoutException =>
+        RegexMatchResult.TimedOut
+      case NonFatal(_) =>
+        RegexMatchResult.Matched(false)
     }
   }
 

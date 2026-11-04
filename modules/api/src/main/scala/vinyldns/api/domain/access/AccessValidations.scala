@@ -25,10 +25,20 @@ import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
 import vinyldns.core.domain.zone.{ACLRule, AccessLevel, Zone}
 
+import scala.collection.mutable
+import scala.concurrent.duration._
+
 class AccessValidations(
     globalAcls: GlobalAcls = GlobalAcls(List.empty),
     sharedApprovedTypes: List[RecordType.Value] = Nil
 ) extends AccessValidationsAlgebra {
+
+  private final val RegexBudgetNanos = 1.second.toNanos
+
+  private final class RegexBudget {
+    val deadlineNanos: Long = System.nanoTime() + RegexBudgetNanos
+    val timedOutRules: mutable.Set[ACLRule] = mutable.Set.empty
+  }
 
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit] =
     ensuring(
@@ -136,8 +146,10 @@ class AccessValidations(
     if (auth.isSuper || auth.isGroupMember(zone.adminGroupId))
       recordSets.map(RecordSetListInfo(_, AccessLevel.Delete))
     else {
+      val budget = new RegexBudget
+      
       recordSets.map { rs =>
-        val aclAccessLevel = getAccessFromAcl(auth, rs.name, rs.typ, zone)
+        val aclAccessLevel = getAccessFromAcl(auth, rs.name, rs.typ, zone, budget)
         val accessLevel = {
           if ((aclAccessLevel == AccessLevel.NoAccess) && auth.isSystemAdmin)
             AccessLevel.Read
@@ -163,15 +175,26 @@ class AccessValidations(
       recordName: String,
       recordType: RecordType,
       zone: Zone
+  ): AccessLevel =
+    getAccessFromAcl(auth, recordName, recordType, zone, new RegexBudget)
+
+  private def getAccessFromAcl(
+      auth: AuthPrincipal,
+      recordName: String,
+      recordType: RecordType,
+      zone: Zone,
+      budget: RegexBudget
   ): AccessLevel = {
-    val validRules = zone.acl.rules.filter { rule =>
-      ruleAppliesToUser(auth, rule) && ruleAppliesToRecordType(recordType, rule) && ruleAppliesToRecordName(
-        recordName,
-        recordType,
-        zone,
-        rule
-      )
-    }
+    val validRules = zone.acl.rules.toSeq
+      .filter(rule => ruleAppliesToUser(auth, rule) && ruleAppliesToRecordType(recordType, rule))
+      .flatMap { rule =>
+        matchRecordName(recordName, recordType, zone, rule, budget) match {
+          case RegexMatchResult.Matched(true) => Some(rule)
+          case RegexMatchResult.Matched(false) => None
+          case RegexMatchResult.TimedOut => Some(rule.copy(accessLevel = AccessLevel.NoAccess))
+        }
+      }
+      .toSet
     getPrioritizedAccessLevel(recordType, validRules)
   }
 
@@ -194,11 +217,28 @@ class AccessValidations(
       zone: Zone,
       rule: ACLRule
   ): Boolean =
+    matchRecordName(recordName, recordType, zone, rule, new RegexBudget) match {
+      case RegexMatchResult.Matched(false) => false
+      case _ => true
+    }
+
+  private def matchRecordName(
+      recordName: String,
+      recordType: RecordType,
+      zone: Zone,
+      rule: ACLRule,
+      budget: RegexBudget
+  ): RegexMatchResult =
     rule.recordMask match {
       case Some(mask) if recordType == RecordType.PTR =>
-        ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, zone, recordName)
-      case Some(mask) => RegexValidator.safeMatches(recordName, mask)
-      case None => true
+        RegexMatchResult.Matched(ReverseZoneHelpers.recordsetIsWithinCidrMask(mask, zone, recordName))
+      case Some(_) if budget.timedOutRules.contains(rule) =>
+        RegexMatchResult.TimedOut
+      case Some(mask) =>
+        val result = RegexValidator.matchDetectingTimeout(recordName, mask, budget.deadlineNanos)
+        if (result == RegexMatchResult.TimedOut) budget.timedOutRules += rule
+        result
+      case None => RegexMatchResult.Matched(true)
     }
 
   // Pull ACL rules that are relevant for the record based on type
