@@ -1228,6 +1228,63 @@ class AccessValidationsSpec
       result shouldBe expected
     }
 
+    "complete quickly when listing ~100 records against a mask that times out" in {
+      // (.*a){12} on these names takes several seconds unbounded, so it hits the per-match timeout.
+      // Without a shared budget this would cost ~100 x 100ms; with it, the mask times out once.
+      val recordList = (1 to 100).map { i =>
+        RecordSetInfo(
+          RecordSet(
+            "zoneId",
+            ("a" * 30) + "!" + i,
+            RecordType.A,
+            100,
+            RecordSetStatus.Active,
+            Instant.now.truncatedTo(ChronoUnit.MILLIS)
+          ),
+          None
+        )
+      }.toList
+
+      // The Read rule has no mask, so NoAccess can only come from the timed-out mask being
+      // applied fail-closed (a mask that merely failed to match would leave Read)
+      val timeoutRule =
+        ACLRule(AccessLevel.Write, userId = Some(okAuth.userId), recordMask = Some("(.*a){12}"))
+      val fallbackRule = ACLRule(AccessLevel.Read, userId = Some(okAuth.userId), recordMask = None)
+      val zone = Zone("test", "test", acl = ZoneACL(Set(timeoutRule, fallbackRule)))
+
+      val startMs = System.currentTimeMillis()
+      val result = accessValidationTest.getListAccessLevels(okAuth, recordList, zone)
+      val elapsedMs = System.currentTimeMillis() - startMs
+
+      elapsedMs should be < 2000L
+      result should have size 100
+      result.map(_.accessLevel).distinct shouldBe List(AccessLevel.NoAccess)
+    }
+
+    "treat a NoAccess rule whose mask times out as NoAccess over a broader allow rule" in {
+      val rs = RecordSetInfo(
+        RecordSet(
+          "zoneId",
+          ("a" * 30) + "!1",
+          RecordType.A,
+          100,
+          RecordSetStatus.Active,
+          Instant.now.truncatedTo(ChronoUnit.MILLIS)
+        ),
+        None
+      )
+
+      val denyRuleTimeout =
+        ACLRule(AccessLevel.NoAccess, userId = Some(okAuth.userId), recordMask = Some("(.*a){12}"))
+      val allowRuleNoMask =
+        ACLRule(AccessLevel.Write, userId = Some(okAuth.userId), recordMask = None)
+      val zone = Zone("test", "test", acl = ZoneACL(Set(denyRuleTimeout, allowRuleNoMask)))
+
+      val result = accessValidationTest.getListAccessLevels(okAuth, List(rs), zone)
+
+      // Failing open would drop the deny rule and return Write
+      result.head.accessLevel shouldBe AccessLevel.NoAccess
+    }
   }
 
   "getZoneAccess" should {
