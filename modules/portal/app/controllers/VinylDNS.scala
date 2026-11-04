@@ -147,10 +147,35 @@ class VinylDNS @Inject() (
     logger.info(s"Setting session for LoginId [$loginId]")
 
     val details = for {
-      code <- EitherT.fromEither[IO](oidcAuthenticator.getCodeFromAuthResponse(request))
-      validToken <- oidcAuthenticator.oidcCallback(code, loginId)
-      userDetails <- EitherT.fromEither[IO](oidcAuthenticator.getUserFromClaims(validToken))
-      userCreate <- EitherT.right[ErrorResponse](processLoginWithDetails(userDetails))
+      expectedState <- EitherT.fromEither[IO](
+        request.session
+          .get("oidc_state")
+          .toRight(ErrorResponse(400, "Missing OIDC state"))
+      )
+
+      expectedNonce <- EitherT.fromEither[IO](
+        request.session
+          .get("oidc_nonce")
+          .toRight(ErrorResponse(400, "Missing OIDC nonce"))
+      )
+
+      code <- EitherT.fromEither[IO](
+        oidcAuthenticator.getCodeFromAuthResponse(request, expectedState)
+      )
+
+      validToken <- oidcAuthenticator.oidcCallback(
+        code,
+        loginId,
+        Some(expectedNonce)
+      )
+
+      userDetails <- EitherT.fromEither[IO](
+        oidcAuthenticator.getUserFromClaims(validToken)
+      )
+
+      userCreate <- EitherT.right[ErrorResponse](
+        processLoginWithDetails(userDetails)
+      )
     } yield (userCreate, validToken)
 
     details.value
@@ -168,7 +193,9 @@ class VinylDNS @Inject() (
               case Failure(_) => "/index"
             }
 
-          Redirect(redirectLocation).withSession(ID_TOKEN -> token.toString)
+          Redirect(redirectLocation).withSession(
+            request.session - "oidc_state" - "oidc_nonce" + (ID_TOKEN -> token.toString)
+          )
         case Left(err) =>
           logger.error(s"LoginId [$loginId] failed with error: $err")
           InternalServerError(
