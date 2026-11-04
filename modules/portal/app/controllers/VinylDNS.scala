@@ -145,13 +145,18 @@ class VinylDNS @Inject() (
 
   def setOidcSession(loginId: String): Action[AnyContent] = Action.async { implicit request =>
     logger.info(s"Setting session for LoginId [$loginId]")
-    val expectedNonce = request.session.get("oidc_nonce")
 
     val details = for {
       expectedState <- EitherT.fromEither[IO](
         request.session
           .get("oidc_state")
           .toRight(ErrorResponse(400, "Missing OIDC state"))
+      )
+
+      expectedNonce <- EitherT.fromEither[IO](
+        request.session
+          .get("oidc_nonce")
+          .toRight(ErrorResponse(400, "Missing OIDC nonce"))
       )
 
       code <- EitherT.fromEither[IO](
@@ -161,7 +166,7 @@ class VinylDNS @Inject() (
       validToken <- oidcAuthenticator.oidcCallback(
         code,
         loginId,
-        expectedNonce
+        Some(expectedNonce)
       )
 
       userDetails <- EitherT.fromEither[IO](

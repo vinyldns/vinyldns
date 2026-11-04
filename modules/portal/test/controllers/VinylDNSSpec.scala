@@ -2759,6 +2759,31 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         contentAsString(result) must contain("There was an issue when logging in")
       }
 
+      "return an error when nonce is missing from session before validating the callback" in new WithApplication(app) {
+        val mockOidcAuth = mock[OidcAuthenticator]
+        val client = mock[WSClient]
+        val underTest = TestVinylDNS(
+          config,
+          authenticator,
+          mockUserAccessor,
+          client,
+          components,
+          crypto,
+          mockOidcAuth
+        )
+
+        val result = underTest.setOidcSession(loginId)(
+          FakeRequest(GET, s"/set-oidc-session/$loginId?state=$state&code=test-code")
+            .withSession("oidc_state" -> state)
+        )
+
+        status(result) mustEqual 500
+        contentAsString(result) must contain("There was an issue when logging in")
+        org.mockito.Mockito
+          .verify(mockOidcAuth, org.mockito.Mockito.never())
+          .getCodeFromAuthResponse(any[RequestHeader], any[String])
+      }
+
       "return an error when callback is missing state" in new WithApplication(app) {
         val mockOidcAuth = mock[OidcAuthenticator]
         mockOidcAuth.getCodeFromAuthResponse(any[RequestHeader], any[String])

@@ -212,7 +212,7 @@ class OidcAuthenticator @Inject() (wsClient: WSClient, configuration: Configurat
 
   def isValidIdToken(
     claimsSet: JWTClaimsSet,
-    expectedNonce: Option[String] = None
+    expectedNonce: Option[String]
   ): Boolean = {
     val tid = getStringFieldOption(claimsSet, "tid")
     val aid = Try(List(claimsSet.getStringListClaim("aud").asScala).flatten).getOrElse(List())
