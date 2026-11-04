@@ -15,7 +15,7 @@
  */
 
 angular.module('controller.records', [])
-    .controller('RecordsController', function ($scope, $timeout, $log, recordsService, groupsService, pagingService, profileService, utilityService, $q, portalEventService) {
+    .controller('RecordsController', function ($scope, $timeout, $log, recordsService, groupsService, pagingService, profileService, utilityService, $q) {
 
     /**
       * Scope data initial setup
@@ -511,9 +511,8 @@ angular.module('controller.records', [])
       */
 
     function deleteRecordSet(record) {
-        return trackRecordOperation('delete', record, function() {
-            return recordsService.delRecordSet($scope.zoneId, record.id);
-        })
+        return recordsService
+            .delRecordSet($scope.zoneId, record.id)
             .then(recordSetSuccess("Delete Record"))
             .catch(function (error){
                 handleError(error, 'recordsService::delRecordSet-failure');
@@ -523,9 +522,8 @@ angular.module('controller.records', [])
     function createRecordSet(record) {
         var payload = recordsService.toVinylRecord(record);
         payload.zoneId = $scope.zoneId;
-        return trackRecordOperation('create', record, function() {
-            return recordsService.createRecordSet($scope.zoneId, payload);
-        })
+        return recordsService
+            .createRecordSet($scope.zoneId, payload)
             .then(recordSetSuccess("Create Record"))
             .catch(function (error){
                 handleError(error, 'recordsService::createRecordSet-failure');
@@ -538,21 +536,12 @@ angular.module('controller.records', [])
         if (record.ownerGroupId) {
             payload.ownerGroupId = record.ownerGroupId;
         }
-        return trackRecordOperation('update', record, function() {
-            return recordsService.updateRecordSet($scope.zoneId, record.id, payload);
-        })
+        return recordsService
+            .updateRecordSet($scope.zoneId, record.id, payload)
             .then(recordSetSuccess("Update Record"))
             .catch(function (error){
                 handleError(error, 'recordsService::updateRecordSet-failure');
             });
-    }
-
-    function trackRecordOperation(action, record, operation) {
-        return portalEventService.trackOperation({
-            feature: 'zone_records',
-            action: action,
-            entityType: 'record_set'
-        }, operation);
     }
 
     function recordSetSuccess(action) {
@@ -645,13 +634,8 @@ angular.module('controller.records', [])
             $log.debug('recordsService::syncZone-success');
             location.reload();
         }
-        return portalEventService.trackOperation({
-            feature: 'zone',
-            action: 'sync',
-            entityType: 'zone'
-        }, function() {
-            return recordsService.syncZone($scope.zoneId);
-        })
+        return recordsService
+            .syncZone($scope.zoneId)
             .then(success)
             .catch(function (error){
                 handleError(error, 'recordsService::syncZone-failure');
@@ -795,13 +779,7 @@ angular.module('controller.records', [])
             downloadLink.click();
             document.body.removeChild(downloadLink);
             setTimeout(function() { window.URL.revokeObjectURL(url); }, 0);
-            recordsService.logExportEvent({
-                type: 'zone',
-                zoneId: $scope.zoneId,
-                recordTypes: filters.recordTypes,
-                query: filters.query,
-                rows: exportResult.rows
-            });
+
             $log.info('CSV file generated and download triggered');
         }).catch(function(error) {
             handleError(error, 'exportRecordsAsCSV-failure');

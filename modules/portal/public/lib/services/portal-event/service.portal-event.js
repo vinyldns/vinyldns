@@ -35,26 +35,7 @@ angular.module('service.portalEvent')
 
         function track(event) {
             event = event || {};
-            return sendEvent('/api/portal-events', {
-                feature: event.feature,
-                action: event.action,
-                status: event.status,
-                entityType: event.entityType || null,
-                durationMs: event.durationMs == null ? null : event.durationMs,
-                errorCode: event.errorCode || null,
-                errorMessage: event.errorMessage || null
-            });
-        }
-
-        function trackExport(event) {
-            event = event || {};
-            return sendEvent('/api/export-events', {
-                type: event.type,
-                zoneId: event.zoneId || null,
-                recordTypes: event.recordTypes || null,
-                query: event.query || null,
-                rows: event.rows
-            });
+            return sendEvent('/api/portal-events', event);
         }
 
         function getErrorMessage(error) {
@@ -97,5 +78,4 @@ angular.module('service.portalEvent')
 
         this.track = track;
         this.trackOperation = trackOperation;
-        this.trackExport = trackExport;
     });

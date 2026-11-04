@@ -17,12 +17,16 @@
 package models
 
 final case class PortalEvent(
-    feature: String,
-    action: String,
-    status: String,
+    feature: Option[String],
+    action: Option[String],
+    status: Option[String],
     entityType: Option[String],
     durationMs: Option[Long],
     errorCode: Option[String],
     errorMessage: Option[String],
+    exportType: Option[String],
+    recordTypes: Option[String],
+    query: Option[String],
+    rows: Option[Long],
     correlationId: String
 )

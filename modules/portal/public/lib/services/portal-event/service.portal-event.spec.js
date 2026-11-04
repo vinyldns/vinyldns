@@ -51,16 +51,15 @@ describe('Service: portalEventService', function() {
         this.httpBackend.flush();
     });
 
-    it('sends a normalized export event to the export endpoint', function() {
-        this.httpBackend.expectPOST('/api/export-events', {
+    it('sends an export event to the portal endpoint', function() {
+        this.httpBackend.expectPOST('/api/portal-events', {
             type: 'search',
-            zoneId: null,
             recordTypes: 'A,AAAA',
             query: 'host.example',
             rows: 23
         }).respond(204);
 
-        this.portalEventService.trackExport({
+        this.portalEventService.track({
             type: 'search',
             recordTypes: 'A,AAAA',
             query: 'host.example',
@@ -69,11 +68,11 @@ describe('Service: portalEventService', function() {
         this.httpBackend.flush();
     });
 
-    it('does not reject when export event delivery fails', function() {
+    it('does not reject when event delivery fails', function() {
         var result;
-        this.httpBackend.expectPOST('/api/export-events').respond(500);
+        this.httpBackend.expectPOST('/api/portal-events').respond(500);
 
-        this.portalEventService.trackExport({type: 'zone', zoneId: 'zone-1', rows: 1})
+        this.portalEventService.track({type: 'zone', rows: 1})
             .then(function(value) { result = value; });
         this.httpBackend.flush();
         this.rootScope.$digest();

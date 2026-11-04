@@ -35,7 +35,7 @@ class PortalEventServiceSpec extends Specification {
       ))
 
       result must beRight.like { case event =>
-        event.feature must beEqualTo("record_set_search")
+        event.feature must beSome("record_set_search")
         event.correlationId must beMatching("[0-9a-f-]{36}")
       }
     }
@@ -74,17 +74,16 @@ class PortalEventServiceSpec extends Specification {
     "validate export events and strip control characters from string fields" in {
       val payload = Json.obj(
         "type" -> "zone",
-        "zoneId" -> "zone\n123",
         "recordTypes" -> "A\rAAAA",
         "query" -> "host\u0000.example",
         "rows" -> 12
       )
 
-      service.validateExport(payload) must beRight.like { case (_, zoneId, recordTypes, query, rows) =>
-        zoneId must beSome("zone123")
-        recordTypes must beSome("AAAAA")
-        query must beSome("host.example")
-        rows must beEqualTo(12L)
+      service.validate(payload) must beRight.like { case event =>
+        event.exportType must beSome("zone")
+        event.recordTypes must beSome("AAAAA")
+        event.query must beSome("host.example")
+        event.rows must beSome(12L)
       }
     }
 
@@ -97,15 +96,15 @@ class PortalEventServiceSpec extends Specification {
         valid ++ Json.obj("rows" -> 1.5)
       )
 
-      invalid.forall(event => service.validateExport(event).isLeft) must beTrue
-      service.validateExport(valid ++ Json.obj("query" -> ("x" * 513))) must beRight.like { case (_, _, _, query, _) =>
-        query must beSome("x" * 512)
+      invalid.forall(event => service.validate(event).isLeft) must beTrue
+      service.validate(valid ++ Json.obj("query" -> ("x" * 513))) must beRight.like { case event =>
+        event.query must beSome("x" * 512)
       }
     }
 
-    "route export payloads through the shared event recorder" in {
+    "record export payloads through the same recorder as generic events" in {
       val payload = Json.obj("type" -> "search", "rows" -> 0)
-      service.record("test-user", payload, exportEvent = true) must beRight
+      service.record("test-user", payload) must beRight
     }
   }
 }

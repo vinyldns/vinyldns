@@ -410,13 +410,6 @@
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
-                        recordsService.logExportEvent({
-                            type: 'search',
-                            zoneId: null,
-                            recordTypes: recordType || ($scope.selectedRecordTypes || []).toString() || null,
-                            query: $scope.query || null,
-                            rows: csvRows.length - 1
-                        });
                         hideLoader();
                     }
 

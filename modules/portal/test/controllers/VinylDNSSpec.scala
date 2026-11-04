@@ -153,7 +153,6 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
           FakeRequest(POST, "/api/export-events")
             .withJsonBody(Json.obj(
               "type" -> "zone",
-              "zoneId" -> "zone-123",
               "recordTypes" -> "A",
               "query" -> "host",
               "rows" -> 3

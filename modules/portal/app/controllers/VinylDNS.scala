@@ -138,11 +138,7 @@ class VinylDNS @Inject() (
   private val frontendAction = securitySupport.frontendAction
 
   def createPortalEvent: Action[JsValue] = userAction.async(parse.json(8192)) { implicit request =>
-    portalEventService.record(
-      request.user.userName,
-      request.body,
-      exportEvent = request.path == "/api/export-events"
-    ) match {
+    portalEventService.record(request.user.userName, request.body) match {
       case Right(_) => Future.successful(NoContent)
       case Left(error) => Future.successful(BadRequest(Json.obj("error" -> error)))
     }

@@ -16,7 +16,6 @@
 
 package controllers
 
-import java.time.Instant
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
 import models.PortalEvent
@@ -27,113 +26,82 @@ import play.api.libs.json._
 @Singleton
 class PortalEventService @Inject() () {
   private val logger = LogManager.getLogger(classOf[PortalEventService])
-  private val exportEventFields = Set("type", "zoneId", "recordTypes", "query", "rows")
+  private val allowedFields = Set(
+    "feature",
+    "action",
+    "status",
+    "entityType",
+    "durationMs",
+    "errorCode",
+    "errorMessage",
+    "type",
+    "recordTypes",
+    "query",
+    "rows"
+  )
 
-  def record(username: String, payload: JsValue, exportEvent: Boolean = false): Either[String, Unit] =
-    if (exportEvent) {
-      validateExport(payload).map { case (exportType, zoneId, recordTypes, query, rows) =>
-        val message = new StringMapMessage()
-          .`with`("event", "export_event")
-          .`with`("user", username)
-          .`with`("type", exportType)
-          .`with`("rows", rows.toString)
-        zoneId.foreach(value => message.`with`("zoneId", value))
-        recordTypes.foreach(value => message.`with`("recordTypes", value))
-        query.foreach(value => message.`with`("query", value))
-        logger.info(message)
-      }
-    } else {
-      validate(payload).map { event =>
-        val message = new StringMapMessage()
-          .`with`("event", "portal_event")
-          .`with`("schemaVersion", "1")
-          .`with`("timestamp", Instant.now.toString)
-          .`with`("user", username)
-          .`with`("feature", event.feature)
-          .`with`("action", event.action)
-          .`with`("status", event.status)
-          .`with`("durationMs", event.durationMs.fold("")(_.toString))
-          .`with`("correlationId", event.correlationId)
-        event.entityType.foreach(value => message.`with`("entityType", value))
-        event.errorCode.foreach(value => message.`with`("errorCode", value))
-        event.errorMessage.foreach(value => message.`with`("errorMessage", value))
-        // ECS layout writes MapMessage entries as searchable structured fields.
-        logger.info(message)
-      }
+  def record(username: String, payload: JsValue): Either[String, Unit] =
+    validate(payload).map { event =>
+      val eventName = if (event.exportType.isDefined) "export_event" else "portal_event"
+      val message = (Seq("event" -> eventName, "user" -> username) ++ portalEventFields(event))
+        .foldLeft(new StringMapMessage()) { case (msg, (key, value)) => msg.`with`(key, value) }
+      // ECS layout writes MapMessage entries as searchable structured fields.
+      logger.info(message)
     }
 
-  private[controllers] def validateExport(
-      payload: JsValue
-  ): Either[String, (String, Option[String], Option[String], Option[String], Long)] = payload match {
-    case event: JsObject if (event.keys -- exportEventFields).nonEmpty => Left("Unsupported export event fields")
+  private def portalEventFields(event: PortalEvent): Seq[(String, String)] =
+    Seq(
+      "feature" -> event.feature,
+      "action" -> event.action,
+      "status" -> event.status,
+      "entityType" -> event.entityType,
+      "type" -> event.exportType,
+      "recordTypes" -> event.recordTypes,
+      "query" -> event.query,
+      "rows" -> event.rows.map(_.toString),
+      "durationMs" -> event.durationMs.map(_.toString),
+      "errorCode" -> event.errorCode,
+      "errorMessage" -> event.errorMessage
+    ).collect { case (key, Some(value)) => key -> value } :+ ("correlationId" -> event.correlationId)
+
+  // An event carrying a `type` is an export event (requires type and rows); otherwise it needs feature, action and status.
+  private[controllers] def validate(payload: JsValue): Either[String, PortalEvent] = payload match {
+    case event: JsObject if (event.keys -- allowedFields).nonEmpty => Left("Unsupported event fields")
     case event: JsObject =>
+      val isExport = event.keys.contains("type")
       for {
-        exportType <- event.value.get("type") match {
-          case Some(JsString(value)) if value == "zone" || value == "search" => Right(value)
-          case _ => Left("Invalid type")
-        }
-        zoneId <- optionalString(event, "zoneId", 128, None, stripControlCharacters = true)
+        feature <- requiredWhen(!isExport, "feature", optionalString(event, "feature", 64, Some(identifierPattern)))
+        action <- requiredWhen(!isExport, "action", optionalString(event, "action", 64, Some(identifierPattern)))
+        status <- requiredWhen(!isExport, "status", optionalString(event, "status", 16, Some("^(success|failure)$".r)))
+        entityType <- optionalString(event, "entityType", 32, Some(identifierPattern))
+        durationMs <- optionalNumber(event, "durationMs", 3600000)
+        errorCode <- optionalString(event, "errorCode", 64, Some(identifierPattern))
+        errorMessage <- optionalErrorMessage(event)
+        exportType <- requiredWhen(isExport, "type", optionalString(event, "type", 16, Some("^(zone|search)$".r)))
         recordTypes <- optionalString(event, "recordTypes", 256, None, stripControlCharacters = true)
         query <- optionalString(event, "query", 512, None, stripControlCharacters = true)
-        rows <- event.value.get("rows") match {
-          case Some(JsNumber(value)) if value.isWhole && value >= 0 && value <= BigDecimal(Long.MaxValue) =>
-            Right(value.toLong)
-          case _ => Left("Invalid rows")
-        }
-      } yield (exportType, zoneId, recordTypes, query, rows)
-    case _ => Left("Export event payload must be a JSON object")
-  }
-
-  private[controllers] def validate(payload: JsValue): Either[String, PortalEvent] = payload match {
-    case event: JsObject =>
-      val allowedFields = Set(
-        "feature",
-        "action",
-        "status",
-        "entityType",
-        "durationMs",
-        "errorCode",
-        "errorMessage"
+        rows <- requiredWhen(isExport, "rows", optionalNumber(event, "rows", Long.MaxValue))
+        _ <- if (status.contains("failure") || (errorCode.isEmpty && errorMessage.isEmpty)) Right(())
+          else Left("Error details are only valid for failed events")
+      } yield PortalEvent(
+        feature,
+        action,
+        status,
+        entityType,
+        durationMs,
+        errorCode,
+        errorMessage,
+        exportType,
+        recordTypes,
+        query,
+        rows,
+        UUID.randomUUID().toString
       )
-      val unknownFields = event.keys -- allowedFields
-      if (unknownFields.nonEmpty) {
-        Left("Unsupported event fields")
-      } else {
-        for {
-          feature <- requiredString(event, "feature", 64, identifierPattern)
-          action <- requiredString(event, "action", 64, identifierPattern)
-          status <- requiredString(event, "status", 16, "^(success|failure)$".r)
-          entityType <- optionalString(event, "entityType", 32, Some(identifierPattern))
-          durationMs <- optionalDuration(event)
-          errorCode <- optionalString(event, "errorCode", 64, Some(identifierPattern))
-          errorMessage <- optionalErrorMessage(event)
-          _ <- if (status == "failure" || (errorCode.isEmpty && errorMessage.isEmpty)) Right(())
-            else Left("Error details are only valid for failed events")
-        } yield PortalEvent(
-          feature,
-          action,
-          status,
-          entityType,
-          durationMs,
-          errorCode,
-          errorMessage,
-          UUID.randomUUID().toString
-        )
-      }
     case _ => Left("Event payload must be a JSON object")
   }
 
-  private def requiredString(
-      event: JsObject,
-      field: String,
-      maxLength: Int,
-      pattern: scala.util.matching.Regex
-  ): Either[String, String] =
-    event.value.get(field) match {
-      case Some(JsString(value)) if value.length <= maxLength && pattern.pattern.matcher(value).matches() =>
-        Right(value)
-      case _ => Left(s"Invalid $field")
-    }
+  private def requiredWhen[A](required: Boolean, field: String, value: Either[String, Option[A]]): Either[String, Option[A]] =
+    value.flatMap(v => if (required && v.isEmpty) Left(s"Invalid $field") else Right(v))
 
   private def optionalString(
       event: JsObject,
@@ -153,12 +121,12 @@ class PortalEventService @Inject() () {
       case _ => Left(s"Invalid $field")
     }
 
-  private def optionalDuration(event: JsObject): Either[String, Option[Long]] =
-    event.value.get("durationMs") match {
+  private def optionalNumber(event: JsObject, field: String, max: Long): Either[String, Option[Long]] =
+    event.value.get(field) match {
       case None | Some(JsNull) => Right(None)
-      case Some(JsNumber(value)) if value.isWhole && value >= 0 && value <= 3600000 =>
+      case Some(JsNumber(value)) if value.isWhole && value >= 0 && value <= BigDecimal(max) =>
         Right(Some(value.toLong))
-      case _ => Left("Invalid durationMs")
+      case _ => Left(s"Invalid $field")
     }
 
   private def optionalErrorMessage(event: JsObject): Either[String, Option[String]] =
