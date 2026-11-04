@@ -698,6 +698,7 @@ angular.module('controller.records', [])
     };
 
     function appendRecordsToCSV(csvRows, records) {
+        let rowsAdded = 0;
         records.forEach(function(recordset) {
             (recordset.records || []).forEach(function(record) {
                 const recordData = Object.entries(record).map(function(entry) { return entry[0] + "=" + entry[1]; }).join("; ");
@@ -709,8 +710,10 @@ angular.module('controller.records', [])
                     '"' + recordData.replace(/"/g, '""') + '"'
                 ];
                 csvRows.push(row.join(","));
+                rowsAdded += 1;
             });
         });
+        return rowsAdded;
     }
 
     // Page through the zone, converting each page to CSV rows as it arrives so we
@@ -718,18 +721,19 @@ angular.module('controller.records', [])
     function fetchAllRecordsAsCSV(filters) {
         const header = ["recordset_id", "fqdn", "record_type", "ttl", "record_data"];
         const csvRows = [header.join(",")];
+        let exportedRows = 0;
         let nextId = undefined;
         function fetchPage() {
             return recordsService
                 .listRecordSetsByZone($scope.zoneId, recordsPaging.maxItems, nextId, filters.query, filters.recordTypes, filters.nameSort, filters.recordTypeSort, false)
                 .then(function(response) {
                     $log.info('recordsService::listRecordSetsByZone-success ('+ response.data.recordSets.length +' records)');
-                    appendRecordsToCSV(csvRows, response.data.recordSets);
+                    exportedRows += appendRecordsToCSV(csvRows, response.data.recordSets);
                     nextId = response.data.nextId;
                     if (nextId) {
                         return fetchPage();
                     } else {
-                        return csvRows.join("\n");
+                        return {csvData: csvRows.join("\n"), rows: exportedRows};
                     }
                 });
         }
@@ -765,8 +769,8 @@ angular.module('controller.records', [])
             nameSort: $scope.nameSort,
             recordTypeSort: $scope.recordTypeSort
         };
-        fetchAllRecordsAsCSV(filters).then(function(csvData) {
-            const blob = new Blob([csvData], { type: 'text/csv' });
+        fetchAllRecordsAsCSV(filters).then(function(exportResult) {
+            const blob = new Blob([exportResult.csvData], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const downloadLink = document.createElement('a');
             downloadLink.href = url;
@@ -775,6 +779,7 @@ angular.module('controller.records', [])
             downloadLink.click();
             document.body.removeChild(downloadLink);
             setTimeout(function() { window.URL.revokeObjectURL(url); }, 0);
+
             $log.info('CSV file generated and download triggered');
         }).catch(function(error) {
             handleError(error, 'exportRecordsAsCSV-failure');

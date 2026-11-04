@@ -22,10 +22,11 @@ describe('Controller: RecordsController', function () {
         module('service.paging'),
         module('service.profile'),
         module('service.utility'),
+        module('service.portalEvent'),
         module('directives.modals.record.module'),
         module('controller.records')
     });
-    beforeEach(inject(function ($rootScope, $controller, $httpBackend, $q, groupsService, recordsService, pagingService, profileService) {
+    beforeEach(inject(function ($rootScope, $controller, $httpBackend, $q, groupsService, recordsService, pagingService, profileService, portalEventService) {
         this.rootScope = $rootScope;
         this.scope = this.rootScope.$new();
         this.$httpBackend = $httpBackend;
@@ -34,6 +35,7 @@ describe('Controller: RecordsController', function () {
         this.recordsService = recordsService;
         this.pagingService = pagingService;
         this.profileService = profileService;
+        this.portalEventService = portalEventService;
         this.q = $q;
     }));
 
@@ -433,7 +435,6 @@ describe('Controller: RecordsController', function () {
         expect(listRecordSetsByZone.calls.mostRecent().args).toEqual(
             [expectedZoneId, expectedMaxItems, expectedStartFrom, expectedQuery, expectedRecordTypeFilter, expectedNameSort, expectedRecordTypeSort]);
     });
-
     it('recordSetGroupOwnershipStatus does not fetch members when the group id is the string "null"', function () {
         this.$httpBackend.when('GET', '/api/users/currentuser').respond({});
         var getGroupMemberList = spyOn(this.groupsService, 'getGroupMemberList')
@@ -473,4 +474,5 @@ describe('Controller: RecordsController', function () {
         expect(getGroupMemberList.calls.count()).toBe(1);
         expect(getGroupMemberList.calls.mostRecent().args).toEqual(["valid-group"]);
     });
+
 });

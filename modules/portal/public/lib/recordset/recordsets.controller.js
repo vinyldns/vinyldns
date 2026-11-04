@@ -266,7 +266,6 @@
             $scope.exportToCSV = function () {
 
                 if (!$scope.isRecordSearchTriggered) return;
-
                 let loader = $("#csvLoaderModal");
                 loader.modal({
                     backdrop: "static",
