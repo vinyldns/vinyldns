@@ -28,5 +28,9 @@ final case class PortalEvent(
     recordTypes: Option[String],
     query: Option[String],
     rows: Option[Long],
+    username: Option[String],
+    zoneId: Option[String],
+    recordId: Option[String],
+    groupId: Option[String],
     correlationId: String
 )

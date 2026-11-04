@@ -37,7 +37,11 @@ class PortalEventService @Inject() () {
     "type",
     "recordTypes",
     "query",
-    "rows"
+    "rows",
+    "username",
+    "zoneId",
+    "recordId",
+    "groupId"
   )
 
   def record(username: String, payload: JsValue): Either[String, Unit] =
@@ -61,7 +65,11 @@ class PortalEventService @Inject() () {
       "rows" -> event.rows.map(_.toString),
       "durationMs" -> event.durationMs.map(_.toString),
       "errorCode" -> event.errorCode,
-      "errorMessage" -> event.errorMessage
+      "errorMessage" -> event.errorMessage,
+      "username" -> event.username,
+      "zoneId" -> event.zoneId,
+      "recordId" -> event.recordId,
+      "groupId" -> event.groupId
     ).collect { case (key, Some(value)) => key -> value } :+ ("correlationId" -> event.correlationId)
 
   // An event carrying a `type` is an export event (requires type and rows); otherwise it needs feature, action and status.
@@ -81,6 +89,10 @@ class PortalEventService @Inject() () {
         recordTypes <- optionalString(event, "recordTypes", 256, None, stripControlCharacters = true)
         query <- optionalString(event, "query", 512, None, stripControlCharacters = true)
         rows <- requiredWhen(isExport, "rows", optionalNumber(event, "rows", Long.MaxValue))
+        username <- optionalString(event, "username", 256, None)
+        zoneId <- optionalString(event, "zoneId", 256, None)
+        recordId <- optionalString(event, "recordId", 256, None)
+        groupId <- optionalString(event, "groupId", 256, None)
         _ <- if (status.contains("failure") || (errorCode.isEmpty && errorMessage.isEmpty)) Right(())
           else Left("Error details are only valid for failed events")
       } yield PortalEvent(
@@ -95,6 +107,10 @@ class PortalEventService @Inject() () {
         recordTypes,
         query,
         rows,
+        username,
+        zoneId,
+        recordId,
+        groupId,
         UUID.randomUUID().toString
       )
     case _ => Left("Event payload must be a JSON object")

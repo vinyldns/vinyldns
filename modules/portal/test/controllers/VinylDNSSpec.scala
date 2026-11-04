@@ -150,7 +150,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val appComponents = app.injector.instanceOf[ControllerComponents]
         val eventController = TestVinylDNS(config, mockLdapAuthenticator, mockUserAccessor, ws, appComponents, crypto)
         val result = call(eventController.createPortalEvent,
-          FakeRequest(POST, "/api/export-events")
+          FakeRequest(POST, "/api/portal-events")
             .withJsonBody(Json.obj(
               "type" -> "zone",
               "recordTypes" -> "A",
@@ -167,7 +167,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val appComponents = app.injector.instanceOf[ControllerComponents]
         val eventController = TestVinylDNS(config, mockLdapAuthenticator, mockUserAccessor, ws, appComponents, crypto)
         val result = call(eventController.createPortalEvent,
-          FakeRequest(POST, "/api/export-events")
+          FakeRequest(POST, "/api/portal-events")
             .withJsonBody(Json.obj("type" -> "search", "rows" -> 3, "user" -> "spoofed"))
             .withSession("username" -> frodoUser.userName)
         )
@@ -179,8 +179,8 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         val appComponents = app.injector.instanceOf[ControllerComponents]
         val eventController = TestVinylDNS(config, mockLdapAuthenticator, mockUserAccessor, ws, appComponents, crypto)
         val invalidEvents = Seq(
-          Json.obj("feature" -> "record_search", "action" -> "csv_export", "status" -> "success", "username" -> "spoofed"),
-          Json.obj("feature" -> "record_search", "action" -> "csv_export", "status" -> "success", "metadata" -> Json.obj())
+          Json.obj("feature" -> "record_search", "action" -> "csv_export", "status" -> "success", "metadata" -> Json.obj()),
+          Json.obj("feature" -> "record_search", "action" -> "csv_export", "status" -> "success", "unknownField" -> "value")
         )
         val results = invalidEvents.map { event =>
           call(eventController.createPortalEvent,

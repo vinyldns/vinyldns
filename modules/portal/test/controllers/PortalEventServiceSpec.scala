@@ -44,7 +44,6 @@ class PortalEventServiceSpec extends Specification {
       val invalidEvents = Seq(
         Json.obj("feature" -> "records", "action" -> "export", "status" -> "pending"),
         Json.obj("feature" -> "records", "action" -> "export", "status" -> "success", "durationMs" -> -1),
-        Json.obj("feature" -> "records", "action" -> "export", "status" -> "success", "username" -> "spoofed"),
         Json.obj("feature" -> "records", "action" -> "export", "status" -> "success", "metadata" -> Json.obj())
       )
 
@@ -90,7 +89,7 @@ class PortalEventServiceSpec extends Specification {
     "reject export events with unknown fields, invalid types, or invalid row counts" in {
       val valid = Json.obj("type" -> "search", "rows" -> 0)
       val invalid = Seq(
-        valid ++ Json.obj("username" -> "spoofed"),
+        valid ++ Json.obj("metadata" -> Json.obj()),
         valid ++ Json.obj("type" -> "other"),
         valid ++ Json.obj("rows" -> -1),
         valid ++ Json.obj("rows" -> 1.5)

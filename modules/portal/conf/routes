@@ -26,7 +26,6 @@ POST          /regenerate-creds                  @controllers.VinylDNS.regenerat
 
 GET           /api/recordsets                    @controllers.VinylDNS.listRecordSetData
 POST          /api/portal-events                 @controllers.VinylDNS.createPortalEvent
-POST          /api/export-events                 @controllers.VinylDNS.createPortalEvent
 
 GET           /api/zones                         @controllers.VinylDNS.getZones
 GET           /api/zones/backendids              @controllers.VinylDNS.getBackendIds
