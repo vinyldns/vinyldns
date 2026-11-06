@@ -30,7 +30,7 @@ import pureconfig._
 import pureconfig.generic.auto._
 import pureconfig.module.catseffect.syntax._
 import cats.effect.Blocker
-import vinyldns.core.queue.{MessageQueue, MessageQueueConfig, MessageQueueProvider}
+import vinyldns.core.queue.{MessageQueue, MessageQueueConfig, MessageQueueProvider, QueueMessageSigning}
 
 import scala.util.matching.Regex
 import cats.effect.ContextShift
@@ -46,11 +46,12 @@ class SqsMessageQueueProvider extends MessageQueueProvider {
       settingsConfig <- Blocker[IO].use(
         ConfigSource.fromConfig(config.settings).loadF[IO, SqsMessageQueueSettings](_)
       )
+      signing <- IO(QueueMessageSigning.fromConfig(config.signing))
       _ <- IO.fromEither(validateQueueName(settingsConfig.queueName))
       client <- setupClient(settingsConfig)
       queueUrl <- setupQueue(client, settingsConfig.queueName)
       _ <- IO(logger.info(s"Queue URL: $queueUrl"))
-    } yield new SqsMessageQueue(queueUrl, client)
+    } yield new SqsMessageQueue(queueUrl, client, signing)
 
   def validateQueueName(queueName: String): Either[InvalidQueueName, String] = {
 

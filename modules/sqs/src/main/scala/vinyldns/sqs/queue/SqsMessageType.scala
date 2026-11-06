@@ -21,7 +21,7 @@ import vinyldns.core.domain.batch.BatchChangeCommand
 import vinyldns.core.domain.record.RecordSetChange
 import vinyldns.core.domain.zone.{ZoneChange, ZoneCommand}
 
-sealed abstract class SqsMessageType(val name: String) {
+sealed abstract class SqsMessageType(val name: String, val code: Int) {
   val messageAttribute: (String, MessageAttributeValue) =
     "message-type" -> new MessageAttributeValue()
       .withStringValue(name)
@@ -29,9 +29,9 @@ sealed abstract class SqsMessageType(val name: String) {
 }
 
 object SqsMessageType {
-  case object SqsRecordSetChangeMessage extends SqsMessageType("SqsRecordSetChangeMessage")
-  case object SqsZoneChangeMessage extends SqsMessageType("SqsZoneChangeMessage")
-  case object SqsBatchChangeMessage extends SqsMessageType("SqsBatchChangeMessage")
+  case object SqsRecordSetChangeMessage extends SqsMessageType("SqsRecordSetChangeMessage", 1)
+  case object SqsZoneChangeMessage extends SqsMessageType("SqsZoneChangeMessage", 2)
+  case object SqsBatchChangeMessage extends SqsMessageType("SqsBatchChangeMessage", 3)
   sealed abstract class SqsMessageTypeError(message: String) extends Throwable(message)
 
   final case class InvalidMessageTypeValue(value: String)

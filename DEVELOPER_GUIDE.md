@@ -181,6 +181,10 @@ Once the prerequisites are running, you can start up sbt by running `sbt` from t
 - To stop the VinylDNS server, run `reStop` from the api project
 - To stop the dependent Docker containers: `utils/clean-vinyldns-containers.sh`
 
+Zone updates validated by the API and authenticated by the queue consumer persist the requested
+ACL, admin group, and sharing changes, including permission revocations. Record operations and zone
+deletion use repository-loaded zone configuration; they must not use message-supplied zone settings.
+
 See the [API Configuration Guide](https://www.vinyldns.io/operator/config-api) for information regarding API
 configuration.
 

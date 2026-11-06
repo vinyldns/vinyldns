@@ -21,6 +21,7 @@ import vinyldns.core.domain.membership.{UserRepository, GroupChangeRepository, M
 import vinyldns.core.domain.record.{RecordChangeRepository, RecordSetCacheRepository, RecordSetRepository}
 import vinyldns.core.domain.zone.{ZoneRepository, ZoneChangeRepository}
 import vinyldns.core.repository.DataAccessor
+import vinyldns.core.queue.CommandExecutionRepository
 
 final case class ApiDataAccessor(
     userRepository: UserRepository,
@@ -32,5 +33,6 @@ final case class ApiDataAccessor(
     recordSetCacheRepository: RecordSetCacheRepository,
     zoneChangeRepository: ZoneChangeRepository,
     zoneRepository: ZoneRepository,
-    batchChangeRepository: BatchChangeRepository
+    batchChangeRepository: BatchChangeRepository,
+    commandExecutionRepository: CommandExecutionRepository
 ) extends DataAccessor

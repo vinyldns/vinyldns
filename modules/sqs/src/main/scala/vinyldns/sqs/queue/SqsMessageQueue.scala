@@ -17,6 +17,7 @@
 package vinyldns.sqs.queue
 
 import java.util.Base64
+import java.nio.charset.StandardCharsets.UTF_8
 import java.util.concurrent.TimeUnit.SECONDS
 
 import cats.data._
@@ -34,16 +35,15 @@ import vinyldns.core.health.HealthCheck._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.queue._
 import vinyldns.core.route.Monitored
-import vinyldns.sqs.queue.SqsMessageType.{
-  SqsBatchChangeMessage,
-  SqsRecordSetChangeMessage,
-  SqsZoneChangeMessage
-}
 import java.io.{PrintWriter, StringWriter}
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
 
-class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
+class SqsMessageQueue(
+    val queueUrl: String,
+    val client: AmazonSQSAsync,
+    signing: QueueMessageSigning
+)
     extends MessageQueue
     with Monitored {
 
@@ -103,7 +103,7 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
   // If we cannot parse the message, remove it from the queue
   def parse(message: Message): IO[Either[Throwable, SqsMessage]] =
     // This is tricky, we need to attempt to parse the message.  If we cannot, delete it; otherwise return ok
-    IO(SqsMessage.parseSqsMessage(message)).flatMap {
+    IO(SqsMessage.parseSqsMessage(message, signing)).flatMap {
       case Left(e) =>
         val errorMessage = new StringWriter
         e.printStackTrace(new PrintWriter(errorMessage))
@@ -133,24 +133,23 @@ class SqsMessageQueue(val queueUrl: String, val client: AmazonSQSAsync)
   def send[A <: ZoneCommand](command: A): IO[Unit] =
     monitor("queue.SQS.send") {
       logger.info(s"Sending command: $command.")
-      sqsAsync[SendMessageRequest, SendMessageResult](
-        toSendMessageRequest(command)
-          .withQueueUrl(queueUrl),
-        client.sendMessageAsync
-      )
+      IO(toSendMessageRequest(command, signing)).flatMap { request =>
+        sqsAsync[SendMessageRequest, SendMessageResult](
+          request.withQueueUrl(queueUrl),
+          client.sendMessageAsync
+        )
+      }
     }.as(())
 
   def sendBatch[A <: ZoneCommand](cmds: NonEmptyList[A]): IO[SendBatchResult[A]] =
     monitor("queue.SQS.sendBatch") {
-      toSendMessageBatchRequest(cmds)
-        .map { sendRequest =>
+      IO(toSendMessageBatchRequest(cmds, signing))
+        .flatMap(_.parTraverse { sendRequest =>
           sqsAsync[SendMessageBatchRequest, SendMessageBatchResult](
-            sendRequest
-              .withQueueUrl(queueUrl),
+            sendRequest.withQueueUrl(queueUrl),
             client.sendMessageBatchAsync
           )
-        }
-        .parSequence
+        })
         .map { sendResult =>
           toSendBatchResult(sendResult, cmds)
         }
@@ -213,41 +212,46 @@ object SqsMessageQueue extends ProtobufConversions {
     }
 
   // Helper function to serialize message body
-  def messageData[A <: ZoneCommand](cmd: A): String = cmd match {
-    case rsc: RecordSetChange => Base64.getEncoder.encodeToString(toPB(rsc).toByteArray)
-    case zc: ZoneChange => Base64.getEncoder.encodeToString(toPB(zc).toByteArray)
-    case bc: BatchChangeCommand => Base64.getEncoder.encodeToString(bc.id.getBytes)
+  def messageData[A <: ZoneCommand](cmd: A, signing: QueueMessageSigning): String = {
+    val payload = cmd match {
+      case rsc: RecordSetChange => toPB(rsc).toByteArray
+      case zc: ZoneChange => toPB(zc).toByteArray
+      case bc: BatchChangeCommand => bc.id.getBytes(UTF_8)
+    }
+    Base64.getEncoder.encodeToString(
+      signing.sign(SqsMessageType.fromCommand(cmd).code, cmd.id, payload)
+    )
   }
 
-  def toSendMessageRequest(zoneCommand: ZoneCommand): SendMessageRequest = {
-    val messageTypeBytesTuple = zoneCommand match {
-      case rsc: RecordSetChange => (SqsRecordSetChangeMessage, toPB(rsc).toByteArray)
-      case zc: ZoneChange => (SqsZoneChangeMessage, toPB(zc).toByteArray)
-      case bc: BatchChangeCommand => (SqsBatchChangeMessage, bc.id.getBytes)
-    }
-
-    messageTypeBytesTuple match {
-      case (messageType, messageBytes) =>
-        new SendMessageRequest()
-          .withMessageBody(Base64.getEncoder.encodeToString(messageBytes))
-          .withMessageAttributes(Map(messageType.messageAttribute).asJava)
-    }
-  }
+  def toSendMessageRequest(
+      zoneCommand: ZoneCommand,
+      signing: QueueMessageSigning
+  ): SendMessageRequest =
+    new SendMessageRequest()
+      .withMessageBody(messageData(zoneCommand, signing))
+      .withMessageAttributes(Map(SqsMessageType.fromCommand(zoneCommand).messageAttribute).asJava)
 
   def toSendMessageBatchRequest[A <: ZoneCommand](
-      commands: NonEmptyList[A]
+      commands: NonEmptyList[A],
+      signing: QueueMessageSigning
   ): List[SendMessageBatchRequest] = {
     // convert each message into an entry
     val entries = commands.map { cmd =>
       new SendMessageBatchRequestEntry()
-        .withMessageBody(messageData(cmd))
+        .withMessageBody(messageData(cmd, signing))
         .withId(cmd.id)
         .withMessageAttributes(Map(SqsMessageType.fromCommand(cmd).messageAttribute).asJava)
     }.toList
 
     // Determine maximum message per batch based off of payload limits
-    val maxMessageGroupCount = (MAXIMUM_BATCH_SIZE.toDouble /
-      entries.map(_.getMessageBody.getBytes().length).max.toDouble).toInt
+    val largestEntrySize = entries.map { entry =>
+      entry.getMessageBody.getBytes(UTF_8).length +
+        "message-type".getBytes(UTF_8).length +
+        "String".getBytes(UTF_8).length +
+        entry.getMessageAttributes.get("message-type").getStringValue.getBytes(UTF_8).length
+    }.max
+    require(largestEntrySize <= MAXIMUM_BATCH_SIZE, "Signed queue message exceeds SQS size limit")
+    val maxMessageGroupCount = MAXIMUM_BATCH_SIZE / largestEntrySize
 
     // Take lower of size and count constraint
     val groupCount = Math.min(maxMessageGroupCount, MAXIMUM_BATCH_ENTRY_COUNT)

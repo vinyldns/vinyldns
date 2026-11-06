@@ -1,4 +1,5 @@
 import copy
+from uuid import uuid4
 
 import pytest
 
@@ -14,6 +15,69 @@ def new_backend_zone(shared_zone_test_context, zone_name, admin_group_id=None):
         "adminGroupId": admin_group_id or shared_zone_test_context.ok_group["id"],
         "backendId": "func-test-backend"
     }
+
+
+@pytest.mark.serial
+def test_authenticated_zone_updates_preserve_authorized_fields(shared_zone_test_context):
+    client = shared_zone_test_context.ok_vinyldns_client
+    super_client = shared_zone_test_context.super_user_client
+    zone_id = None
+    group = None
+    try:
+        group = client.create_group({
+            "name": "queue-update-" + uuid4().hex,
+            "email": "test@test.com",
+            "description": "Isolated queue update regression",
+            "members": [{"id": "ok"}],
+            "admins": [{"id": "ok"}]
+        }, status=200)
+        zone = new_backend_zone(
+            shared_zone_test_context,
+            f"one-time{shared_zone_test_context.partition_id}."
+        )
+        zone["backendId"] = "default"
+        created = client.create_zone(zone, status=202)
+        zone_id = created["zone"]["id"]
+        client.wait_until_zone_active(zone_id)
+
+        update = client.get_zone(zone_id)["zone"]
+        rule = {"accessLevel": "Read", "userId": "dummy", "recordTypes": []}
+        update["acl"]["rules"] = [rule]
+        update["adminGroupId"] = group["id"]
+        update["shared"] = True
+        update["backendId"] = "func-test-backend"
+        changed = super_client.update_zone(update, status=202)
+        super_client.wait_until_zone_change_status_synced(changed)
+
+        persisted = super_client.get_zone(zone_id)["zone"]
+        assert persisted["adminGroupId"] == group["id"]
+        assert persisted["shared"] is True
+        assert persisted["backendId"] == "func-test-backend"
+        verify_acl_rule_is_present_once(rule, persisted["acl"])
+        shared_zone_test_context.dummy_vinyldns_client.get_zone(zone_id, status=200)
+
+        persisted["acl"]["rules"] = []
+        persisted["shared"] = False
+        persisted["backendId"] = "default"
+        revoked = super_client.update_zone(persisted, status=202)
+        super_client.wait_until_zone_change_status_synced(revoked)
+        persisted = super_client.get_zone(zone_id)["zone"]
+        assert persisted["acl"]["rules"] == []
+        assert persisted["shared"] is False
+        assert persisted["backendId"] == "default"
+        shared_zone_test_context.dummy_vinyldns_client.get_zone(zone_id, status=403)
+
+        client.delete_zone(zone_id, status=202)
+        client.wait_until_zone_deleted(zone_id)
+        zone_id = None
+    finally:
+        try:
+            if zone_id is not None:
+                super_client.delete_zone(zone_id, status=(202, 404))
+                super_client.wait_until_zone_deleted(zone_id)
+        finally:
+            if group is not None:
+                client.delete_group(group["id"], status=(200, 404))
 
 
 @pytest.mark.serial
@@ -1046,21 +1110,21 @@ def test_normal_user_cannot_update_shared_zone_flag(shared_zone_test_context):
 @pytest.mark.serial
 def test_update_connection_info_success(shared_zone_test_context):
     """
-    Test user can update zone to backendId instead of connection info
+    Test a backend switch is persisted and subsequent record changes succeed.
     """
     client = shared_zone_test_context.ok_vinyldns_client
-    zone = shared_zone_test_context.system_test_zone
+    zone = client.get_zone(shared_zone_test_context.system_test_zone["id"])["zone"]
 
-    to_update = client.get_zone(zone["id"])["zone"]
-    assert_that(to_update, has_key("backendId"))
-    to_update["backendId"] = "func-test-backend"
+    to_update = copy.deepcopy(zone)
+    assert_that(to_update["backendId"], is_("func-test-backend"))
+    to_update["backendId"] = "default"
     test_rs = None
     try:
         change = client.update_zone(to_update, status=202)
         client.wait_until_zone_change_status_synced(change)
-        new_zone = change["zone"]
+        new_zone = client.get_zone(zone["id"])["zone"]
 
-        assert_that(new_zone["backendId"], is_("func-test-backend"))
+        assert_that(new_zone["backendId"], is_("default"))
 
         # test adding a recordset - validates the key
         new_rs = create_recordset(new_zone, "test-update-connection-info-success", "CNAME",
@@ -1068,11 +1132,15 @@ def test_update_connection_info_success(shared_zone_test_context):
         create_rs = client.create_recordset(new_rs, status=202)
         test_rs = client.wait_until_recordset_change_status(create_rs, "Complete")["recordSet"]
     finally:
-        revert = client.update_zone(zone, status=202)
-        client.wait_until_zone_change_status_synced(revert)
-        if test_rs:
-            delete_result = client.delete_recordset(test_rs["zoneId"], test_rs["id"], status=202)
-            client.wait_until_recordset_change_status(delete_result, "Complete")
+        try:
+            if test_rs:
+                delete_result = client.delete_recordset(test_rs["zoneId"], test_rs["id"], status=202)
+                client.wait_until_recordset_change_status(delete_result, "Complete")
+        finally:
+            revert = client.update_zone(zone, status=202)
+            client.wait_until_zone_change_status_synced(revert)
+            restored_zone = client.get_zone(zone["id"])["zone"]
+            assert_that(restored_zone["backendId"], is_(zone["backendId"]))
 
 
 @pytest.mark.serial

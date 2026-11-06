@@ -23,7 +23,7 @@ import pureconfig.generic.auto._
 import pureconfig.module.catseffect.syntax._
 import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
 import scalikejdbc.config.DBs
-import vinyldns.core.queue.{MessageQueue, MessageQueueConfig, MessageQueueProvider}
+import vinyldns.core.queue.{MessageQueue, MessageQueueConfig, MessageQueueProvider, QueueMessageSigning}
 import vinyldns.mysql.{HikariCloser, MySqlConnectionConfig, MySqlDataSourceSettings}
 import vinyldns.mysql.MySqlConnector._
 import cats.effect.ContextShift
@@ -44,11 +44,15 @@ class MySqlMessageQueueProvider extends MessageQueueProvider {
       connectionSettings <- Blocker[IO].use(
         ConfigSource.fromConfig(config.settings).loadF[IO, MySqlConnectionConfig](_)
       )
+      signing <- IO(QueueMessageSigning.fromConfig(config.signing))
       _ <- runDBMigrations(connectionSettings)
       _ <- setupQueueConnection(connectionSettings)
-    } yield new MySqlMessageQueue(config.maxRetries)
+    } yield new MySqlMessageQueue(config.maxRetries, signing)
 
-  def setupQueueConnection(config: MySqlConnectionConfig): IO[Unit] = {
+  def setupQueueConnection(
+      config: MySqlConnectionConfig,
+      connectionPoolName: Symbol = MySqlMessageQueue.QUEUE_CONNECTION_NAME
+  ): IO[Unit] = {
     val queueConnectionSettings = MySqlDataSourceSettings(config, "mysqlQueuePool")
 
     getDataSource(queueConnectionSettings).map { dataSource =>
@@ -60,7 +64,7 @@ class MySqlMessageQueueProvider extends MessageQueueProvider {
 
       // Configure the connection pool
       ConnectionPool.add(
-        MySqlMessageQueue.QUEUE_CONNECTION_NAME,
+        connectionPoolName,
         new DataSourceConnectionPool(dataSource, closer = new HikariCloser(dataSource))
       )
 

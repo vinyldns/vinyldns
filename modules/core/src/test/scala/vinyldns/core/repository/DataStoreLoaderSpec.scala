@@ -54,7 +54,8 @@ class DataStoreLoaderSpec
     enabled,
     enabled,
     enabled,
-    enabled
+    enabled,
+    commandExecution = enabled
   )
 
   val allDisabledReposConfig = RepositoriesConfig(

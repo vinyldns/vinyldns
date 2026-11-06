@@ -37,7 +37,7 @@ import vinyldns.core.domain.record.{
   RecordSetRepository
 }
 import vinyldns.core.domain.zone._
-import vinyldns.core.queue.{CommandMessage, MessageCount, MessageId, MessageQueue}
+import vinyldns.core.queue.{CommandExecutionGuard, CommandExecutionRepository, CommandIdentity, CommandMessage, MessageCount, MessageId, MessageQueue}
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.TestZoneData._
 import vinyldns.core.domain.backend.{Backend, BackendResolver}
@@ -58,6 +58,8 @@ class CommandHandlerSpec
   private case class TestCommandMessage(command: ZoneCommand, value: String)
       extends CommandMessage {
     def id: MessageId = MessageId(value)
+    override def authenticatedIdentity: Option[CommandIdentity] =
+      Some(CommandIdentity(command.id, command.id, "test-digest"))
   }
 
   private val mq = mock[MessageQueue]
@@ -76,17 +78,27 @@ class CommandHandlerSpec
   private val mockZoneSyncProcessor = mock[ZoneChange => IO[ZoneChange]]
   private val mockBatchChangeProcessor = mock[BatchChangeCommand => IO[Option[BatchChange]]]
   private val mockBackendResolver = mock[BackendResolver]
+  private val mockZoneRepo = mock[ZoneRepository]
+  private val executionRepo = mock[CommandExecutionRepository]
   private val processor =
     CommandHandler.processChangeRequests(
       mockZoneChangeProcessor,
       mockRecordChangeProcessor,
       mockZoneSyncProcessor,
       mockBatchChangeProcessor,
-      mockBackendResolver
+      mockBackendResolver,
+      mockZoneRepo,
+      new CommandExecutionGuard(executionRepo)
     )
 
-  override protected def beforeEach(): Unit =
-    Mockito.reset(mq, mockZoneChangeProcessor, mockRecordChangeProcessor, mockZoneSyncProcessor)
+  override protected def beforeEach(): Unit = {
+    Mockito.reset(mq, mockZoneChangeProcessor, mockRecordChangeProcessor, mockZoneSyncProcessor, mockZoneRepo, mockBackendResolver, executionRepo)
+    doReturn(IO.pure(CommandExecutionRepository.Acquired)).when(executionRepo)
+      .claim(any[CommandIdentity], anyString(), any[FiniteDuration])
+    doReturn(IO.unit).when(executionRepo).renew(any[CommandIdentity], anyString(), any[FiniteDuration])
+    doReturn(IO.unit).when(executionRepo).complete(any[CommandIdentity], anyString())
+    doReturn(IO.unit).when(executionRepo).release(any[CommandIdentity], anyString())
+  }
 
   "polling" should {
     "poll for messages" in {
@@ -221,6 +233,8 @@ class CommandHandlerSpec
   "processing change requests" should {
     "handle record changes" in {
       val change = TestCommandMessage(pendingCreateAAAA, "foo")
+      doReturn(IO.pure(Some(pendingCreateAAAA.zone))).when(mockZoneRepo).getZone(pendingCreateAAAA.zone.id)
+      doReturn(mock[Backend]).when(mockBackendResolver).resolve(any[Zone])
       doReturn(IO.pure(change))
         .when(mockRecordChangeProcessor)
         .apply(any[DnsBackend], any[RecordSetChange])
@@ -243,6 +257,7 @@ class CommandHandlerSpec
     "handle zone syncs" in {
       val sync = zoneCreate.copy(changeType = ZoneChangeType.Sync)
       val change = TestCommandMessage(sync, "foo")
+      doReturn(IO.pure(Some(sync.zone))).when(mockZoneRepo).getZone(sync.zone.id)
       doReturn(IO.pure(sync)).doReturn(IO.pure(change)).when(mockZoneChangeProcessor).apply(sync)
       doReturn(IO.pure(sync)).when(mockZoneSyncProcessor).apply(sync)
       Stream.emit(change).covary[IO].through(processor).compile.drain.unsafeRunSync()
@@ -271,9 +286,80 @@ class CommandHandlerSpec
       verifyZeroInteractions(mockZoneSyncProcessor)
       verifyZeroInteractions(mockRecordChangeProcessor)
     }
+
+    "discard a RecordSetChange whose zone id is absent from the repository" in {
+      val change = TestCommandMessage(pendingCreateAAAA, "foo")
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZone(pendingCreateAAAA.zone.id)
+
+      val result = Stream.emit(change).covary[IO].through(processor).compile.toList.unsafeRunSync()
+
+      result.head shouldBe DeleteMessage(change)
+      verifyZeroInteractions(mockRecordChangeProcessor)
+      verifyZeroInteractions(mockBackendResolver)
+    }
+    "use the DB zone for RecordSetChange backend resolution, not the message-supplied zone" in {
+      // Zone configuration from database takes precedence for backend resolution
+      val modifiedZone = pendingCreateAAAA.zone.copy(backendId = Some("modified-backend"))
+      val msg = TestCommandMessage(pendingCreateAAAA.copy(zone = modifiedZone), "foo")
+      val dbZone = pendingCreateAAAA.zone
+
+      doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(modifiedZone.id)
+      doReturn(mock[Backend]).when(mockBackendResolver).resolve(dbZone)
+      doReturn(IO.pure(pendingCreateAAAA)).when(mockRecordChangeProcessor).apply(any[Backend], any[RecordSetChange])
+
+      Stream.emit(msg).covary[IO].through(processor).compile.drain.unsafeRunSync()
+
+      verify(mockBackendResolver).resolve(dbZone)
+      verify(mockRecordChangeProcessor).apply(any[Backend], any[RecordSetChange])
+    }
+    "discard a zone sync whose zone id is absent from the repository" in {
+      val sync = zoneCreate.copy(changeType = ZoneChangeType.Sync)
+      val change = TestCommandMessage(sync, "foo")
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZone(sync.zone.id)
+
+      val result = Stream.emit(change).covary[IO].through(processor).compile.toList.unsafeRunSync()
+
+      result.head shouldBe DeleteMessage(change)
+      verifyZeroInteractions(mockZoneSyncProcessor)
+    }
+    "use the DB zone for zone sync, not the message-supplied zone" in {
+      val modifiedZone = zoneCreate.zone.copy(backendId = Some("modified-backend"))
+      val msg = TestCommandMessage(zoneCreate.copy(changeType = ZoneChangeType.Sync, zone = modifiedZone), "foo")
+      val dbZone = zoneCreate.zone
+      val syncWithDbZone = zoneCreate.copy(changeType = ZoneChangeType.Sync, zone = dbZone)
+
+      doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(zoneCreate.zone.id)
+      doReturn(IO.pure(syncWithDbZone)).when(mockZoneSyncProcessor).apply(syncWithDbZone)
+
+      Stream.emit(msg).covary[IO].through(processor).compile.drain.unsafeRunSync()
+
+      verify(mockZoneSyncProcessor).apply(syncWithDbZone)
+      verifyZeroInteractions(mockRecordChangeProcessor)
+    }
+    "pass through zone creates without querying the repository" in {
+      val change = TestCommandMessage(zoneCreate, "foo")
+      doReturn(IO.pure(zoneCreate)).when(mockZoneSyncProcessor).apply(zoneCreate)
+
+      Stream.emit(change).covary[IO].through(processor).compile.drain.unsafeRunSync()
+
+      verifyZeroInteractions(mockZoneRepo)
+      verify(mockZoneSyncProcessor).apply(zoneCreate)
+    }
   }
 
   "main flow" should {
+    "defer a command owned by another worker without dispatching or immediately requeuing it" in {
+      val cmd = TestCommandMessage(pendingCreateAAAA, "concurrent")
+      doReturn(IO.pure(CommandExecutionRepository.Busy)).when(executionRepo)
+        .claim(any[CommandIdentity], anyString(), any[FiniteDuration])
+      doReturn(IO.unit).when(mq).changeMessageTimeout(cmd, 1.minute)
+      Stream.emit(cmd).covary[IO].through(processor)
+        .through(CommandHandler.messageSink(mq)).compile.drain.unsafeRunSync()
+      verify(mq).changeMessageTimeout(cmd, 1.minute)
+      verify(mq, never()).requeue(any[CommandMessage])
+      verify(mockRecordChangeProcessor, never()).apply(any[Backend], any[RecordSetChange])
+    }
+
     "process successfully" in {
       val stop = fs2.concurrent.SignallingRef[IO, Boolean](false).unsafeRunSync()
       val cmd = TestCommandMessage(pendingCreateAAAA, "foo")
@@ -292,6 +378,7 @@ class CommandHandlerSpec
 
       // stage removing from the queue
       doReturn(IO.unit).when(mq).remove(cmd)
+      doReturn(IO.pure(Some(pendingCreateAAAA.zone))).when(mockZoneRepo).getZone(pendingCreateAAAA.zone.id)
 
       val flow =
         CommandHandler
@@ -305,6 +392,8 @@ class CommandHandlerSpec
             100.millis,
             stop,
             mockBackendResolver,
+            mockZoneRepo,
+            executionRepo,
             1
           )
           .take(1)
@@ -339,6 +428,7 @@ class CommandHandlerSpec
 
       // stage removing from the queue
       doReturn(IO.unit).when(mq).remove(cmd)
+      doReturn(IO.pure(Some(pendingCreateAAAA.zone))).when(mockZoneRepo).getZone(pendingCreateAAAA.zone.id)
 
       val flow =
         CommandHandler
@@ -351,7 +441,9 @@ class CommandHandlerSpec
             count,
             100.millis,
             stop,
-            mockBackendResolver
+            mockBackendResolver,
+            mockZoneRepo,
+            executionRepo
           )
           .take(1)
 
@@ -394,6 +486,7 @@ class CommandHandlerSpec
       doReturn(mock[Backend])
         .when(mockBackendResolver)
         .resolve(any[Zone])
+      doReturn(IO.pure(Some(zoneUpdate.zone))).when(zoneRepo).getZone(zoneUpdate.zone.id)
       doReturn(IO.pure(Right(zoneUpdate.zone))).when(zoneRepo).save(zoneUpdate.zone)
       doReturn(IO.pure(zoneUpdate)).when(zoneChangeRepo).save(any[ZoneChange])
 
@@ -415,7 +508,8 @@ class CommandHandlerSpec
             batchChangeRepo,
             AllNotifiers(List.empty),
             mockBackendResolver,
-            10000
+            10000,
+            executionRepo
           )
 
       // kick off processing of messages
