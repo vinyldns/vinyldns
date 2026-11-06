@@ -163,7 +163,7 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     // zone save must NOT be called when zone does not exist
     verify(mockZoneRepo, never()).save(any[Zone])
   }
-  "preserve DB ownership, ACL and sharing while persisting message backend and connection updates" in new Fixture {
+  "persist authorized ownership, ACL, sharing, backend and connection updates" in new Fixture {
     val dbZone = change.zone
     val modifiedZone = change.zone.copy(
       adminGroupId = "modified-group",
@@ -185,12 +185,30 @@ class ZoneChangeHandlerSpec extends AnyWordSpec with Matchers with MockitoSugar 
     val zoneCaptor = ArgumentCaptor.forClass(classOf[Zone])
     verify(mockZoneRepo).save(zoneCaptor.capture())
     val saved = zoneCaptor.getValue
-    saved.adminGroupId shouldBe dbZone.adminGroupId
-    saved.shared shouldBe dbZone.shared
-    saved.acl shouldBe dbZone.acl
+    saved.adminGroupId shouldBe modifiedZone.adminGroupId
+    saved.shared shouldBe modifiedZone.shared
+    saved.acl shouldBe modifiedZone.acl
     saved.backendId shouldBe modifiedZone.backendId
     saved.connection shouldBe modifiedZone.connection
     saved.transferConnection shouldBe modifiedZone.transferConnection
+    saved shouldBe modifiedZone
+    verify(mockChangeRepo).save(updateChange.copy(status = ZoneChangeStatus.Synced))
+  }
+  "persist authorized ACL revocation and disable sharing" in new Fixture {
+    val dbZone = change.zone.copy(
+      shared = true,
+      acl = ZoneACL(Set(ACLRule(AccessLevel.Read, userId = Some("dummy"))))
+    )
+    val updatedZone = dbZone.copy(shared = false, acl = ZoneACL())
+    val updateChange = change.copy(changeType = ZoneChangeType.Update, zone = updatedZone)
+    doReturn(IO.pure(Some(dbZone))).when(mockZoneRepo).getZone(dbZone.id)
+    doReturn(IO.pure(Right(updatedZone))).when(mockZoneRepo).save(updatedZone)
+    doReturn(IO.pure(updateChange)).when(mockChangeRepo).save(any[ZoneChange])
+
+    test(updateChange).unsafeRunSync()
+
+    verify(mockZoneRepo).save(updatedZone)
+    verify(mockChangeRepo).save(updateChange.copy(status = ZoneChangeStatus.Synced))
   }
   "remove explicit connections when switching to a configured backend" in new Fixture {
     val dbZone = change.zone.copy(transferConnection = change.zone.connection)

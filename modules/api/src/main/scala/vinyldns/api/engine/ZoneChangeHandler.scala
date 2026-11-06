@@ -62,14 +62,9 @@ object ZoneChangeHandler {
                 )
             }
           }
-        case Some(dbZone) =>
-          // Ownership, ACL and sharing come from the DB; connection and backend settings come from the message
-          val trustedZone = zoneChange.zone.copy(
-            adminGroupId = dbZone.adminGroupId,
-            shared = dbZone.shared,
-            acl = dbZone.acl
-          )
-          zoneRepository.save(trustedZone).flatMap {
+        case Some(_) =>
+          // The authenticated command carries the updates authorized by ZoneService.
+          zoneRepository.save(zoneChange.zone).flatMap {
             case Left(duplicateZoneError) =>
               zoneChangeRepository.save(
                 zoneChange.copy(
