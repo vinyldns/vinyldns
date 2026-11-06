@@ -62,5 +62,23 @@ class CryptoAlgebraSpec extends AnyWordSpec with Matchers {
         .unsafeRunSync()
       thrown.getCause shouldBe a[ConfigException]
     }
+    "load JavaCrypto when configured with a valid 256-bit secret" in {
+      val conf = ConfigFactory.parseString(
+        """
+          | type = "vinyldns.core.crypto.JavaCrypto"
+          | secret = "8B06A7F3BC8A2497736F1916A123AA40E88217BE9264D8872597EF7A6E5DCE61"
+        """.stripMargin
+      )
+      CryptoAlgebra.load(conf).unsafeRunSync() shouldBe a[JavaCrypto]
+    }
+    "throw when loading JavaCrypto with a key shorter than 256 bits" in {
+      val conf = ConfigFactory.parseString(
+        """
+          | type = "vinyldns.core.crypto.JavaCrypto"
+          | secret = "DEADBEEF"
+        """.stripMargin
+      )
+      an[InvocationTargetException] should be thrownBy CryptoAlgebra.load(conf).unsafeRunSync()
+    }
   }
 }
