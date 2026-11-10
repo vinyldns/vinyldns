@@ -406,6 +406,15 @@ angular.module('controller.manageZones', ['angular-cron-jobs'])
                });
     };
 
+    $scope.showZoneChangeError = function(zoneChange) {
+        $scope.selectedZoneChangeError = zoneChange.systemMessage;
+        $("#zoneChangeErrorModal").modal("show");
+    };
+
+    $scope.closeZoneChangeError = function() {
+        $scope.selectedZoneChangeError = undefined;
+    };
+
     $scope.refreshAclRule = function (index) {
         $scope.allAclRules = [];
         $scope.aclRulesModal = {

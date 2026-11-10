@@ -33,8 +33,10 @@
                     <th>Created</th>
                     <th>Updated</th>
                     <th>Change type</th>
+                    <th>Status</th>
                     <th>Admin group</th>
                     <th>ACL</th>
+                    <th>Error</th>
                 </tr>
             </thead>
             <tbody>
@@ -45,6 +47,11 @@
                     <td>{{ zoneChange.zone.created }}</td>
                     <td>{{ zoneChange.zone.updated }}</td>
                     <td>{{ zoneChange.changeType == "AutomatedSync" ? "Automated Sync" : zoneChange.changeType }}</td>
+                    <td>
+                        <span ng-if="zoneChange.status">
+                            {{ zoneChange.status }}
+                        </span>
+                    </td>
                     <td ng-switch="zoneChange.zone.adminGroupName || '_undefined_'">
                         <p ng-switch-when="_undefined_">Group has been deleted now.</p>
                         <a ng-switch-default ng-bind="zoneChange.zone.adminGroupName" href="/groups/{{zoneChange.zone.adminGroupId}}"></a>
@@ -54,6 +61,15 @@
                         <button class="btn btn-info btn-sm"
                                  ng-if="zoneChange.zone.acl.rules.length != 0"
                                  ng-click="refreshAclRule($index)">ACL Rules
+                        </button>
+                    </td>
+                    <td>
+                        <button
+                            type="button"
+                            class="btn btn-danger btn-sm"
+                            ng-if="zoneChange.status === 'Failed' && zoneChange.systemMessage"
+                            ng-click="showZoneChangeError(zoneChange)">
+                            View Error
                         </button>
                     </td>
                 </tr>
@@ -131,6 +147,33 @@
     </modal>
 </form>
 <!-- THE ACL RULE MODAL FORM ENDS -->
+
+<!-- ZONE CHANGE ERROR MODAL STARTS -->
+<form name="zoneChangeErrorForm" role="form" class="form-horizontal" novalidate>
+    <modal
+        modal-id="zoneChangeErrorModal"
+        modal-title="Zone Change Error">
+
+        <modal-body>
+            <div class="alert alert-danger">
+                <strong>Error:</strong>
+                <span ng-bind="selectedZoneChangeError"></span>
+            </div>
+        </modal-body>
+
+        <modal-footer>
+            <button
+                type="button"
+                class="btn btn-default"
+                data-dismiss="modal"
+                ng-click="closeZoneChangeError()">
+                Close
+            </button>
+        </modal-footer>
+
+    </modal>
+</form>
+<!-- ZONE CHANGE ERROR MODAL ENDS -->
 
 
 
