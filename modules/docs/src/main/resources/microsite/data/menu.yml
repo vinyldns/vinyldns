@@ -63,6 +63,67 @@ options:
     menu_type: portal_menu
     menu_section: portal_section
 
+  - title: New Portal Guide
+    url: new-portal/
+    menu_type: new_portal_menu
+    menu_section: new_portal_section
+
+  - title: Access the Portal
+    url: new-portal/access.html
+    menu_type: new_portal_menu
+    menu_section: new_portal_section
+
+  - title: DNS Changes
+    url: new-portal/dns-changes.html
+    menu_type: new_portal_menu
+    menu_section: new_portal_section
+    nested_options:
+      - title: Manual Review & Scheduling
+        url: new-portal/manual-review-scheduling.html
+        menu_section: new_portal_section
+
+  - title: RecordSet Search
+    url: new-portal/recordset-search.html
+    menu_type: new_portal_menu
+    menu_section: new_portal_section
+
+  - title: Groups
+    url: new-portal/groups.html
+    menu_type: new_portal_menu
+    menu_section: new_portal_section
+    nested_options:
+      - title: Create a Group
+        url: new-portal/create-a-group.html
+      - title: Manage Membership
+        url: new-portal/manage-membership.html
+      - title: Delete a Group
+        url: new-portal/delete-a-group.html
+
+  - title: Zones
+    url: new-portal/zones.html
+    menu_type: new_portal_menu
+    menu_section: new_portal_section
+    nested_options:
+      - title: Connect to your Zone
+        url: new-portal/connect-to-zone.html
+        menu_section: new_portal_section
+      - title: Manage Records
+        url: new-portal/manage-records.html
+      - title: Manage Access
+        url: new-portal/manage-access.html
+        menu_section: new_portal_section
+      - title: Understand Connections
+        url: new-portal/connections.html
+      - title: Search Zones
+        url: new-portal/search-zones.html
+      - title: RecordSets Ownership Transfer
+        url: new-portal/recordsets-ownership-transfer.html
+
+  - title: Credentials
+    url: new-portal/credentials.html
+    menu_type: new_portal_menu
+    menu_section: new_portal_section
+
   - title: Operator Guide
     url: operator/index.html
     menu_type: operator_menu

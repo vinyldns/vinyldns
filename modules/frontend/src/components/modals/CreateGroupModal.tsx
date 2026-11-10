@@ -78,6 +78,11 @@ export function CreateGroupModal({
               </div>
             </div>
             <div className="modal-body">
+              <div className="alert alert-info mb-4" role="alert">
+                <p className="mb-0">
+                  <strong>What is a Group?</strong> Groups simplify setup and access to resources in VinylDNS. A Group consists of one or more members, who are registered users of VinylDNS. Any member in the group can be designated as a Group Admin, which allows that member full administrative access to the group, including deleting the group.
+                </p>
+              </div>
               <GroupForm
                 onSubmit={onSubmit}
                 onCancel={onCancel}
