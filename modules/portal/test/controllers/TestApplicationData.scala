@@ -357,14 +357,14 @@ trait TestApplicationData { this: Mockito =>
       "provider": "powerdns",
       "request-templates": {
         "create-zone": {
-          "Kind": { "type": "Select", "value": "Native, Master, Slave, Forward" },
+          "Kind": { "type": "Select", "value": "Native, Master" },
           "Masters": { "type": "Multi-Select", "value": "172.17.42.1, 172.17.42.2" }
         },
         "delete-zone": {
           "name": "{{zoneName}}"
         },
         "update-zone": {
-          "Kind": { "type": "Select", "value": "Native, Master, Slave, Forward" },
+          "Kind": { "type": "Select", "value": "Native, Master" },
           "Masters": { "type": "Multi-Select", "value": "172.17.42.1, 172.17.42.2" }
         }
       },
