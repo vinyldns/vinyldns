@@ -1,5 +1,6 @@
 import copy
 
+import dns.rcode
 import pytest
 
 from utils import *
@@ -88,6 +89,67 @@ def test_update_generate_zone_bind_success(shared_zone_test_context):
         assert_that(uz["email"], is_("test@dummy.com"))
         assert_that(uz["providerParams"]["admin_email"], is_("updated-admin@test.com"))
         assert_that(uz["updated"], is_not(none()))
+
+    finally:
+        if result_zone:
+            client.abandon_generated_zones([result_zone["id"]], status=202)
+
+
+@pytest.mark.serial
+def test_update_generate_zone_bind_preserves_dynamic_records(shared_zone_test_context):
+    """
+    Test updating a bind zone keeps records added dynamically before the update and applies the new SOA/NS data
+    """
+    client = shared_zone_test_context.ok_vinyldns_client
+    result_zone = None
+    try:
+        zone_name = f"one-time-bind-keep{shared_zone_test_context.partition_id}."
+        dns_zone = {"name": zone_name}
+
+        zone = {
+            "groupId": shared_zone_test_context.ok_group["id"],
+            "email": "test@test.com",
+            "provider": "bind",
+            "zoneName": zone_name,
+            "providerParams": {
+                "nameservers": [
+                    "ns1.mttest1.example.org.",
+                    "ns2.mttest1.example.org."
+                ],
+                "admin_email": "admin@test.com"
+            }
+        }
+        result_zone = client.generate_zone(zone, status=202)
+        client.wait_until_generate_zone_active(result_zone["id"])
+
+        # a dynamic change that is still only in BIND's journal when the update runs
+        response = dns_add(dns_zone, "www", 300, "A", "1.2.3.4")
+        assert_that(response.rcode(), is_(dns.rcode.NOERROR))
+        assert_that(rdata(dns_resolve(dns_zone, "www", "A")), contains_exactly("1.2.3.4"))
+
+        result_zone["providerParams"]["admin_email"] = "updated-admin@test.com"
+        result_zone["providerParams"]["nameservers"] = [
+            "ns1.mttest1.example.org.",
+            "ns3.mttest1.example.org."
+        ]
+        client.update_generate_zone(result_zone, status=202)
+
+        # the existing record survives and the updated SOA/NS data is served
+        assert_that(rdata(dns_resolve(dns_zone, "www", "A")), contains_exactly("1.2.3.4"))
+
+        soa = rdata(dns_resolve(dns_zone, zone_name, "SOA"))
+        assert_that(soa, has_length(1))
+        assert_that(soa[0], starts_with("ns1.mttest1.example.org. updated-admin.test.com. "))
+
+        assert_that(
+            rdata(dns_resolve(dns_zone, zone_name, "NS")),
+            contains_inanyorder("ns1.mttest1.example.org.", "ns3.mttest1.example.org.")
+        )
+
+        # the zone is thawed again, so dynamic updates still work
+        response = dns_add(dns_zone, "ftp", 300, "A", "5.6.7.8")
+        assert_that(response.rcode(), is_(dns.rcode.NOERROR))
+        assert_that(rdata(dns_resolve(dns_zone, "ftp", "A")), contains_exactly("5.6.7.8"))
 
     finally:
         if result_zone:

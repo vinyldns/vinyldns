@@ -33,7 +33,7 @@ class VinylDNSBindDNSManager:
         self.zones_dir = zones_dir
         self.vinyldns_zone_config = vinyldns_zone_config
         self.zone_config = zone_config
-        self._create_lock = Lock()
+        self._lock = Lock()
 
         os.makedirs(self.zones_dir, exist_ok=True)
         os.chmod(self.zones_dir, 0o755)
@@ -85,21 +85,100 @@ class VinylDNSBindDNSManager:
             or self._zone_config_exists(normalized)
         )
 
-    def _next_serial(self, zone_name: str) -> str:
-        today = datetime.now().strftime("%Y%m%d")
-        zone_file_path = self._zone_file_path(zone_name)
+    @staticmethod
+    def _next_serial(existing_serial: Optional[int]) -> str:
+        # Dynamic updates also bump the live serial, so never go below existing + 1.
+        floor = int(datetime.now().strftime("%Y%m%d") + "01")
+        return str(max(floor, (existing_serial or 0) + 1))
 
-        if os.path.exists(zone_file_path):
-            with open(zone_file_path, "r", encoding="utf-8") as f:
-                content = f.read()
+    @staticmethod
+    def _scan_line(line: str) -> Tuple[str, int]:
+        """Return the line without its comment and its net open parentheses, ignoring quoted text."""
+        in_quotes = False
+        escaped = False
+        depth = 0
+        for index, ch in enumerate(line):
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_quotes = not in_quotes
+            elif in_quotes:
+                continue
+            elif ch == ";":
+                return line[:index], depth
+            elif ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+        return line, depth
 
-            match = re.search(r"^\s*(\d{10})\s*;\s*Serial\b", content, re.MULTILINE)
-            if match:
-                existing_serial = match.group(1)
-                if existing_serial.startswith(today):
-                    return f"{today}{int(existing_serial[8:]) + 1:02d}"
+    @classmethod
+    def _split_statements(cls, content: str) -> List[List[str]]:
+        """Group zone file lines into statements; a record may span lines inside parentheses."""
+        statements: List[List[str]] = []
+        current: List[str] = []
+        depth = 0
+        for line in content.splitlines():
+            current.append(line)
+            depth += cls._scan_line(line)[1]
+            if depth <= 0:
+                statements.append(current)
+                current = []
+                depth = 0
+        if current:
+            statements.append(current)
+        return statements
 
-        return f"{today}01"
+    @classmethod
+    def _parse_record(cls, lines: List[str], previous_owner: Optional[str]):
+        """Return (owner, type, rdata tokens) for a record statement, or None for blanks/directives."""
+        code = " ".join(cls._scan_line(line)[0] for line in lines)
+        if not code.strip() or code.lstrip().startswith("$"):
+            return None
+
+        tokens = code.replace("(", " ").replace(")", " ").split()
+        if lines[0][:1].isspace():
+            owner = previous_owner
+        else:
+            owner = tokens.pop(0)
+
+        while tokens and (tokens[0].upper() in ("IN", "CH", "HS") or tokens[0][0].isdigit()):
+            tokens.pop(0)
+        if not tokens:
+            return None
+
+        return owner, tokens[0].upper(), tokens[1:]
+
+    @classmethod
+    def _read_zone_records(cls, content: str, zone_name: str) -> Tuple[List[str], Optional[int]]:
+        """Split a zone file into lines to preserve and the current SOA serial.
+
+        The SOA, apex NS records and $TTL are regenerated on update; everything else is kept.
+        """
+        apex = {"@", f"{zone_name}.".lower()}
+        preserved: List[str] = []
+        serial: Optional[int] = None
+        owner: Optional[str] = None
+
+        for lines in cls._split_statements(content):
+            record = cls._parse_record(lines, owner)
+            if record is None:
+                if not lines[0].lstrip().upper().startswith("$TTL"):
+                    preserved.extend(lines)
+                continue
+
+            owner, rr_type, rdata = record
+            if rr_type == "SOA":
+                if len(rdata) >= 3 and rdata[2].isdigit():
+                    serial = int(rdata[2])
+                continue
+            if rr_type == "NS" and owner is not None and owner.lower() in apex:
+                continue
+            preserved.extend(lines)
+
+        return preserved, serial
 
     @staticmethod
     def _normalize_nameservers(nameservers: List[str]) -> List[str]:
@@ -283,18 +362,77 @@ class VinylDNSBindDNSManager:
         if not os.path.exists(zone_file_path):
             raise HTTPException(status_code=404, detail=f"Zone '{zoneName}' does not exist")
 
-        serial = self._next_serial(zoneName)
+        # Freeze first: it flushes pending dynamic updates into the zone file, so the edit
+        # below starts from the live zone and cannot be overwritten by the journal.
+        self._rndc_zone("freeze", zoneName)
+        try:
+            self._rewrite_zone_file(
+                zoneName, zone_file_path, nameservers, admin_email, ttl, refresh,
+                retry, expire, negative_cache_ttl
+            )
+        except Exception:
+            self._rndc_zone("thaw", zoneName, raise_on_failure=False)
+            raise
+
+        # Thaw reloads the zone from disk and re-enables dynamic updates.
+        self._rndc_zone("thaw", zoneName)
+        return zone_file_path
+
+    def _rewrite_zone_file(
+        self,
+        zoneName: str,
+        zone_file_path: str,
+        nameservers: List[str],
+        admin_email: str,
+        ttl: int,
+        refresh: int,
+        retry: int,
+        expire: int,
+        negative_cache_ttl: int,
+    ) -> None:
+        with open(zone_file_path, "r", encoding="utf-8") as f:
+            existing = f.read()
+
+        preserved, existing_serial = self._read_zone_records(existing, zoneName)
+        serial = self._next_serial(existing_serial)
         content = self._build_zone_content(
             zoneName, nameservers, admin_email, serial, ttl, refresh,
             retry, expire, negative_cache_ttl
-        )
+        ) + "".join(f"{line}\n" for line in preserved)
 
-        with open(zone_file_path, "w", encoding="utf-8") as f:
-            f.write(content)
+        # Validate a temp copy so a bad edit never replaces the live zone file.
+        tmp_path = f"{zone_file_path}.tmp"
+        try:
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                f.write(content)
+            os.chmod(tmp_path, 0o644)
 
-        os.chmod(zone_file_path, 0o644)
+            check = self._run_command(["named-checkzone", zoneName, tmp_path])
+            if check.returncode != 0:
+                raise HTTPException(
+                    status_code=500,
+                    detail=check.stderr or check.stdout or "Zone validation failed",
+                )
+            os.replace(tmp_path, zone_file_path)
+        finally:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+
         logger.info("Updated zone file for %s with serial %s", zoneName, serial)
-        return zone_file_path
+
+    def _rndc_zone(self, action: str, zoneName: str, raise_on_failure: bool = True) -> None:
+        try:
+            self._run_command(["rndc", action, zoneName], check=True)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+            detail = (
+                getattr(exc, "stderr", None) or getattr(exc, "stdout", None) or str(exc)
+            )
+            logger.error("rndc %s failed for %s: %s", action, zoneName, detail)
+            if raise_on_failure:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to {action} zone '{zoneName}': {detail}",
+                )
 
     def delete_zone(self, zoneName: str) -> Tuple[bool, Optional[str]]:
         zoneName = self._validate_zone_name(zoneName)
@@ -447,7 +585,7 @@ async def create_zone(zone_request: ZoneCreateRequest):
     logger.info("Create zone request: %s", zone_name)
 
     # Serialize create checks/writes within this API process to reduce race conditions.
-    with dns_manager._create_lock:
+    with dns_manager._lock:
         if dns_manager.zone_exists(zone_name):
             raise HTTPException(
                 status_code=409,
@@ -496,21 +634,17 @@ async def update_zone(zone_request: ZoneCreateRequest):
         raise HTTPException(status_code=404, detail=f"Zone '{zone_name}' does not exist")
 
     try:
-        zone_file = dns_manager.update_zone_file(
-            zoneName=zone_name,
-            nameservers=zone_request.nameservers,
-            admin_email=str(zone_request.admin_email),
-            ttl=zone_request.ttl,
-            refresh=zone_request.refresh,
-            retry=zone_request.retry,
-            expire=zone_request.expire,
-            negative_cache_ttl=zone_request.negative_cache_ttl,
-        )
-        success, error = dns_manager.reload_bind(zone_name)
-
-        if not success:
-            raise HTTPException(
-                status_code=500, detail=f"Failed to reload VinylDNS BIND: {error}"
+        # update_zone_file freezes, edits and thaws the zone, which reloads it from disk.
+        with dns_manager._lock:
+            zone_file = dns_manager.update_zone_file(
+                zoneName=zone_name,
+                nameservers=zone_request.nameservers,
+                admin_email=str(zone_request.admin_email),
+                ttl=zone_request.ttl,
+                refresh=zone_request.refresh,
+                retry=zone_request.retry,
+                expire=zone_request.expire,
+                negative_cache_ttl=zone_request.negative_cache_ttl,
             )
 
         return APIResponse(
