@@ -295,7 +295,7 @@ $scope.refresh = function () {
                 $log.debug("getGroupsByUser:groupIds: ", groupIds);
 
                 const groupPromises = groupIds.map((groupId) =>
-                    groupsService.getGroup(groupId, false).then(result => result.data)
+                    groupsService.getGroup(groupId).then(result => result.data)
                 );
 
                 return Promise.all(groupPromises).then((groupsSearchByUser) => {
