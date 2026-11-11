@@ -763,6 +763,7 @@ class MembershipServiceSpec
 
       "return an error if the group is an owner for a record set" in {
         doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(List())).when(mockZoneRepo).getZonesByAdminGroupId(anyString)
         doReturn(IO.pure(Some("somerecordsetid")))
           .when(mockRecordSetRepo)
           .getFirstOwnedRecordByGroup(anyString())
@@ -773,6 +774,8 @@ class MembershipServiceSpec
 
       "return an error if the group has an ACL rule on a zone" in {
         doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(List())).when(mockZoneRepo).getZonesByAdminGroupId(anyString)
+        doReturn(IO.pure(None)).when(mockRecordSetRepo).getFirstOwnedRecordByGroup(anyString())
         doReturn(IO.pure(Some("someId")))
           .when(mockZoneRepo)
           .getFirstOwnedZoneAclGroupId(anyString())
