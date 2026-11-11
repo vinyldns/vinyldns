@@ -131,9 +131,18 @@ class VinylDNSBindDNSManager:
             statements.append(current)
         return statements
 
+    @staticmethod
+    def _absolute_name(name: str, origin: str) -> str:
+        """Resolve a zone file owner name against the current $ORIGIN (always absolute, lowercase)."""
+        if name == "@":
+            return origin.lower()
+        if name.endswith("."):
+            return name.lower()
+        return f"{name}.".lower() if origin == "." else f"{name}.{origin}".lower()
+
     @classmethod
-    def _parse_record(cls, lines: List[str], previous_owner: Optional[str]):
-        """Return (owner, type, rdata tokens) for a record statement, or None for blanks/directives."""
+    def _parse_record(cls, lines: List[str], previous_owner: Optional[str], origin: str):
+        """Return (absolute owner, type, rdata tokens) for a record statement, or None for blanks/directives."""
         code = " ".join(cls._scan_line(line)[0] for line in lines)
         if not code.strip() or code.lstrip().startswith("$"):
             return None
@@ -142,7 +151,7 @@ class VinylDNSBindDNSManager:
         if lines[0][:1].isspace():
             owner = previous_owner
         else:
-            owner = tokens.pop(0)
+            owner = cls._absolute_name(tokens.pop(0), origin)
 
         while tokens and (tokens[0].upper() in ("IN", "CH", "HS") or tokens[0][0].isdigit()):
             tokens.pop(0)
@@ -155,27 +164,44 @@ class VinylDNSBindDNSManager:
     def _read_zone_records(cls, content: str, zone_name: str) -> Tuple[List[str], Optional[int]]:
         """Split a zone file into lines to preserve and the current SOA serial.
 
-        The SOA, apex NS records and $TTL are regenerated on update; everything else is kept.
+        The SOA and apex NS records are regenerated on update; everything else is kept.
+        BIND writes the zone back with `$ORIGIN .`, the apex owner as `zone` and blank owners on
+        continuation lines, so owners are resolved against $ORIGIN before matching the apex.
         """
-        apex = {"@", f"{zone_name}.".lower()}
+        apex = f"{zone_name}.".lower()
+        origin = apex
         preserved: List[str] = []
         serial: Optional[int] = None
         owner: Optional[str] = None
+        # A blank owner no longer means the same thing once its predecessor is dropped or a
+        # directive sits in between, so such records get their owner written out.
+        needs_explicit_owner = True
 
         for lines in cls._split_statements(content):
-            record = cls._parse_record(lines, owner)
+            directive = cls._scan_line(lines[0])[0].split()
+            if directive and directive[0].upper() == "$ORIGIN" and len(directive) > 1:
+                origin = cls._absolute_name(directive[1], origin)
+
+            record = cls._parse_record(lines, owner, origin)
             if record is None:
-                if not lines[0].lstrip().upper().startswith("$TTL"):
-                    preserved.extend(lines)
+                preserved.extend(lines)
+                if directive and directive[0].startswith("$"):
+                    needs_explicit_owner = True
                 continue
 
             owner, rr_type, rdata = record
             if rr_type == "SOA":
                 if len(rdata) >= 3 and rdata[2].isdigit():
                     serial = int(rdata[2])
+                needs_explicit_owner = True
                 continue
-            if rr_type == "NS" and owner is not None and owner.lower() in apex:
+            if rr_type == "NS" and owner == apex:
+                needs_explicit_owner = True
                 continue
+
+            if needs_explicit_owner and lines[0][:1].isspace():
+                lines = [f"{owner} {lines[0].lstrip()}"] + lines[1:]
+            needs_explicit_owner = False
             preserved.extend(lines)
 
         return preserved, serial
