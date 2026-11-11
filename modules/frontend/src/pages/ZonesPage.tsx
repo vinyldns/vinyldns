@@ -1093,7 +1093,7 @@ export function ZonesPage() {
           </div>
         </div>
         <div className="d-flex align-items-center gap-2">
-          {mainTab === "myZones" && isSuper && (
+          {mainTab === "myZones" && ( //&& isSuper
             <button
               className="btn btn-primary d-flex align-items-center gap-2 vds-btn-nav"
               onClick={toggleConnectForm}
