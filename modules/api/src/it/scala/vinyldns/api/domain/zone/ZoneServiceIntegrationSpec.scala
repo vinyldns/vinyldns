@@ -163,6 +163,7 @@ class ZoneServiceIntegrationSpec
     mock[UserRepository],
     mock[MembershipRepository],
     zoneRepo,
+    mockGenerateZoneRepository,
     mock[GroupChangeRepository],
     recordSetRepo,
     ValidEmailConfig(valid_domains = List("test.com"), 2)

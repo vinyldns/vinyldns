@@ -27,6 +27,7 @@ import org.scalatest.BeforeAndAfterEach
 import vinyldns.api.Interfaces._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone.ZoneRepository
+import vinyldns.core.domain.zone.generate.GenerateZoneRepository
 import cats.effect._
 import scalikejdbc.{ConnectionPool, DB}
 import vinyldns.api.config.ValidEmailConfig
@@ -47,6 +48,7 @@ class MembershipServiceSpec
   private val mockUserRepo = mock[UserRepository]
   private val mockMembershipRepo = mock[MembershipRepository]
   private val mockZoneRepo = mock[ZoneRepository]
+  private val mockGenerateZoneRepo = mock[GenerateZoneRepository]
   private val mockGroupChangeRepo = mock[GroupChangeRepository]
   private val mockRecordSetRepo = mock[RecordSetRepository]
   private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com","*dummy.com"),2)
@@ -57,6 +59,7 @@ class MembershipServiceSpec
     mockUserRepo,
     mockMembershipRepo,
     mockZoneRepo,
+    mockGenerateZoneRepo,
     mockGroupChangeRepo,
     mockRecordSetRepo,
     mockValidEmailConfig
@@ -66,6 +69,7 @@ class MembershipServiceSpec
     mockUserRepo,
     mockMembershipRepo,
     mockZoneRepo,
+    mockGenerateZoneRepo,
     mockGroupChangeRepo,
     mockRecordSetRepo,
     mockValidEmailConfigNew
@@ -111,15 +115,18 @@ class MembershipServiceSpec
     adminUserIds = existingGroup.adminUserIds ++ updatedInfo.memberIds
   )
 
-  override protected def beforeEach(): Unit =
+  override protected def beforeEach(): Unit = {
     reset(
       mockGroupRepo,
       mockUserRepo,
       mockMembershipRepo,
+      mockGenerateZoneRepo,
       mockGroupChangeRepo,
       mockRecordSetRepo,
       underTest
     )
+    doReturn(IO.pure(List())).when(mockGenerateZoneRepo).getGenerateZonesByAdminGroupId(anyString)
+  }
   // Add connection to run tests
   ConnectionPool.add('default, "jdbc:h2:mem:vinyldns;MODE=MYSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;IGNORECASE=TRUE;INIT=RUNSCRIPT FROM 'classpath:test/ddl.sql'","sa","")
   "MembershipService" should {
@@ -738,6 +745,22 @@ class MembershipServiceSpec
         error shouldBe an[InvalidGroupRequestError]
       }
 
+      "return an error if the group owns a generated zone that was never connected" in {
+        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(List())).when(mockZoneRepo).getZonesByAdminGroupId(anyString)
+        doReturn(IO.pure(List(generateBindZone)))
+          .when(mockGenerateZoneRepo)
+          .getGenerateZonesByAdminGroupId(okGroup.id)
+        doReturn(IO.pure(None)).when(mockRecordSetRepo).getFirstOwnedRecordByGroup(anyString())
+        doReturn(IO.pure(None)).when(mockZoneRepo).getFirstOwnedZoneAclGroupId(anyString())
+
+        val error = underTest.deleteGroup("ok", okAuth).value.unsafeRunSync().swap.toOption.get
+
+        error shouldBe an[InvalidGroupRequestError]
+        verify(mockGroupRepo, never()).delete(any[Group])
+        verify(mockMembershipRepo, never()).removeMembers(any[DB], anyString, any[Set[String]])
+      }
+
       "return an error if the group is an owner for a record set" in {
         doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
         doReturn(IO.pure(Some("somerecordsetid")))
@@ -1265,6 +1288,16 @@ class MembershipServiceSpec
         doReturn(IO.pure(List(zoneActive)))
           .when(mockZoneRepo)
           .getZonesByAdminGroupId(okGroup.id)
+
+        val error = underTest.isNotZoneAdmin(okGroup).value.unsafeRunSync().swap.toOption.get
+        error shouldBe an[InvalidGroupRequestError]
+      }
+
+      "return an InvalidGroupRequestError when a group for deletion is admin of a generated zone only" in {
+        doReturn(IO.pure(List())).when(mockZoneRepo).getZonesByAdminGroupId(okGroup.id)
+        doReturn(IO.pure(List(generateBindZone)))
+          .when(mockGenerateZoneRepo)
+          .getGenerateZonesByAdminGroupId(okGroup.id)
 
         val error = underTest.isNotZoneAdmin(okGroup).value.unsafeRunSync().swap.toOption.get
         error shouldBe an[InvalidGroupRequestError]

@@ -67,6 +67,7 @@ class GenerateZoneServiceSpec
     mockUserRepo,
     mockMembershipRepo,
     mockZoneRepo,
+    mockGenerateZoneRepository,
     mockGroupChangeRepo,
     mockRecordSetRepo,
     mockValidEmailConfig

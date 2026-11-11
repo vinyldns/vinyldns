@@ -33,6 +33,7 @@ import vinyldns.api.repository.TestDataLoader
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate.GenerateZoneRepository
 import vinyldns.core.queue.MessageQueue
 import vinyldns.core.TestMembershipData._
 import vinyldns.core.TestZoneData._
@@ -64,6 +65,7 @@ class ZoneServiceSpec
   private val mockMembershipRepo = mock[MembershipRepository]
   private val mockGroupChangeRepo = mock[GroupChangeRepository]
   private val mockRecordSetRepo = mock[RecordSetRepository]
+  private val mockGenerateZoneRepo = mock[GenerateZoneRepository]
   private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com", "*dummy.com"),2)
   private val mockValidEmailConfigEmpty = ValidEmailConfig(valid_domains = List(),2)
 
@@ -71,6 +73,7 @@ class ZoneServiceSpec
     mockUserRepo,
     mockMembershipRepo,
     mockZoneRepo,
+    mockGenerateZoneRepo,
     mockGroupChangeRepo,
     mockRecordSetRepo,
     mockValidEmailConfig)
@@ -119,6 +122,7 @@ class ZoneServiceSpec
       mockUserRepo,
       mockMembershipRepo,
       mockZoneRepo,
+      mockGenerateZoneRepo,
       mockGroupChangeRepo,
       mockRecordSetRepo,
       mockValidEmailConfigEmpty)

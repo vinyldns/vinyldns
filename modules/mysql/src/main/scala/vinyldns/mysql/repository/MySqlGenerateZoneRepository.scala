@@ -80,6 +80,9 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
   private final val GET_GENERATED_ZONE_BY_ID: SQLSyntax =
     sqls"SELECT data FROM generate_zone WHERE id = ?"
 
+  private final val GET_GENERATED_ZONES_BY_ADMIN_GROUP_ID: SQLSyntax =
+    sqls"SELECT data FROM generate_zone WHERE admin_group_id = ?"
+
   private final val BASE_GENERATE_ZONE_SEARCH_SQL: SQLSyntax =
     sqls"SELECT gz.data FROM generate_zone gz"
 
@@ -190,6 +193,19 @@ class MySqlGenerateZoneRepository extends GenerateZoneRepository with ProtobufCo
       IO {
         DB.readOnly { implicit s =>
           getGenerateZoneByIdInSession(id)
+        }
+      }
+    }
+
+  def getGenerateZonesByAdminGroupId(adminGroupId: String): IO[List[GenerateZone]] =
+    monitor("repo.ZoneJDBC.getGenerateZonesByAdminGroupId") {
+      IO {
+        DB.readOnly { implicit s =>
+          sql"$GET_GENERATED_ZONES_BY_ADMIN_GROUP_ID"
+            .bind(adminGroupId)
+            .map(extractGenerateZone(1))
+            .list()
+            .apply()
         }
       }
     }

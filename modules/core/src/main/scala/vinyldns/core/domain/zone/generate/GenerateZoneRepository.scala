@@ -28,6 +28,8 @@ trait GenerateZoneRepository extends Repository {
 
   def getGenerateZoneById(id: String): IO[Option[GenerateZone]]
 
+  def getGenerateZonesByAdminGroupId(adminGroupId: String): IO[List[GenerateZone]]
+
   def delete(generateZone: GenerateZone): IO[GenerateZone]
 
   def listGenerateZones(

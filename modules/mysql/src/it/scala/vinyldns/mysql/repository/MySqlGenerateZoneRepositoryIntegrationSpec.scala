@@ -150,6 +150,17 @@ class MySqlGenerateZoneRepositoryIntegrationSpec
       repo.getGenerateZoneById("no-existo").unsafeRunSync() shouldBe None
     }
   }
+
+  "MySqlGenerateZoneRepository.getGenerateZonesByAdminGroupId" should {
+    "retrieve only the zones owned by the group" in {
+      val zones = repo.getGenerateZonesByAdminGroupId(okGroup.id).unsafeRunSync()
+      zones should contain theSameElementsAs List(generateBindZone, generatePdnsZone)
+    }
+
+    "return an empty list when the group owns no generated zones" in {
+      repo.getGenerateZonesByAdminGroupId("no-existo").unsafeRunSync() shouldBe List()
+    }
+  }
   "MySqlGenerateZoneRepository.listGenerateZones" should {
     "get a list of zones" in {
       saveZones(testZones).unsafeRunSync()
