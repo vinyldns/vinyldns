@@ -1,333 +1,423 @@
 import os
+import re
 import sys
 import logging
-from datetime import datetime
 import subprocess
+from datetime import datetime
+from threading import Lock
 from typing import Optional, Tuple, List
+
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 import uvicorn
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
 
+
 class VinylDNSBindDNSManager:
-    def __init__(self,
-                 zones_dir: str = "/etc/bind/vinyldns_zones",
-                 vinyldns_zone_config: str = "/etc/bind/named.conf.vinyldns-zones",
-                 zone_config: str = "/etc/bind/named.conf"):
+    """Manage VinylDNS zone files and configuration for BIND."""
+
+    def __init__(
+        self,
+        zones_dir: str = os.environ.get("VINYLDNS_BIND_ZONES_DIR", "/etc/bind/vinyldns_zones"),
+        vinyldns_zone_config: str = os.environ.get(
+            "VINYLDNS_BIND_ZONE_CONFIG", "/etc/bind/named.conf.vinyldns-zones"
+        ),
+        zone_config: str = os.environ.get("VINYLDNS_BIND_NAMED_CONF", "/etc/bind/named.conf"),
+    ):
         self.zones_dir = zones_dir
         self.vinyldns_zone_config = vinyldns_zone_config
         self.zone_config = zone_config
+        self._create_lock = Lock()
 
-        try:
-            os.makedirs(zones_dir, exist_ok=True)
-            os.chmod(zones_dir, 0o755)
-        except Exception as e:
-            logger.error(f"Failed to VinylDNS create zones directory: {e}")
-            raise
+        os.makedirs(self.zones_dir, exist_ok=True)
+        os.chmod(self.zones_dir, 0o755)
 
-    def _next_serial(self, zoneName: str) -> str:
-        """
-        Compute the next SOA serial, bumping the counter if a zone file already
-        exists with today's date so successive updates on the same day are valid.
-        """
-        import re
+    @staticmethod
+    def _validate_zone_name(zone_name: str) -> str:
+        zone_name = zone_name.strip()
+        if not zone_name or len(zone_name) > 254:
+            raise HTTPException(status_code=400, detail="Invalid zoneName")
 
+        normalized = zone_name[:-1] if zone_name.endswith(".") else zone_name
+        labels = normalized.split(".")
+        label_pattern = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$")
+
+        if any(
+            not label or len(label) > 63 or not label_pattern.fullmatch(label)
+            for label in labels
+        ):
+            raise HTTPException(status_code=400, detail="Invalid zoneName")
+
+        return normalized
+
+    def _zone_file_path(self, zone_name: str) -> str:
+        validated = self._validate_zone_name(zone_name)
+        zones_dir_real = os.path.realpath(self.zones_dir)
+        zone_file_path = os.path.realpath(os.path.join(zones_dir_real, validated))
+
+        # Defense-in-depth: confirm the resolved path stays within zones_dir.
+        if os.path.commonpath([zone_file_path, zones_dir_real]) != zones_dir_real:
+            raise HTTPException(status_code=400, detail="Invalid zoneName")
+
+        return zone_file_path
+
+    def _zone_config_exists(self, zone_name: str) -> bool:
+        if not os.path.exists(self.vinyldns_zone_config):
+            return False
+
+        with open(self.vinyldns_zone_config, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        normalized = self._validate_zone_name(zone_name)
+        pattern = rf'^\s*zone\s+"{re.escape(normalized)}\.?"\s*\{{'
+        return bool(re.search(pattern, content, re.MULTILINE))
+
+    def zone_exists(self, zone_name: str) -> bool:
+        normalized = self._validate_zone_name(zone_name)
+        return (
+            os.path.exists(self._zone_file_path(normalized))
+            or self._zone_config_exists(normalized)
+        )
+
+    def _next_serial(self, zone_name: str) -> str:
         today = datetime.now().strftime("%Y%m%d")
-        zone_file_path = os.path.join(self.zones_dir, zoneName)
+        zone_file_path = self._zone_file_path(zone_name)
+
         if os.path.exists(zone_file_path):
-            with open(zone_file_path, 'r') as f:
+            with open(zone_file_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            match = re.search(r'(\d{10})\s*;\s*Serial', content)
+
+            match = re.search(r"^\s*(\d{10})\s*;\s*Serial\b", content, re.MULTILINE)
             if match:
                 existing_serial = match.group(1)
                 if existing_serial.startswith(today):
                     return f"{today}{int(existing_serial[8:]) + 1:02d}"
+
         return f"{today}01"
 
-    def create_zone_file(self, zoneName: str, nameservers: List[str],
-                        admin_email: str, ttl: int = 3600, refresh: int = 604800,
-                        retry: int = 86400, expire: int = 2419200,
-                        negative_cache_ttl: int = 604800, serial: Optional[str] = None) -> str:
-        """
-        Create (or overwrite) a VinylDNS zone file for BIND DNS server with multiple nameservers
-        """
-        try:
-            admin_email = admin_email.replace('@', '.')
-            serial = serial or datetime.now().strftime("%Y%m%d01")
-            # Fully-qualify nameservers so BIND treats them as absolute names rather than
-            # relative to the zone (which would require a nonsensical in-zone glue record).
-            nameservers = [ns if ns.endswith('.') else f"{ns}." for ns in nameservers]
-            primary_ns = nameservers[0]
-            secondary_ns = nameservers[1:]
+    @staticmethod
+    def _normalize_nameservers(nameservers: List[str]) -> List[str]:
+        if not nameservers:
+            raise HTTPException(
+                status_code=400, detail="At least one nameserver is required"
+            )
 
-            zone_content = f""
-            # Add NS records for each nameserver
-            zone_content = f"""$TTL    {ttl}
-{zoneName}       IN      SOA     {primary_ns} {admin_email}. (
-                                 {serial} ; Serial
-                                 {refresh} ; Refresh
-                                 {retry} ; Retry
-                                 {expire} ; Expire
-                                 {negative_cache_ttl} ) ; Negative Cache TTL
-{zoneName}    IN         NS      {primary_ns}
-"""
-            for ns in secondary_ns:
-                zone_content += f"                     IN        NS      {ns}\n"
+        normalized_nameservers = []
+        for nameserver in nameservers:
+            ns = nameserver.strip().rstrip(".")
+            if (
+                not ns
+                or any(ch.isspace() for ch in ns)
+                or "/" in ns
+                or not re.fullmatch(
+                    r"[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?"
+                    r"(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*",
+                    ns,
+                )
+            ):
+                raise HTTPException(
+                    status_code=400, detail=f"Invalid nameserver: {nameserver}"
+                )
+            normalized_nameservers.append(ns + ".")
 
-            zone_file_path = os.path.join(self.zones_dir, f"{zoneName}")
+        return normalized_nameservers
 
-            with open(zone_file_path, 'w') as f:
-                f.write(zone_content)
+    @staticmethod
+    def _normalize_admin_email(admin_email: str) -> str:
+        # DNS SOA RNAME represents an email address with the first @ replaced by a dot.
+        value = admin_email.strip()
+        if value.count("@") != 1:
+            raise HTTPException(status_code=400, detail="Invalid admin_email")
 
-            os.chmod(zone_file_path, 0o644)
-            logger.info(f"Created zone file for {zoneName} at {zone_file_path}")
-            return zone_file_path
+        local, domain = value.split("@", 1)
+        if not local or not domain or any(ch.isspace() for ch in value):
+            raise HTTPException(status_code=400, detail="Invalid admin_email")
 
-        except Exception as e:
-            logger.error(f"Failed to create zone file: {e}")
-            raise
+        return f"{local}.{domain}."
+
+    def _build_zone_content(
+        self,
+        zone_name: str,
+        nameservers: List[str],
+        admin_email: str,
+        serial: str,
+        ttl: int,
+        refresh: int,
+        retry: int,
+        expire: int,
+        negative_cache_ttl: int,
+    ) -> str:
+        zone_name = self._validate_zone_name(zone_name)
+        ns_list = self._normalize_nameservers(nameservers)
+        rname = self._normalize_admin_email(admin_email)
+        primary_ns = ns_list[0]
+
+        lines = [
+            f"$TTL {ttl}",
+            f"{zone_name}. IN SOA {primary_ns} {rname} (",
+            f"    {serial} ; Serial",
+            f"    {refresh} ; Refresh",
+            f"    {retry} ; Retry",
+            f"    {expire} ; Expire",
+            f"    {negative_cache_ttl} ) ; Negative Cache TTL",
+            f"{zone_name}. IN NS {primary_ns}",
+        ]
+        for ns in ns_list[1:]:
+            lines.append(f"{zone_name}. IN NS {ns}")
+
+        return "\n".join(lines) + "\n"
+
+    def create_zone_file(
+        self,
+        zoneName: str,
+        nameservers: List[str],
+        admin_email: str,
+        ttl: int = 3600,
+        refresh: int = 604800,
+        retry: int = 86400,
+        expire: int = 2419200,
+        negative_cache_ttl: int = 604800,
+        serial: Optional[str] = None,
+    ) -> str:
+        zoneName = self._validate_zone_name(zoneName)
+        is_new_zone_file = serial is None
+        serial = serial or datetime.now().strftime("%Y%m%d01")
+
+        zone_content = self._build_zone_content(
+            zoneName, nameservers, admin_email, serial, ttl, refresh,
+            retry, expire, negative_cache_ttl
+        )
+        zone_file_path = self._zone_file_path(zoneName)
+
+        # Exclusive creation prevents accidental overwrite of an existing zone file.
+        open_mode = "x" if is_new_zone_file else "w"
+        with open(zone_file_path, open_mode, encoding="utf-8") as f:
+            f.write(zone_content)
+
+        os.chmod(zone_file_path, 0o644)
+        logger.info("Created zone file for %s at %s", zoneName, zone_file_path)
+        return zone_file_path
 
     def add_zone_config(self, zoneName: str, zone_file_path: str) -> None:
-        """
-        Add VinylDNS zone configuration to BIND config file, skipping zones already registered
-        (e.g. from a prior create attempt that failed validation after this file was appended).
-        """
-        try:
-            existing_content = ""
-            if os.path.exists(self.vinyldns_zone_config):
-                with open(self.vinyldns_zone_config, 'r') as f:
-                    existing_content = f.read()
+        zoneName = self._validate_zone_name(zoneName)
+        existing_content = ""
 
-            import re
-            if re.search(rf'zone\s+"{re.escape(zoneName)}"\s*{{', existing_content):
-                logger.info(f"Zone configuration for {zoneName} already present, skipping append")
-            else:
-                config_content = f'''
-zone "{zoneName}" {{
-    type master;
-    file "{zone_file_path}";
-    allow-update {{ any; }};
-}};
-'''
-                with open(self.vinyldns_zone_config, 'a') as f:
-                    f.write(config_content)
+        if os.path.exists(self.vinyldns_zone_config):
+            with open(self.vinyldns_zone_config, "r", encoding="utf-8") as f:
+                existing_content = f.read()
 
-            named_config = 'include "/etc/bind/named.conf.vinyldns-zones";'
-            with open(self.zone_config, 'r+') as f:
-                content = f.read()
-                if named_config not in content:
-                    f.write(f"\n{named_config}\n")
+        zone_pattern = rf'^\s*zone\s+"{re.escape(zoneName)}\.?"\s*\{{'
+        zone_match = re.search(zone_pattern, existing_content, re.MULTILINE)
 
-            logger.info(f"Added VinylDNS zone configuration for {zoneName}")
-        except Exception as e:
-            logger.error(f"Failed to add VinylDNS zone configuration: {e}")
-            raise
+        if not zone_match:
+            # New zones must allow both authenticated updates and authenticated AXFR.
+            config_content = (
+                f'\nzone "{zoneName}" {{\n'
+                "    type master;\n"
+                f'    file "{zone_file_path}";\n'
+                '    allow-update { key "vinyldns."; };\n'
+                '    allow-transfer { key "vinyldns."; };\n'
+                "};\n"
+            )
+            existing_content += config_content
+            with open(self.vinyldns_zone_config, "w", encoding="utf-8") as f:
+                f.write(existing_content)
+        else:
+            # Existing zone blocks may predate allow-transfer. Find the matching
+            # closing brace and add the directive only when it is missing.
+            opening_brace = existing_content.find("{", zone_match.start())
+            depth = 0
+            closing_brace = None
+            for index in range(opening_brace, len(existing_content)):
+                if existing_content[index] == "{":
+                    depth += 1
+                elif existing_content[index] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        closing_brace = index
+                        break
 
-    def update_zone_file(self, zoneName: str, nameservers: List[str],
-                        admin_email: str, ttl: int = 3600, refresh: int = 604800,
-                        retry: int = 86400, expire: int = 2419200,
-                        negative_cache_ttl: int = 604800) -> str:
-        """
-        Regenerate an existing zone's file content with a bumped serial. The zone's
-        named.conf block is left untouched since it was already registered on create.
-        """
-        serial = self._next_serial(zoneName)
-        zone_file = self.create_zone_file(
-            zoneName=zoneName,
-            nameservers=nameservers,
-            admin_email=admin_email,
-            ttl=ttl,
-            refresh=refresh,
-            retry=retry,
-            expire=expire,
-            negative_cache_ttl=negative_cache_ttl,
-            serial=serial
-        )
-        logger.info(f"Updated zone file for {zoneName} at {zone_file} with serial {serial}")
-        return zone_file
+            if closing_brace is None:
+                raise RuntimeError(f"Malformed BIND zone block for {zoneName}")
 
-    def delete_zone(self, zoneName: str) -> Tuple[bool, Optional[str]]:
-        """
-        Delete VinylDNS zone file and its configuration from named.conf.vinyldns-zones.
-        """
-        import re
+            zone_block = existing_content[zone_match.start():closing_brace + 1]
+            if not re.search(r'^\s*allow-transfer\s*\{', zone_block, re.MULTILINE):
+                existing_content = (
+                    existing_content[:closing_brace]
+                    + '    allow-transfer { key "vinyldns."; };\n'
+                    + existing_content[closing_brace:]
+                )
+                with open(self.vinyldns_zone_config, "w", encoding="utf-8") as f:
+                    f.write(existing_content)
 
-        zone_file_path = os.path.join(self.zones_dir, zoneName)
+        include_line = f'include "{self.vinyldns_zone_config}";'
+        with open(self.zone_config, "r", encoding="utf-8") as f:
+            main_config = f.read()
+
+        if include_line not in main_config:
+            with open(self.zone_config, "a", encoding="utf-8") as f:
+                f.write(f"\n{include_line}\n")
+
+        logger.info("Ensured BIND zone configuration for %s", zoneName)
+
+    def update_zone_file(
+        self,
+        zoneName: str,
+        nameservers: List[str],
+        admin_email: str,
+        ttl: int = 3600,
+        refresh: int = 604800,
+        retry: int = 86400,
+        expire: int = 2419200,
+        negative_cache_ttl: int = 604800,
+    ) -> str:
+        zoneName = self._validate_zone_name(zoneName)
+        zone_file_path = self._zone_file_path(zoneName)
 
         if not os.path.exists(zone_file_path):
-            logger.warning(f"No zone file found for: {zone_file_path}")
-            return False, "No zone records found"
+            raise HTTPException(status_code=404, detail=f"Zone '{zoneName}' does not exist")
+
+        serial = self._next_serial(zoneName)
+        content = self._build_zone_content(
+            zoneName, nameservers, admin_email, serial, ttl, refresh,
+            retry, expire, negative_cache_ttl
+        )
+
+        with open(zone_file_path, "w", encoding="utf-8") as f:
+            f.write(content)
+
+        os.chmod(zone_file_path, 0o644)
+        logger.info("Updated zone file for %s with serial %s", zoneName, serial)
+        return zone_file_path
+
+    def delete_zone(self, zoneName: str) -> Tuple[bool, Optional[str]]:
+        zoneName = self._validate_zone_name(zoneName)
+        zone_file_path = self._zone_file_path(zoneName)
+
+        if not os.path.exists(zone_file_path) and not self._zone_config_exists(zoneName):
+            return False, "Zone does not exist"
 
         try:
-            os.remove(zone_file_path)
-            logger.info(f"Deleted zone file: {zone_file_path}")
+            if os.path.exists(zone_file_path):
+                os.remove(zone_file_path)
+                logger.info("Deleted zone file: %s", zone_file_path)
 
             if os.path.exists(self.vinyldns_zone_config):
-                with open(self.vinyldns_zone_config, 'r') as f:
+                with open(self.vinyldns_zone_config, "r", encoding="utf-8") as f:
                     lines = f.readlines()
 
                 new_lines = []
                 inside_zone_block = False
                 brace_count = 0
+                zone_start_pattern = re.compile(
+                    rf'^\s*zone\s+"{re.escape(zoneName)}\.?"\s*\{{'
+                )
 
-                zone_start_pattern = re.compile(rf'zone\s+"{re.escape(zoneName)}"\s*{{')
                 for line in lines:
                     if not inside_zone_block and zone_start_pattern.search(line):
                         inside_zone_block = True
-                        brace_count = line.count('{') - line.count('}')
+                        brace_count = line.count("{") - line.count("}")
                         continue
 
                     if inside_zone_block:
-                        brace_count += line.count('{') - line.count('}')
+                        brace_count += line.count("{") - line.count("}")
                         if brace_count <= 0:
                             inside_zone_block = False
                         continue
 
                     new_lines.append(line)
 
-                with open(self.vinyldns_zone_config, 'w') as f:
+                with open(self.vinyldns_zone_config, "w", encoding="utf-8") as f:
                     f.writelines(new_lines)
 
-                logger.info(f"Removed zone configuration for {zoneName}")
-            else:
-                logger.warning(f"{self.vinyldns_zone_config} does not exist")
-            # Step 3: Restart BIND
             success, error = self.reload_bind(zoneName)
             if not success:
                 return False, f"Zone deleted, but BIND reload failed: {error}"
 
             return True, None
+        except Exception as exc:
+            logger.exception("Failed to delete zone %s", zoneName)
+            return False, str(exc)
 
-        except Exception as e:
-            logger.error(f"Failed to delete zone: {e}")
-            return False, str(e)
-
+    @staticmethod
+    def _run_command(command: List[str], timeout: int = 10, check: bool = False):
+        """Run a subprocess with captured text output and a timeout."""
+        return subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            timeout=timeout,
+            check=check,
+        )
 
     def reload_bind(self, zoneName: str) -> Tuple[bool, Optional[str]]:
         """
-        Reload BIND configuration with optional zone validation if zone file exists.
-        
-        For zones with allow-update (dynamic zones):
-        - rndc freeze → write zone file → rndc thaw (reloads from disk)
-        For new zone blocks appended to named.conf:
-        - rndc reconfig (loads new zone configurations)
-        
-        This approach avoids dropping the server and causing test failures in parallel test runs.
+        Reload BIND without restarting it, so parallel test runs never hit a downtime window.
+
+        - rndc reconfig loads new zone blocks (and drops removed ones) from named.conf.
+        - rndc freeze/thaw reloads the zone file from disk; a plain `rndc reload` fails for
+          dynamic zones (allow-update) with a "dynamic zone" error.
         """
+        zoneName = self._validate_zone_name(zoneName)
+
         try:
-            # Step 1: Validate BIND config
-            check_zone_config_result = subprocess.run(
-                ['named-checkconf', self.zone_config],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
+            config_result = self._run_command(["named-checkconf", self.zone_config])
+            if config_result.returncode != 0:
+                return False, (
+                    config_result.stderr or config_result.stdout
+                    or "BIND config validation failed"
+                )
 
-            if check_zone_config_result.returncode != 0:
-                logger.error(f"VinylDNS BIND config validation failed: {check_zone_config_result.stderr}")
-                return False, check_zone_config_result.stderr or check_zone_config_result.stdout or "Config validation failed"
-
-            logger.info("VinylDNS BIND configuration validated successfully")
-
-            zone_file_path = os.path.join(self.zones_dir, zoneName)
+            zone_file_path = self._zone_file_path(zoneName)
             zone_file_exists = os.path.exists(zone_file_path)
 
-            # Step 2: Validate zone file if it exists
             if zone_file_exists:
-                check_zone_result = subprocess.run(
-                    ['named-checkzone', zoneName, zone_file_path],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
+                zone_result = self._run_command(
+                    ["named-checkzone", zoneName, zone_file_path]
                 )
+                if zone_result.returncode != 0:
+                    return False, (
+                        zone_result.stderr or zone_result.stdout
+                        or "Zone validation failed"
+                    )
 
-                if check_zone_result.returncode != 0:
-                    logger.error(f"VinylDNS Zone file validation failed: {check_zone_result.stderr}")
-                    return False, check_zone_result.stderr or check_zone_result.stdout or "Zone validation failed"
-                else:
-                    logger.info(f"VinylDNS Zone file '{zoneName}' validated successfully")
-            else:
-                logger.warning(f"Zone file for '{zoneName}' not found. Skipping zone validation (possibly deleted).")
-
-            # Step 3: Reload BIND using rndc (no restart needed)
-            # This avoids the downtime caused by pkill/restart which was causing intermittent
-            # test failures in parallel test runs. With rndc, BIND stays running continuously.
-            
-            # First, reload the config to handle any new zone blocks in named.conf.
-            # rndc reconfig re-parses the configuration file and loads new zone definitions
-            # without restarting the server (replaces: pkill -f 'named -c' && /usr/sbin/named -c ...)
             try:
-                reconfig_result = subprocess.run(
-                    ['rndc', 'reconfig'],
-                    capture_output=True,
-                    text=True,
-                    timeout=10,
-                    check=True
-                )
-                logger.info("BIND reconfig completed via rndc (new zone configs loaded)")
-            except subprocess.CalledProcessError as e:
-                logger.error(f"rndc reconfig failed: {e.stderr}")
-                return False, e.stderr or e.stdout or "BIND reconfig failed"
+                self._run_command(["rndc", "reconfig"], check=True)
+            except subprocess.CalledProcessError as exc:
+                return False, exc.stderr or exc.stdout or "BIND reconfig failed"
 
-            # If zone file exists, freeze then thaw to reload it from disk.
-            # This is necessary for dynamic zones (with allow-update { any; }) because:
-            # - plain 'rndc reload' fails with "dynamic zone" error
-            # - rndc freeze prepares the zone for editing and stops updates
-            # - rndc thaw resumes updates and reloads the zone file from disk
-            # For non-dynamic zones, this sequence is still harmless and ensures consistency.
             if zone_file_exists:
                 try:
-                    freeze_result = subprocess.run(
-                        ['rndc', 'freeze', zoneName],
-                        capture_output=True,
-                        text=True,
-                        timeout=10,
-                        check=True
-                    )
-                    logger.info(f"Froze zone {zoneName}")
+                    self._run_command(["rndc", "freeze", zoneName], check=True)
+                    self._run_command(["rndc", "thaw", zoneName], check=True)
+                except subprocess.CalledProcessError as exc:
+                    return False, exc.stderr or exc.stdout or "BIND zone reload failed"
 
-                    thaw_result = subprocess.run(
-                        ['rndc', 'thaw', zoneName],
-                        capture_output=True,
-                        text=True,
-                        timeout=10,
-                        check=True
-                    )
-                    logger.info(f"Thawed zone {zoneName} - zone reloaded from disk")
-
-                except subprocess.CalledProcessError as e:
-                    logger.error(f"rndc freeze/thaw failed for zone {zoneName}: {e.stderr}")
-                    return False, e.stderr or e.stdout or "BIND zone reload failed"
-
-            logger.info("VinylDNS BIND reloaded successfully via rndc (no restart)")
+            logger.info("BIND reloaded successfully via rndc")
             return True, None
 
         except subprocess.TimeoutExpired:
-            logger.error("Configuration or zone validation timed out")
+            logger.exception("BIND validation/reload timed out")
             return False, "Timeout during configuration or zone validation"
+        except Exception as exc:
+            logger.exception("Unexpected BIND reload error")
+            return False, str(exc)
 
-        except Exception as e:
-            logger.error(f"Unexpected error: {e}")
-            return False, str(e)
 
-
-# FastAPI Application Setup
 app = FastAPI(
     title="BIND DNS Management API",
     description="API for creating VinylDNS BIND DNS zones and configurations",
-    version="1.0.0"
+    version="1.0.0",
 )
-
-# Initialize DNS Manager
 dns_manager = VinylDNSBindDNSManager()
+
 
 class ZoneCreateRequest(BaseModel):
     zoneName: str
@@ -339,149 +429,136 @@ class ZoneCreateRequest(BaseModel):
     expire: Optional[int] = 2419200
     negative_cache_ttl: Optional[int] = 604800
 
+    @field_validator("zoneName")
+    @classmethod
+    def validate_zone_name(cls, value):
+        return VinylDNSBindDNSManager._validate_zone_name(value)
+
+
 class APIResponse(BaseModel):
     success: bool
     message: str
     data: Optional[dict] = None
 
 
-# API Endpoints for VinylDNS Bind Management
 @app.post("/api/zones/generate", response_model=APIResponse)
 async def create_zone(zone_request: ZoneCreateRequest):
-    logger.info(f"Creating vinylDNS zone with request: {zone_request}")
+    zone_name = zone_request.zoneName
+    logger.info("Create zone request: %s", zone_name)
 
-    try:
-
-        zone_file = dns_manager.create_zone_file(
-            zoneName=zone_request.zoneName,
-            nameservers=zone_request.nameservers,
-            admin_email=str(zone_request.admin_email),
-            ttl=zone_request.ttl,
-            refresh=zone_request.refresh,
-            retry=zone_request.retry,
-            expire=zone_request.expire,
-            negative_cache_ttl=zone_request.negative_cache_ttl
-        )
-
-        dns_manager.add_zone_config(zone_request.zoneName, zone_file)
-
-        success, error = dns_manager.reload_bind(zone_request.zoneName)
-        if not success:
-            logger.error(f"Zone reload failed with error: {error}")
+    # Serialize create checks/writes within this API process to reduce race conditions.
+    with dns_manager._create_lock:
+        if dns_manager.zone_exists(zone_name):
             raise HTTPException(
-                status_code=500,
-                detail=f"Failed to reload vinylDNS BIND: {error}" if error else "Failed to reload vinylDNS BIND: Unknown error"
+                status_code=409,
+                detail=f"Zone '{zone_name}' already exists; use PUT /api/zones/update to modify it",
             )
 
-        return APIResponse(
-            success=True,
-            message=f"vinylDNS Zone {zone_request.zoneName} created successfully",
-            data={
-                "zoneName": zone_request.zoneName,
-                "zone_file": zone_file
-            }
-        )
+        try:
+            zone_file = dns_manager.create_zone_file(
+                zoneName=zone_name,
+                nameservers=zone_request.nameservers,
+                admin_email=str(zone_request.admin_email),
+                ttl=zone_request.ttl,
+                refresh=zone_request.refresh,
+                retry=zone_request.retry,
+                expire=zone_request.expire,
+                negative_cache_ttl=zone_request.negative_cache_ttl,
+            )
+            dns_manager.add_zone_config(zone_name, zone_file)
+            success, error = dns_manager.reload_bind(zone_name)
 
-    except Exception as e:
-        logger.error(f"VinylDNS Zone creation failed: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+            if not success:
+                # Keep files for diagnosis rather than silently removing partial configuration.
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to reload VinylDNS BIND: {error}",
+                )
+
+            return APIResponse(
+                success=True,
+                message=f"VinylDNS zone {zone_name} created successfully",
+                data={"zoneName": zone_name, "zone_file": zone_file},
+            )
+        except HTTPException:
+            raise
+        except FileExistsError:
+            raise HTTPException(status_code=409, detail=f"Zone '{zone_name}' already exists")
+        except Exception as exc:
+            logger.exception("Zone creation failed for %s", zone_name)
+            raise HTTPException(status_code=500, detail=str(exc))
+
 
 @app.put("/api/zones/update", response_model=APIResponse)
 async def update_zone(zone_request: ZoneCreateRequest):
-    logger.info(f"Updating vinylDNS zone with request: {zone_request}")
-
-    zone_file_path = os.path.join(dns_manager.zones_dir, zone_request.zoneName)
-    if not os.path.exists(zone_file_path):
-        raise HTTPException(
-            status_code=404,
-            detail=f"Zone {zone_request.zoneName} does not exist"
-        )
+    zone_name = zone_request.zoneName
+    if not os.path.exists(dns_manager._zone_file_path(zone_name)):
+        raise HTTPException(status_code=404, detail=f"Zone '{zone_name}' does not exist")
 
     try:
         zone_file = dns_manager.update_zone_file(
-            zoneName=zone_request.zoneName,
+            zoneName=zone_name,
             nameservers=zone_request.nameservers,
             admin_email=str(zone_request.admin_email),
             ttl=zone_request.ttl,
             refresh=zone_request.refresh,
             retry=zone_request.retry,
             expire=zone_request.expire,
-            negative_cache_ttl=zone_request.negative_cache_ttl
+            negative_cache_ttl=zone_request.negative_cache_ttl,
         )
+        success, error = dns_manager.reload_bind(zone_name)
 
-        success, error = dns_manager.reload_bind(zone_request.zoneName)
         if not success:
-            logger.error(f"Zone reload failed with error: {error}")
             raise HTTPException(
-                status_code=500,
-                detail=f"Failed to reload vinylDNS BIND: {error}" if error else "Failed to reload vinylDNS BIND: Unknown error"
+                status_code=500, detail=f"Failed to reload VinylDNS BIND: {error}"
             )
 
         return APIResponse(
             success=True,
-            message=f"vinylDNS Zone {zone_request.zoneName} updated successfully",
-            data={
-                "zoneName": zone_request.zoneName,
-                "zone_file": zone_file
-            }
+            message=f"VinylDNS zone {zone_name} updated successfully",
+            data={"zoneName": zone_name, "zone_file": zone_file},
         )
-
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"VinylDNS Zone update failed: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+    except Exception as exc:
+        logger.exception("Zone update failed for %s", zone_name)
+        raise HTTPException(status_code=500, detail=str(exc))
+
 
 @app.delete("/api/zones/delete", response_model=APIResponse)
 async def delete_zone(zoneName: str):
-    logger.info(f"Deleting vinylDNS zone: {zoneName}")
+    zone_name = VinylDNSBindDNSManager._validate_zone_name(zoneName)
+    logger.info("Delete zone request: %s", zone_name)
 
     try:
-        success, error = dns_manager.delete_zone(zoneName)
+        success, error = dns_manager.delete_zone(zone_name)
         if not success:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to delete vinylDNS BIND zone: {error}" if error else "Unknown error during zone deletion"
-            )
+            raise HTTPException(status_code=404, detail=error or "Zone not found")
 
-        # Reload BIND after deletion
-        reload_success, reload_error = dns_manager.reload_bind(zoneName)
-        if not reload_success:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Zone deleted, but BIND reload failed: {reload_error}"
-            )
-
+        # delete_zone already reloads BIND; do not reload a second time here.
         return APIResponse(
             success=True,
-            message=f"vinylDNS Zone {zoneName} deleted and BIND reloaded successfully",
-            data={"zoneName": zoneName}
+            message=f"VinylDNS zone {zone_name} deleted and BIND reloaded successfully",
+            data={"zoneName": zone_name},
         )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Zone deletion failed for %s", zone_name)
+        raise HTTPException(status_code=500, detail=str(exc))
 
-    except Exception as e:
-        logger.error(f"Zone deletion failed: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
 
 @app.get("/api/health", response_model=APIResponse)
 async def health_check():
     return APIResponse(
-        success=True,
-        message="VinylDNS Zone creation BIND Service is running"
+        success=True, message="VinylDNS BIND management API is running"
     )
+
 
 if __name__ == "__main__":
     uvicorn.run(
         "manage_vinyldns_zones_bind_api:app",
         host="0.0.0.0",
         port=19000,
-        reload=False
+        reload=False,
     )
