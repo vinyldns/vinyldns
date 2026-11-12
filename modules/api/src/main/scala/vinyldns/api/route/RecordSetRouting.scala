@@ -49,7 +49,7 @@ case class ListGlobalRecordSetsResponse(
                                          recordTypeFilter: Option[Set[RecordType]] = None,
                                          recordOwnerGroupFilter: Option[String] = None,
                                          nameSort: NameSort,
-                                         zoneId: Option[String]
+                                         zoneId: Option[String],
                                          totalCount: Option[Int] = None
                                        )
 
