@@ -1878,7 +1878,7 @@ class RecordSetServiceSpec
         )
       ).when(mockRecordDataRepo)
         .listRecordSetData(
-          None,
+          Some("123ab"),
           None,
           None,
           Some("aaaa*."),
@@ -1898,7 +1898,8 @@ class RecordSetServiceSpec
             recordOwnerGroupFilter = Some("owner group id"),
             nameSort = NameSort.ASC,
             authPrincipal = sharedAuth,
-            recordTypeSort = RecordTypeSort.ASC
+            recordTypeSort = RecordTypeSort.ASC,
+            zoneId = Some("123ab")
           )
           .value.unsafeRunSync().toOption.get
 
@@ -1955,7 +1956,8 @@ class RecordSetServiceSpec
             Some("owner group id"),
             NameSort.ASC,
             sharedAuth,
-            RecordTypeSort.ASC
+            RecordTypeSort.ASC,
+            None
           )
           .value.unsafeRunSync().toOption.get
 
@@ -2004,7 +2006,8 @@ class RecordSetServiceSpec
             None,
             NameSort.ASC,
             sharedAuth,
-            RecordTypeSort.ASC
+            RecordTypeSort.ASC,
+            None
           )
           .value.unsafeRunSync().toOption.get
 
@@ -2054,7 +2057,8 @@ class RecordSetServiceSpec
             None,
             NameSort.ASC,
             sharedAuth,
-            RecordTypeSort.ASC
+            RecordTypeSort.ASC,
+            None
           )
           .value.unsafeRunSync().toOption.get
 
@@ -2073,7 +2077,8 @@ class RecordSetServiceSpec
             recordOwnerGroupFilter = Some("owner group id"),
             nameSort = NameSort.ASC,
             authPrincipal = okAuth,
-            recordTypeSort = RecordTypeSort.ASC
+            recordTypeSort = RecordTypeSort.ASC,
+            zoneId = Some("123ab")
           )
           .value.unsafeRunSync().swap.toOption.get
 
@@ -2120,7 +2125,8 @@ class RecordSetServiceSpec
             recordOwnerGroupFilter = None,
             nameSort = NameSort.ASC,
             authPrincipal = okAuth,
-            recordTypeSort = RecordTypeSort.ASC
+            recordTypeSort = RecordTypeSort.ASC,
+            zoneId = None
           )
           .value.unsafeRunSync().toOption.get
 
