@@ -1956,7 +1956,8 @@ class RecordSetServiceSpec
             Some("owner group id"),
             NameSort.ASC,
             sharedAuth,
-            RecordTypeSort.ASC
+            RecordTypeSort.ASC,
+            None
           )
           .value.unsafeRunSync().toOption.get
 
@@ -2005,7 +2006,8 @@ class RecordSetServiceSpec
             None,
             NameSort.ASC,
             sharedAuth,
-            RecordTypeSort.ASC
+            RecordTypeSort.ASC,
+            None
           )
           .value.unsafeRunSync().toOption.get
 
@@ -2055,7 +2057,8 @@ class RecordSetServiceSpec
             None,
             NameSort.ASC,
             sharedAuth,
-            RecordTypeSort.ASC
+            RecordTypeSort.ASC,
+            None
           )
           .value.unsafeRunSync().toOption.get
 
@@ -2122,7 +2125,8 @@ class RecordSetServiceSpec
             recordOwnerGroupFilter = None,
             nameSort = NameSort.ASC,
             authPrincipal = okAuth,
-            recordTypeSort = RecordTypeSort.ASC
+            recordTypeSort = RecordTypeSort.ASC,
+            zoneId = None
           )
           .value.unsafeRunSync().toOption.get
 
