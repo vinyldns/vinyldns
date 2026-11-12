@@ -122,29 +122,33 @@ def test_update_generate_zone_bind_preserves_dynamic_records(shared_zone_test_co
         result_zone = client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(result_zone["id"])
 
-        # a dynamic change that is still only in BIND's journal when the update runs
-        response = dns_add(dns_zone, "www", 300, "A", "1.2.3.4")
-        assert_that(response.rcode(), is_(dns.rcode.NOERROR))
-        assert_that(rdata(dns_resolve(dns_zone, "www", "A")), contains_exactly("1.2.3.4"))
-
-        result_zone["providerParams"]["admin_email"] = "updated-admin@test.com"
         result_zone["providerParams"]["nameservers"] = [
             "ns1.mttest1.example.org.",
             "ns3.mttest1.example.org."
         ]
-        client.update_generate_zone(result_zone, status=202)
 
-        # the existing record survives and the updated SOA/NS data is served
-        assert_that(rdata(dns_resolve(dns_zone, "www", "A")), contains_exactly("1.2.3.4"))
+        # The journal flush on freeze is racy, so repeat to catch an intermittent loss.
+        for i in range(5):
+            # a dynamic change that is still only in BIND's journal when the update runs
+            response = dns_add(dns_zone, f"www{i}", 300, "A", f"1.2.3.{i}")
+            assert_that(response.rcode(), is_(dns.rcode.NOERROR))
+            assert_that(rdata(dns_resolve(dns_zone, f"www{i}", "A")), contains_exactly(f"1.2.3.{i}"))
 
-        soa = rdata(dns_resolve(dns_zone, zone_name, "SOA"))
-        assert_that(soa, has_length(1))
-        assert_that(soa[0], starts_with("ns1.mttest1.example.org. updated-admin.test.com. "))
+            result_zone["providerParams"]["admin_email"] = f"updated-admin{i}@test.com"
+            client.update_generate_zone(result_zone, status=202)
 
-        assert_that(
-            rdata(dns_resolve(dns_zone, zone_name, "NS")),
-            contains_inanyorder("ns1.mttest1.example.org.", "ns3.mttest1.example.org.")
-        )
+            # every earlier record survives and the updated SOA/NS data is served
+            for j in range(i + 1):
+                assert_that(rdata(dns_resolve(dns_zone, f"www{j}", "A")), contains_exactly(f"1.2.3.{j}"))
+
+            soa = rdata(dns_resolve(dns_zone, zone_name, "SOA"))
+            assert_that(soa, has_length(1))
+            assert_that(soa[0], starts_with(f"ns1.mttest1.example.org. updated-admin{i}.test.com. "))
+
+            assert_that(
+                rdata(dns_resolve(dns_zone, zone_name, "NS")),
+                contains_inanyorder("ns1.mttest1.example.org.", "ns3.mttest1.example.org.")
+            )
 
         # the zone is thawed again, so dynamic updates still work
         response = dns_add(dns_zone, "ftp", 300, "A", "5.6.7.8")

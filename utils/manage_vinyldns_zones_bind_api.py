@@ -3,6 +3,7 @@ import re
 import sys
 import logging
 import subprocess
+import time
 from datetime import datetime
 from threading import Lock
 from typing import Optional, Tuple, List
@@ -392,6 +393,7 @@ class VinylDNSBindDNSManager:
         # below starts from the live zone and cannot be overwritten by the journal.
         self._rndc_zone("freeze", zoneName)
         try:
+            self._wait_for_zone_file_sync(zoneName, zone_file_path)
             self._rewrite_zone_file(
                 zoneName, zone_file_path, nameservers, admin_email, ttl, refresh,
                 retry, expire, negative_cache_ttl
@@ -403,6 +405,40 @@ class VinylDNSBindDNSManager:
         # Thaw reloads the zone from disk and re-enables dynamic updates.
         self._rndc_zone("thaw", zoneName)
         return zone_file_path
+
+    def _live_serial(self, zoneName: str) -> int:
+        status = self._run_command(["rndc", "zonestatus", zoneName], check=True)
+        match = re.search(r"^serial:\s*(\d+)", status.stdout, re.MULTILINE)
+        if not match:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Could not read the live serial for zone '{zoneName}'",
+            )
+        return int(match.group(1))
+
+    def _wait_for_zone_file_sync(
+        self, zoneName: str, zone_file_path: str, timeout: float = 10.0, interval: float = 0.1
+    ) -> None:
+        """Block until the zone file's serial reaches the frozen live serial.
+
+        `rndc freeze` can return before BIND finishes dumping the journal, so the file may be stale.
+        """
+        live_serial = self._live_serial(zoneName)
+        deadline = time.monotonic() + timeout
+        while True:
+            with open(zone_file_path, "r", encoding="utf-8") as f:
+                file_serial = self._read_zone_records(f.read(), zoneName)[1]
+            if file_serial is not None and file_serial >= live_serial:
+                return
+            if time.monotonic() >= deadline:
+                raise HTTPException(
+                    status_code=500,
+                    detail=(
+                        f"Zone file for '{zoneName}' did not reach live serial {live_serial} "
+                        f"(file serial {file_serial}) after freeze"
+                    ),
+                )
+            time.sleep(interval)
 
     def _rewrite_zone_file(
         self,
