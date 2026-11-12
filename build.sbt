@@ -54,6 +54,7 @@ lazy val testSettings = Seq(
 lazy val apiSettings = Seq(
   name := "api",
   libraryDependencies ++= apiDependencies ++ apiTestDependencies.map(_ % "test, it"),
+  dependencyOverrides += "org.typelevel" % "cats-core_2.12" % "2.7.0",
   mainClass := Some("vinyldns.api.Boot"),
   javaOptions in reStart ++= Seq(
     "-Dlog4j.configurationFile=test/log4j2.xml",
@@ -212,7 +213,6 @@ lazy val portalSettings = Seq(
   coverageExcludedPackages := "<empty>;views.html.*;router.*;controllers\\.javascript.*;.*Reverse.*",
   javaOptions in Test += "-Dconfig.file=conf/application-test.conf",
   javaOptions in Test += "-Dlog4j.configurationFile=conf/log4j2-test.xml",
-
   // Adds the version when working locally with sbt run
   PlayKeys.devSettings += "vinyldns.base-version" -> (version in ThisBuild).value,
   // Automatically run the prepare portal script before `run`

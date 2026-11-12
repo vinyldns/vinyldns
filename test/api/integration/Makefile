@@ -27,37 +27,84 @@ endif
 
 .ONESHELL:
 
-.PHONY: all build run run-local run-bg stop-bg clean-containers
+.PHONY: all build init-network start-pdns stop-pdns run run-local run-bg stop-bg clean-containers
 
-all: build run
+all: build init-network start-pdns run
+
+init-network:
+	@set -euo pipefail
+	docker network create --driver bridge vinyldns_net &> /dev/null || true
+
+# Marks whether this Makefile started pdns-auth itself (vs. reusing one already running, e.g.
+# from quickstart/docker-compose), so stop-pdns only tears down containers it owns.
+PDNS_MARKER := /tmp/.vinyldns_it_started_pdns
+
+# Starts pdns-auth as a sibling container on vinyldns_net, reachable from the integration
+# container at "vinyldns-pdns-auth:19005" (mirrors test/api/functional/Makefile's start-pdns).
+# Idempotent/non-destructive: if a container with this name already exists (e.g. one started by
+# quickstart/docker-compose), it's reused and just attached to vinyldns_net rather than recreated.
+start-pdns:
+	@set -euo pipefail
+	docker network create --driver bridge vinyldns_net &> /dev/null || true
+	if [ -z "$$(docker ps -aq -f name=^/vinyldns-pdns-auth$$)" ]; then \
+	  docker run -d --name vinyldns-pdns-auth \
+	    -p 19005:19005 -p 1053:53 -p 1053:53/udp \
+	    -e PDNS_AUTH_API_KEY="vinyldns_pdns_auth_api_key" \
+	    --network vinyldns_net \
+	    powerdns/pdns-auth-master; \
+	  docker cp "$(ROOT_DIR)/../../../quickstart/pdns/pdns.conf" vinyldns-pdns-auth:/etc/powerdns/pdns.conf; \
+	  touch $(PDNS_MARKER); \
+	else \
+	  docker network connect vinyldns_net vinyldns-pdns-auth &> /dev/null || true; \
+	  rm -f $(PDNS_MARKER); \
+	fi
+
+# Only removes pdns-auth if start-pdns created it in this invocation (see PDNS_MARKER).
+stop-pdns:
+	@set -euo pipefail
+	if [ -f $(PDNS_MARKER) ]; then \
+	  docker rm -f vinyldns-pdns-auth &> /dev/null || true; \
+	  rm -f $(PDNS_MARKER); \
+	fi
 
 build:
 	@set -euo pipefail
 	cd ../../..
 	docker build -t $(IMAGE_NAME) $(DOCKER_PARAMS) --build-arg DOCKERFILE_PATH="$(RELATIVE_ROOT_DIR)" -f "$(ROOT_DIR)/Dockerfile" .
 
-run:
+run: init-network start-pdns
 	@set -euo pipefail
 	docker network create --driver bridge vinyldns_net &> /dev/null || true
 	USE_TTY="" && test -t 1 && USE_TTY="-t"
-	docker run -i $${USE_TTY} --rm --network vinyldns_net $(DOCKER_PARAMS) $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS)
+	set +e; \
+	docker run -i $${USE_TTY} --rm --network vinyldns_net $(DOCKER_PARAMS) $(IMAGE_NAME) $(ARG_SEPARATOR) $(WITH_ARGS); \
+	TEST_EXIT=$$?; \
+	set -e; \
+	$(MAKE) stop-pdns; \
+	exit $$TEST_EXIT
 
 run-bg:
 	@set -euo pipefail
 	docker stop $(IMAGE_NAME) &> /dev/null || true
-	docker network create --driver bridge vinyldns_net &> /dev/null || true
+	$(MAKE) start-pdns
 	USE_TTY="" && test -t 1 && USE_TTY="-t"
 	docker run -d $${USE_TTY} --name $(IMAGE_NAME) --rm --network vinyldns_net $(DOCKER_PARAMS) -e RUN_SERVICES="deps-only tail-logs" -p 19001-19003:19001-19003 -p 19001:19001/udp $(IMAGE_NAME)
 
 stop-bg:
 	@set -euo pipefail
 	docker stop $(IMAGE_NAME) &> /dev/null || true
+	$(MAKE) stop-pdns
 
 run-local:
 	@set -euo pipefail
-	docker network create --driver bridge vinyldns_net &> /dev/null || true
+	$(MAKE) start-pdns
 	USE_TTY="" && test -t 1 && USE_TTY="-t"
-	docker run -i $${USE_TTY} --rm --network vinyldns_net $(DOCKER_PARAMS) -v "$(ROOT_DIR)/../../..:/build" $(IMAGE_NAME) -- $(WITH_ARGS)
+	set +e; \
+	docker run -i $${USE_TTY} --rm --network vinyldns_net $(DOCKER_PARAMS) -v "$(ROOT_DIR)/../../..:/build" $(IMAGE_NAME) -- $(WITH_ARGS); \
+	TEST_EXIT=$$?; \
+	set -e; \
+	$(MAKE) stop-pdns; \
+	exit $$TEST_EXIT
 
 clean-containers:
 	@set -euo pipefail

@@ -7,6 +7,19 @@ services:
     ports:
       - "19004:19004"
 
+  pdns-auth:
+    container_name: "vinyldns-pdns-auth"
+    image: powerdns/pdns-auth-master
+    volumes:
+      - ./pdns/pdns.conf:/etc/powerdns/pdns.conf
+    environment:
+      PDNS_AUTH_API_KEY: "vinyldns_pdns_auth_api_key"
+
+    ports:
+      - "19005:19005"
+      - "1053:53"
+      - "1053:53/udp"
+
   # Integration image hosting r53, sns, sqs, bind and mysql
   integration:
     container_name: "vinyldns-api-integration"
@@ -22,8 +35,10 @@ services:
     env_file:
       - "${ENV_FILE:-.env}"
     ports:
-      - "19001-19003:19001-19003/tcp"
+      - "19000-19003:19000-19003/tcp"
       - "19001:19001/udp"
+    depends_on:
+      - pdns-auth
 
   # The VinylDNS API
   api:

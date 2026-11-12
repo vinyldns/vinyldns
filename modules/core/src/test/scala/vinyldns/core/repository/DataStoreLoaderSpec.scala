@@ -54,10 +54,12 @@ class DataStoreLoaderSpec
     enabled,
     enabled,
     enabled,
+    enabled,
     enabled
   )
 
   val allDisabledReposConfig = RepositoriesConfig(
+    None,
     None,
     None,
     None,

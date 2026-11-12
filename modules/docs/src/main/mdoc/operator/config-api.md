@@ -16,6 +16,7 @@ section: "operator_menu"
 - [Database Configuration](#database-configuration)
 - [Cryptography](#cryptography-settings)
 - [Zone Connections](#zone-connections)
+- [DNS Provider API](#dns-provider-api)
 - [Additional Configuration Settings](#additional-configuration-settings)
 - [Full Example Config](#full-example-config)
 
@@ -436,6 +437,116 @@ backend {
 ```
 Make sure to add AWS name servers in [Approved Name Servers Config](#approved-name-servers).
 
+## DNS Provider API <a id="dns-provider-api" />
+
+The DNS provider API lets users create zones on a DNS server through the
+[Generate Zone](../api/generate-zone.html) endpoints. Each provider is an HTTP management API (for example PowerDNS, or
+a service in front of BIND) that VinylDNS calls to create, update and delete zones.
+
+It is configured with a `dns-provider-api` block inside the `settings` of a `DnsBackendProviderLoader` backend
+provider. If no backend provider has this block, no providers are available and generate zone requests are rejected.
+Generated zones are stored in the `generate-zone` MySQL repository, which must also be enabled (see
+[Database Configuration](#database-configuration)).
+
+{% raw %}
+Each key under `providers` is a provider name. These names are what users send as `provider`, and what
+[Get DNS Providers](../api/get-dns-providers.html) returns. Each provider has:
+
+* `api-key` - Sent to the provider in the `X-API-Key` header.
+* `endpoints` - The URL for each operation: `create-zone` (called with `POST`), `update-zone` (`PUT`) and `delete-zone`
+  (`DELETE`). `{{param}}` placeholders are replaced with URL-encoded values from the request (`zoneName`, `provider`,
+  `groupId`, `email`, or any provider param). A request fails if a placeholder cannot be filled.
+* `request-templates` - The JSON body sent for `create-zone` and `update-zone`. A value of `"{{param}}"` is replaced
+  with the request value, keeping its JSON type. Fields whose param was not sent are removed. `delete-zone` sends no
+  body.
+* `schemas` - A [JSON Schema](https://json-schema.org/draft/2020-12/schema) (draft 2020-12) for `create-zone` and
+  `update-zone`. The user's `providerParams` must match it, or the request is rejected. Both schemas are required; if
+  one is missing, requests for that operation fail.
+
+`name-servers` is the list returned by [Get Name Servers](../api/get-dns-providers.html#get-name-servers).
+
+VinylDNS waits up to 10 seconds to connect to a provider and 30 seconds for a response. A provider response that is not
+`2xx` fails the request, and nothing is saved.
+
+```yaml
+backend {
+  default-backend-id = "default"
+
+  backend-providers = [
+    {
+      class-name = "vinyldns.api.backend.dns.DnsBackendProviderLoader"
+      settings = {
+        legacy = false
+        dns-provider-api = {
+          providers = {
+            powerdns = {
+              api-key = "vinyldns_pdns_auth_api_key"
+              endpoints = {
+                create-zone = "http://localhost:19005/api/v1/servers/localhost/zones"
+                update-zone = "http://localhost:19005/api/v1/servers/localhost/zones/{{zoneName}}"
+                delete-zone = "http://localhost:19005/api/v1/servers/localhost/zones/{{zoneName}}"
+              }
+              request-templates = {
+                create-zone = """
+                {
+                  "name": "{{zoneName}}",
+                  "kind": "{{kind}}",
+                  "masters": "{{masters}}",
+                  "nameservers": "{{nameservers}}"
+                }
+                """
+                update-zone = """
+                {
+                  "name": "{{zoneName}}",
+                  "kind": "{{kind}}",
+                  "masters": "{{masters}}"
+                }
+                """
+              }
+              schemas = {
+                create-zone = """
+                {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "required": ["kind", "nameservers"],
+                  "properties": {
+                    "kind": { "type": "string", "enum": ["Native", "Master"] },
+                    "nameservers": {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": { "type": "string", "pattern": "^[a-zA-Z0-9.-]+\\.$" }
+                    },
+                    "masters": { "type": "array", "items": { "type": "string" } }
+                  },
+                  "additionalProperties": false
+                }
+                """
+                update-zone = """
+                {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "kind": { "type": "string", "enum": ["Native", "Master"] },
+                    "masters": { "type": "array", "items": { "type": "string" } }
+                  },
+                  "additionalProperties": false
+                }
+                """
+              }
+            }
+          }
+          name-servers = ["ns1.example.com.", "ns2.example.com."]
+        }
+        backends = [
+          # your zone connection backends
+        ]
+      }
+    }
+  ]
+}
+```
+{% endraw %}
+
 ## Additional Configuration Settings
 
 ### Approved Name Servers
@@ -818,6 +929,8 @@ dotted-hosts = {
         zone-change {
         }
         record-change {
+        }
+        generate-zone {
         }
      }
   }

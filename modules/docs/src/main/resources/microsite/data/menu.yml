@@ -182,6 +182,36 @@ options:
         url: api/delete-acl-rule.html
         menu_section: zoneapireference
 
+  - title: Generated Zone
+    url: api/generated-zone-model.html
+    menu_type: api
+    menu_section: generatedzoneapireference
+    nested_options:
+      - title: Generated Zone Model
+        url: api/generated-zone-model.html
+        menu_section: generatedzoneapireference
+      - title: Generate Zone
+        url: api/generate-zone.html
+        menu_section: generatedzoneapireference
+      - title: Update Generated Zone
+        url: api/update-generated-zone.html
+        menu_section: generatedzoneapireference
+      - title: Delete Generated Zone
+        url: api/delete-generated-zone.html
+        menu_section: generatedzoneapireference
+      - title: Get Generated Zone by ID
+        url: api/get-generated-zone-by-id.html
+        menu_section: generatedzoneapireference
+      - title: Get Generated Zone by Name
+        url: api/get-generated-zone-by-name.html
+        menu_section: generatedzoneapireference
+      - title: List / Search Generated Zones
+        url: api/list-generated-zones.html
+        menu_section: generatedzoneapireference
+      - title: Get DNS Providers
+        url: api/get-dns-providers.html
+        menu_section: generatedzoneapireference
+
   - title: RecordSet
     url: api/recordset-model.html
     menu_type: api

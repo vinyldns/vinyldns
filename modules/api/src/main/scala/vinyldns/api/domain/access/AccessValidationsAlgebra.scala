@@ -21,11 +21,14 @@ import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.RecordData
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.zone.AccessLevel.AccessLevel
-import vinyldns.core.domain.zone.Zone
+import vinyldns.core.domain.zone.{Zone}
+import vinyldns.core.domain.zone.generate.GenerateZone
 
 trait AccessValidationsAlgebra {
 
   def canSeeZone(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit]
+
+  def canSeeGenerateZone(auth: AuthPrincipal, zone: GenerateZone): Either[Throwable, Unit]
 
   def canSeeZoneChange(auth: AuthPrincipal, zone: Zone): Either[Throwable, Unit]
 
@@ -78,4 +81,7 @@ trait AccessValidationsAlgebra {
   ): List[RecordSetListInfo]
 
   def getZoneAccess(auth: AuthPrincipal, zone: Zone): AccessLevel
+
+  def getGenerateZoneAccess(auth: AuthPrincipal, zone: GenerateZone): AccessLevel
+
 }

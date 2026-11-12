@@ -21,5 +21,5 @@ trait Repository
 object RepositoryName extends Enumeration {
   type RepositoryName = Value
   val user, group, membership, groupChange, recordSet, recordChange, recordSetCache, zoneChange,
-      zone, batchChange, userChange, task = Value
+      zone, batchChange, userChange, task, generateZone = Value
 }
