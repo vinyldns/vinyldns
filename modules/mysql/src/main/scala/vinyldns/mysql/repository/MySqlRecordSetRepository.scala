@@ -309,7 +309,6 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
             totalCount = totalCount)
         }
       }
-    }
   }
 
   private def buildAccessFilter(authPrincipal: AuthPrincipal): SQLSyntax = {
