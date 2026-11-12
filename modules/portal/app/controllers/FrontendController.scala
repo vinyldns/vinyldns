@@ -71,7 +71,7 @@ class FrontendController @Inject() (
   }
 
   def viewAllZones(): Action[AnyContent] = userAction.async { implicit request =>
-    Future(Ok(views.html.zones.zones(request.user.userName)))
+    Future(Ok(views.html.zones.zones(request.user.userName, request.user.isSuper)))
   }
 
   def viewZone(zoneId: String): Action[AnyContent] = userAction.async { implicit request =>

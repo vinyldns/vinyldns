@@ -1,4 +1,4 @@
-@(rootAccountName: String)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
+@(rootAccountName: String, isSuperUser: Boolean)(implicit request: play.api.mvc.Request[Any], customLinks: models.CustomLinks, meta: models.Meta)
 @content = {
 <!-- PAGE CONTENT -->
 <div class="right_col" role="main">
@@ -27,14 +27,17 @@
         <!-- START VERTICAL TABS -->
         <div class="panel panel-default panel-tabs">
             <ul class="nav nav-tabs bar_tabs">
+                @if(isSuperUser) {
                 <li class="active"><a href="#createdZones" data-toggle="tab">Created Zones</a></li>
-                <li class="tab2-button"><a href="#myZones" data-toggle="tab" ng-click="myZonesAccess()">My Zones</a></li>
+                }
+                <li class="tab2-button @if(!isSuperUser) {active}"><a href="#myZones" data-toggle="tab" ng-click="myZonesAccess()">My Zones</a></li>
                 <li><a id="tab3-button" href="#allZones" data-toggle="tab" ng-click="allZonesAccess()">All Zones</a></li>
                 <li><a id="tab4-button" href="#deletedZones" data-toggle="tab">Abandoned Zones</a></li>
             </ul>
 
             <div class="panel-body tab-content">
 
+                @if(isSuperUser) {
                 <div class="tab-pane active" id="createdZones" ng-controller="GenerateZonesController">
                     <div class="row">
                         <div class="col-md-12">
@@ -156,7 +159,8 @@
                     <zonecreation></zonecreation>
                     <zonecreatedview></zonecreatedview>
                 </div>
-                <div class="tab-pane" id="myZones">
+                }
+                <div class="tab-pane @if(!isSuperUser) {active}" id="myZones">
                     <div class="row">
                         <div class="col-md-12">
 
