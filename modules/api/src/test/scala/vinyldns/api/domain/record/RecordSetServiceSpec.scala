@@ -1878,7 +1878,7 @@ class RecordSetServiceSpec
         )
       ).when(mockRecordDataRepo)
         .listRecordSetData(
-          None,
+          Some("123ab"),
           None,
           None,
           Some("aaaa*."),
