@@ -18,7 +18,6 @@
 
 angular.module('service.records', [])
     .service('recordsService', function ($http, utilityService) {
-
         this.listRecordSetData = function (limit, startFrom, nameFilter, typeFilter, nameSort, ownerGroupFilter, zoneId, skipLoader) {
             if (typeFilter == "") {
                 typeFilter = null;
