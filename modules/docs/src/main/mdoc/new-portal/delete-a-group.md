@@ -29,6 +29,8 @@ A group cannot be deleted if any of the following conditions are true:
 3. Confirm the deletion when prompted.
 4. If deletion is successful, the group will be removed from the table.
 
+[![Delete group action in the Groups page](../img/new-portal/delete-group.png){:.screenshot}](../img/new-portal/delete-group.png)
+
 ### Error Messages
 
 If deletion fails, you may see one of the following error messages:

@@ -12,11 +12,11 @@ Once your zone is [setup for use with VinylDNS](../faq.html#1), you can use the 
 
 2. Select the Zones link from the navigation, then click the Connect button. This will show the Connect to a Zone form.
 
-[![Zones main screenshot](../img/portal/zone-main.png){:.screenshot}](../img/portal/zone-main.png)
+[![Zones page with the Connect Zone action](../img/new-portal/zone-mainpage.png){:.screenshot}](../img/new-portal/zone-mainpage.png)
 
-[![Connect to zone form screenshot](../img/portal/connect-to-zone.png){:.screenshot}](../img/portal/connect-to-zone.png)
+[![Connect to Zone dialog](../img/new-portal/connect-a-zone.png){:.screenshot}](../img/new-portal/connect-a-zone.png)
 
-3. Enter the full name of the zone, example "test.sys.example.com"
+3. Enter the full name of the zone, example "ok."
 
 4. Enter the email distribution list for the zone. This is typically a distribution list email for the team that owns the zone.
 
@@ -30,6 +30,6 @@ Once your zone is [setup for use with VinylDNS](../faq.html#1), you can use the 
 
 9. You may have to click the Refresh button from the zone list to see your new zone.
 
-[![Created zone listed screenshot](../img/portal/zone-list.png){:.screenshot}](../img/portal/zone-list.png)
+[![Connected zone shown in the Zones list](../img/new-portal/myzones.png){:.screenshot}](../img/new-portal/myzones.png)
 
 10. If you see error messages, please consult the [FAQ](../faq.html).

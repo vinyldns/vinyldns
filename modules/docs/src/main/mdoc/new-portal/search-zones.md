@@ -18,6 +18,8 @@ Given a list of zone names: another.example.com., example.com., test.com., test.
 - Search `*example` returns: example.com., another.example.com.
 - Search `*e*` returns: another.example.com., example.com., test.com., test.net., xyz.efg.
 
-[![Search zones My Zones tab](../img/portal/search-zones-my-zones.png){:.screenshot}](../img/portal/search-zones-my-zones.png)
+[![Zone search with no matching results](../img/new-portal/zone-search-not-found.png){:.screenshot}](../img/new-portal/zone-search-not-found.png)
 
-[![Search zones All Zones tab](../img/portal/search-zones-all-zones.png){:.screenshot}](../img/portal/search-zones-all-zones.png)
+[![Searching zones by name](../img/new-portal/zone-search.png){:.screenshot}](../img/new-portal/zone-search.png)
+
+

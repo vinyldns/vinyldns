@@ -21,14 +21,20 @@ To request Ownership Transfer of an unowned RecordSet in a shared zone, go to th
 
 In the *Claim Record Ownership* dialog, select your owner group under *Assign ownership to* and submit the request.
 
+[![Requesting ownership of an unowned record](../img/new-portal/ownership-request.png){:.screenshot}](../img/new-portal/ownership-request.png)
+
 To request Ownership Transfer for a RecordSet with an existing owner group in a shared zone, go to the *Zone* page in the VinylDNS Portal and select the *Request Transfer* button that corresponds with the records for which you want to request ownership. In the *Request Ownership Transfer* dialog, select your group under *Request transfer to* and submit the request.
 The record then shows a *Pending Review* status until the owner group approves or rejects the request.
+
+[![Ownership transfer request pending review](../img/new-portal/ownership-rerequest.png){:.screenshot}](../img/new-portal/ownership-rerequest.png)
 
 ## Approving/Rejecting Ownership Transfer
 
 An approver can approve or reject the requested Ownership Transfer in a shared zone on the *Zone* page of the VinylDNS Portal by opening the ownership actions menu (shown with the *Pending Review* status) for the records they want to approve or reject.
 
 Select either *Approve* or *Reject* from the menu. The record then shows its final status: *Approved*, *Rejected* or *Cancelled*.
+
+[![Ownership transfer approval and close request actions](../img/new-portal/ownership-close-request.png){:.screenshot}](../img/new-portal/ownership-close-request.png)
 
 ## Cancelling an Ownership Transfer Request
 

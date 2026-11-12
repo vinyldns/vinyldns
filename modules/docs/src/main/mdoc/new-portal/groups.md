@@ -10,8 +10,9 @@ Groups are the primary way users are granted access to zones. Users can create g
 
 - [Create a group](create-a-group.html)
 - [Manage membership](manage-membership.html)
+- [Update group email](update-group-email.html)
 - [Delete a group](delete-a-group.html)
 
-[![Groups main "My Groups" tab screenshot](../img/portal/groups-main.png){:.screenshot}](../img/portal/groups-main.png)
+[![Groups page showing My Groups](../img/new-portal/mygroup.png){:.screenshot}](../img/new-portal/mygroup.png)
 
-[![Groups main "All Groups" tab screenshot](../img/portal/groups-main-all.png){:.screenshot}](../img/portal/groups-main-all.png)
+[![All Groups list with multiple groups](../img/new-portal/all-groups-with-multiple-groups.png){:.screenshot}](../img/new-portal/all-groups-with-multiple-groups.png)

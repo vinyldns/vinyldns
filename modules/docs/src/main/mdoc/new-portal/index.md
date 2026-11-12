@@ -11,6 +11,8 @@ The VinylDNS new portal is the primary user interface for interacting with Vinyl
 
 ## Navigating the New Portal
 
+[![New portal navigation and user menu](../img/new-portal/navigation-portal.png){:.screenshot}](../img/new-portal/navigation-portal.png)
+
 The new portal provides an improved user experience with enhanced features for managing DNS zones and records. The interface includes:
 
 ### Top Navigation Bar

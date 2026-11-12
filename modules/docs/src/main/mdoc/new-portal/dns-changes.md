@@ -31,6 +31,8 @@ DNS Changes is an alternative to submitting individual RecordSet changes and pro
 - To update an existing record, you must delete the record first and add all expected records within the same request; a delete and add of the same record set within a DNS change request will be processed as an update.
 - When creating a new record in a shared zone, or updating an existing unowned record, a record owner group is required. Once the owner group is assigned only users in that group, zone admins, and users with ACL permissions can modify the record.
 
+[![DNS Changes page with My Requests and All Requests tabs](../img/new-portal/my-request-dnschange.png){:.screenshot}](../img/new-portal/my-request-dnschange.png)
+
 ## Create a DNS Change
 
 1. Go to the DNS Changes section of the site.
@@ -43,11 +45,9 @@ DNS Changes is an alternative to submitting individual RecordSet changes and pro
    - If your submission was successful you'll redirect to the DNS Change summary page where you will see the status of the DNS Change request overall and of the individual records in the DNS Change.
    - If there are errors in the DNS Change you will remain on the form with prompts to correct errors before you attempt to submit again.
 
-[![DNS Changes main page screenshot](../img/portal/dns-change-main-annotated.png){:.screenshot}](../img/portal/dns-change-main-annotated.png)
+[![New DNS Change form with request date and time options](../img/new-portal/create-dnschange.png){:.screenshot}](../img/new-portal/create-dnschange.png)
 
-[![New DNS Change form screenshot](../img/portal/dns-change-new-annotated.png){:.screenshot}](../img/portal/dns-change-new-annotated.png)
-
-[![Submitted DNS Change screenshot](../img/portal/dns-change-summary.png){:.screenshot}](../img/portal/dns-change-summary.png)
+[![Adding a record change to a DNS change request](../img/new-portal/add-change-in-dnschange.png){:.screenshot}](../img/new-portal/add-change-in-dnschange.png)
 
 ### DNS Change CSV Import
 
@@ -60,4 +60,4 @@ DNS Changes is an alternative to submitting individual RecordSet changes and pro
 
 You can review your submitted DNS Change requests by selecting the linked DNS Change ID or View button for the DNS Change on the main page of the DNS Changes section in the portal.
 
-[![List of DNS Change requests screenshot](../img/portal/dns-change-list-annotated.png){:.screenshot}](../img/portal/dns-change-list-annotated.png)
+[![DNS Change request details](../img/new-portal/view-dnschange.png){:.screenshot}](../img/new-portal/view-dnschange.png)

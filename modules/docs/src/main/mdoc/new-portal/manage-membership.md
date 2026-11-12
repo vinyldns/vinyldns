@@ -28,4 +28,5 @@ You can relinquish your managerial rights if there is at least one other group m
 
 If you wish to remove yourself entirely from a group there must be at least one other manager of the group. If that condition is met you can select the Delete button that corresponds with your username and you will be removed from the group entirely.
 
-[![Group membership screenshot](../img/portal/group-membership.png){: .screenshot}](../img/portal/group-membership.png)
+[![Group membership and member administration](../img/new-portal/manage-members-group.png){: .screenshot}](../img/new-portal/manage-members-group.png)
+

@@ -96,6 +96,8 @@ options:
         url: new-portal/create-a-group.html
       - title: Manage Membership
         url: new-portal/manage-membership.html
+      - title: Update Group Email
+        url: new-portal/update-group-email.html
       - title: Delete a Group
         url: new-portal/delete-a-group.html
 
@@ -109,6 +111,8 @@ options:
         menu_section: new_portal_section
       - title: Manage Records
         url: new-portal/manage-records.html
+      - title: Abandon a Zone
+        url: new-portal/abandon-zone.html
       - title: Manage Access
         url: new-portal/manage-access.html
         menu_section: new_portal_section

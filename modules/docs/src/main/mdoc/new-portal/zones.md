@@ -15,14 +15,15 @@ The All Zones tab is intended as a reference, it includes zones you have access 
 - [Search Zones](search-zones.html)
 - [Connect to your Zone](connect-to-zone.html)
 - [Manage Records](manage-records.html)
+- [Abandon a Zone](abandon-zone.html)
 - [Manage Access](manage-access.html)
 - [Understand Connections](connections.html)
 - [RecordSets Ownership Transfer](recordsets-ownership-transfer.html)
 
-[![Zones page - My Zones tab](../img/portal/zones-my-zones.png){:.screenshot}](../img/portal/zones-my-zones.png)
+[![New portal Zones page](../img/new-portal/myzones.png){:.screenshot}](../img/new-portal/myzones.png)
 
-[![Zones page - All Zones tab](../img/portal/zones-all-zones.png){:.screenshot}](../img/portal/zones-all-zones.png)
+[![Searching for a zone in the Zones list](../img/new-portal/allzones.png){:.screenshot}](../img/new-portal/allzones.png)
 
-[![Zones page - My Abandoned Zones](../img/portal/zones-my-deleted-zones.png){:.screenshot}](../img/portal/zones-my-deleted-zones.png)
+[![Abandoned my zones list](../img/new-portal/abandon-myzones.png){:.screenshot}](../img/new-portal/abandon-myzones.png)
 
-[![Zones page - All Abandoned Zones](../img/portal/zones-all-deleted-zones.png){:.screenshot}](../img/portal/zones-all-deleted-zones.png)
+[![Abandoned zones list](../img/new-portal/abandon-allzones.png){:.screenshot}](../img/new-portal/abandon-allzones.png)

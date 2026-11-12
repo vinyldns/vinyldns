@@ -11,10 +11,10 @@ section: "new_portal_menu"
 3. Select the Create button to submit the group information.
 4. If all fields are valid you'll see the group listed in the table on the screen when the form closes.
 
-[![Groups main screenshot](../img/portal/groups-main.png){:.screenshot}](../img/portal/groups-main.png)
+[![My Groups page with the create group action](../img/new-portal/mygroup.png){:.screenshot}](../img/new-portal/mygroup.png)
 
-[![Groups form screenshot](../img/portal/create-group.png){:.screenshot}](../img/portal/create-group.png)
+[![Create a Group dialog](../img/new-portal/create-a-group.png){:.screenshot}](../img/new-portal/create-a-group.png)
 
-[![Created group listed in "My Groups" tab screenshot](../img/portal/groups-listed.png){:.screenshot}](../img/portal/groups-listed.png)
+[![Created group listed in My Groups](../img/new-portal/mygroup-with-group.png){:.screenshot}](../img/new-portal/mygroup-with-group.png)
 
-[![Created group listed in "All Groups" tab screenshot](../img/portal/groups-listed-all.png){:.screenshot}](../img/portal/groups-listed-all.png)
+[![Created group listed in All Groups](../img/new-portal/all-groups-with-multiple-groups.png){:.screenshot}](../img/new-portal/all-groups-with-multiple-groups.png)
