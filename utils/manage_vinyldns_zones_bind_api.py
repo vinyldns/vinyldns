@@ -642,11 +642,13 @@ class APIResponse(BaseModel):
 
 
 @app.post("/api/zones/generate", response_model=APIResponse)
-async def create_zone(zone_request: ZoneCreateRequest):
+def create_zone(zone_request: ZoneCreateRequest):
     zone_name = zone_request.zoneName
     logger.info("Create zone request: %s", zone_name)
 
     # Serialize create checks/writes within this API process to reduce race conditions.
+    # Endpoints are sync so FastAPI runs them in its threadpool; this lock and the rndc calls
+    # would otherwise block the event loop.
     with dns_manager._lock:
         if dns_manager.zone_exists(zone_name):
             raise HTTPException(
@@ -690,13 +692,12 @@ async def create_zone(zone_request: ZoneCreateRequest):
 
 
 @app.put("/api/zones/update", response_model=APIResponse)
-async def update_zone(zone_request: ZoneCreateRequest):
+def update_zone(zone_request: ZoneCreateRequest):
     zone_name = zone_request.zoneName
-    if not os.path.exists(dns_manager._zone_file_path(zone_name)):
-        raise HTTPException(status_code=404, detail=f"Zone '{zone_name}' does not exist")
 
     try:
-        # update_zone_file freezes, edits and thaws the zone, which reloads it from disk.
+        # update_zone_file 404s on a missing zone, then freezes, edits and thaws it, which
+        # reloads it from disk. The check runs under the lock so a concurrent delete can't race it.
         with dns_manager._lock:
             zone_file = dns_manager.update_zone_file(
                 zoneName=zone_name,
@@ -722,12 +723,14 @@ async def update_zone(zone_request: ZoneCreateRequest):
 
 
 @app.delete("/api/zones/delete", response_model=APIResponse)
-async def delete_zone(zoneName: str):
+def delete_zone(zoneName: str):
     zone_name = VinylDNSBindDNSManager._validate_zone_name(zoneName)
     logger.info("Delete zone request: %s", zone_name)
 
     try:
-        success, error = dns_manager.delete_zone(zone_name)
+        # Without the lock, an in-flight update could recreate the zone file after it is removed.
+        with dns_manager._lock:
+            success, error = dns_manager.delete_zone(zone_name)
         if not success:
             raise HTTPException(status_code=404, detail=error or "Zone not found")
 
