@@ -29,20 +29,21 @@
 
             <modal-element label="Name Servers">
                 <div ng-repeat="ns in createZone.providerParams.nameservers track by $index" class="form-group" style="margin-bottom: 10px;">
-                    <input type="text" class="form-control"
-                           ng-model="createZone.providerParams.nameservers[$index]"
-                           name="nameserver-{{$index}}"
-                           disabled />
+                    <input type="text" class="form-control" ng-value="ns" disabled />
                 </div>
             </modal-element>
 
             <!-- Dynamic Fields -->
             <modal-element ng-repeat="field in zoneFields"
-                           label="{{ field.label }}"
-                           ng-if="createZone.providerParams[field.field] && createZone.providerParams[field.field].length">
+                           label="{{ formatLabel(field.label) }}"
+                           ng-if="field.type === 'Display' ? isProviderFieldVisible(field) : hasProviderParamValue(createZone.providerParams[field.field]) && isProviderFieldVisible(field)">
 
-                <!-- Render multiple input fields if it's an array -Multi-Select -->
-                <div class="form-group" ng-if="field.type === 'Multi-Select'">
+                <div class="form-control-static" ng-if="field.type === 'Display'">
+                    {{ displayProviderParamValue(createZone.providerParams[field.field]) }}
+                </div>
+                <span class="help-block" ng-if="field.type === 'Display'">{{ field.value }}</span>
+
+                <div class="form-group" ng-if="field.type !== 'Display' && isProviderParamArray(createZone.providerParams[field.field])">
                     <div ng-repeat="(idx, value) in createZone.providerParams[field.field] track by $index" style="margin-bottom: 10px;">
                         <input type="text" class="form-control"
                                ng-model="createZone.providerParams[field.field][idx]"
@@ -51,8 +52,7 @@
                     </div>
                 </div>
 
-                <!-- Single value - Int, String, Select -->
-                <div class="form-group" ng-if="field.type !== 'Multi-Select'">
+                <div class="form-group" ng-if="field.type !== 'Display' && !isProviderParamArray(createZone.providerParams[field.field])">
                     <input type="text" class="form-control"
                            ng-model="createZone.providerParams[field.field]"
                            name="{{ field.field }}"
@@ -63,7 +63,7 @@
         </modal-body>
 
         <modal-footer>
-            <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="confirmingDelete = false">
+            <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="resetGeneratedZoneModalState()">
                 Close
             </button>
             <!-- Initial delete button -->
@@ -75,13 +75,13 @@
             </button>
             <!-- Confirmation step -->
             <span ng-if="isDelete && confirmingDelete">
-                <span class="pull-right" style="line-height: 34px; margin-right: 8px;">Are you sure?</span>
-                <button class="btn btn-default pull-right" ng-click="cancelDeleteCreatedZone()">
-                    Cancel
-                </button>
                 <button class="btn btn-danger pull-right" style="margin-right: 4px;" ng-click="confirmDeleteCreatedZone()">
                     Confirm Delete
                 </button>
+                <button class="btn btn-default pull-right" ng-click="cancelDeleteCreatedZone()">
+                    Cancel
+                </button>
+                <span class="pull-right" style="line-height: 34px; margin-right: 8px;">Are you sure?</span>
             </span>
         </modal-footer>
     </modal>

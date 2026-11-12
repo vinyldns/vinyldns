@@ -1,4 +1,4 @@
-<form name="addZoneCreationForm" ng-submit="addZoneCreationForm.$valid && addZoneCreation()" role="form" class="form-horizontal" novalidate>
+<form name="addZoneCreationForm" ng-submit="addZoneCreationForm.$valid && hasRequiredProviderParams() && addZoneCreation()" role="form" class="form-horizontal" novalidate>
     <modal modal-id="zone_creation_modal" modal-title="Create a New Zone">
         <modal-body>
             <p>
@@ -50,7 +50,7 @@
                 </span>
             </modal-element>
             <modal-element label="Name Server"
-                           invalid-when="addZoneCreationForm.$submitted && createZone.providerParams.nameservers.length === 0" ng-if="!isEditMode">
+                           invalid-when="addZoneCreationForm.$submitted && createZone.providerParams.nameservers.length === 0" ng-if="!isEditMode && !hasVisibleNameserversSelector()">
 
                 <input type="hidden"
                        name="nameservers"
@@ -97,7 +97,8 @@
                 </span>
             </modal-element>
 
-            <modal-element label="Name Servers" ng-if="isEditMode">
+            <modal-element label="Name Servers" ng-if="isEditMode"
+                          invalid-when="addZoneCreationForm.$submitted && isRequiredProviderFieldMissing('nameservers')">
                 <div ng-repeat="ns in createZone.providerParams.nameservers track by $index" class="form-group" style="margin-bottom: 10px;">
                     <input type="text" class="form-control"
                            ng-model="createZone.providerParams.nameservers[$index]"
@@ -127,7 +128,7 @@
             <div ng-repeat="field in zoneFields">
 
                 <!-- Multi-Select -->
-                <modal-element ng-if="field.type === 'Multi-Select'" label="{{ field.label }}"
+                <modal-element ng-if="field.type === 'Multi-Select' && isProviderFieldVisible(field)" label="{{ field.label }}"
                                invalid-when="addZoneCreationForm.$submitted && isDynamicZoneFieldRequired(field.field) && (createZone.providerParams[field.field] || []).length === 0"
                 >
                     <input type="hidden"
@@ -160,7 +161,7 @@
                                        placeholder="Search..."
                                        ng-model="search[field.field]" />
                             </li>
-                            <li ng-repeat="value in field.value | filter:search[field.field]">
+                            <li ng-repeat="value in getProviderFieldValues(field) | filter:search[field.field]">
                                 <label class="dropdown-label">
                                     <input type="checkbox"
                                            ng-checked="createZone.providerParams[field.field].indexOf(value) > -1"
@@ -171,18 +172,25 @@
                         </ul>
                     </div>
 
-                    <span class="help-block">
+                    <span class="help-block" ng-if="field.description">{{ field.description }}</span>
+                    <span class="help-block" ng-if="!field.description">
                         {{ field.label }} for DNS Zone, for example: <code>{{field.value}}</code>
                     </span>
                 </modal-element>
 
+                <modal-element ng-if="field.type === 'Display' && isProviderFieldVisible(field)" label="{{ field.label }}">
+                    <div class="form-control-static">{{ displayProviderParamValue(createZone.providerParams[field.field]) }}</div>
+                    <span class="help-block">{{ field.value }}</span>
+                </modal-element>
+
                 <!-- Select -->
-                <modal-element ng-if="field.type === 'Select'" label="{{ field.label }}"
+                <modal-element ng-if="field.type === 'Select' && isProviderFieldVisible(field)" label="{{ field.label }}"
                                ng-init="createZone.providerParams[field.field] = createZone.providerParams[field.field] || null"
                                invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm['providerParams_' + field.field].$invalid">
                     <select class="form-control"
                             name="providerParams_{{ field.field }}"
                             ng-model="createZone.providerParams[field.field]"
+                            ng-change="updateProviderFieldVisibility()"
                             ng-required="isDynamicZoneFieldRequired(field.field)"
                             ng-options="opt for opt in field.value track by opt"
                             ng-disabled="!field.editable"
@@ -195,7 +203,7 @@
                 </modal-element>
 
                 <!-- String/Integer -->
-                <modal-element ng-if="field.type === 'String' || field.type === 'Integer'"
+                <modal-element ng-if="(field.type === 'String' || field.type === 'Integer') && isProviderFieldVisible(field)"
                                label="{{ formatLabel(field.label) }}"
                                invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm['providerParams_' + field.field].$invalid">
                     <input type="{{ field.type === 'Integer' ? 'number' : 'text' }}"
@@ -224,7 +232,7 @@
                     ng-if="!isEditMode">
                 Create
             </button>
-            <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="resetCreateZone()">
+            <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="resetGeneratedZoneModalState()">
                 Close
             </button>
         </modal-footer>
