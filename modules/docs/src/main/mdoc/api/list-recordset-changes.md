@@ -22,6 +22,12 @@ name          | type          | required?   | description |
 startFrom     | int           | no          | In order to advance through pages of results, the startFrom is set to the `nextId` that is returned on the previous response.  It is up to the client to maintain previous pages if the client wishes to advance forward and backward.   If not specified, will return the first page of results |
 maxItems      | int           | no          | The number of items to return in the page.  Valid values are 1 - 100. Defaults to 100 if not provided. |
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+GET /zones/9f353bc7-cb8d-491c-b074-34afafc97c5f/recordsetchanges?maxItems=50
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |

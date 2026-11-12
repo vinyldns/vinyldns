@@ -1,7 +1,7 @@
 ---
 layout: page
 title: "Tools"
-position: 5
+position: 6
 ---
 
 # VinylDNS Tools

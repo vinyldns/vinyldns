@@ -37,6 +37,8 @@ options:
         url: portal/create-a-group.html
       - title: Manage Membership
         url: portal/manage-membership.html
+      - title: Delete a Group
+        url: portal/delete-a-group.html
 
   - title: Zones
     url: portal/zones.html
@@ -62,6 +64,71 @@ options:
     url: portal/credentials.html
     menu_type: portal_menu
     menu_section: portal_section
+
+  - title: New Portal Guide
+    url: new-portal/
+    menu_type: new_portal_menu
+    menu_section: new_portal_section
+
+  - title: Access the Portal
+    url: new-portal/access.html
+    menu_type: new_portal_menu
+    menu_section: new_portal_section
+
+  - title: DNS Changes
+    url: new-portal/dns-changes.html
+    menu_type: new_portal_menu
+    menu_section: new_portal_section
+    nested_options:
+      - title: Manual Review & Scheduling
+        url: new-portal/manual-review-scheduling.html
+        menu_section: new_portal_section
+
+  - title: RecordSet Search
+    url: new-portal/recordset-search.html
+    menu_type: new_portal_menu
+    menu_section: new_portal_section
+
+  - title: Groups
+    url: new-portal/groups.html
+    menu_type: new_portal_menu
+    menu_section: new_portal_section
+    nested_options:
+      - title: Create a Group
+        url: new-portal/create-a-group.html
+      - title: Manage Membership
+        url: new-portal/manage-membership.html
+      - title: Update Group Email
+        url: new-portal/update-group-email.html
+      - title: Delete a Group
+        url: new-portal/delete-a-group.html
+
+  - title: Zones
+    url: new-portal/zones.html
+    menu_type: new_portal_menu
+    menu_section: new_portal_section
+    nested_options:
+      - title: Connect to your Zone
+        url: new-portal/connect-to-zone.html
+        menu_section: new_portal_section
+      - title: Manage Records
+        url: new-portal/manage-records.html
+      - title: Abandon a Zone
+        url: new-portal/abandon-zone.html
+      - title: Manage Access
+        url: new-portal/manage-access.html
+        menu_section: new_portal_section
+      - title: Understand Connections
+        url: new-portal/connections.html
+      - title: Search Zones
+        url: new-portal/search-zones.html
+      - title: RecordSets Ownership Transfer
+        url: new-portal/recordsets-ownership-transfer.html
+
+  - title: Credentials
+    url: new-portal/credentials.html
+    menu_type: new_portal_menu
+    menu_section: new_portal_section
 
   - title: Operator Guide
     url: operator/index.html
@@ -105,6 +172,30 @@ options:
     url: api/auth-mechanism.html
     menu_type: api
 
+  - title: Health & Monitoring
+    url: api/ping.html
+    menu_type: api
+    menu_section: healthapireference
+    nested_options:
+      - title: Ping
+        url: api/ping.html
+        menu_section: healthapireference
+      - title: Health Check
+        url: api/health.html
+        menu_section: healthapireference
+      - title: Color
+        url: api/color.html
+        menu_section: healthapireference
+      - title: Prometheus Metrics
+        url: api/prometheus-metrics.html
+        menu_section: healthapireference
+      - title: Get Status
+        url: api/get-status.html
+        menu_section: healthapireference
+      - title: Update Status
+        url: api/update-status.html
+        menu_section: healthapireference
+
   - title: Zone
     url: api/zone-model.html
     menu_type: api
@@ -142,6 +233,18 @@ options:
         menu_section: zoneapireference
       - title: Abandoned Zones
         url: api/list-deleted-zones.html
+        menu_section: zoneapireference
+      - title: Get Zone Details
+        url: api/get-zone-details.html
+        menu_section: zoneapireference
+      - title: Get Backend IDs
+        url: api/get-backend-ids.html
+        menu_section: zoneapireference
+      - title: Add ACL Rule
+        url: api/add-acl-rule.html
+        menu_section: zoneapireference
+      - title: Delete ACL Rule
+        url: api/delete-acl-rule.html
         menu_section: zoneapireference
 
   - title: RecordSet
@@ -185,6 +288,9 @@ options:
       - title: Get RecordSet Change History
         url: api/get-recordset-change-history.html
         menu_section: recordsetapireference
+      - title: Ownership Transfer Model
+        url: api/ownership-transfer-model.html
+        menu_section: recordsetapireference
 
   - title: Batch Change
     url: api/batchchange-model.html
@@ -227,6 +333,9 @@ options:
       - title: Get User
         url: api/get-user.html
         menu_section: membershipapireference
+      - title: Search User
+        url: api/search-user.html
+        menu_section: membershipapireference
       - title: Create Group
         url: api/create-group.html
         menu_section: membershipapireference
@@ -256,4 +365,10 @@ options:
         menu_section: membershipapireference
       - title: Get Valid Email Domains
         url: api/get-valid-email-domains.html
+        menu_section: membershipapireference
+      - title: Lock User
+        url: api/lock-user.html
+        menu_section: membershipapireference
+      - title: Unlock User
+        url: api/unlock-user.html
         menu_section: membershipapireference
