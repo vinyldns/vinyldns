@@ -67,6 +67,16 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
          |  WHERE ? IN(id, user_name)
      """.stripMargin
 
+  private final val SEARCH_USER_BY_NAME =
+    sql"""
+         | SELECT data
+         |   FROM user
+         |  WHERE user_name LIKE {userName} ESCAPE '\\'
+         |  ORDER BY user_name
+         |  LIMIT {maxResults}
+         |  OFFSET {offset}
+     """.stripMargin
+
   private final val BASE_GET_USERS: String =
     """
       | SELECT data
@@ -102,13 +112,21 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
             val sb = new StringBuilder
             sb.append(BASE_GET_USERS)
             sb.append("WHERE ID IN (" + userIds.toList.as("?").mkString(",") + ")")
-            startFrom.foreach(start => sb.append(s" AND id > '$start'"))
+            // Bound parameters appended after the IN-clause placeholders, in order.
+            val extraParams = scala.collection.mutable.ListBuffer[Any]()
+            startFrom.foreach { start =>
+              sb.append(" AND id > ?")
+              extraParams += start
+            }
             sb.append(" ORDER BY id ASC")
             // Grab one more than the maxItem limit, if provided, to determine whether nextId should be returned
-            maxItems.foreach(limit => sb.append(s" LIMIT ${limit + 1}"))
+            maxItems.foreach { limit =>
+              sb.append(" LIMIT ?")
+              extraParams += (limit + 1)
+            }
             val query = sb.toString
             SQL(query)
-              .bind(userIds.toList: _*)
+              .bind(userIds.toList ++ extraParams.toList: _*)
               .map(toUser(1))
               .list()
               .apply()
@@ -172,13 +190,29 @@ class MySqlUserRepository(cryptoAlgebra: CryptoAlgebra)
    */
   def getUserByIdOrName(userIdentifier: String): IO[Option[User]] =
     monitor("repo.User.getUser") {
-      logger.debug(s"Getting user with id: $userIdentifier")
+      logger.debug(s"Getting user with id or name: $userIdentifier")
       IO {
         DB.readOnly { implicit s =>
           GET_USER_BY_ID_OR_NAME
             .bind(userIdentifier)
             .map(toUser(1))
             .first()
+            .apply()
+        }
+      }
+    }
+
+  def searchUsersByName(pattern: String, startFrom: Option[Int] = None, maxResults: Int = 100): IO[List[User]] =
+    monitor("repo.User.searchUsersByName") {
+      val sqlPattern = LikePattern.prefix(pattern)
+      val offset = startFrom.getOrElse(0)
+      logger.debug(s"Searching user with pattern: $pattern, using SQL pattern: $sqlPattern, offset: $offset, max results: $maxResults")
+      IO {
+        DB.readOnly { implicit s =>
+          SEARCH_USER_BY_NAME
+            .bindByName('userName -> sqlPattern, 'offset -> offset, 'maxResults -> maxResults)
+            .map(toUser(1))
+            .list()
             .apply()
         }
       }

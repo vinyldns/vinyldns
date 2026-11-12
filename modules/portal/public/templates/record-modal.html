@@ -473,12 +473,28 @@
                     Owner Group transfer status is required for records in shared zones
                 </modal-invalid>
             </modal-element>
-            <modal-element label="Requested Record Owner Group"
+            <modal-element label="Ownership Transfer Group"
                            invalid-when="addRecordForm.$submitted && addRecordForm.recordSetGroupChange.requestedOwnerGroupId.$invalid"
-                           ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone && recordModal.previous.recordSetGroupChange.ownerShipTransferStatus=='PendingReview'">
+                           ng-if="recordModal.sharedDisplayEnabled
+                                && recordModal.sharedZone
+                                && currentRecord.recordSetGroupChange.requestedOwnerGroupId != 'null'
+                                && currentRecord.recordSetGroupChange.requestedOwnerGroupId != undefined">
                 <input name="requestedOwnerGroupName"
                        class="form-control"
-                       ng-model="recordSetRequestedOwnerShipName"
+                       ng-model="recordSetRequestedOwnershipName"
+                       ng-class="recordModal.details.class"
+                       ng-readonly="recordModal.basics.readOnly"
+                       placeholder="">
+            </modal-element>
+            <modal-element label="Ownership Transfer Status"
+                           invalid-when="addRecordForm.$submitted && addRecordForm.recordSetGroupChange.ownershipTransferStatus.$invalid"
+                           ng-if="recordModal.sharedDisplayEnabled
+                                && recordModal.sharedZone
+                                && currentRecord.recordSetGroupChange.ownershipTransferStatus != 'None'
+                                && currentRecord.recordSetGroupChange.ownershipTransferStatus != undefined">
+                <input name="ownerGroupStatus"
+                       class="form-control"
+                       ng-model="currentRecord.recordSetGroupChange.ownershipTransferStatus"
                        ng-class="recordModal.details.class"
                        ng-readonly="recordModal.basics.readOnly"
                        placeholder="">
@@ -517,12 +533,12 @@
         </modal-footer>
     </modal>
 </form>
-<form name="recordOwnerShipForm" role="form" class="form-horizontal" novalidate>
+<form name="recordOwnershipForm" role="form" class="form-horizontal" novalidate>
     <!--Request ownership for unowned records in shared zones-->
-    <modal modal-id="record_modal_ownership" modal-title="Request OwnerShip">
+    <modal modal-id="record_modal_ownership" modal-title="Request Ownership">
         <modal-body>
             <modal-element label="Record Owner Group Request"
-                           invalid-when="recordOwnerShipForm.$submitted && recordOwnerShipForm.requestOwnerGroupId.$invalid"
+                           invalid-when="recordOwnershipForm.$submitted && recordOwnershipForm.requestOwnerGroupId.$invalid"
                            ng-if = "recordModal.sharedDisplayEnabled && recordModal.sharedZone && !recordModal.isCurrentRecordOwnerGroup && currentRecord.ownerGroupId == undefined">
                 <select name="requestOwnerGroupId"
                         class="form-control"
@@ -541,24 +557,24 @@
         <modal-footer>
             <span>
                 <button type="button" class="btn btn-default" data-dismiss="modal"  ng-click="closeRecordModal()">Close</button>
-                <button class="btn btn-primary pull-right"  ng-click="requestedOwnerShip()" id="requested_ownership">Request</button>
+                <button class="btn btn-primary pull-right"  ng-click="requestedOwnership()" id="requested_ownership">Request</button>
             </span>
         </modal-footer>
     </modal>
     <!--Request and approve ownership for owned records in shared zones-->
-    <modal modal-id="record_modal_ownership_transfer" modal-title="OwnerShip Transfer">
+    <modal modal-id="record_modal_ownership_transfer" modal-title="Ownership Transfer">
             <modal-body>
                 <modal-element label="Record Owner Group Request"
-                               invalid-when="recordOwnerShipForm.$submitted && recordOwnerShipForm.requestedOwnerGroupId1.$invalid"
+                               invalid-when="recordOwnershipForm.$submitted && recordOwnershipForm.requestedOwnerGroupId1.$invalid"
                                ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone"
-                               ng-switch="currentOwnerShipTransferApprover || recordModal.previous.recordSetGroupChange.ownerShipTransferStatus == 'PendingReview'">
+                               ng-switch="currentOwnershipTransferApprover || recordModal.previous.recordSetGroupChange.ownershipTransferStatus == 'PendingReview'">
                     <select name="requestedOwnerGroupId1"
                             class="form-control"
                             ng-model="currentRecord.recordSetGroupChange.requestedOwnerGroupId"
                             ng-switch-when="false"
                             ng-disabled="recordModal.details.readOnly"
                             ng-class="recordModal.details.class"
-                            ng-options="group.id as group.name for group in myGroups | orderBy: 'name'"
+                            ng-options="group.id as group.name for group in myGroups | filter:{id: '!'+ currentRecord.ownerGroupId} | orderBy: 'name'"
                             required>
                         <option value="" selected="selected">Please choose a record owner group</option>
                     </select>
@@ -568,34 +584,34 @@
                     <input name="requestedOwnerGroupId2"
                            class="form-control"
                            ng-switch-default
-                           ng-model="recordSetRequestedOwnerShipName"
+                           ng-model="recordSetRequestedOwnershipName"
                            ng-class="recordModal.details.class"
                            ng-readonly="recordModal.basics.readOnly"
                            >
                 </modal-element>
 
                 <modal-element label="Record Owner Group Status"
-                               invalid-when="recordOwnerShipForm.$submitted && (recordOwnerShipForm.ownerGroupStatus.$invalid
-                                             || recordOwnerShipForm.ownerGroupStatus.$viewValue == null || !recordOwnerShipForm.ownerGroupStatus.$viewValue)"
+                               invalid-when="recordOwnershipForm.$submitted && (recordOwnershipForm.ownerGroupStatus.$invalid
+                                             || recordOwnershipForm.ownerGroupStatus.$viewValue == null || !recordOwnershipForm.ownerGroupStatus.$viewValue)"
                                ng-if="recordModal.sharedDisplayEnabled && recordModal.sharedZone "
-                               ng-switch="!currentOwnerShipTransferApprover">
+                               ng-switch="!currentOwnershipTransferApprover">
                     <select name="ownerGroupStatus"
                             class="form-control"
                             ng-switch-when="false"
-                            ng-model="currentRecord.recordSetGroupChange.ownerShipTransferStatus"
+                            ng-model="currentRecord.recordSetGroupChange.ownershipTransferStatus"
                             ng-class="recordModal.details.class"
-                            ng-options="ownerShipTransferApproverStatus.value as ownerShipTransferApproverStatus.label for ownerShipTransferApproverStatus in ownerShipTransferStatus" required>
+                            ng-options="ownershipTransferApproverStatus.value as ownershipTransferApproverStatus.label for ownershipTransferApproverStatus in ownershipTransferStatus" required>
                         <option value= ""  selected="selected">Please choose a record owner group status</option>
 
                     </select>
                     <select name="ownerGroupStatus"
                             class="form-control"
                             ng-switch-default
-                            ng-model="currentRecord.recordSetGroupChange.ownerShipTransferStatus"
+                            ng-model="currentRecord.recordSetGroupChange.ownershipTransferStatus"
                             ng-class="recordModal.details.class">
                         <option value= ""  selected="selected">Please choose a record owner group status</option>
-                        <option ng-if="recordModal.previous.recordSetGroupChange.ownerShipTransferStatus == 'PendingReview'" value="Cancelled" required>Cancel</option>
-                        <option ng-if="recordModal.previous.recordSetGroupChange.ownerShipTransferStatus != 'PendingReview'" value="Requested" required>Request</option>
+                        <option ng-if="recordModal.previous.recordSetGroupChange.ownershipTransferStatus == 'PendingReview'" value="Cancelled" required>Cancel</option>
+                        <option ng-if="recordModal.previous.recordSetGroupChange.ownershipTransferStatus != 'PendingReview'" value="Requested" required>Request</option>
                     </select>
                     <modal-invalid>
                         Owner Group transfer status is required for records in shared zones
@@ -605,7 +621,7 @@
             <modal-footer>
             <span>
                 <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="closeRecordModal()">Close</button>
-                <button class="btn btn-primary pull-right" ng-click="submitRequestedOwnerShipTransfer()" id="update_recordset_ownership_request">Submit</button>
+                <button class="btn btn-primary pull-right" ng-click="submitRequestedOwnershipTransfer()" id="update_recordset_ownership_request">Submit</button>
             </span>
             </modal-footer>
 </modal>

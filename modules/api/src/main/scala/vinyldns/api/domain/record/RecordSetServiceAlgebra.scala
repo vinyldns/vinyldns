@@ -97,6 +97,7 @@ trait RecordSetServiceAlgebra {
 
   def getRecordSetChange(
                           zoneId: String,
+                          rsId: String,
                           changeId: String,
                           authPrincipal: AuthPrincipal
                         ): Result[RecordSetChange]

@@ -20,6 +20,7 @@ import cats.effect._
 import cats.implicits._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record._
 import vinyldns.core.domain.record.RecordType.RecordType
@@ -178,12 +179,14 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     recordTypeFilter: Option[Set[RecordType]],
     recordOwnerGroupFilter: Option[String],
     nameSort: NameSort,
-    recordTypeSort: RecordTypeSort
+    recordTypeSort: RecordTypeSort,
+    authPrincipal: Option[AuthPrincipal],
   ): IO[ListRecordSetResults] =
     monitor("repo.RecordSet.listRecordSets") {
     IO {
       DB.readOnly { implicit s =>
         val maxPlusOne = maxItems.map(_ + 1)
+        val authFilter = authPrincipal.filter(auth => zoneId.isEmpty && !auth.isSystemAdmin).map(buildAccessFilter)
         def escapeSqlLike(input: String): String =
           input.replace("\\", "\\\\").replace("_", "\\_").replace("%", "\\%").replace("*", "%").replace(".", "%")
         val zoneAndNameFilters: Option[SQLSyntax] = {
@@ -223,7 +226,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
 
         val ownerGroupFilter = recordOwnerGroupFilter.map(owner => sqls"owner_group_id = ${owner}")
 
-        val opts = (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
+          val opts =
+            (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter ++ authFilter).toList
 
 
         val nameSortQualifiers = nameSort match {
@@ -261,24 +265,57 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           .list()
           .apply()
 
-        val newResults = if (maxPlusOne.contains(results.size)) results.dropRight(1) else results
+          val newResults = if (maxPlusOne.contains(results.size)) {
+            results.dropRight(1)
+          } else { results }
 
-        val nextId = maxPlusOne
-          .filter(_ == results.size)
-          .flatMap(_ => newResults.lastOption.map(PagingKey.toNextId(_, searchByZone)))
+          // if size of results is less than the maxItems plus one, we don't have a next id
+          // if maxItems is None, we don't have a next id
+          val nextId = maxPlusOne
+            .filter(_ == results.size)
+            .flatMap(_ => newResults.lastOption.map(PagingKey.toNextId(_, searchByZone)))
 
-        ListRecordSetResults(
-          recordSets = newResults,
-          nextId = nextId,
-          startFrom = startFrom,
-          maxItems = maxItems,
-          recordNameFilter = recordNameFilter,
-          recordTypeFilter = recordTypeFilter,
-          nameSort = nameSort,
-          recordTypeSort = recordTypeSort
-        )
+          val totalCount: Option[Int] =
+            if (zoneId.isEmpty) {
+              val countQueryBase = sqls"SELECT COUNT(*) FROM recordset"
+
+              val countOpts = (zoneAndNameFilters ++ typeFilter ++ ownerGroupFilter ++ authFilter).toList
+
+              val countWhere =
+                if (countOpts.nonEmpty) {
+                  val setDelimiter = SQLSyntax.join(countOpts, sqls"AND")
+                  sqls"WHERE".append(setDelimiter)
+                } else sqls""
+
+              val countQuery = countQueryBase.append(countWhere)
+
+              sql"$countQuery"
+                .map(_.int(1))
+                .single()
+                .apply()
+            } else {
+              None
+            }
+
+          ListRecordSetResults(
+            recordSets = newResults,
+            nextId = nextId,
+            startFrom = startFrom,
+            maxItems = maxItems,
+            recordNameFilter = recordNameFilter,
+            recordTypeFilter = recordTypeFilter,
+            nameSort = nameSort,
+            recordTypeSort = recordTypeSort,
+            totalCount = totalCount)
+        }
       }
     }
+  }
+
+  private def buildAccessFilter(authPrincipal: AuthPrincipal): SQLSyntax = {
+    val accessors =
+      MySqlAccessors.buildZoneSearchAccessorList(authPrincipal.signedInUser, authPrincipal.memberGroupIds, logger)
+    sqls"zone_id IN (SELECT za.zone_id FROM zone_access za WHERE za.accessor_id IN ($accessors))"
   }
 
   def getRecordSets(zoneId: String, name: String, typ: RecordType): IO[List[RecordSet]] =

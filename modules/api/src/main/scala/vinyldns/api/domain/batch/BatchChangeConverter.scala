@@ -237,7 +237,7 @@ class BatchChangeConverter(batchChangeRepo: BatchChangeRepository, messageQueue:
             None,
             proposedRecordData.toList,
             ownerGroupId = setOwnerGroupId,
-            recordSetGroupChange = Some(OwnerShipTransfer(ownerShipTransferStatus = OwnerShipTransferStatus.None))
+            recordSetGroupChange = Some(OwnershipTransfer(ownershipTransferStatus = OwnershipTransferStatus.None))
           )
       }
     }

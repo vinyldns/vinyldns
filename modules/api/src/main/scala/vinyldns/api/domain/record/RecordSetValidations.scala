@@ -27,9 +27,10 @@ import vinyldns.core.domain.record.RecordType._
 import vinyldns.api.domain.zone._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.Group
-import vinyldns.core.domain.record.{OwnerShipTransferStatus, RecordSet, RecordType}
+import vinyldns.core.domain.record.{OwnershipTransfer, OwnershipTransferStatus, RecordSet, RecordType}
 import vinyldns.core.domain.zone.Zone
 import vinyldns.core.Messages._
+import vinyldns.core.domain.record.OwnershipTransferStatus.OwnershipTransferStatus
 
 import scala.util.matching.Regex
 
@@ -399,12 +400,97 @@ object RecordSetValidations {
   ): Either[Throwable, Unit] =
     (ownerGroupId, group) match {
       case (None, _) => ().asRight
-      case (Some(groupId), None) =>
+      case (Some(groupId), None) => {
         InvalidGroupError(s"""Record owner group with id "$groupId" not found""").asLeft
+      }
       case (Some(groupId), Some(_)) =>
         if (authPrincipal.isSuper || authPrincipal.isGroupMember(groupId)) ().asRight
         else InvalidRequest(s"""User not in record owner group with id "$groupId"""").asLeft
     }
+
+  def isAlreadyOwnerGroupMember(
+                                 existing: RecordSet,
+                                 recordSet: RecordSet
+                      ): Either[Throwable, Unit] =
+    Either.cond(
+      recordSet.recordSetGroupChange.exists(change =>
+        existing.ownerGroupId != change.requestedOwnerGroupId || change.ownershipTransferStatus == OwnershipTransferStatus.Cancelled),
+      (),
+      InvalidRequest(s"""Record owner group with id ${existing.ownerGroupId.getOrElse("<none>")} already owns the record, new request is not needed"""")
+    )
+
+  def isValidOwnershipTransferStatusPendingReview(
+                                      ownershipTransfer: Option[OwnershipTransfer],
+                               ): Either[Throwable, Unit] =
+    Either.cond(
+      !ownershipTransfer.exists(_.ownershipTransferStatus == OwnershipTransferStatus.PendingReview),
+      (),
+      InvalidRequest(s"Invalid Ownership transfer status: ${ownershipTransfer.map(_.ownershipTransferStatus).getOrElse("none")}")
+    )
+
+  def isValidOwnershipTransferStatusApprove(
+                                                  existingOwnershipTransfer: Option[OwnershipTransfer],
+                                                  CurrentOwnershipTransfer: Option[OwnershipTransfer]
+                                                ): Either[Throwable, Unit] = {
+    val existingStatus = existingOwnershipTransfer.map(_.ownershipTransferStatus).getOrElse(OwnershipTransferStatus.None)
+    val requestedStatus = CurrentOwnershipTransfer.map(_.ownershipTransferStatus).getOrElse(OwnershipTransferStatus.None)
+
+    val isInvalidApproval =
+      requestedStatus == OwnershipTransferStatus.AutoApproved ||
+      requestedStatus == OwnershipTransferStatus.ManuallyApproved ||
+      requestedStatus == OwnershipTransferStatus.ManuallyRejected
+
+    Either.cond(
+      !(isInvalidApproval && (existingStatus == OwnershipTransferStatus.None || existingStatus == OwnershipTransferStatus.Cancelled)),
+      (),
+      InvalidRequest(s"Unable to $requestedStatus the Ownership transfer status for the record: None")
+    )
+  }
+
+  def isValidCancelOwnershipTransferStatus(
+                                            exitingOwnershipTransferStatus: OwnershipTransferStatus,
+                                            currentOwnershipTransferStatus: OwnershipTransferStatus
+                                          ): Either[Throwable, Unit] = {
+    val approvedOrRejectedStatuses = List(
+      OwnershipTransferStatus.ManuallyApproved,
+      OwnershipTransferStatus.AutoApproved,
+      OwnershipTransferStatus.ManuallyRejected
+    )
+    val isCancelRequest = currentOwnershipTransferStatus == OwnershipTransferStatus.Cancelled
+    val canCancel = exitingOwnershipTransferStatus == OwnershipTransferStatus.PendingReview &&
+      !approvedOrRejectedStatuses.contains(exitingOwnershipTransferStatus)
+    Either.cond(
+      !isCancelRequest || canCancel,
+      (),
+      InvalidRequest(
+        s"Unable to cancel the Ownership transfer. Current status: $exitingOwnershipTransferStatus"
+      )
+    )
+  }
+
+  def canCancelOwnershipTransfer(
+                                      recordSet: RecordSet,
+                                      authPrincipal: AuthPrincipal
+                                    ): Either[Throwable, Unit] =
+    Either.cond(
+      recordSet.recordSetGroupChange.forall { owt =>
+        owt.ownershipTransferStatus != OwnershipTransferStatus.Cancelled ||
+          authPrincipal.isSuper ||
+          authPrincipal.isGroupMember(owt.requestedOwnerGroupId.getOrElse("none"))},
+      (),
+      InvalidRequest("Unauthorised to Cancel the ownership transfer")
+    )
+
+  def canChangeFromPendingReview(
+                                  recordSet: RecordSet,
+                                  authPrincipal: AuthPrincipal
+                                ): Either[Throwable, Unit] = {
+
+    val currentOwnershipTransferStatus = recordSet.recordSetGroupChange.map(_.ownershipTransferStatus).getOrElse(OwnershipTransferStatus.None)
+    ensuring(
+      NotAuthorizedError(s"Unauthorized to change ownership transfer status to '$currentOwnershipTransferStatus'")
+    )(authPrincipal.isSuper || authPrincipal.isGroupMember(recordSet.ownerGroupId.getOrElse("none")))
+  }
 
   def unchangedRecordName(
       existing: RecordSet,
@@ -447,14 +533,15 @@ object RecordSetValidations {
     zone: Zone,
     auth: AuthPrincipal
   ): Boolean =
-    (updates.ownerGroupId != existing.ownerGroupId
-        && updates.zoneId == existing.zoneId
-        && updates.name == existing.name
-        && updates.typ == existing.typ
-        && updates.ttl == existing.ttl
-        && updates.records == existing.records
+    ((updates.ownerGroupId != existing.ownerGroupId
+        || updates.zoneId != existing.zoneId
+        || updates.name != existing.name
+        || updates.typ != existing.typ
+        || updates.ttl != existing.ttl
+        || updates.records != existing.records)
         && zone.shared
-        && auth.isSuper)
+        && auth.isSuper
+    )
 
   def validRecordNameFilterLength(recordNameFilter: String): Either[Throwable, Unit] =
     ensuring(onError = InvalidRequest(RecordNameFilterError)) {
@@ -479,15 +566,15 @@ object RecordSetValidations {
       InvalidRequest("Cannot update RecordSet's if user not a member of ownership group. User can only request for ownership transfer")
     )
 
-  def recordSetOwnerShipApproveStatus(
+  def recordSetOwnershipApproveStatus(
                                        updates: RecordSet,
                                      ): Either[Throwable, Unit] =
     Either.cond(
-      updates.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") != OwnerShipTransferStatus.ManuallyApproved &&
-        updates.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") != OwnerShipTransferStatus.AutoApproved &&
-        updates.recordSetGroupChange.map(_.ownerShipTransferStatus).getOrElse("<none>") != OwnerShipTransferStatus.ManuallyRejected,
+      updates.recordSetGroupChange.map(_.ownershipTransferStatus).getOrElse("<none>") != OwnershipTransferStatus.ManuallyApproved &&
+        updates.recordSetGroupChange.map(_.ownershipTransferStatus).getOrElse("<none>") != OwnershipTransferStatus.AutoApproved &&
+        updates.recordSetGroupChange.map(_.ownershipTransferStatus).getOrElse("<none>") != OwnershipTransferStatus.ManuallyRejected,
       (),
-      InvalidRequest("Cannot update RecordSet OwnerShip Status when request is cancelled.")
+      InvalidRequest("Cannot update RecordSet Ownership Status when request is cancelled.")
     )
 
   def unchangedRecordSetOwnershipStatus(
@@ -497,6 +584,6 @@ object RecordSetValidations {
     Either.cond(
       updates.recordSetGroupChange == existing.recordSetGroupChange || existing.recordSetGroupChange.isEmpty,
       (),
-      InvalidRequest("Cannot update RecordSet OwnerShip Status when zone is not shared.")
+      InvalidRequest("Cannot update RecordSet Ownership Status when zone is not shared.")
     )
 }
