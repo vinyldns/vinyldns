@@ -16,6 +16,12 @@ To delete the RecordSets see [Delete RecordSet](delete-recordset.html)
 
 > DELETE /zones/{zoneId}
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+DELETE /zones/4995e883-f314-4c5f-8ee8-75003ca08ab0
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |
