@@ -294,4 +294,58 @@ describe('Controller: GenerateZonesController', function () {
         expect(this.scope.getProviderFieldValues(field)).toEqual(this.scope.nameservers);
         expect(this.scope.requiredFields).toEqual(['kind', 'nameservers']);
     });
+
+    it('shows Forwarded recursion control and preserves its false value', function () {
+        this.zonesService.getCreateZoneTemplate = function () {
+            return this.zonesService.q.when({
+                data: {
+                    'request-templates': {
+                        'create-zone': JSON.stringify({
+                            Kind: { type: 'Select', value: 'Native, Master, Slave, Forwarded' },
+                            'Recursion Desired': {
+                                type: 'Boolean',
+                                field: 'recursion_desired',
+                                value: false,
+                                'visible-when': { field: 'kind', value: 'Forwarded' }
+                            }
+                        })
+                    },
+                    'required-fields': { 'create-zone': ['kind'] }
+                }
+            });
+        }.bind(this);
+
+        this.scope.createZone = { provider: 'powerdns', providerParams: {} };
+        this.scope.getCreateZoneTemplate('powerdns', true);
+        this.scope.$digest();
+
+        var recursionField = this.scope.zoneFields.filter(function (field) {
+            return field.field === 'recursion_desired';
+        })[0];
+        expect(this.scope.createZone.providerParams.recursion_desired).toBe(false);
+        expect(this.scope.isProviderFieldVisible(recursionField)).toBe(false);
+
+        this.scope.createZone.providerParams.kind = 'Forwarded';
+        expect(this.scope.isProviderFieldVisible(recursionField)).toBe(true);
+        this.scope.createZone.providerParams.recursion_desired = true;
+        this.scope.createZone.providerParams.kind = 'Native';
+        this.scope.updateProviderFieldVisibility();
+        expect(this.scope.createZone.providerParams.recursion_desired).toBe(false);
+        this.scope.createZone.providerParams.kind = 'Forwarded';
+        this.scope.updateProviderFieldVisibility();
+        this.scope.updateZoneTemplate = {
+            Kind: { type: 'Select', value: 'Native, Master, Slave, Forwarded' },
+            'Recursion Desired': {
+                type: 'Boolean',
+                field: 'recursion_desired',
+                value: false,
+                'visible-when': { field: 'kind', value: 'Forwarded' }
+            }
+        };
+        this.scope.UpdateRequiredFields = ['kind'];
+        expect(this.scope.getUpdatePayload(this.scope.createZone).providerParams).toEqual({
+            kind: 'Forwarded',
+            recursion_desired: false
+        });
+    });
 });

@@ -209,7 +209,7 @@ angular.module('controller.generateZones', [])
                 const value = config.source === 'nameservers' ? [] : isSelect ? config.value.split(',').map(v => v.trim()) : config.value;
 
                 if (config.type !== 'Display' && $scope.createZone.providerParams[field] === undefined) {
-                    $scope.createZone.providerParams[field] = config.type.toLowerCase() === 'multi-select' ? [] : '';
+                    $scope.createZone.providerParams[field] = config.type === 'Boolean' ? config.value : config.type.toLowerCase() === 'multi-select' ? [] : '';
                 }
                 return {
                     label,
@@ -220,7 +220,8 @@ angular.module('controller.generateZones', [])
                     visibleWhen: config['visible-when'],
                     source: config.source,
                     description: config.description,
-                    preserveWhenHidden: config['preserve-when-hidden']
+                    preserveWhenHidden: config['preserve-when-hidden'],
+                    requiredWhen: config['required-when']
                 };
             });
         });
@@ -249,7 +250,7 @@ angular.module('controller.generateZones', [])
 
                 // Only initialize providerParams entry if not already populated from existing zone data
                 if (config.type !== 'Display' && ($scope.createZone.providerParams[field] === undefined || $scope.createZone.providerParams[field] === null)) {
-                    $scope.createZone.providerParams[field] = config.type.toLowerCase() === 'multi-select' ? [] : '';
+                    $scope.createZone.providerParams[field] = config.type === 'Boolean' ? config.value : config.type.toLowerCase() === 'multi-select' ? [] : '';
                 }
                 return {
                     label,
@@ -260,7 +261,8 @@ angular.module('controller.generateZones', [])
                     visibleWhen: config['visible-when'],
                     source: config.source,
                     description: config.description,
-                    preserveWhenHidden: config['preserve-when-hidden']
+                    preserveWhenHidden: config['preserve-when-hidden'],
+                    requiredWhen: config['required-when']
                 };
             });
         });
@@ -268,13 +270,27 @@ angular.module('controller.generateZones', [])
 
     $scope.isDynamicZoneFieldRequired = function (fieldName) {
         const requiredList = $scope.isEditMode ? $scope.UpdateRequiredFields : $scope.requiredFields;
-        return requiredList && requiredList.indexOf(fieldName) !== -1;
+        if (requiredList && requiredList.indexOf(fieldName) !== -1) {
+            return true;
+        }
+        const field = ($scope.zoneFields || []).find(function (zoneField) { return zoneField.field === fieldName; });
+        if (!field || !field.requiredWhen) {
+            return false;
+        }
+        const values = field.requiredWhen.values || [field.requiredWhen.value];
+        const providerParams = ($scope.createZone && $scope.createZone.providerParams) || {};
+        return values.indexOf(providerParams[field.requiredWhen.field]) !== -1;
     };
 
     $scope.hasRequiredProviderParams = function () {
         const requiredList = $scope.isEditMode ? $scope.UpdateRequiredFields : $scope.requiredFields;
         const providerParams = ($scope.createZone && $scope.createZone.providerParams) || {};
-        return (requiredList || []).every(function (fieldName) {
+        const configuredRequirements = ($scope.zoneFields || []).filter(function (field) {
+            return field.requiredWhen && $scope.isProviderFieldVisible(field);
+        }).every(function (field) {
+            return $scope.hasProviderParamValue(providerParams[field.field]);
+        });
+        return configuredRequirements && (requiredList || []).every(function (fieldName) {
             return $scope.hasProviderParamValue(providerParams[fieldName]);
         });
     };
@@ -289,7 +305,8 @@ angular.module('controller.generateZones', [])
             return true;
         }
         const providerParams = ($scope.createZone && $scope.createZone.providerParams) || {};
-        return providerParams[field.visibleWhen.field] === field.visibleWhen.value;
+        const values = field.visibleWhen.values || [field.visibleWhen.value];
+        return values.indexOf(providerParams[field.visibleWhen.field]) !== -1;
     };
 
     $scope.displayProviderParamValue = function (value) {
@@ -309,7 +326,7 @@ angular.module('controller.generateZones', [])
     $scope.updateProviderFieldVisibility = function () {
         ($scope.zoneFields || []).forEach(function (field) {
             if (field.type !== 'Display' && !field.preserveWhenHidden && !$scope.isProviderFieldVisible(field)) {
-                $scope.createZone.providerParams[field.field] = Array.isArray($scope.createZone.providerParams[field.field]) ? [] : '';
+                $scope.createZone.providerParams[field.field] = field.type === 'Boolean' ? false : Array.isArray($scope.createZone.providerParams[field.field]) ? [] : '';
             }
         });
     };

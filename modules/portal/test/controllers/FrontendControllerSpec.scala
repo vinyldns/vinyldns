@@ -52,12 +52,15 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
   enabledOidcAuthenticator.getValidUsernameFromToken(any[String]).returns(Some("test"))
 
   val lockedUserAccessor: UserAccountAccessor = buildMockLockedkUserAccountAccessor
+  val superUserAccessor: UserAccountAccessor = buildMockSuperUserAccountAccessor
   val disabledOidcSec: SecuritySupport =
     new LegacySecuritySupport(components, userAccessor, config, disabledOidcAuthenticator)
   val enabledOidcSec: SecuritySupport =
     new LegacySecuritySupport(components, userAccessor, config, enabledOidcAuthenticator)
   val lockedSec: SecuritySupport =
     new LegacySecuritySupport(components, lockedUserAccessor, config, disabledOidcAuthenticator)
+  val superUserSec: SecuritySupport =
+    new LegacySecuritySupport(components, superUserAccessor, config, disabledOidcAuthenticator)
 
   val underTest = new FrontendController(
     components,
@@ -69,6 +72,12 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
     components,
     config,
     lockedSec
+  )
+
+  val superUserUnderTest = new FrontendController(
+    components,
+    config,
+    superUserSec
   )
 
   val oidcUnderTest = new FrontendController(
@@ -204,6 +213,16 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("Zones | VinylDNS")
+        contentAsString(result) must not(contain("Created Zones"))
+      }
+      "render the Created Zones tab for a superuser" in new WithApplication(app) {
+        val result =
+          superUserUnderTest.viewAllZones()(
+            FakeRequest(GET, "/zones").withSession("username" -> "superBaggins").withCSRFToken
+          )
+        status(result) must beEqualTo(OK)
+        contentAsString(result) must contain("Created Zones")
+        contentAsString(result) must contain("id=\"createdZones\"")
       }
       "redirect to the no access page when a user is locked out" in new WithApplication(app) {
         val result =
@@ -543,6 +562,14 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
     accessor.get(anyString).returns(IO.pure(Some(lockedFrodoUser)))
     accessor.create(any[User]).returns(IO.pure(lockedFrodoUser))
     accessor.getUserByKey(anyString).returns(IO.pure(Some(lockedFrodoUser)))
+    accessor
+  }
+
+  def buildMockSuperUserAccountAccessor: UserAccountAccessor = {
+    val accessor = mock[UserAccountAccessor]
+    accessor.get(anyString).returns(IO.pure(Some(superFrodoUser)))
+    accessor.create(any[User]).returns(IO.pure(superFrodoUser))
+    accessor.getUserByKey(anyString).returns(IO.pure(Some(superFrodoUser)))
     accessor
   }
 }

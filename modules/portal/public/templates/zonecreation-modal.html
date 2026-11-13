@@ -202,6 +202,14 @@
                     </span>
                 </modal-element>
 
+                <!-- Boolean -->
+                <modal-element ng-if="field.type === 'Boolean' && isProviderFieldVisible(field)" label="{{ field.label }}">
+                    <label class="checkbox-inline">
+                        <input type="checkbox" ng-model="createZone.providerParams[field.field]" ng-disabled="!field.editable">
+                        {{ field.description }}
+                    </label>
+                </modal-element>
+
                 <!-- String/Integer -->
                 <modal-element ng-if="(field.type === 'String' || field.type === 'Integer') && isProviderFieldVisible(field)"
                                label="{{ formatLabel(field.label) }}"
