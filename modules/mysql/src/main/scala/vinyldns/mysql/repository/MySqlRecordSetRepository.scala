@@ -172,112 +172,134 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
     }
 
   def listRecordSets(
-                       zoneId: Option[String],
-                       startFrom: Option[String],
-                       maxItems: Option[Int],
-                       recordNameFilter: Option[String],
-                       recordTypeFilter: Option[Set[RecordType]],
-                       recordOwnerGroupFilter: Option[String],
-                       nameSort: NameSort,
-                       recordTypeSort: RecordTypeSort,
-                      authPrincipal: Option[AuthPrincipal],
-                     ): IO[ListRecordSetResults] =
-    monitor("repo.RecordSet.listRecordSets") {
-      IO {
-        DB.readOnly { implicit s =>
-          val maxPlusOne = maxItems.map(_ + 1)
-          val authFilter = authPrincipal.filter(auth => zoneId.isEmpty && !auth.isSystemAdmin).map(buildAccessFilter)
+                    zoneId: Option[String],
+                    startFrom: Option[String],
+                    maxItems: Option[Int],
+                    recordNameFilter: Option[String],
+                    recordTypeFilter: Option[Set[RecordType]],
+                    recordOwnerGroupFilter: Option[String],
+                    nameSort: NameSort,
+                    recordTypeSort: RecordTypeSort,
+                    authPrincipal: Option[AuthPrincipal],
+                  ): IO[ListRecordSetResults] =
+  monitor("repo.RecordSet.listRecordSets") {
+    IO {
+      DB.readOnly { implicit s =>
+        val maxPlusOne = maxItems.map(_ + 1)
+        val wildcardStart = raw"^\s*[*%](.+[^*%])\s*$$".r
+        val authFilter = authPrincipal.filter(auth => zoneId.isEmpty && !auth.isSystemAdmin).map(buildAccessFilter)
 
-          // setup optional filters
-          val zoneAndNameFilters = (zoneId, recordNameFilter) match {
-            case (Some(zId), Some(rName)) =>
-              Some(sqls"zone_id = $zId AND name LIKE ${rName.replace('*', '%')} ")
-            case (None, Some(fqdn)) => Some(sqls"fqdn LIKE ${fqdn.replace('*', '%')} ")
-            case (Some(zId), None) => Some(sqls"zone_id = $zId ")
-            case _ => None
-          }
+        // setup optional filters
+        val zoneAndNameFilters = (zoneId, recordNameFilter) match {
+          case (Some(zId), Some(rName)) =>
+            Some(sqls"zone_id = $zId AND name LIKE ${rName.replace('*', '%')} ")
+          case (None, Some(fqdn)) => Some(sqls"fqdn LIKE ${fqdn.replace('*', '%')} ")
+          case (Some(zId), None) => Some(sqls"zone_id = $zId ")
+          case _ => None
+        }
 
-          val searchByZone = zoneId.fold[Boolean](false)(_ => true)
-          val pagingKey = PagingKey(startFrom)
+        val searchByZone = zoneId.fold[Boolean](false)(_ => true)
+        val pagingKey = PagingKey(startFrom)
 
-          // sort by name or fqdn in given order
-          val sortBy = (searchByZone, nameSort) match {
-            case (true, NameSort.DESC) =>
-              pagingKey.as(
-                sqls"((name <= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR name < ${pagingKey.map(pk => pk.recordName)})"
-              )
-            case (false, NameSort.ASC) =>
-              pagingKey.as(
-                sqls"((fqdn >= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR fqdn > ${pagingKey.map(pk => pk.recordName)})"
-              )
-            case (false, NameSort.DESC) =>
-              pagingKey.as(
-                sqls"((fqdn <= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR fqdn < ${pagingKey.map(pk => pk.recordName)})"
-              )
-            case _ =>
-              pagingKey.as(
-                sqls"((name >= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR name > ${pagingKey.map(pk => pk.recordName)})"
-              )
-          }
+        val sortBy = (searchByZone, nameSort) match {
+          case (true, NameSort.DESC) =>
+            pagingKey.as(
+              sqls"((name <= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR name < ${pagingKey.map(pk => pk.recordName)})"
+            )
+          case (false, NameSort.ASC) =>
+            pagingKey.as(
+              sqls"((fqdn >= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR fqdn > ${pagingKey.map(pk => pk.recordName)})"
+            )
+          case (false, NameSort.DESC) =>
+            pagingKey.as(
+              sqls"((fqdn <= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR fqdn < ${pagingKey.map(pk => pk.recordName)})"
+            )
+          case _ =>
+            pagingKey.as(
+              sqls"((name >= ${pagingKey.map(pk => pk.recordName)} AND type > ${pagingKey.map(pk => pk.recordType)}) OR name > ${pagingKey.map(pk => pk.recordName)})"
+            )
+        }
 
-          val typeFilter = recordTypeFilter.map { t =>
-            val list = t.map(fromRecordType)
-            sqls"type IN ($list)"
-          }
+        val typeFilter = recordTypeFilter.map { t =>
+          val list = t.map(fromRecordType)
+          sqls"type IN ($list)"
+        }
 
-          val ownerGroupFilter =
-            recordOwnerGroupFilter.map(owner => sqls"owner_group_id = $owner ")
+        val ownerGroupFilter =
+          recordOwnerGroupFilter.map(owner => sqls"owner_group_id = $owner ")
 
           val opts =
             (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter ++ authFilter).toList
 
-          val nameSortQualifiers = nameSort match {
-            case NameSort.ASC => sqls"ORDER BY fqdn ASC, type ASC "
-            case NameSort.DESC => sqls"ORDER BY fqdn DESC, type ASC "
-          }
+        val nameSortQualifiers = nameSort match {
+          case NameSort.ASC => sqls"ORDER BY fqdn ASC, type ASC "
+          case NameSort.DESC => sqls"ORDER BY fqdn DESC, type ASC "
+        }
 
-          val recordTypeSortQualifiers = recordTypeSort match {
-            case RecordTypeSort.ASC => sqls"ORDER BY type ASC"
-            case RecordTypeSort.DESC => sqls"ORDER BY type DESC"
-            case RecordTypeSort.NONE => nameSortQualifiers
+        val recordTypeSortQualifiers = recordTypeSort match {
+          case RecordTypeSort.ASC => sqls"ORDER BY type ASC"
+          case RecordTypeSort.DESC => sqls"ORDER BY type DESC"
+          case RecordTypeSort.NONE => nameSortQualifiers
+        }
 
-          }
+        val recordLimit = maxPlusOne match {
+          case Some(limit) => sqls"LIMIT $limit"
+          case None => sqls""
+        }
 
-          val recordLimit = maxPlusOne match {
-            case Some(limit) => sqls"LIMIT $limit"
-            case None => sqls""
-          }
+        val finalQualifiers = recordTypeSortQualifiers.append(recordLimit)
 
-          val finalQualifiers = recordTypeSortQualifiers.append(recordLimit)
+        val initialQuery =
+          sqls"SELECT data, fqdn AS fqdn, type AS type FROM recordset "
 
-          // construct query
-          val initialQuery = sqls"SELECT data, fqdn FROM recordset "
+        val appendOpts = if (opts.nonEmpty) {
+          val setDelimiter = SQLSyntax.join(opts, sqls"AND")
+          sqls"WHERE".append(setDelimiter)
+        } else sqls""
 
-          val appendOpts = if (opts.nonEmpty){
-            val setDelimiter = SQLSyntax.join(opts, sqls"AND")
-            val addWhere = sqls"WHERE"
-            addWhere.append(setDelimiter)
-          } else sqls""
+        val part1 = initialQuery.append(appendOpts)
 
-          val appendQueries = initialQuery.append(appendOpts)
-          val finalQuery = appendQueries.append(finalQualifiers)
+        val finalQuery = (zoneId, recordNameFilter) match {
+          case (None, Some(fqdn)) if !wildcardStart.pattern.matcher(fqdn).matches() =>
 
-          val results = sql"$finalQuery"
-            .map(toRecordSet)
-            .list()
-            .apply()
+            val recordDataValueOpts =
+              (Some(sqls"recordset_data.record_data_value LIKE ${fqdn.replace('*', '%')} ") ++
+                sortBy ++ typeFilter ++ ownerGroupFilter).toList
 
-          val newResults = if (maxPlusOne.contains(results.size)) {
-            results.dropRight(1)
-          } else { results }
+            val appendRecordDataValueOpts = if (recordDataValueOpts.nonEmpty) {
+              val setDelimiter = SQLSyntax.join(recordDataValueOpts, sqls"AND")
+              sqls"WHERE".append(setDelimiter)
+            } else sqls""
 
-          // if size of results is less than the maxItems plus one, we don't have a next id
-          // if maxItems is None, we don't have a next id
-          val nextId = maxPlusOne
-            .filter(_ == results.size)
-            .flatMap(_ => newResults.lastOption.map(PagingKey.toNextId(_, searchByZone)))
+            val part2 =
+              sqls"SELECT recordset.data, recordset.fqdn AS fqdn, recordset.type AS type FROM recordset "
+                .append(sqls"JOIN recordset_data ON recordset.id = recordset_data.recordset_id ")
+                .append(appendRecordDataValueOpts)
+            part1
+              .append(sqls"UNION ")
+              .append(part2)
+              .append(finalQualifiers)
 
-          val totalCount: Option[Int] =
+          case _ =>
+            part1.append(finalQualifiers)
+        }
+
+        val results = sql"$finalQuery"
+          .map(toRecordSet)
+          .list()
+          .apply()
+
+        val newResults = if (maxPlusOne.contains(results.size)) {
+          results.dropRight(1)
+        } else {
+          results
+        }
+
+        val nextId = maxPlusOne
+          .filter(_ == results.size)
+          .flatMap(_ => newResults.lastOption.map(PagingKey.toNextId(_, searchByZone)))
+        
+        val totalCount: Option[Int] =
             if (zoneId.isEmpty) {
               val countQueryBase = sqls"SELECT COUNT(*) FROM recordset"
 
@@ -299,19 +321,20 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
               None
             }
 
-          ListRecordSetResults(
-            recordSets = newResults,
-            nextId = nextId,
-            startFrom = startFrom,
-            maxItems = maxItems,
-            recordNameFilter = recordNameFilter,
-            recordTypeFilter = recordTypeFilter,
-            nameSort = nameSort,
-            recordTypeSort = recordTypeSort,
-            totalCount = totalCount)
-        }
+        ListRecordSetResults(
+          recordSets = newResults,
+          nextId = nextId,
+          startFrom = startFrom,
+          maxItems = maxItems,
+          recordNameFilter = recordNameFilter,
+          recordTypeFilter = recordTypeFilter,
+          nameSort = nameSort,
+          recordTypeSort = recordTypeSort,
+          totalCount = totalCount
+        )
       }
     }
+  }
 
   private def buildAccessFilter(authPrincipal: AuthPrincipal): SQLSyntax = {
     val accessors =

@@ -311,7 +311,6 @@ class MySqlRecordSetCacheRepository
         val searchByZone = zoneId.fold[Boolean](false)(_ => true)
         val pagingKey = PagingKey(startFrom)
 
-        // sort by name or fqdn in given order
         val sortBy = (searchByZone, nameSort) match {
           case (true, NameSort.DESC) =>
             pagingKey.as(
@@ -343,10 +342,9 @@ class MySqlRecordSetCacheRepository
           (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter ++ authFilter).toList
 
         val qualifiers = if (nameSort == ASC) {
-          sqls"ORDER BY recordset.fqdn ASC, recordset.type ASC "
-        }
-        else {
-          sqls"ORDER BY recordset.fqdn DESC, recordset.type ASC "
+          sqls"ORDER BY fqdn ASC, type ASC "
+        } else {
+          sqls"ORDER BY fqdn DESC, type ASC "
         }
 
         val recordLimit = maxPlusOne match {
@@ -356,27 +354,55 @@ class MySqlRecordSetCacheRepository
 
         val finalQualifiers = qualifiers.append(recordLimit)
 
-        // Construct query. We include the MySQL MAX_EXECUTION_TIME directive here to limit the maximum amount of time
-        // this query can execute. The API should timeout before we reach 20s - this is just to avoid user-generated
-        // long-running queries leading to performance degradation
-        val initialQuery = sqls"SELECT /*+ MAX_EXECUTION_TIME(20000) */ recordset.data, recordset.fqdn FROM recordset_data "
+        val initialQuery =
+          sqls"SELECT /*+ MAX_EXECUTION_TIME(20000) */ recordset.data, recordset.fqdn AS fqdn, recordset.type AS type FROM recordset_data "
 
-        // Join query for data column from recordset table
-        val recordsetDataJoin = sqls"RIGHT JOIN recordset ON recordset.id=recordset_data.recordset_id "
+        val recordsetDataJoin =
+          sqls"RIGHT JOIN recordset ON recordset.id=recordset_data.recordset_id "
+
         val recordsetDataJoinQuery = initialQuery.append(recordsetDataJoin)
 
-        // Add GROUP BY clause to group by recordset_data.recordset_id and recordset_data.type
-        val groupByClause = sqls"GROUP BY recordset_data.recordset_id, recordset_data.type "
+        val groupByClause =
+          sqls"GROUP BY recordset_data.recordset_id, recordset_data.type "
 
         val appendOpts = if (opts.nonEmpty) {
           val setDelimiter = SQLSyntax.join(opts, sqls"AND")
-          val addWhere = sqls"WHERE"
-          addWhere.append(setDelimiter)
+          sqls"WHERE".append(setDelimiter)
         } else sqls""
 
-        val appendQueries = recordsetDataJoinQuery.append(appendOpts).append(groupByClause)
+        val finalQuery = (zoneId, recordNameFilter) match {
+          case (None, Some(fqdn)) if !wildcardStart.pattern.matcher(fqdn).matches() =>
+            val part1 = recordsetDataJoinQuery
+              .append(appendOpts)
+              .append(groupByClause)
 
-        val finalQuery = appendQueries.append(finalQualifiers)
+            val recordDataValueOpts =
+              (Some(sqls"recordset_data.record_data_value LIKE ${fqdn.replace('*', '%')} ") ++
+                sortBy ++ typeFilter ++ ownerGroupFilter ++ authFilter).toList
+
+            val appendRecordDataValueOpts = if (recordDataValueOpts.nonEmpty) {
+              val setDelimiter = SQLSyntax.join(recordDataValueOpts, sqls"AND")
+              sqls"WHERE".append(setDelimiter)
+            } else sqls""
+
+            val part2 =
+              sqls"SELECT /*+ MAX_EXECUTION_TIME(20000) */ recordset.data, recordset.fqdn AS fqdn, recordset.type AS type FROM recordset_data "
+                .append(recordsetDataJoin)
+                .append(appendRecordDataValueOpts)
+                .append(groupByClause)
+
+            part1
+              .append(sqls"UNION ")
+              .append(part2)
+              .append(finalQualifiers)
+
+          case _ =>
+            recordsetDataJoinQuery
+              .append(appendOpts)
+              .append(groupByClause)
+              .append(finalQualifiers)
+        }
+
         DB.readOnly { implicit s =>
           val results = sql"$finalQuery"
             .map(toRecordSetData)
@@ -389,19 +415,13 @@ class MySqlRecordSetCacheRepository
             results
           }
 
-          // if size of results is less than the maxItems plus one, we don't have a next id
-          // if maxItems is None, we don't have a next id
-          val nextId = maxPlusOne
-            .filter(_ == results.size)
-            .flatMap(_ => newResults.lastOption.map(PagingKey.toNextId(_, searchByZone)))
-
           val countQueryBase = sqls"""
-              SELECT /*+ MAX_EXECUTION_TIME(20000) */ COUNT(*) FROM (
-                SELECT recordset_data.recordset_id, recordset_data.type
-                FROM recordset_data
-                RIGHT JOIN recordset
-                  ON recordset.id = recordset_data.recordset_id
-              """
+            SELECT /*+ MAX_EXECUTION_TIME(20000) */ COUNT(*) FROM (
+              SELECT recordset_data.recordset_id, recordset_data.type
+              FROM recordset_data
+              RIGHT JOIN recordset
+                ON recordset.id = recordset_data.recordset_id
+            """
           val countOpts = (zoneAndNameFilters ++ typeFilter ++ ownerGroupFilter ++ authFilter).toList
           val countWhere =
             if (countOpts.nonEmpty) {
@@ -410,17 +430,21 @@ class MySqlRecordSetCacheRepository
             } else sqls""
 
           val countGroupBy = sqls"""
-              GROUP BY recordset_data.recordset_id, recordset_data.type
-            ) AS grouped_count
-            """
+            GROUP BY recordset_data.recordset_id, recordset_data.type
+          ) AS grouped_count
+          """
           val countQuery = countQueryBase.append(countWhere).append(countGroupBy)
 
-          val totalCount: Option[Int] = 
-              sql"$countQuery"
+          val totalCount: Option[Int] =
+            sql"$countQuery"
               .map(_.int(1))
               .single()
               .apply()
-          
+
+          val nextId = maxPlusOne
+            .filter(_ == results.size)
+            .flatMap(_ => newResults.lastOption.map(PagingKey.toNextId(_, searchByZone)))
+
           ListRecordSetResults(
             recordSets = newResults,
             nextId = nextId,
