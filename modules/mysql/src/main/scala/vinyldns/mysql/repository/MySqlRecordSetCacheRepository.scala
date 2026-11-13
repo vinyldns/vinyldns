@@ -453,7 +453,8 @@ class MySqlRecordSetCacheRepository
             recordNameFilter = recordNameFilter,
             recordTypeFilter = recordTypeFilter,
             nameSort = nameSort,
-            recordTypeSort = RecordTypeSort.NONE)
+            recordTypeSort = RecordTypeSort.NONE,
+            totalCount = totalCount)
         }
       }
     }

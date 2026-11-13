@@ -329,7 +329,8 @@ class MySqlRecordSetRepository extends RecordSetRepository with Monitored {
           recordNameFilter = recordNameFilter,
           recordTypeFilter = recordTypeFilter,
           nameSort = nameSort,
-          recordTypeSort = recordTypeSort
+          recordTypeSort = recordTypeSort,
+          totalCount = totalCount
         )
       }
     }
