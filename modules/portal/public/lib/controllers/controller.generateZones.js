@@ -45,14 +45,6 @@ angular.module('controller.generateZones', [])
         }
     });
 
-    $(document).ready(function () {
-        $('#zone-nameservers').select2({
-            placeholder: "Select nameservers",
-            allowClear: true,
-            width: '100%'
-        });
-    });
-
     $scope.resetCreateZone = function () {
         $scope.createZone = {};
         if ($scope.myGroups && $scope.myGroups.length) {
@@ -426,12 +418,7 @@ angular.module('controller.generateZones', [])
                 }
             }
             const value = zone.providerParams[field];
-            if (
-                value === undefined ||
-                value === null ||
-                (typeof value === 'string' && value.trim() === '') ||
-                (Array.isArray(value) && !this.hasProviderParamValue(value))
-            ) {
+            if (!$scope.hasProviderParamValue(value)) {
                 continue;
             }
             const rootWhen = config['payload-location-when'];
@@ -473,9 +460,7 @@ angular.module('controller.generateZones', [])
                     return item !== undefined && item !== null && String(item).trim() !== '';
                 });
             }
-            if (value === undefined || value === null ||
-                (typeof value === 'string' && value.trim() === '') ||
-                (Array.isArray(value) && value.length === 0)) {
+            if (!$scope.hasProviderParamValue(value)) {
                 return;
             }
             const rootWhen = config['payload-location-when'];
@@ -500,7 +485,7 @@ angular.module('controller.generateZones', [])
             // create zone service
             zonesService.generateZone($scope.getCreatePayload($scope.createZone))
                 .then(function (response) {
-                    $timeout($scope.refreshGeneratedZones(), 1000);
+                    $timeout($scope.refreshGeneratedZones, 1000);
                     $("#zone_creation_modal").modal("hide");
                     $scope.processing = false;
                     const zoneName = $scope.createZone.zoneName || 'unknown';
@@ -545,6 +530,7 @@ angular.module('controller.generateZones', [])
         zonesService.deleteGeneratedZone($scope.createZone.id)
             .then(function (response) {
                 $("#zone_creation_view_modal").modal("hide");
+                $timeout($scope.refreshGeneratedZones, 1000);
                 $log.debug("Deleting zone with ID:", $scope.createZone.id);
                 const zoneName = $scope.createZone.zoneName || 'unknown';
                 const msg = `${response.statusText} (HTTP ${response.status}): '${zoneName}' deleted`;
@@ -665,13 +651,14 @@ angular.module('controller.generateZones', [])
             open: function () { $(this).removeClass("ui-corner-all").addClass("ui-corner-top"); },
             close: function () { $(this).removeClass("ui-corner-top").addClass("ui-corner-all"); }
         });
+        vinyldnsAutocomplete.applyRenderer($(".generateZone-search-text"));
     };
 
     $.generateZoneAutocompleteSearch();
 
     // When "Search by admin group" is toggled, rewire only this tab's search input.
     // The parent controller handles the equivalent rewiring for .zone-search-text.
-    $('.isGroupSearch').change(function () {
+    $('.generateZone-isGroupSearch').change(function () {
         if (this.checked) {
             $(".generateZone-search-text").autocomplete({
                 source: function (request, response) {
@@ -696,6 +683,7 @@ angular.module('controller.generateZones', [])
                 open: function () { $(this).removeClass("ui-corner-all").addClass("ui-corner-top"); },
                 close: function () { $(this).removeClass("ui-corner-top").addClass("ui-corner-all"); }
             });
+            vinyldnsAutocomplete.applyRenderer($(".generateZone-search-text"));
         } else {
             $.generateZoneAutocompleteSearch();
         }

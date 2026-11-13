@@ -197,15 +197,6 @@ angular.module('controller.zones', [])
         }
     });
 
-    // Autocomplete text-highlight
-    $.ui.autocomplete.prototype._renderItem = function(ul, item) {
-            let txt = String(item.label).replace(new RegExp(this.term, "gi"),"<b>$&</b>");
-            return $("<li></li>")
-                  .data("ui-autocomplete-item", item.value)
-                  .append("<div>" + txt + "</div>")
-                  .appendTo(ul);
-    };
-   
     /* Refreshes zone data set and then re-displays */
     $scope.refreshZones = function () {
         zonesPaging = pagingService.resetPaging(zonesPaging);

@@ -25,16 +25,16 @@ describe('Controller: GenerateZonesController', function () {
         module('service.paging'),
         module('controller.generateZones')
     });
-    beforeEach(inject(function ($rootScope, $controller, $q, groupsService, profileService, zonesService, utilityService, pagingService) {
+    beforeEach(inject(function ($rootScope, $controller, $q, $timeout, groupsService, profileService, zonesService, utilityService, pagingService) {
         this.scope = $rootScope.$new();
+        this.controllerFactory = $controller;
+        this.timeout = $timeout;
         this.zonesService = zonesService;
         this.zonesService.q = $q;
         this.pagingService = pagingService;
 
         this.scope.myGroups = {};
         this.scope.alerts = [];
-
-        $.fn.select2 = function () { return this; };
 
         zonesService.getNameservers = function () {
             return $q.when({ data: [] });
@@ -94,6 +94,52 @@ describe('Controller: GenerateZonesController', function () {
         expect(getZoneSets.calls.count()).toBe(3);
         expect(getZoneSets.calls.mostRecent().args).toEqual(
             [expectedMaxItems, expectedStartFrom, expectedQuery, expectedSearchByAdminGroup, expectedIgnoreAccess]);
+    });
+
+    it('refreshes Generated Zones after a successful delete', function () {
+        this.timeout.flush();
+        var deleteGeneratedZone = spyOn(this.zonesService, 'deleteGeneratedZone')
+            .and.returnValue(this.zonesService.q.when({ status: 202, statusText: 'Accepted' }));
+        var refreshGeneratedZones = spyOn(this.scope, 'refreshGeneratedZones');
+        this.scope.createZone = { id: 'zone-id', zoneName: 'example.com.' };
+
+        this.scope.confirmDeleteCreatedZone();
+        this.scope.$digest();
+
+        expect(deleteGeneratedZone).toHaveBeenCalledWith('zone-id');
+        expect(refreshGeneratedZones).not.toHaveBeenCalled();
+        this.timeout.flush(1000);
+        expect(refreshGeneratedZones).toHaveBeenCalledTimes(1);
+    });
+
+    it('renders Generated Zones autocomplete labels as text with regex-special search terms', function () {
+        document.body.innerHTML = '<input class="generateZone-search-text" /><input class="generateZone-isGroupSearch" type="checkbox" />';
+        this.controllerFactory('GenerateZonesController', { '$scope': this.scope });
+
+        var input = $('.generateZone-search-text');
+        var instance = input.autocomplete('instance');
+        instance.term = 'paren(';
+
+        var rendered = instance._renderItem($('<ul></ul>'), {
+            label: '<img src=x onerror=alert(1)> paren(',
+            value: '<img src=x onerror=alert(1)> paren('
+        });
+        expect(rendered.find('img').length).toBe(0);
+        expect(rendered.find('div').text()).toBe('<img src=x onerror=alert(1)> paren(');
+        expect(rendered.find('b').text()).toBe('paren(');
+
+        $('.generateZone-isGroupSearch').prop('checked', true).trigger('change');
+        instance = input.autocomplete('instance');
+        instance.term = 'paren(';
+        rendered = instance._renderItem($('<ul></ul>'), {
+            label: '<img src=x onerror=alert(1)> paren(',
+            value: '<img src=x onerror=alert(1)> paren('
+        });
+        expect(rendered.find('img').length).toBe(0);
+        expect(rendered.find('div').text()).toBe('<img src=x onerror=alert(1)> paren(');
+        expect(rendered.find('b').text()).toBe('paren(');
+
+        document.body.innerHTML = '';
     });
 
     it('resetGeneratedZoneModalState should clear previous modal selections and mode', function () {
@@ -219,6 +265,16 @@ describe('Controller: GenerateZonesController', function () {
             nameservers: ['ns1.example.com'],
             admin_email: 'admin@example.com'
         };
+        expect(this.scope.hasRequiredProviderParams()).toBe(true);
+    });
+
+    it('does not allow BIND zone creation without nameservers', function () {
+        this.scope.requiredFields = ['nameservers', 'admin_email'];
+        this.scope.createZone = { providerParams: { nameservers: [], admin_email: 'admin@example.com' } };
+
+        expect(this.scope.hasRequiredProviderParams()).toBe(false);
+
+        this.scope.createZone.providerParams.nameservers = ['ns1.example.com'];
         expect(this.scope.hasRequiredProviderParams()).toBe(true);
     });
 
@@ -591,6 +647,40 @@ describe('Controller: GenerateZonesController', function () {
             email: 'test@example.com',
             providerParams: { kind: 'Forwarded', recursion_desired: false },
             servers: ['172.17.42.3', '172.17.42.4']
+        });
+    });
+
+    it('omits untouched optional BIND fields from the create payload', function () {
+        this.scope.createZoneTemplate = {
+            Admin_Email: { type: 'String', field: 'admin_email' },
+            TTL: { type: 'Integer', field: 'ttl' },
+            Refresh: { type: 'Integer', field: 'refresh' },
+            Retry: { type: 'Integer', field: 'retry' },
+            Expire: { type: 'Integer', field: 'expire' },
+            Negative_Cache_TTL: { type: 'Integer', field: 'negative_cache_ttl' }
+        };
+
+        var zone = {
+            groupId: 'group-id',
+            provider: 'bind',
+            zoneName: 'example.com.',
+            email: 'test@example.com',
+            providerParams: {
+                admin_email: 'admin@example.com',
+                ttl: '',
+                refresh: '',
+                retry: '',
+                expire: '',
+                negative_cache_ttl: ''
+            }
+        };
+
+        expect(this.scope.getCreatePayload(zone)).toEqual({
+            groupId: 'group-id',
+            provider: 'bind',
+            zoneName: 'example.com.',
+            email: 'test@example.com',
+            providerParams: { admin_email: 'admin@example.com' }
         });
     });
 

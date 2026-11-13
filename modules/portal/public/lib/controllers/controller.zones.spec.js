@@ -26,7 +26,7 @@ describe('Controller: ZonesController', function () {
         module('controller.zones')
     });
 
-    beforeEach(inject(function ($rootScope, $controller, $q, $httpBackend, groupsService, profileService, recordsService, zonesService, utilityService, pagingService) {
+    beforeEach(inject(function ($rootScope, $controller, $q, groupsService, profileService, recordsService, zonesService, utilityService, pagingService) {
         this.rootScope = $rootScope;
         this.controllerFactory = $controller;
         this.scope = $rootScope.$new();
@@ -38,8 +38,6 @@ describe('Controller: ZonesController', function () {
         this.scope.myGroups = {};
         this.scope.allGroups = {};
         this.scope.zones = {};
-        this.$httpBackend = $httpBackend;
-
         profileService.getAuthenticatedUserData = function() {
             return $q.when({data: {id: "userId"}});
         };

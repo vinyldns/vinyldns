@@ -203,7 +203,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
     ".getNameServers" should {
       "return the list of nameservers when requested - Ok(200)" in new WithApplication(app) {
         val client = MockWS {
-          case (GET, u) if u == s"http://localhost:9001/zones/generate/nameservers" =>
+          case (GET, u) if u.matches(".*/zones/generate/nameservers$") =>
             defaultActionBuilder { Results.Ok(nameServers) }
         }
         val mockUserAccessor = mock[UserAccountAccessor]
@@ -256,7 +256,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
       "return unauthorized (401) when request fails authentication" in new WithApplication(app) {
         val client = MockWS {
-          case (GET, u) if u == s"http://localhost:9001/zones/generate/nameservers" =>
+          case (GET, u) if u.matches(".*/zones/generate/nameservers$") =>
             defaultActionBuilder { Results.Unauthorized("The supplied authentication is invalid") }
         }
         val mockUserAccessor = mock[UserAccountAccessor]
@@ -284,7 +284,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
     ".getGeneratedZones" should {
       "return the list of nameservers when requested - Ok(200)" in new WithApplication(app) {
         val client = MockWS {
-          case (GET, u) if u == s"http://localhost:9001/zones/generate/info" =>
+          case (GET, u) if u.matches(".*/zones/generate/info$") =>
             defaultActionBuilder { Results.Ok(validGenerateZoneRequest) }
         }
         val mockUserAccessor = mock[UserAccountAccessor]
@@ -337,7 +337,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
       "return unauthorized (401) when request fails authentication" in new WithApplication(app) {
         val client = MockWS {
-          case (GET, u) if u == s"http://localhost:9001/zones/generate/info" =>
+          case (GET, u) if u.matches(".*/zones/generate/info$") =>
             defaultActionBuilder { Results.Unauthorized("The supplied authentication is invalid") }
         }
         val mockUserAccessor = mock[UserAccountAccessor]
@@ -365,7 +365,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
     ".deleteGeneratedZone" should {
       "return ok with no content (204) when delete is successful" in new WithApplication(app) {
         val client = MockWS {
-          case (DELETE, u) if u == s"http://localhost:9001/zones/generate/$validGenerateZoneId" =>
+          case (DELETE, u) if u.matches(s".*/zones/generate/$validGenerateZoneId$$") =>
             defaultActionBuilder { Results.NoContent }
         }
         val mockUserAccessor = mock[UserAccountAccessor]
@@ -422,7 +422,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         app
       ) {
         val client = MockWS {
-          case (DELETE, u) if u == s"http://localhost:9001/zones/generate/$validGenerateZoneId" =>
+          case (DELETE, u) if u.matches(s".*/zones/generate/$validGenerateZoneId$$") =>
             defaultActionBuilder { Results.Unauthorized("Invalid credentials") }
         }
         val mockUserAccessor = mock[UserAccountAccessor]
@@ -440,7 +440,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
       "return forbidden (403) when authorization fails in the backend" in new WithApplication(app) {
         val client = MockWS {
-          case (DELETE, u) if u == s"http://localhost:9001/zones/generate/$validGenerateZoneId" =>
+          case (DELETE, u) if u.matches(s".*/zones/generate/$validGenerateZoneId$$") =>
             defaultActionBuilder {
               Results.Forbidden("You do not have access to delete this group")
             }
@@ -461,7 +461,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
       "return a not found (404) if the zone does not exist" in new WithApplication(app) {
         val client = MockWS {
-          case (DELETE, "http://localhost:9001/zones/generate/not-zone-id") =>
+          case (DELETE, u) if u.matches(".*/zones/generate/not-zone-id$") =>
             defaultActionBuilder { Results.NotFound }
         }
         val mockUserAccessor = mock[UserAccountAccessor]
@@ -483,7 +483,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       tag("slow")
       "return the generate zone response on create - status ok (200)" in new WithApplication(app) {
         val client = MockWS {
-          case (POST, "http://localhost:9001/zones/generate") =>
+          case (POST, u) if u.matches(".*/zones/generate$") =>
             defaultActionBuilder { Results.Ok(validGenerateZoneRequest) }
         }
 
@@ -503,7 +503,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
       }
       "return bad request (400) if the request is not properly made" in new WithApplication(app) {
         val client = MockWS {
-          case (POST, "http://localhost:9001/zones/generate") =>
+          case (POST, u) if u.matches(".*/zones/generate$") =>
             defaultActionBuilder { Results.BadRequest("user id not found") }
         }
         val mockUserAccessor = mock[UserAccountAccessor]
@@ -523,7 +523,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         app
       ) {
         val client = MockWS {
-          case (POST, "http://localhost:9001/zones/generate") =>
+          case (POST, u) if u.matches(".*/zones/generate$") =>
             defaultActionBuilder { Results.Unauthorized("Invalid credentials") }
         }
 

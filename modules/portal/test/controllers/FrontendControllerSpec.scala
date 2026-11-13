@@ -490,6 +490,15 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         (parsedCreate \ "Kind" \ "type").as[String] must beEqualTo("Select")
         contentAsString(result2) must contain("""{"error":"Missing request-templates or required-fields for provider 'cloudfare'"}""")
       }
+        "return not found for a provider name that cannot form a config path" in new WithApplication(app) {
+          val result = underTest.getCreateZoneTemplate("a\"b")(
+            FakeRequest(GET, "/config/createZoneTemplate/a%22b")
+              .withSession("username" -> "frodo")
+              .withCSRFToken
+          )
+
+          status(result) must beEqualTo(NOT_FOUND)
+        }
       "redirect to the no access page when a user is locked out" in new WithApplication(app) {
         val result =
           lockedUserUnderTest.getCreateZoneTemplate("some-id")(

@@ -125,28 +125,33 @@ class FrontendController @Inject() (
 
   def getCreateZoneTemplate(provider: String): Action[AnyContent] = userAction.async {
     Future {
-      val templatesPath = s"api.dns-provider-portal-fields.providers.$provider.request-templates"
-      val requiredPath = s"api.dns-provider-portal-fields.providers.$provider.required-fields"
+      val providersConfigOpt = configuration.getOptional[Configuration]("api.dns-provider-portal-fields.providers")
+      if (!providersConfigOpt.exists(_.subKeys.contains(provider))) {
+        NotFound(Json.obj("error" -> s"Missing request-templates or required-fields for provider '$provider'"))
+      } else {
+        val templatesPath = s"api.dns-provider-portal-fields.providers.$provider.request-templates"
+        val requiredPath = s"api.dns-provider-portal-fields.providers.$provider.required-fields"
 
-      val templateConfigOpt = configuration.getOptional[Configuration](templatesPath)
-      val requiredConfigOpt = configuration.getOptional[Configuration](requiredPath)
-      (templateConfigOpt, requiredConfigOpt) match {
-        case (Some(templateConfig), Some(requiredConfig)) =>
-          val renderedTemplates = Json.parse(
-            templateConfig.underlying.root().render(ConfigRenderOptions.concise())
-          )
-          val renderedRequired = Json.parse(
-            requiredConfig.underlying.root().render(ConfigRenderOptions.concise())
-          )
+        val templateConfigOpt = configuration.getOptional[Configuration](templatesPath)
+        val requiredConfigOpt = configuration.getOptional[Configuration](requiredPath)
+        (templateConfigOpt, requiredConfigOpt) match {
+          case (Some(templateConfig), Some(requiredConfig)) =>
+            val renderedTemplates = Json.parse(
+              templateConfig.underlying.root().render(ConfigRenderOptions.concise())
+            )
+            val renderedRequired = Json.parse(
+              requiredConfig.underlying.root().render(ConfigRenderOptions.concise())
+            )
 
-          Ok(Json.obj(
-            "provider" -> provider,
-            "request-templates" -> renderedTemplates,
-            "required-fields"   -> renderedRequired
-          ))
+            Ok(Json.obj(
+              "provider" -> provider,
+              "request-templates" -> renderedTemplates,
+              "required-fields"   -> renderedRequired
+            ))
 
-        case _ =>
-          NotFound(Json.obj("error" -> s"Missing request-templates or required-fields for provider '$provider'"))
+          case _ =>
+            NotFound(Json.obj("error" -> s"Missing request-templates or required-fields for provider '$provider'"))
+        }
       }
     }
   }
