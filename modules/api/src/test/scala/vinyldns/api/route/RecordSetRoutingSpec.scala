@@ -56,6 +56,7 @@ class RecordSetRoutingSpec
   private val notAuthorizedZone = Zone("notAuth", "test@test.com")
   private val syncingZone = Zone("syncing", "test@test.com")
   private val invalidChangeZone = Zone("invalidChange", "test@test.com")
+  private val mismatchedZone = Zone("mismatch", "test@test.com")
   private val recordSetCount = RecordSetCount(5)
 
   private val rsAlreadyExists = RecordSet(
@@ -735,6 +736,7 @@ class RecordSetRoutingSpec
 
     def getRecordSetChange(
                             zoneId: String,
+                            rsId: String,
                             changeId: String,
                             authPrincipal: AuthPrincipal
                           ): Result[RecordSetChange] = {
@@ -742,7 +744,12 @@ class RecordSetRoutingSpec
         case "changeNotFound" => Left(RecordSetChangeNotFoundError(""))
         case "zoneNotFound" => Left(ZoneNotFoundError(""))
         case "forbidden" => Left(NotAuthorizedError(""))
-        case _ => Right(rsChange1)
+        case _ =>
+          if (rsId == "test") {
+            Right(rsChange1)
+          } else {
+            Left(RecordSetNotFoundError(s"RecordSet with id $rsId does not exist."))
+          }
       }
     }.toResult
 
@@ -785,7 +792,7 @@ class RecordSetRoutingSpec
       }
     }.toResult
 
-  }
+}
 
   val recordSetService: RecordSetServiceAlgebra = new TestService
 
@@ -876,6 +883,12 @@ class RecordSetRoutingSpec
 
     "return a 404 Not Found when the change doesn't exist" in {
       Get(s"/zones/${okZone.id}/recordsets/test/changes/changeNotFound") ~> recordSetRoute ~> check {
+        status shouldBe StatusCodes.NotFound
+      }
+    }
+
+    "return a 404 Not Found when the change exists for a different record set" in {
+      Get(s"/zones/${okZone.id}/recordsets/differentRecordSetId/changes/good") ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
       }
     }
@@ -1308,6 +1321,42 @@ class RecordSetRoutingSpec
       }
     }
 
+    "return a 400 Bad Request if the zoneId in the body does not match the one in the URI" in {
+      Post(s"/zones/${okZone.id}/recordsets")
+        .withEntity(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            rsJson(rsOk.copy(zoneId = mismatchedZone.id))
+        )   
+      ) ~>
+      recordSetRoute ~> check {
+        
+        status shouldBe StatusCodes.BadRequest
+        val error = responseAs[String]
+        error shouldBe "zoneId in URI and body must match"
+      }
+    }
+
+    "return 202 Accepted when zoneId is omitted from the body and uses the URI value" in {
+      val createInput = compact(render(
+        ("type" -> "A") ~~
+        ("id" -> rsOk.id) ~
+        ("name" -> "test-omitted-zoneid") ~~
+        ("ttl" -> 300) ~~
+        ("records" -> List(Map("address" -> "1.2.3.4")))
+      ))
+      Post(s"/zones/${okZone.id}/recordsets")
+        .withEntity(HttpEntity(ContentTypes.`application/json`, createInput)) ~>
+        recordSetRoute ~> check {
+          status shouldBe StatusCodes.Accepted
+          val change = responseAs[RecordSetChange]
+          change.changeType shouldBe RecordSetChangeType.Create
+          change.status shouldBe RecordSetChangeStatus.Complete
+          change.recordSet.zoneId shouldBe okZone.id
+          change.recordSet.name shouldBe rsOk.name
+        }
+    }
+
     "return a 404 NOT FOUND if the zone does not exist" in {
       post(rsZoneNotFound) ~> recordSetRoute ~> check {
         status shouldBe StatusCodes.NotFound
@@ -1348,7 +1397,6 @@ class RecordSetRoutingSpec
     "return appropriate errors for missing information" in {
       validateErrors(
         rsMissingData,
-        "Missing RecordSet.zoneId",
         "Missing RecordSet.name",
         "Missing RecordSet.type",
         "Missing RecordSet.ttl"

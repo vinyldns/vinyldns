@@ -19,6 +19,7 @@ package vinyldns.mysql.repository
 import cats.implicits._
 import org.slf4j.LoggerFactory
 import scalikejdbc._
+import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.record._
 import vinyldns.core.protobuf.ProtobufConversions
 import vinyldns.core.route.Monitored
@@ -276,26 +277,54 @@ class MySqlRecordSetCacheRepository
     * @return A list of {@link RecordSet} matching the criteria
     */
   def listRecordSetData(
-                       zoneId: Option[String],
-                       startFrom: Option[String],
-                       maxItems: Option[Int],
-                       recordNameFilter: Option[String],
-                       recordTypeFilter: Option[Set[RecordType]],
-                       recordOwnerGroupFilter: Option[String],
-                       nameSort: NameSort
-                     ): IO[ListRecordSetResults] =
-  monitor("repo.RecordSet.listRecordSetData") {
-    IO {
-      val maxPlusOne = maxItems.map(_ + 1)
-      val wildcardStart = raw"^\s*[*%](.+[^*%])\s*$$".r
+                          zoneId: Option[String],
+                          startFrom: Option[String],
+                          maxItems: Option[Int],
+                          recordNameFilter: Option[String],
+                          recordTypeFilter: Option[Set[RecordType]],
+                          recordOwnerGroupFilter: Option[String],
+                          nameSort: NameSort,
+                          authPrincipal: Option[AuthPrincipal]
+                        ): IO[ListRecordSetResults] =
+    monitor("repo.RecordSet.listRecordSetData") {
+      IO {
+        val maxPlusOne = maxItems.map(_ + 1)
+        val wildcardStart = raw"^\s*[*%](.+[^*%])\s*$$".r
+        val authFilter = authPrincipal.filter(auth => zoneId.isEmpty && !auth.isSystemAdmin).map(buildAccessFilter)
 
-      // setup optional filters
-      val zoneAndNameFilters = (zoneId, recordNameFilter) match {
-        case (Some(zId), Some(rName)) =>
-          Some(sqls"recordset.zone_id = $zId AND recordset.name LIKE ${rName.replace('*', '%')} ")
-        case (None, Some(fqdn)) => fqdn match {
-          case fqdn if wildcardStart.pattern.matcher(fqdn).matches() =>
-            Some(sqls"recordset_data.reverse_fqdn LIKE ${wildcardStart.replaceAllIn(fqdn, "$1").reverse.replace('*', '%') + "%"} ")
+        // setup optional filters
+        val zoneAndNameFilters = (zoneId, recordNameFilter) match {
+          case (Some(zId), Some(rName)) =>
+            Some(sqls"recordset.zone_id = $zId AND recordset.name LIKE ${rName.replace('*', '%')} ")
+          case (None, Some(fqdn)) => fqdn match {
+            case fqdn if wildcardStart.pattern.matcher(fqdn).matches() =>
+              // If we have a wildcard at the beginning only, then use the reverse_fqdn DB index
+              Some(sqls"recordset_data.reverse_fqdn LIKE ${wildcardStart.replaceAllIn(fqdn, "$1").reverse.replace('*', '%') + "%"} ")
+            case _ =>
+              // By default, just use a LIKE query
+              Some(sqls"recordset.fqdn LIKE ${fqdn.replace('*', '%')} ")
+          }
+          case (Some(zId), None) => Some(sqls"recordset.zone_id = $zId ")
+          case _ => None
+        }
+
+        val searchByZone = zoneId.fold[Boolean](false)(_ => true)
+        val pagingKey = PagingKey(startFrom)
+
+        // sort by name or fqdn in given order
+        val sortBy = (searchByZone, nameSort) match {
+          case (true, NameSort.DESC) =>
+            pagingKey.as(
+              sqls"((recordset.name <= ${pagingKey.map(pk => pk.recordName)} AND recordset.type > ${pagingKey.map(pk => pk.recordType)}) OR recordset.name < ${pagingKey.map(pk => pk.recordName)})"
+            )
+          case (false, NameSort.ASC) =>
+            pagingKey.as(
+              sqls"((recordset.fqdn >= ${pagingKey.map(pk => pk.recordName)} AND recordset.type > ${pagingKey.map(pk => pk.recordType)}) OR recordset.fqdn > ${pagingKey.map(pk => pk.recordName)})"
+            )
+          case (false, NameSort.DESC) =>
+            pagingKey.as(
+              sqls"((recordset.fqdn <= ${pagingKey.map(pk => pk.recordName)} AND recordset.type > ${pagingKey.map(pk => pk.recordType)}) OR recordset.fqdn < ${pagingKey.map(pk => pk.recordName)})"
+            )
           case _ =>
             Some(sqls"recordset.fqdn LIKE ${fqdn.replace('*', '%')} ")
         }
@@ -329,12 +358,11 @@ class MySqlRecordSetCacheRepository
         val list = t.map(fromRecordType)
         sqls"recordset.type IN ($list)"
       }
+        val opts =
+          (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter ++ authFilter).toList
 
       val ownerGroupFilter =
         recordOwnerGroupFilter.map(owner => sqls"recordset.owner_group_id = $owner ")
-
-      val opts =
-        (zoneAndNameFilters ++ sortBy ++ typeFilter ++ ownerGroupFilter).toList
 
       val qualifiers = if (nameSort == ASC) {
         sqls"ORDER BY fqdn ASC, type ASC "
@@ -409,6 +437,32 @@ class MySqlRecordSetCacheRepository
         } else {
           results
         }
+        
+        val countQueryBase = sqls"""
+              SELECT /*+ MAX_EXECUTION_TIME(20000) */ COUNT(*) FROM (
+                SELECT recordset_data.recordset_id, recordset_data.type
+                FROM recordset_data
+                RIGHT JOIN recordset
+                  ON recordset.id = recordset_data.recordset_id
+              """
+          val countOpts = (zoneAndNameFilters ++ typeFilter ++ ownerGroupFilter ++ authFilter).toList
+          val countWhere =
+            if (countOpts.nonEmpty) {
+              val setDelimiter = SQLSyntax.join(countOpts, sqls"AND")
+              sqls"WHERE".append(setDelimiter)
+            } else sqls""
+
+          val countGroupBy = sqls"""
+              GROUP BY recordset_data.recordset_id, recordset_data.type
+            ) AS grouped_count
+            """
+          val countQuery = countQueryBase.append(countWhere).append(countGroupBy)
+
+          val totalCount: Option[Int] = 
+              sql"$countQuery"
+              .map(_.int(1))
+              .single()
+              .apply()
 
         val nextId = maxPlusOne
           .filter(_ == results.size)
@@ -425,7 +479,13 @@ class MySqlRecordSetCacheRepository
           recordTypeSort = RecordTypeSort.NONE)
       }
     }
+
+  private def buildAccessFilter(authPrincipal: AuthPrincipal): SQLSyntax = {
+    val accessors =
+      MySqlAccessors.buildZoneSearchAccessorList(authPrincipal.signedInUser, authPrincipal.memberGroupIds, logger)
+    sqls"recordset.zone_id IN (SELECT za.zone_id FROM zone_access za WHERE za.accessor_id IN ($accessors))"
   }
+
 
   private val IPV4_ARPA = ".in-addr.arpa."
   private val IPV6_ARPA = ".ip6.arpa."
