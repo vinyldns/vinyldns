@@ -378,7 +378,7 @@ class MySqlRecordSetCacheRepository
 
             val recordDataValueOpts =
               (Some(sqls"recordset_data.record_data_value LIKE ${fqdn.replace('*', '%')} ") ++
-                sortBy ++ typeFilter ++ ownerGroupFilter).toList
+                sortBy ++ typeFilter ++ ownerGroupFilter ++ authFilter).toList
 
             val appendRecordDataValueOpts = if (recordDataValueOpts.nonEmpty) {
               val setDelimiter = SQLSyntax.join(recordDataValueOpts, sqls"AND")
