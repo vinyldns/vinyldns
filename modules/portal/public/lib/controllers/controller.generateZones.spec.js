@@ -221,35 +221,142 @@ describe('Controller: GenerateZonesController', function () {
         expect(this.scope.hasRequiredProviderParams()).toBe(true);
     });
 
-    it('hides and clears Masters when Kind is Native', function () {
-        this.scope.createZone = { providerParams: { kind: 'Native', nameservers: ['ns1.example.com'], masters: ['172.17.42.1'] } };
+    it('uses the selected Kind to show update fields and serialize their payload locations', function () {
+        this.scope.createZone = {
+            provider: 'powerdns',
+            providerParams: {
+                kind: 'Native',
+                nameservers: ['ns1.example.com'],
+                masters: ['172.17.42.1', '172.17.42.2'],
+                servers: ['172.17.42.3', '172.17.42.4'],
+                recursion_desired: false
+            }
+        };
+        this.scope.isEditMode = true;
         this.scope.UpdateRequiredFields = ['kind'];
         this.scope.updateZoneTemplate = {
-            Kind: { type: 'Select', value: 'Native, Master' },
-            'Native Name Servers': { type: 'Display', field: 'nameservers', value: 'Native name servers', 'visible-when': { field: 'kind', value: 'Native' } },
-            Masters: { type: 'Multi-Select', value: '172.17.42.1, 172.17.42.2' }
+            Kind: { type: 'Select', value: 'Native, Master, Slave, Forwarded' },
+            'Name Servers': {
+                type: 'Display',
+                field: 'nameservers',
+                value: 'Name servers used by this zone',
+                'visible-when': { field: 'kind', values: ['Native', 'Master'] },
+                'required-when': { field: 'kind', values: ['Native', 'Master'] }
+            },
+            'Native Masters': {
+                type: 'Multi-Select',
+                field: 'masters',
+                value: '172.17.42.1, 172.17.42.2',
+                'visible-when': { field: 'kind', value: 'Native' }
+            },
+            'Slave Masters': {
+                type: 'Multi-Select',
+                field: 'masters',
+                value: '172.17.42.1, 172.17.42.2',
+                'visible-when': { field: 'kind', value: 'Slave' },
+                'payload-location-when': { field: 'kind', value: 'Slave' }
+            },
+            Servers: {
+                type: 'IP-Array',
+                field: 'servers',
+                'visible-when': { field: 'kind', value: 'Forwarded' },
+                'payload-location': 'zone'
+            },
+            'Recursion Desired': {
+                type: 'Boolean',
+                field: 'recursion_desired',
+                'visible-when': { field: 'kind', value: 'Forwarded' }
+            }
         };
-        this.scope.zoneFields = [{
-            field: 'nameservers',
-            type: 'Display',
-            visibleWhen: { field: 'kind', value: 'Native' }
-        }, {
-            field: 'masters',
-            type: 'Multi-Select',
-            visibleWhen: { field: 'kind', value: 'Master' }
-        }];
+        this.scope.zoneFields = Object.keys(this.scope.updateZoneTemplate).map(function (label) {
+            var config = this.scope.updateZoneTemplate[label];
+            return {
+                label: label,
+                field: config.field || label.replace(/ /g, '').toLowerCase(),
+                type: config.type,
+                visibleWhen: config['visible-when'],
+                requiredWhen: config['required-when']
+            };
+        }, this);
 
-        expect(this.scope.isProviderFieldVisible(this.scope.zoneFields[1])).toBe(false);
-        this.scope.updateProviderFieldVisibility();
-        expect(this.scope.createZone.providerParams.masters).toEqual([]);
-        expect(this.scope.isProviderFieldVisible(this.scope.zoneFields[0])).toBe(true);
-        expect(this.scope.displayProviderParamValue(this.scope.createZone.providerParams.nameservers)).toBe('ns1.example.com');
-        expect(this.scope.getUpdatePayload(this.scope.createZone).providerParams).toEqual({ kind: 'Native' });
+        var nameserversField = this.scope.zoneFields.filter(function (field) { return field.field === 'nameservers'; })[0];
+        var nativeMastersField = this.scope.zoneFields.filter(function (field) { return field.label === 'Native Masters'; })[0];
+        var slaveMastersField = this.scope.zoneFields.filter(function (field) { return field.label === 'Slave Masters'; })[0];
+        var serversField = this.scope.zoneFields.filter(function (field) { return field.field === 'servers'; })[0];
+
+        expect(this.scope.isProviderFieldVisible(nameserversField)).toBe(true);
+        expect(this.scope.isProviderFieldVisible(nativeMastersField)).toBe(true);
+        expect(this.scope.isProviderFieldVisible(slaveMastersField)).toBe(false);
+        expect(this.scope.getUpdatePayload(this.scope.createZone).providerParams).toEqual({
+            kind: 'Native',
+            nameservers: ['ns1.example.com'],
+            masters: ['172.17.42.1', '172.17.42.2']
+        });
 
         this.scope.createZone.providerParams.kind = 'Master';
-        expect(this.scope.isProviderFieldVisible(this.scope.zoneFields[1])).toBe(true);
-        this.scope.updateProviderFieldVisibility();
-        expect(this.scope.createZone.providerParams.nameservers).toEqual(['ns1.example.com']);
+        expect(this.scope.isProviderFieldVisible(nameserversField)).toBe(true);
+        expect(this.scope.isProviderFieldVisible(nativeMastersField)).toBe(false);
+        expect(this.scope.isProviderFieldVisible(slaveMastersField)).toBe(false);
+        expect(this.scope.getUpdatePayload(this.scope.createZone).providerParams).toEqual({
+            kind: 'Master',
+            nameservers: ['ns1.example.com']
+        });
+
+        this.scope.createZone.providerParams.kind = 'Slave';
+        var slavePayload = this.scope.getUpdatePayload(this.scope.createZone);
+        expect(this.scope.isProviderFieldVisible(nameserversField)).toBe(false);
+        expect(this.scope.isProviderFieldVisible(slaveMastersField)).toBe(true);
+        expect(slavePayload.providerParams).toEqual({ kind: 'Slave' });
+        expect(slavePayload.masters).toEqual(['172.17.42.1', '172.17.42.2']);
+
+        this.scope.createZone.providerParams.kind = 'Forwarded';
+        var forwardedPayload = this.scope.getUpdatePayload(this.scope.createZone);
+        expect(this.scope.isProviderFieldVisible(nameserversField)).toBe(false);
+        expect(this.scope.isProviderFieldVisible(serversField)).toBe(true);
+        expect(forwardedPayload.providerParams).toEqual({ kind: 'Forwarded', recursion_desired: false });
+        expect(forwardedPayload.servers).toEqual(['172.17.42.3', '172.17.42.4']);
+    });
+
+    it('hydrates root-level Masters and Servers when loading the update template', function () {
+        this.zonesService.getCreateZoneTemplate = function () {
+            return this.zonesService.q.when({
+                data: {
+                    'request-templates': {
+                        'update-zone': JSON.stringify({
+                            Kind: { type: 'Select', value: 'Native, Slave, Forwarded' },
+                            'Slave Masters': {
+                                type: 'IP-Array',
+                                field: 'masters',
+                                value: '172.17.42.1, 172.17.42.2',
+                                'visible-when': { field: 'kind', value: 'Slave' },
+                                'payload-location-when': { field: 'kind', value: 'Slave' }
+                            },
+                            Servers: {
+                                type: 'IP-Array',
+                                field: 'servers',
+                                'visible-when': { field: 'kind', value: 'Forwarded' },
+                                'payload-location': 'zone'
+                            }
+                        })
+                    },
+                    'required-fields': { 'update-zone': ['kind'] }
+                }
+            });
+        }.bind(this);
+        this.scope.createZone = {
+            provider: 'powerdns',
+            masters: ['172.17.42.1', '172.17.42.2'],
+            servers: ['172.17.42.3', '172.17.42.4'],
+            providerParams: { kind: 'Slave' }
+        };
+
+        this.scope.getUpdateZoneTemplate('powerdns');
+        this.scope.$digest();
+
+        expect(this.scope.createZone.providerParams.masters).toEqual(['172.17.42.1', '172.17.42.2']);
+        expect(this.scope.createZone.providerParams.servers).toEqual(['172.17.42.3', '172.17.42.4']);
+        expect(this.scope.zoneFields[1].type).toBe('Multi-Select');
+        expect(this.scope.zoneFields[2].type).toBe('IP-Array');
     });
 
     it('uses the loaded nameserver list for a config-sourced provider field', function () {
@@ -259,19 +366,19 @@ describe('Controller: GenerateZonesController', function () {
                 data: {
                     'request-templates': {
                         'create-zone': JSON.stringify({
-                            Kind: { type: 'Select', value: 'Native, Master' },
-                            'Native Name Servers': {
+                            Kind: { type: 'Select', value: 'Native, Master, Slave, Forwarded' },
+                            'Name Servers': {
                                 type: 'Multi-Select',
                                 field: 'nameservers',
                                 source: 'nameservers',
-                                description: 'Select Native name servers.',
-                                'visible-when': { field: 'kind', value: 'Native' },
-                                'preserve-when-hidden': true
+                                description: 'Select zone name servers.'
                             },
                             Masters: {
                                 type: 'Multi-Select',
+                                field: 'masters',
                                 value: '172.17.42.1, 172.17.42.2',
-                                'visible-when': { field: 'kind', value: 'Master' }
+                                'visible-when': { field: 'kind', values: ['Master', 'Slave'] },
+                                'preserve-when-hidden': true
                             }
                         })
                     },
@@ -283,16 +390,74 @@ describe('Controller: GenerateZonesController', function () {
         this.scope.getCreateZoneTemplate('powerdns');
         this.scope.$digest();
         var field = this.scope.zoneFields.filter(function (zoneField) {
-            return zoneField.label === 'Native Name Servers';
+            return zoneField.label === 'Name Servers';
         })[0];
 
         expect(field.field).toBe('nameservers');
-        expect(this.scope.isProviderFieldVisible(field)).toBe(false);
-        this.scope.createZone.providerParams.kind = 'Native';
         expect(this.scope.isProviderFieldVisible(field)).toBe(true);
         expect(this.scope.hasVisibleNameserversSelector()).toBe(true);
         expect(this.scope.getProviderFieldValues(field)).toEqual(this.scope.nameservers);
         expect(this.scope.requiredFields).toEqual(['kind', 'nameservers']);
+    });
+
+    it('uses configured IP choices as dropdowns and keeps unconfigured IP fields editable', function () {
+        this.zonesService.getCreateZoneTemplate = function () {
+            return this.zonesService.q.when({
+                data: {
+                    'request-templates': {
+                        'create-zone': JSON.stringify({
+                            Kind: { type: 'Select', value: 'Native, Slave, Forwarded' },
+                            'Native Masters': {
+                                type: 'IP-Array',
+                                field: 'masters',
+                                value: '10.0.0.1, 10.0.0.2',
+                                'visible-when': { field: 'kind', value: 'Native' },
+                                'required-when': { field: 'kind', value: 'Native' }
+                            },
+                            'Slave Masters': {
+                                type: 'IP-Array',
+                                field: 'masters',
+                                value: '10.0.1.1, 10.0.1.2',
+                                'visible-when': { field: 'kind', value: 'Slave' },
+                                'required-when': { field: 'kind', value: 'Slave' },
+                                'payload-location-when': { field: 'kind', value: 'Slave' }
+                            },
+                            Servers: {
+                                type: 'IP-Array',
+                                field: 'servers',
+                                value: '10.0.2.1, 10.0.2.2',
+                                'visible-when': { field: 'kind', value: 'Forwarded' },
+                                'payload-location': 'zone'
+                            },
+                            'Manual IPs': { type: 'IP-Array', field: 'manual_ips' }
+                        })
+                    },
+                    'required-fields': { 'create-zone': ['kind'] }
+                }
+            });
+        }.bind(this);
+
+        this.scope.createZone = { provider: 'powerdns', providerParams: {} };
+        this.scope.getCreateZoneTemplate('powerdns', true);
+        this.scope.$digest();
+
+        var nativeMasters = this.scope.zoneFields.filter(function (field) { return field.label === 'Native Masters'; })[0];
+        var slaveMasters = this.scope.zoneFields.filter(function (field) { return field.label === 'Slave Masters'; })[0];
+        var forwardedServers = this.scope.zoneFields.filter(function (field) { return field.label === 'Servers'; })[0];
+        var manualIps = this.scope.zoneFields.filter(function (field) { return field.label === 'Manual IPs'; })[0];
+
+        expect(nativeMasters.type).toBe('Multi-Select');
+        expect(nativeMasters.value).toEqual(['10.0.0.1', '10.0.0.2']);
+        expect(slaveMasters.type).toBe('Multi-Select');
+        expect(slaveMasters.value).toEqual(['10.0.1.1', '10.0.1.2']);
+        expect(forwardedServers.type).toBe('Multi-Select');
+        expect(forwardedServers.value).toEqual(['10.0.2.1', '10.0.2.2']);
+        expect(manualIps.type).toBe('IP-Array');
+        expect(this.scope.createZone.providerParams.manual_ips).toEqual(['']);
+
+        this.scope.createZone.providerParams.kind = 'Slave';
+        expect(this.scope.isDynamicZoneFieldRequired('masters')).toBe(true);
+        expect(this.scope.getProviderFieldValues(slaveMasters)).toEqual(slaveMasters.value);
     });
 
     it('shows Forwarded recursion control and preserves its false value', function () {
@@ -347,5 +512,94 @@ describe('Controller: GenerateZonesController', function () {
             kind: 'Forwarded',
             recursion_desired: false
         });
+    });
+
+    it('builds PowerDNS create payload fields according to Kind', function () {
+        this.scope.createZoneTemplate = {
+            Kind: { type: 'Select', field: 'kind' },
+            'Name Servers': {
+                type: 'Multi-Select',
+                field: 'nameservers',
+                'visible-when': { field: 'kind', values: ['Native', 'Master'] }
+            },
+            Masters: {
+                type: 'IP-Array',
+                field: 'masters',
+                'visible-when': { field: 'kind', values: ['Native', 'Slave'] },
+                'payload-location-when': { field: 'kind', value: 'Slave' }
+            },
+            Servers: {
+                type: 'IP-Array',
+                field: 'servers',
+                'visible-when': { field: 'kind', value: 'Forwarded' },
+                'payload-location': 'zone'
+            },
+            'Recursion Desired': {
+                type: 'Boolean',
+                field: 'recursion_desired',
+                'visible-when': { field: 'kind', value: 'Forwarded' }
+            }
+        };
+
+        var zone = {
+            groupId: 'group-id',
+            provider: 'powerdns',
+            zoneName: 'example.com.',
+            email: 'test@example.com',
+            providerParams: {
+                kind: 'Native',
+                nameservers: ['172.17.42.1.'],
+                masters: ['172.17.42.1', '172.17.42.2', '']
+            }
+        };
+        expect(this.scope.getCreatePayload(zone)).toEqual({
+            groupId: 'group-id',
+            provider: 'powerdns',
+            zoneName: 'example.com.',
+            email: 'test@example.com',
+            providerParams: {
+                kind: 'Native',
+                nameservers: ['172.17.42.1.'],
+                masters: ['172.17.42.1', '172.17.42.2']
+            }
+        });
+
+        zone.providerParams.kind = 'Master';
+        expect(this.scope.getCreatePayload(zone).providerParams).toEqual({
+            kind: 'Master',
+            nameservers: ['172.17.42.1.']
+        });
+
+        zone.providerParams.kind = 'Slave';
+        expect(this.scope.getCreatePayload(zone)).toEqual({
+            groupId: 'group-id',
+            provider: 'powerdns',
+            zoneName: 'example.com.',
+            email: 'test@example.com',
+            providerParams: { kind: 'Slave' },
+            masters: ['172.17.42.1', '172.17.42.2']
+        });
+
+        zone.providerParams.kind = 'Forwarded';
+        zone.providerParams.servers = ['172.17.42.3', '172.17.42.4', ''];
+        zone.providerParams.recursion_desired = false;
+        expect(this.scope.getCreatePayload(zone)).toEqual({
+            groupId: 'group-id',
+            provider: 'powerdns',
+            zoneName: 'example.com.',
+            email: 'test@example.com',
+            providerParams: { kind: 'Forwarded', recursion_desired: false },
+            servers: ['172.17.42.3', '172.17.42.4']
+        });
+    });
+
+    it('adds and removes entries in an editable provider IP array', function () {
+        this.scope.createZone = { providerParams: { masters: ['172.17.42.1'] } };
+
+        this.scope.addProviderArrayItem('masters');
+        expect(this.scope.createZone.providerParams.masters).toEqual(['172.17.42.1', '']);
+        this.scope.removeProviderArrayItem('masters', 0);
+        expect(this.scope.createZone.providerParams.masters).toEqual(['']);
+        expect(this.scope.hasProviderParamValue(this.scope.createZone.providerParams.masters)).toBe(false);
     });
 });

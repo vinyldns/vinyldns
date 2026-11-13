@@ -1,5 +1,5 @@
 <form name="addZoneCreationForm" ng-submit="addZoneCreationForm.$valid && hasRequiredProviderParams() && addZoneCreation()" role="form" class="form-horizontal" novalidate>
-    <modal modal-id="zone_creation_modal" modal-title="Create a New Zone">
+    <modal modal-id="zone_creation_modal" modal-title="{{ isEditMode ? 'Update Zone' : 'Create a New Zone' }}">
         <modal-body>
             <p>
                 Use this form to create a new zone.
@@ -49,64 +49,6 @@
                     and access rules. <a href="/groups">You can create a new group from the Groups page.</a>
                 </span>
             </modal-element>
-            <modal-element label="Name Server"
-                           invalid-when="addZoneCreationForm.$submitted && createZone.providerParams.nameservers.length === 0" ng-if="!isEditMode && !hasVisibleNameserversSelector()">
-
-                <input type="hidden"
-                       name="nameservers"
-                       ng-model="createZone.providerParams.nameservers"
-                       ng-required="createZone.providerParams.nameservers.length === 0"/>
-
-                <!-- Dropdown -->
-                <div class="dropdown dropdown-container">
-                    <button class="btn btn-default dropdown-toggle form-control text-left dropdown-toggle-btn"
-                            type="button"
-                            data-toggle="dropdown"
-                            aria-haspopup="true"
-                            aria-expanded="false"
-                            ng-disabled="isEditMode" >
-                        <span ng-if="createZone.providerParams.nameservers.length === 0">Select a NameServer</span>
-                        <span ng-if="createZone.providerParams.nameservers.length > 0">{{ createZone.providerParams.nameservers.join(', ') }}</span>
-                        <span class="caret pull-right dropdown-caret"></span>
-                    </button>
-
-                    <ul class="dropdown-menu dropdown-menu-box">
-                        <!-- Search Input -->
-                        <li>
-                            <input type="text"
-                                   class="form-control dropdown-search-input"
-                                   placeholder="Search..."
-                                   ng-model="searchNs" />
-                        </li>
-
-                        <!-- Filtered List -->
-                        <li ng-repeat="ns in nameservers | filter:searchNs">
-                            <label class="dropdown-label">
-                                <input type="checkbox"
-                                       ng-model="nameserverSelection[ns]"
-                                       ng-change="updateNameserverSelection(ns)">
-                                {{ ns }}
-                            </label>
-                        </li>
-                    </ul>
-                </div>
-                <span class="help-block">
-                    The Name Server for a pre-configured DNS connection configuration. Please contact your DNS admin team
-                    for more information if you believe you need a custom connection. In most cases, the default
-                    connection will suffice.
-                </span>
-            </modal-element>
-
-            <modal-element label="Name Servers" ng-if="isEditMode"
-                          invalid-when="addZoneCreationForm.$submitted && isRequiredProviderFieldMissing('nameservers')">
-                <div ng-repeat="ns in createZone.providerParams.nameservers track by $index" class="form-group" style="margin-bottom: 10px;">
-                    <input type="text" class="form-control"
-                           ng-model="createZone.providerParams.nameservers[$index]"
-                           name="nameserver-{{$index}}"
-                           disabled />
-                </div>
-            </modal-element>
-
             <modal-element label="DNS Provider" invalid-when="addZoneCreationForm.$submitted && addZoneCreationForm.allowedDNSProviders.$invalid">
                 <select id="zone-provider"
                         name="allowedDNSProviders"
@@ -125,10 +67,12 @@
                 </span>
             </modal-element>
 
+            <div ng-include="'zone-name-servers-field.html'" ng-if="createZone.provider !== 'powerdns'"></div>
+
             <div ng-repeat="field in zoneFields">
 
                 <!-- Multi-Select -->
-                <modal-element ng-if="field.type === 'Multi-Select' && isProviderFieldVisible(field)" label="{{ field.label }}"
+                <modal-element ng-if="field.type === 'Multi-Select' && field.field !== 'nameservers' && isProviderFieldVisible(field)" label="{{ field.label }}"
                                invalid-when="addZoneCreationForm.$submitted && isDynamicZoneFieldRequired(field.field) && (createZone.providerParams[field.field] || []).length === 0"
                 >
                     <input type="hidden"
@@ -178,7 +122,28 @@
                     </span>
                 </modal-element>
 
-                <modal-element ng-if="field.type === 'Display' && isProviderFieldVisible(field)" label="{{ field.label }}">
+                <modal-element ng-if="field.type === 'IP-Array' && isProviderFieldVisible(field)" label="{{ field.label }}"
+                               invalid-when="addZoneCreationForm.$submitted && isDynamicZoneFieldRequired(field.field) && !hasProviderParamValue(createZone.providerParams[field.field])">
+                    <div ng-repeat="ip in createZone.providerParams[field.field] track by $index" class="input-group" style="margin-bottom: 8px;">
+                        <input type="text" class="form-control"
+                               name="providerParams_{{ field.field }}_{{$index}}"
+                               ng-model="createZone.providerParams[field.field][$index]"
+                               ng-required="isDynamicZoneFieldRequired(field.field)"
+                               placeholder="IP address" />
+                        <span class="input-group-btn">
+                            <button type="button" class="btn btn-default" aria-label="Remove IP address"
+                                    ng-click="removeProviderArrayItem(field.field, $index)">
+                                <span class="fa fa-times" aria-hidden="true"></span>
+                            </button>
+                        </span>
+                    </div>
+                    <button type="button" class="btn btn-default" ng-click="addProviderArrayItem(field.field)">
+                        <span class="fa fa-plus" aria-hidden="true"></span> Add IP
+                    </button>
+                    <span class="help-block" ng-if="field.description">{{ field.description }}</span>
+                </modal-element>
+
+                <modal-element ng-if="field.type === 'Display' && field.field !== 'nameservers' && isProviderFieldVisible(field)" label="{{ field.label }}">
                     <div class="form-control-static">{{ displayProviderParamValue(createZone.providerParams[field.field]) }}</div>
                     <span class="help-block">{{ field.value }}</span>
                 </modal-element>
@@ -225,6 +190,8 @@
                 </modal-element>
             </div>
 
+            <div ng-include="'zone-name-servers-field.html'" ng-if="createZone.provider === 'powerdns'"></div>
+
         </modal-body>
         <modal-footer>
             <button type="button" class="btn btn-default pull-left" ng-click="resetCreateZone()">Clear Form</button>
@@ -245,4 +212,58 @@
             </button>
         </modal-footer>
     </modal>
+
+<script type="text/ng-template" id="zone-name-servers-field.html">
+    <modal-element label="Name Server"
+                   invalid-when="addZoneCreationForm.$submitted && isNameserversSelectorRequired() && createZone.providerParams.nameservers.length === 0"
+                   ng-if="!isEditMode && shouldShowNameserversSelector()">
+        <input type="hidden"
+               name="nameservers"
+               ng-model="createZone.providerParams.nameservers"
+               ng-required="isNameserversSelectorRequired()" />
+        <div class="dropdown dropdown-container">
+            <button class="btn btn-default dropdown-toggle form-control text-left dropdown-toggle-btn"
+                    type="button"
+                    data-toggle="dropdown"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                    ng-disabled="isEditMode">
+                <span ng-if="createZone.providerParams.nameservers.length === 0">Select a NameServer</span>
+                <span ng-if="createZone.providerParams.nameservers.length > 0">{{ createZone.providerParams.nameservers.join(', ') }}</span>
+                <span class="caret pull-right dropdown-caret"></span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-box">
+                <li>
+                    <input type="text"
+                           class="form-control dropdown-search-input"
+                           placeholder="Search..."
+                           ng-model="searchNs" />
+                </li>
+                <li ng-repeat="ns in nameservers | filter:searchNs">
+                    <label class="dropdown-label">
+                        <input type="checkbox"
+                               ng-model="nameserverSelection[ns]"
+                               ng-change="updateNameserverSelection(ns)">
+                        {{ ns }}
+                    </label>
+                </li>
+            </ul>
+        </div>
+        <span class="help-block">
+            The Name Server for a pre-configured DNS connection configuration. Please contact your DNS admin team
+            for more information if you believe you need a custom connection. In most cases, the default
+            connection will suffice.
+        </span>
+    </modal-element>
+
+    <modal-element label="Name Servers" ng-if="isEditMode && shouldShowNameserversSelector()"
+                   invalid-when="addZoneCreationForm.$submitted && isRequiredProviderFieldMissing('nameservers')">
+        <div ng-repeat="ns in createZone.providerParams.nameservers track by $index" class="form-group" style="margin-bottom: 10px;">
+            <input type="text" class="form-control"
+                   ng-model="createZone.providerParams.nameservers[$index]"
+                   name="nameserver-{{$index}}"
+                   disabled />
+        </div>
+    </modal-element>
+</script>
 </form>

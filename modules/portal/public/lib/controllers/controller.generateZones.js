@@ -146,7 +146,9 @@ angular.module('controller.generateZones', [])
     $scope.hasProviderParamValue = function (value) {
         return value !== undefined && value !== null &&
             !(typeof value === 'string' && value.trim() === '') &&
-            (!Array.isArray(value) || value.length > 0);
+            (!Array.isArray(value) || value.some(function (item) {
+                return item !== undefined && item !== null && String(item).trim() !== '';
+            }));
     };
 
     $scope.isProviderParamArray = function (value) {
@@ -169,6 +171,17 @@ angular.module('controller.generateZones', [])
 
     $scope.addNameserver = function () {
         $scope.createZone.providerParams.nameservers.push('');
+    };
+
+    $scope.addProviderArrayItem = function (fieldKey) {
+        if (!Array.isArray($scope.createZone.providerParams[fieldKey])) {
+            $scope.createZone.providerParams[fieldKey] = [];
+        }
+        $scope.createZone.providerParams[fieldKey].push('');
+    };
+
+    $scope.removeProviderArrayItem = function (fieldKey, index) {
+        $scope.createZone.providerParams[fieldKey].splice(index, 1);
     };
 
     $scope.removeNameserver = function (index) {
@@ -205,15 +218,17 @@ angular.module('controller.generateZones', [])
 
             $scope.zoneFields = Object.entries(createZone).map(([label, config]) => {
                 const field = config.field || label.replace(/ /g, '').toLowerCase();
-                const isSelect = config.type.toLowerCase().includes('select');
-                const value = config.source === 'nameservers' ? [] : isSelect ? config.value.split(',').map(v => v.trim()) : config.value;
+                const hasConfiguredIpChoices = config.type === 'IP-Array' && typeof config.value === 'string' && config.value.trim() !== '';
+                const type = hasConfiguredIpChoices ? 'Multi-Select' : config.type;
+                const isSelect = type.toLowerCase().includes('select');
+                const value = config.source === 'nameservers' ? [] : isSelect ? (config.value || '').split(',').map(v => v.trim()).filter(Boolean) : config.value;
 
                 if (config.type !== 'Display' && $scope.createZone.providerParams[field] === undefined) {
-                    $scope.createZone.providerParams[field] = config.type === 'Boolean' ? config.value : config.type.toLowerCase() === 'multi-select' ? [] : '';
+                    $scope.createZone.providerParams[field] = config.type === 'Boolean' ? config.value : type === 'IP-Array' ? [''] : type === 'Multi-Select' ? [] : '';
                 }
                 return {
                     label,
-                    type: config.type,
+                    type,
                     value,
                     field,
                     editable: true,
@@ -221,7 +236,9 @@ angular.module('controller.generateZones', [])
                     source: config.source,
                     description: config.description,
                     preserveWhenHidden: config['preserve-when-hidden'],
-                    requiredWhen: config['required-when']
+                    requiredWhen: config['required-when'],
+                    payloadLocation: config['payload-location'],
+                    payloadLocationWhen: config['payload-location-when']
                 };
             });
         });
@@ -245,16 +262,23 @@ angular.module('controller.generateZones', [])
             }
             $scope.zoneFields = Object.entries(updateZone).map(([label, config]) => {
                 const field = config.field || label.replace(/ /g, '').toLowerCase();
-                const isSelect = config.type.toLowerCase().includes('select');
-                const value = config.source === 'nameservers' ? [] : isSelect ? config.value.split(',').map(v => v.trim()) : config.value;
+                const hasConfiguredIpChoices = config.type === 'IP-Array' && typeof config.value === 'string' && config.value.trim() !== '';
+                const type = hasConfiguredIpChoices ? 'Multi-Select' : config.type;
+                const isSelect = type.toLowerCase().includes('select');
+                const value = config.source === 'nameservers' ? [] : isSelect ? (config.value || '').split(',').map(v => v.trim()).filter(Boolean) : config.value;
+
+                if ($scope.createZone.providerParams[field] === undefined && $scope.createZone[field] !== undefined &&
+                    (config['payload-location'] === 'zone' || config['payload-location-when'])) {
+                    $scope.createZone.providerParams[field] = angular.copy($scope.createZone[field]);
+                }
 
                 // Only initialize providerParams entry if not already populated from existing zone data
                 if (config.type !== 'Display' && ($scope.createZone.providerParams[field] === undefined || $scope.createZone.providerParams[field] === null)) {
-                    $scope.createZone.providerParams[field] = config.type === 'Boolean' ? config.value : config.type.toLowerCase() === 'multi-select' ? [] : '';
+                    $scope.createZone.providerParams[field] = config.type === 'Boolean' ? config.value : type === 'IP-Array' ? [''] : type === 'Multi-Select' ? [] : '';
                 }
                 return {
                     label,
-                    type: config.type,
+                    type,
                     value,
                     field,
                     editable: true,
@@ -262,7 +286,9 @@ angular.module('controller.generateZones', [])
                     source: config.source,
                     description: config.description,
                     preserveWhenHidden: config['preserve-when-hidden'],
-                    requiredWhen: config['required-when']
+                    requiredWhen: config['required-when'],
+                    payloadLocation: config['payload-location'],
+                    payloadLocationWhen: config['payload-location-when']
                 };
             });
         });
@@ -273,13 +299,13 @@ angular.module('controller.generateZones', [])
         if (requiredList && requiredList.indexOf(fieldName) !== -1) {
             return true;
         }
-        const field = ($scope.zoneFields || []).find(function (zoneField) { return zoneField.field === fieldName; });
-        if (!field || !field.requiredWhen) {
-            return false;
-        }
-        const values = field.requiredWhen.values || [field.requiredWhen.value];
         const providerParams = ($scope.createZone && $scope.createZone.providerParams) || {};
-        return values.indexOf(providerParams[field.requiredWhen.field]) !== -1;
+        return ($scope.zoneFields || []).filter(function (field) {
+            return field.field === fieldName && field.requiredWhen && $scope.isProviderFieldVisible(field);
+        }).some(function (field) {
+            const values = field.requiredWhen.values || [field.requiredWhen.value];
+            return values.indexOf(providerParams[field.requiredWhen.field]) !== -1;
+        });
     };
 
     $scope.hasRequiredProviderParams = function () {
@@ -323,6 +349,23 @@ angular.module('controller.generateZones', [])
         });
     };
 
+    $scope.shouldShowNameserversSelector = function () {
+        if (!$scope.createZone.provider) {
+            return true;
+        }
+        const nameserversField = ($scope.zoneFields || []).find(function (field) {
+            return field.field === 'nameservers';
+        });
+        return !nameserversField || $scope.isProviderFieldVisible(nameserversField);
+    };
+
+    $scope.isNameserversSelectorRequired = function () {
+        if ($scope.createZone.provider === 'bind') {
+            return true;
+        }
+        return $scope.hasVisibleNameserversSelector() && $scope.isDynamicZoneFieldRequired('nameservers');
+    };
+
     $scope.updateProviderFieldVisibility = function () {
         ($scope.zoneFields || []).forEach(function (field) {
             if (field.type !== 'Display' && !field.preserveWhenHidden && !$scope.isProviderFieldVisible(field)) {
@@ -346,38 +389,105 @@ angular.module('controller.generateZones', [])
 
     $scope.getUpdatePayload = function (zone) {
         const providerParams = {};
-        if (zone.providerParams && zone.providerParams.nameservers !== undefined &&
-            ($scope.UpdateRequiredFields || []).indexOf('nameservers') !== -1) {
+        const template = $scope.updateZoneTemplate || {};
+        const nameserversConfig = Object.keys(template).map(function (label) {
+            const config = template[label];
+            const field = config.field || label.replace(/ /g, '').toLowerCase();
+            return field === 'nameservers' ? config : undefined;
+        }).filter(Boolean)[0];
+        let nameserversVisible = true;
+        if (nameserversConfig && nameserversConfig['visible-when']) {
+            const visibility = nameserversConfig['visible-when'];
+            const values = visibility.values || [visibility.value];
+            nameserversVisible = values.indexOf(zone.providerParams[visibility.field]) !== -1;
+        }
+        if (zone.providerParams && zone.providerParams.nameservers !== undefined && nameserversVisible &&
+            (nameserversConfig || ($scope.UpdateRequiredFields || []).indexOf('nameservers') !== -1)) {
             providerParams.nameservers = zone.providerParams.nameservers;
         }
-        const template = $scope.updateZoneTemplate || {};
-        for (const label in template) {
-            const config = template[label];
-            if (config.type === 'Display') {
-                continue;
-            }
-            const field = config.field || label.replace(/ /g, '').toLowerCase();
-            const fieldConfig = ($scope.zoneFields || []).find(function (zoneField) { return zoneField.field === field; });
-            if (fieldConfig && !$scope.isProviderFieldVisible(fieldConfig)) {
-                continue;
-            }
-            const value = zone.providerParams[field];
-            if (
-                value !== undefined &&
-                value !== null &&
-                !(typeof value === 'string' && value.trim() === '') &&
-                !(Array.isArray(value) && value.length === 0)
-            ) {
-                providerParams[field] = value;
-            }
-        }
-        return {
+        const payload = {
             groupId: zone.groupId,
             zoneName: zone.zoneName,
             email: zone.email,
             provider: zone.provider,
             providerParams
         };
+        for (const label in template) {
+            const config = template[label];
+            if (config.type === 'Display') {
+                continue;
+            }
+            const field = config.field || label.replace(/ /g, '').toLowerCase();
+            const visibility = config['visible-when'];
+            if (visibility) {
+                const values = visibility.values || [visibility.value];
+                if (values.indexOf(zone.providerParams[visibility.field]) === -1) {
+                    continue;
+                }
+            }
+            const value = zone.providerParams[field];
+            if (
+                value === undefined ||
+                value === null ||
+                (typeof value === 'string' && value.trim() === '') ||
+                (Array.isArray(value) && !this.hasProviderParamValue(value))
+            ) {
+                continue;
+            }
+            const rootWhen = config['payload-location-when'];
+            const putAtRoot = config['payload-location'] === 'zone' ||
+                (rootWhen && zone.providerParams[rootWhen.field] === rootWhen.value);
+            if (putAtRoot) {
+                payload[field] = value;
+            } else {
+                providerParams[field] = value;
+            }
+        }
+        return payload;
+    };
+
+    $scope.getCreatePayload = function (zone) {
+        const payload = {
+            groupId: zone.groupId,
+            provider: zone.provider,
+            zoneName: zone.zoneName,
+            email: zone.email,
+            providerParams: {}
+        };
+        const template = $scope.createZoneTemplate || {};
+        Object.keys(template).forEach(function (label) {
+            const config = template[label];
+            const field = config.field || label.replace(/ /g, '').toLowerCase();
+            const visibility = config['visible-when'];
+            if (visibility) {
+                const values = visibility.values || [visibility.value];
+                if (values.indexOf(zone.providerParams[visibility.field]) === -1) {
+                    return;
+                }
+            }
+            let value = zone.providerParams[field];
+            if (Array.isArray(value)) {
+                value = value.map(function (item) {
+                    return typeof item === 'string' ? item.trim() : item;
+                }).filter(function (item) {
+                    return item !== undefined && item !== null && String(item).trim() !== '';
+                });
+            }
+            if (value === undefined || value === null ||
+                (typeof value === 'string' && value.trim() === '') ||
+                (Array.isArray(value) && value.length === 0)) {
+                return;
+            }
+            const rootWhen = config['payload-location-when'];
+            const putAtRoot = config['payload-location'] === 'zone' ||
+                (rootWhen && zone.providerParams[rootWhen.field] === rootWhen.value);
+            if (putAtRoot) {
+                payload[field] = value;
+            } else {
+                payload.providerParams[field] = value;
+            }
+        });
+        return payload;
     };
 
     $scope.addZoneCreation = function () {
@@ -388,7 +498,7 @@ angular.module('controller.generateZones', [])
         $scope.processing = true;
         if (!$scope.isEditMode) {
             // create zone service
-            zonesService.generateZone($scope.createZone)
+            zonesService.generateZone($scope.getCreatePayload($scope.createZone))
                 .then(function (response) {
                     $timeout($scope.refreshGeneratedZones(), 1000);
                     $("#zone_creation_modal").modal("hide");
