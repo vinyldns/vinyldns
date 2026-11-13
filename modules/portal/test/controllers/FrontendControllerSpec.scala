@@ -23,6 +23,7 @@ import org.junit.runner.RunWith
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
+import play.api.libs.json.Json
 import play.api.mvc.{AnyContent, BodyParser, ControllerComponents}
 import play.api.test.CSRFTokenHelper._
 import play.api.test.Helpers._
@@ -50,12 +51,15 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
   enabledOidcAuthenticator.getValidUsernameFromToken(any[String]).returns(Some("test"))
 
   val lockedUserAccessor: UserAccountAccessor = buildMockLockedkUserAccountAccessor
+  val superUserAccessor: UserAccountAccessor = buildMockSuperUserAccountAccessor
   val disabledOidcSec: SecuritySupport =
     new LegacySecuritySupport(components, userAccessor, config, disabledOidcAuthenticator)
   val enabledOidcSec: SecuritySupport =
     new LegacySecuritySupport(components, userAccessor, config, enabledOidcAuthenticator)
   val lockedSec: SecuritySupport =
     new LegacySecuritySupport(components, lockedUserAccessor, config, disabledOidcAuthenticator)
+  val superUserSec: SecuritySupport =
+    new LegacySecuritySupport(components, superUserAccessor, config, disabledOidcAuthenticator)
 
   val underTest = new FrontendController(
     components,
@@ -67,6 +71,12 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
     components,
     config,
     lockedSec
+  )
+
+  val superUserUnderTest = new FrontendController(
+    components,
+    config,
+    superUserSec
   )
 
   val oidcUnderTest = new FrontendController(
@@ -202,6 +212,16 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
         status(result) must beEqualTo(OK)
         contentType(result) must beSome.which(_ == "text/html")
         contentAsString(result) must contain("Zones | VinylDNS")
+        contentAsString(result) must not(contain("Created Zones"))
+      }
+      "render the Created Zones tab for a superuser" in new WithApplication(app) {
+        val result =
+          superUserUnderTest.viewAllZones()(
+            FakeRequest(GET, "/zones").withSession("username" -> "superBaggins").withCSRFToken
+          )
+        status(result) must beEqualTo(OK)
+        contentAsString(result) must contain("Created Zones")
+        contentAsString(result) must contain("id=\"createdZones\"")
       }
       "redirect to the no access page when a user is locked out" in new WithApplication(app) {
         val result =
@@ -412,6 +432,83 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       }
     }
 
+    "Get for '/config/allowedDNSProviders'" should {
+      "redirect to the login page when a user is not logged in" in new WithApplication(app) {
+        val result = underTest.getAllowedDNSProviders()(FakeRequest(GET, "/config/allowedDNSProviders"))
+        status(result) must equalTo(SEE_OTHER)
+        headers(result) must contain("Location" -> "/login?target=/config/allowedDNSProviders")
+      }
+      "render the zone allowed providers for config when the user is logged in" in new WithApplication(app) {
+        val result =
+          underTest.getAllowedDNSProviders()(
+            FakeRequest(GET, "/config/allowedDNSProviders").withSession("username" -> "frodo").withCSRFToken
+          )
+        status(result) must beEqualTo(OK)
+        contentType(result) must beSome.which(_ == "application/json")
+        contentAsString(result) must contain("""{"allowedDNSProviders":["bind","powerdns"]}""")
+      }
+      "redirect to the no access page when a user is locked out" in new WithApplication(app) {
+        val result =
+          lockedUserUnderTest.viewAllBatchChanges()(
+            FakeRequest(GET, "/config/allowedDNSProviders")
+              .withSession("username" -> "lockedFbaggins")
+              .withCSRFToken
+          )
+        headers(result) must contain("Location" -> "/noaccess")
+      }
+    }
+
+    "Get for '/config/createZoneTemplate/:provider'" should {
+      "redirect to the login page when a user is not logged in" in new WithApplication(app) {
+        val result = underTest.getCreateZoneTemplate("some-id")(FakeRequest(GET, "/config/createZoneTemplate/powerdns"))
+        status(result) must equalTo(SEE_OTHER)
+        headers(result) must contain("Location" -> "/login?target=/config/createZoneTemplate/powerdns")
+      }
+      "render the zone template for config when the user is logged in" in new WithApplication(app) {
+        val result1 = {
+          underTest.getCreateZoneTemplate("powerdns")(
+            FakeRequest(GET, "/config/createZoneTemplate/powerdns")
+              .withSession("username" -> "frodo")
+              .withCSRFToken
+          )
+        }
+        val result2 = {
+          underTest.getCreateZoneTemplate("cloudfare")(
+            FakeRequest(GET, "/config/createZoneTemplate/cloudfare")
+              .withSession("username" -> "frodo")
+              .withCSRFToken
+          )
+        }
+        val requestTemplates = (contentAsJson(result1) \ "request-templates").as[Map[String, String]]
+        val parsedCreate = Json.parse(requestTemplates("create-zone"))
+
+        status(result1) must beEqualTo(OK)
+        contentType(result1) must beSome.which(_ == "application/json")
+        requestTemplates.keys must contain("create-zone")
+        requestTemplates.keys must contain("update-zone")
+        (parsedCreate \ "Kind" \ "type").as[String] must beEqualTo("Select")
+        contentAsString(result2) must contain("""{"error":"Missing request-templates or required-fields for provider 'cloudfare'"}""")
+      }
+        "return not found for a provider name that cannot form a config path" in new WithApplication(app) {
+          val result = underTest.getCreateZoneTemplate("a\"b")(
+            FakeRequest(GET, "/config/createZoneTemplate/a%22b")
+              .withSession("username" -> "frodo")
+              .withCSRFToken
+          )
+
+          status(result) must beEqualTo(NOT_FOUND)
+        }
+      "redirect to the no access page when a user is locked out" in new WithApplication(app) {
+        val result =
+          lockedUserUnderTest.getCreateZoneTemplate("some-id")(
+            FakeRequest(GET, "/config/createZoneTemplate/powerdns")
+              .withSession("username" -> "lockedFbaggins")
+              .withCSRFToken
+          )
+        headers(result) must contain("Location" -> "/noaccess")
+      }
+    }
+
     "Get for '/dnschanges/new'" should {
       "redirect to the login page when a user is not logged in" in new WithApplication(app) {
         val result = underTest.viewNewBatchChange()(FakeRequest(GET, "/dnschanges/new"))
@@ -473,6 +570,14 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
     accessor.get(anyString).returns(IO.pure(Some(lockedFrodoUser)))
     accessor.create(any[User]).returns(IO.pure(lockedFrodoUser))
     accessor.getUserByKey(anyString).returns(IO.pure(Some(lockedFrodoUser)))
+    accessor
+  }
+
+  def buildMockSuperUserAccountAccessor: UserAccountAccessor = {
+    val accessor = mock[UserAccountAccessor]
+    accessor.get(anyString).returns(IO.pure(Some(superFrodoUser)))
+    accessor.create(any[User]).returns(IO.pure(superFrodoUser))
+    accessor.getUserByKey(anyString).returns(IO.pure(Some(superFrodoUser)))
     accessor
   }
 }
