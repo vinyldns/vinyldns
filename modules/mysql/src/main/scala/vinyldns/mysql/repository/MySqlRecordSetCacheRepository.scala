@@ -307,31 +307,7 @@ class MySqlRecordSetCacheRepository
           case (Some(zId), None) => Some(sqls"recordset.zone_id = $zId ")
           case _ => None
         }
-
-        val searchByZone = zoneId.fold[Boolean](false)(_ => true)
-        val pagingKey = PagingKey(startFrom)
-
-        // sort by name or fqdn in given order
-        val sortBy = (searchByZone, nameSort) match {
-          case (true, NameSort.DESC) =>
-            pagingKey.as(
-              sqls"((recordset.name <= ${pagingKey.map(pk => pk.recordName)} AND recordset.type > ${pagingKey.map(pk => pk.recordType)}) OR recordset.name < ${pagingKey.map(pk => pk.recordName)})"
-            )
-          case (false, NameSort.ASC) =>
-            pagingKey.as(
-              sqls"((recordset.fqdn >= ${pagingKey.map(pk => pk.recordName)} AND recordset.type > ${pagingKey.map(pk => pk.recordType)}) OR recordset.fqdn > ${pagingKey.map(pk => pk.recordName)})"
-            )
-          case (false, NameSort.DESC) =>
-            pagingKey.as(
-              sqls"((recordset.fqdn <= ${pagingKey.map(pk => pk.recordName)} AND recordset.type > ${pagingKey.map(pk => pk.recordType)}) OR recordset.fqdn < ${pagingKey.map(pk => pk.recordName)})"
-            )
-          case _ =>
-            Some(sqls"recordset.fqdn LIKE ${fqdn.replace('*', '%')} ")
-        }
-        case (Some(zId), None) => Some(sqls"recordset.zone_id = $zId ")
-        case _ => None
-      }
-
+        
       val searchByZone = zoneId.fold[Boolean](false)(_ => true)
       val pagingKey = PagingKey(startFrom)
 
