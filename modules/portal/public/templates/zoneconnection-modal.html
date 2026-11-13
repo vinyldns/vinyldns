@@ -65,7 +65,7 @@
             <modal-element label="Backend Id">
                 <select id="zone-backendId" name="backendIdVal" class="form-control" ng-model="currentZone.backendId">
                     <option value="">Select the Backend Id</option>
-                    <option ng-repeat="id in backendIds" value="{{id}}" ng-if="!isEditMode">
+                    <option ng-repeat="id in backendIds" value="{{id}}">
                         {{id}}
                     </option>
                 </select>

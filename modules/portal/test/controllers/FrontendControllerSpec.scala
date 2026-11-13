@@ -23,8 +23,7 @@ import org.junit.runner.RunWith
 import org.specs2.mock.Mockito
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
-import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.Json
 import play.api.mvc.{AnyContent, BodyParser, ControllerComponents}
 import play.api.test.CSRFTokenHelper._
 import play.api.test.Helpers._

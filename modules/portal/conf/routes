@@ -31,6 +31,13 @@ GET           /api/recordsets                    @controllers.VinylDNS.listRecor
 
 GET           /api/zones                         @controllers.VinylDNS.getZones
 GET           /api/zones/backendids              @controllers.VinylDNS.getBackendIds
+
+GET           /api/zones/generate/nameservers    @controllers.VinylDNS.getNameservers
+POST          /api/zones/generate                @controllers.VinylDNS.generateZone
+PUT           /api/zones/generate                @controllers.VinylDNS.updateGeneratedZone
+DELETE        /api/zones/generate/:id            @controllers.VinylDNS.deleteGeneratedZone(id: String)
+GET           /api/zones/generate/info           @controllers.VinylDNS.getGeneratedZones
+
 GET           /api/zones/:id                     @controllers.VinylDNS.getZone(id: String)
 GET           /api/zones/:id/details             @controllers.VinylDNS.getCommonZoneDetails(id: String)
 GET           /api/zones/name/:name              @controllers.VinylDNS.getZoneByName(name: String)
@@ -40,12 +47,6 @@ POST          /api/zones                         @controllers.VinylDNS.addZone
 PUT           /api/zones/:id                     @controllers.VinylDNS.updateZone(id: String)
 DELETE        /api/zones/:id                     @controllers.VinylDNS.deleteZone(id: String)
 POST          /api/zones/:id/sync                @controllers.VinylDNS.syncZone(id: String)
-
-GET           /api/zones/generate/nameservers    @controllers.VinylDNS.getNameservers
-POST          /api/zones/generate                @controllers.VinylDNS.generateZone
-PUT           /api/zones/generate                @controllers.VinylDNS.updateGeneratedZone
-DELETE        /api/zones/generate/:id            @controllers.VinylDNS.deleteGeneratedZone(id: String)
-GET           /api/zones/generate/info           @controllers.VinylDNS.getGeneratedZones
 
 GET           /api/zones/:id/recordsets          @controllers.VinylDNS.listRecordSetsByZone(id: String)
 POST          /api/zones/:id/recordsets          @controllers.VinylDNS.addRecordSet(id: String)

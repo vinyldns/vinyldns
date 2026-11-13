@@ -17,18 +17,17 @@
 package controllers
 
 import actions.SecuritySupport
-import com.typesafe.config.{ConfigObject, ConfigRenderOptions, ConfigValueFactory}
+import com.typesafe.config.ConfigRenderOptions
 
 import javax.inject.{Inject, Singleton}
 import models.{CustomLinks, DnsChangeNotices, Meta}
 import org.slf4j.LoggerFactory
 import play.api.Configuration
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.Json
 import play.api.mvc._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.jdk.CollectionConverters.mapAsScalaMapConverter
 
 /*
  * Controller for specific pages - sends requests along to views

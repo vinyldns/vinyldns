@@ -282,7 +282,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
     }
 
     ".getGeneratedZones" should {
-      "return the list of nameservers when requested - Ok(200)" in new WithApplication(app) {
+      "return generated zones when requested - Ok(200)" in new WithApplication(app) {
         val client = MockWS {
           case (GET, u) if u.matches(".*/zones/generate/info$") =>
             defaultActionBuilder { Results.Ok(validGenerateZoneRequest) }
@@ -481,10 +481,10 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
 
     ".generateZone" should {
       tag("slow")
-      "return the generate zone response on create - status ok (200)" in new WithApplication(app) {
+      "return the generate zone response on create - status accepted (202)" in new WithApplication(app) {
         val client = MockWS {
           case (POST, u) if u.matches(".*/zones/generate$") =>
-            defaultActionBuilder { Results.Ok(validGenerateZoneRequest) }
+            defaultActionBuilder { Results.Accepted(validGenerateZoneRequest) }
         }
 
         val mockUserAccessor = mock[UserAccountAccessor]
@@ -497,7 +497,7 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
             .withSession("username" -> frodoUser.userName, "accessKey" -> frodoUser.accessKey)
         )
 
-        status(result) must beEqualTo(OK)
+        status(result) must beEqualTo(ACCEPTED)
         hasCacheHeaders(result)
         contentAsJson(result) must beEqualTo(validGenerateZoneRequest)
       }

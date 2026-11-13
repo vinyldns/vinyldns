@@ -104,7 +104,7 @@ angular.module('controller.generateZones', [])
 
                 const configuredFields = new Set($scope.zoneFields.map(function (field) { return field.field; }));
                 Object.keys($scope.createZone.providerParams || {}).forEach(function (fieldKey) {
-                    if (fieldKey !== 'nameservers' && !configuredFields.has(fieldKey)) {
+                    if (fieldKey !== 'nameservers' && fieldKey !== 'nameServers' && !configuredFields.has(fieldKey)) {
                         const value = $scope.createZone.providerParams[fieldKey];
                         $scope.zoneFields.push({
                             label: fieldKey.replace(/_/g, ' '),
@@ -475,6 +475,16 @@ angular.module('controller.generateZones', [])
         return payload;
     };
 
+    function handleZoneSaveSuccess(response, action) {
+        $("#zone_creation_modal").modal("hide");
+        $scope.processing = false;
+        $timeout($scope.refreshGeneratedZones, 1000);
+        const zoneName = $scope.createZone.zoneName || 'unknown';
+        const msg = `${response.statusText} (HTTP ${response.status}): '${zoneName}' ${action}`;
+        $scope.alerts = $scope.alerts || [];
+        $scope.alerts.push({ type: "success", content: msg });
+    }
+
     $scope.addZoneCreation = function () {
         if ($scope.processing) {
             $log.debug('zoneCreation::processing is true; exiting');
@@ -485,13 +495,7 @@ angular.module('controller.generateZones', [])
             // create zone service
             zonesService.generateZone($scope.getCreatePayload($scope.createZone))
                 .then(function (response) {
-                    $timeout($scope.refreshGeneratedZones, 1000);
-                    $("#zone_creation_modal").modal("hide");
-                    $scope.processing = false;
-                    const zoneName = $scope.createZone.zoneName || 'unknown';
-                    const msg = `${response.statusText} (HTTP ${response.status}): '${zoneName}' created`;
-                    $scope.alerts = $scope.alerts || [];
-                    $scope.alerts.push({ type: "success", content: msg });
+                    handleZoneSaveSuccess(response, 'created');
                 })
                 .catch(function (error) {
                     $("#zone_creation_modal").modal("hide");
@@ -504,13 +508,7 @@ angular.module('controller.generateZones', [])
             const payload = $scope.getUpdatePayload($scope.createZone);
             zonesService.updateGeneratedZone(payload)
                 .then(function (response) {
-                    $("#zone_creation_modal").modal("hide");
-                    $scope.processing = false;
-                    $timeout($scope.refreshGeneratedZones, 1000);
-                    const zoneName = $scope.createZone.zoneName || 'unknown';
-                    const msg = `${response.statusText} (HTTP ${response.status}): '${zoneName}' updated`;
-                    $scope.alerts = $scope.alerts || [];
-                    $scope.alerts.push({ type: "success", content: msg });
+                    handleZoneSaveSuccess(response, 'updated');
                 })
                 .catch(function (error) {
                     $("#zone_creation_modal").modal("hide");
@@ -695,9 +693,9 @@ angular.module('controller.generateZones', [])
         $scope.alerts.push(alert);
         if (error.data !== undefined && error.data.errors !== undefined) {
             var errors = error.data.errors;
-            for (i in errors) {
-                $scope.alerts.push({ type: "danger", content: errors[i] });
-            }
+            Object.keys(errors).forEach(function (errorKey) {
+                $scope.alerts.push({ type: "danger", content: errors[errorKey] });
+            });
         }
     }
 

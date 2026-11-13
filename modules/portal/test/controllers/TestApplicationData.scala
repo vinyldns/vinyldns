@@ -381,15 +381,13 @@ trait TestApplicationData { this: Mockito =>
 
   val frodoGroupList: JsObject = Json.obj("groups" -> Json.arr(hobbitGroup, ringbearerGroup))
 
-  val nameServers: JsObject = Json.obj(
-    "name-servers" -> Json.arr(
+  val nameServers: JsValue = Json.arr(
       "172.17.42.1.",
       "ns1.parent.com.",
       "ns1.parent.com1.",
       "ns1.parent.com2.",
       "ns1.parent.com3.",
       "ns1.parent.com4."
-    )
   )
 
   val simulatedBackendPort: Int = 9001

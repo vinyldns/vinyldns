@@ -242,7 +242,7 @@ describe('Controller: GenerateZonesController', function () {
 
         this.scope.viewCreatedZone({
             provider: 'powerdns',
-            providerParams: { nameservers: '["ns1.example.com", "ns2.example.com"]' }
+            providerParams: { nameServers: '["ns1.example.com", "ns2.example.com"]' }
         });
         this.scope.$digest();
 
@@ -250,6 +250,7 @@ describe('Controller: GenerateZonesController', function () {
             'ns1.example.com', 'ns2.example.com'
         ]);
         expect(this.scope.displayNameservers).toBe('ns1.example.com, ns2.example.com');
+        expect(this.scope.zoneFields).toEqual([]);
     });
 
     it('isDynamicZoneFieldRequired should honor provider update required fields', function () {
