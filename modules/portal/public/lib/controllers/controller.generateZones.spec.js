@@ -177,7 +177,8 @@ describe('Controller: GenerateZonesController', function () {
         expect(this.scope.createZone.providerParams).toEqual({
             admin_email: 'admin@example.com',
             ttl: 3600,
-            custom_setting: 'custom value'
+            custom_setting: 'custom value',
+            nameservers: []
         });
         expect(this.scope.hasProviderParamValue(3600)).toBe(true);
         expect(this.scope.hasProviderParamValue('')).toBe(false);
