@@ -22,6 +22,7 @@ In order to use [tooling](../tools.html) to access VinylDNS, all users must down
 
 ### Zones
 The Zones section of the portal is for managing DNS zones and records. This area also includes more granular management of user abilities.
+It includes zone search, connection settings, synchronization, change history, and abandoned-zone listings.
 To access Zones in the portal select the Zones link in the left column navigation.
 Access to individual zones in this part of the portal is limited to zone administrators and users with explicit permissions.
 
@@ -29,6 +30,7 @@ Access to individual zones in this part of the portal is limited to zone adminis
 
 ### Groups
 The Groups section of the portal is for managing high level user access and abilities. To access Groups in the portal select the Groups link in the left column navigation.
+You can search groups, manage their details and membership, and review group change history.
 
 [Learn More](groups.html)
 
