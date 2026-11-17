@@ -210,9 +210,10 @@ class GenerateZoneService(
       endpoint <- buildGenerateZoneEndpoint(endpointTemplate, request).toResult
       requestJsonOpt = buildGenerateZoneRequestJson(providerConfig.requestTemplates.get("create-zone"), request)
 
-      // Authorization and existence checks
+      // Authorization and existence checks. Only super users can create; the zone's admin
+      // group can then view, update and delete it.
       _ <- adminGroupExists(request.groupId)
-      _ <- canChangeZone(auth, request.zoneName, request.groupId).toResult
+      _ <- ensureSuperUser(auth).toResult
       _ <- generateZoneDoesNotExist(request.zoneName)
       // Cross-table check (D6): a generated zone must not collide with an existing
       // VinylDNS-managed zone. The reverse check in connectToZone is intentionally omitted:
@@ -276,9 +277,13 @@ class GenerateZoneService(
       zoneToUpdate = existingGeneratedZone.copy(
         email = request.email,
         groupId = request.groupId,
-        // PUT semantics: the request's providerParams fully replace the stored set so params
-        // can be removed. (Previously merged with ++, which made removal impossible.)
-        providerParams = request.providerParams,
+        // PUT semantics for params the update schema covers; stored params it can't carry
+        // (e.g. PowerDNS nameservers) are kept.
+        providerParams = mergeUpdatedProviderParams(
+          providerConfig,
+          existingGeneratedZone.providerParams,
+          request.providerParams
+        ),
         response = Some(zoneGenerateResponse),
         updated = Some(Instant.now.truncatedTo(ChronoUnit.MILLIS))
       )
@@ -570,6 +575,30 @@ class GenerateZoneService(
       val zoneAccess = getGenerateZoneAccess(auth, zn)
       GenerateZoneSummaryInfo(zn, groupName, zoneAccess)
     }
+
+  private def ensureSuperUser(auth: AuthPrincipal): Either[Throwable, Unit] =
+    ensuring(
+      NotAuthorizedError(
+        s"User '${auth.signedInUser.userName}' cannot create generated zones; only super users can."
+      )
+    )(auth.isSuper)
+
+  // Stored params the update schema can't carry survive the update; the request replaces the rest.
+  private def mergeUpdatedProviderParams(
+      providerConfig: DnsProviderConfig,
+      stored: Map[String, JValue],
+      requested: Map[String, JValue]
+  ): Map[String, JValue] = {
+    val updatable = updateSchemaProperties(providerConfig)
+    stored.filter { case (key, _) => !updatable.contains(key) } ++ requested
+  }
+
+  private def updateSchemaProperties(providerConfig: DnsProviderConfig): Set[String] =
+    providerConfig.schemas
+      .get("update-zone")
+      .flatMap(schema => Try(parse(schema) \ "properties").toOption)
+      .collect { case JObject(fields) => fields.map(_._1).toSet }
+      .getOrElse(Set.empty)
 
   private def getGroupsIdsByName(groupName: String): IO[Set[String]] =
     groupRepository.getGroupsByName(groupName).map(x => x.map(_.id))

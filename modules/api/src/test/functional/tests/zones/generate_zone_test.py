@@ -29,7 +29,7 @@ def test_generate_zone_success(shared_zone_test_context):
                         ]
                     }
                  }
-        result_zone = client.generate_zone(zone, status=202)
+        result_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
 
         client.wait_until_generate_zone_active(result_zone["id"])
 
@@ -69,7 +69,7 @@ def test_generate_zone_bind_success(shared_zone_test_context):
                         "admin_email": "admin@test.com"
                     }
                  }
-        result_zone = client.generate_zone(zone, status=202)
+        result_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
 
         client.wait_until_generate_zone_active(result_zone["id"])
 
@@ -191,7 +191,29 @@ def test_generate_zone_returns_409_if_already_exists(shared_zone_test_context):
     """
     generate_conflict = dict(shared_zone_test_context.ok_generate_zone)
 
-    shared_zone_test_context.ok_vinyldns_client.generate_zone(generate_conflict, status=409)
+    shared_zone_test_context.super_user_client.generate_zone(generate_conflict, status=409)
+
+
+def test_generate_zone_fails_for_non_super_user(shared_zone_test_context):
+    """
+    Test that an admin group member who is not a super user cannot create a zone
+    """
+    zone = {
+        "groupId": shared_zone_test_context.ok_group["id"],
+        "email": "test@test.com",
+        "provider": "powerdns",
+        "zoneName": f"one-time-not-super{shared_zone_test_context.partition_id}.",
+        "providerParams": {
+            "kind": "Master",
+            "nameservers": [
+                "172.17.42.1.",
+                "ns1.mttest1.example.org."
+            ]
+        }
+    }
+
+    result = shared_zone_test_context.ok_vinyldns_client.generate_zone(zone, status=403)
+    assert_that(result, contains_string("only super users can"))
 
 
 def test_generate_zone_zone_returns_400_for_invalid_data(shared_zone_test_context):

@@ -10,8 +10,10 @@ Updates a generated zone on its DNS provider and in VinylDNS. The zone is found 
 the zone's current admin group, or a super user. If you change `groupId`, you must also be a member of the new group
 (super users are exempt).
 
-The whole zone is replaced: `providerParams` in the request replaces the stored params, so any param you leave out is
-removed. Send all the params you want to keep.
+The whole zone is replaced. For every param the provider's `update-zone` schema allows, the value in `providerParams`
+replaces the stored one, and any of those params you leave out is removed, so send all the ones you want to keep. Stored
+params that the update schema does not allow (for example PowerDNS `nameservers`) cannot be changed by an update and are
+kept.
 
 The provider cannot be changed. `provider` must match the provider the zone was generated on.
 

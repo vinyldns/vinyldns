@@ -135,7 +135,7 @@ def test_delete_group_that_owns_a_generated_zone(shared_zone_test_context):
                 ]
             }
         }
-        generated_zone = client.generate_zone(zone, status=202)
+        generated_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(generated_zone["id"])
 
         # The group is only referenced by the generate_zone table, not the zone table

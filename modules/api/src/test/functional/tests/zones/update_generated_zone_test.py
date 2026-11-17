@@ -31,7 +31,7 @@ def test_update_generate_zone_success(shared_zone_test_context):
                 ]
             }
         }
-        result_zone = client.generate_zone(zone, status=202)
+        result_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(result_zone["id"])
 
         result_zone["email"] = "test@dummy.com"
@@ -45,6 +45,8 @@ def test_update_generate_zone_success(shared_zone_test_context):
         uz = client.get_generate_zone(result_zone["id"])
         assert_that(uz["email"], is_("test@dummy.com"))
         assert_that(uz["updated"], is_not(none()))
+        # nameservers can't be sent on a PowerDNS update, so the stored ones must survive it
+        assert_that(uz["providerParams"]["nameservers"], is_(zone["providerParams"]["nameservers"]))
 
     finally:
         if result_zone:
@@ -74,7 +76,7 @@ def test_update_generate_zone_bind_success(shared_zone_test_context):
                 "admin_email": "admin@test.com"
             }
         }
-        result_zone = client.generate_zone(zone, status=202)
+        result_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(result_zone["id"])
 
         result_zone["email"] = "test@dummy.com"
@@ -119,7 +121,7 @@ def test_update_generate_zone_bind_preserves_dynamic_records(shared_zone_test_co
                 "admin_email": "admin@test.com"
             }
         }
-        result_zone = client.generate_zone(zone, status=202)
+        result_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(result_zone["id"])
 
         result_zone["providerParams"]["nameservers"] = [
@@ -182,7 +184,7 @@ def test_update_generate_zone_failure_with_nameserver(shared_zone_test_context):
                 ]
             }
         }
-        result_zone = client.generate_zone(zone, status=202)
+        result_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(result_zone["id"])
 
         result_zone["email"] = "test@dummy.com"
@@ -218,7 +220,7 @@ def test_update_generate_zone_failure_with_invalid_fields(shared_zone_test_conte
                 ]
             }
         }
-        result_zone = client.generate_zone(zone, status=202)
+        result_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(result_zone["id"])
 
         result_zone["providerParams"]["ttl"] = "100"
@@ -255,7 +257,7 @@ def test_update_generate_zone_success_wildcard(shared_zone_test_context):
                 ]
             }
         }
-        result_zone = client.generate_zone(zone, status=202)
+        result_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(result_zone["id"])
 
         result_zone["email"] = "test@ok.dummy.com"
@@ -295,7 +297,7 @@ def test_update_generate_zone_success_number_of_dots(shared_zone_test_context):
                 ]
             }
         }
-        result_zone = client.generate_zone(zone, status=202)
+        result_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(result_zone["id"])
 
         result_zone["email"] = "test@ok.dummy.com"
@@ -336,7 +338,7 @@ def test_update_generate_invalid_email(shared_zone_test_context):
                 ]
             }
         }
-        result_zone = client.generate_zone(zone, status=202)
+        result_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(result_zone["id"])
 
         result_zone["email"] = "test.trial.com"
@@ -368,7 +370,7 @@ def test_update_generate_zone_invalid_domain(shared_zone_test_context):
                 ]
             }
         }
-        result_zone = client.generate_zone(zone, status=202)
+        result_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(result_zone["id"])
 
         result_zone["email"] = "test@trial.com"
@@ -401,7 +403,7 @@ def test_update_generate_zone_invalid_email_number_of_dots(shared_zone_test_cont
                 ]
             }
         }
-        result_zone = client.generate_zone(zone, status=202)
+        result_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(result_zone["id"])
 
         result_zone["email"] = "test@ok.ok.dummy.com"
@@ -436,7 +438,7 @@ def test_update_missing_generate_zone_data(shared_zone_test_context):
                 ]
             }
         }
-        result_zone = client.generate_zone(zone, status=202)
+        result_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(result_zone["id"])
 
         update_zone = {
@@ -482,7 +484,7 @@ def test_update_invalid_generate_zone_data(shared_zone_test_context):
                 ]
             }
         }
-        result_zone = client.generate_zone(zone, status=202)
+        result_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(result_zone["id"])
 
         update_zone = {
@@ -546,7 +548,7 @@ def test_user_can_update_generate_zone_to_another_admin_group(shared_zone_test_c
     group = None
     zone = None
     try:
-        zone = client.generate_zone(
+        zone = shared_zone_test_context.super_user_client.generate_zone(
             {
                 "groupId": shared_zone_test_context.dummy_group["id"],
                 "email": "test@test.com",

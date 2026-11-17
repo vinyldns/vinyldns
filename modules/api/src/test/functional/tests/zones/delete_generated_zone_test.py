@@ -26,7 +26,7 @@ def test_delete_generated_zone_success(shared_zone_test_context):
                 ]
             }
         }
-        result_zone = client.generate_zone(zone, status=202)
+        result_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(result_zone["id"])
 
         client.delete_generated_zone(result_zone["id"], status=202)
@@ -61,7 +61,7 @@ def test_delete_generated_zone_twice(shared_zone_test_context):
                 ]
             }
         }
-        result_zone = client.generate_zone(zone, status=202)
+        result_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(result_zone["id"])
 
         client.delete_generated_zone(result_zone["id"], status=202)
@@ -114,7 +114,7 @@ def test_delete_generated_zone_bind_success(shared_zone_test_context):
                 "admin_email": "admin@test.com"
             }
         }
-        result_zone = client.generate_zone(zone, status=202)
+        result_zone = shared_zone_test_context.super_user_client.generate_zone(zone, status=202)
         client.wait_until_generate_zone_active(result_zone["id"])
 
         client.delete_generated_zone(result_zone["id"], status=202)

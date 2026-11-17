@@ -10,6 +10,9 @@ These endpoints return information you need before calling [Generate Zone](gener
 operator's [DNS Provider API configuration](../operator/config-api.html#dns-provider-api). Any authenticated user can
 call them.
 
+**Note:** Generated zones are experimental. The provider configuration and provider params may change in a future
+release.
+
 ## Get DNS Providers
 
 Returns the DNS providers that zones can be generated on, in no particular order. Use one of these values as `provider`

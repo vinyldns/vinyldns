@@ -31,7 +31,10 @@ The DNS providers that can be used are set by the VinylDNS operator. See
 [DNS Provider API configuration](../operator/config-api.html#dns-provider-api). Use
 [Get DNS Providers](get-dns-providers.html) to see which providers are available.
 
-Access to a generated zone is controlled by its admin group (`groupId`):
+**Note:** Generated zones are experimental. The provider configuration and provider params may change in a future
+release.
+
+Only super users can create generated zones. After that, access is controlled by the zone's admin group (`groupId`):
 
 - Members of the admin group, and super users, can view, update and delete the zone.
 - Support users can view the zone, but cannot update or delete it.

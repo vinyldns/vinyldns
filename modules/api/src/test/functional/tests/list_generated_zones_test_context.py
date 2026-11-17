@@ -7,6 +7,8 @@ class ListGeneratedZonesTestContext(object):
         self.partition_id = partition_id
         self.setup_started = False
         self.client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "listZonesAccessKey", "listZonesSecretKey")
+        # Only super users can create generated zones
+        self.super_client = VinylDNSClient(VinylDNSTestContext.vinyldns_url, "superUserAccessKey", "superUserSecretKey")
         self.search_generate_zone1 = None
         self.search_generate_zone2 = None
         self.search_generate_zone3 = None
@@ -30,7 +32,7 @@ class ListGeneratedZonesTestContext(object):
         }
         self.list_generate_zones_group = self.client.create_group(group, status=200)
 
-        self.search_generate_zone1 = self.client.generate_zone(
+        self.search_generate_zone1 = self.super_client.generate_zone(
             {
                 "groupId": self.list_generate_zones_group["id"],
                 "email": "test@test.com",
@@ -45,7 +47,7 @@ class ListGeneratedZonesTestContext(object):
                 }
             }, status=202)
 
-        self.search_generate_zone2 = self.client.generate_zone(
+        self.search_generate_zone2 = self.super_client.generate_zone(
             {
                 "groupId": self.list_generate_zones_group["id"],
                 "email": "test@test.com",
@@ -60,7 +62,7 @@ class ListGeneratedZonesTestContext(object):
                 }
             }, status=202)
 
-        self.search_generate_zone3 = self.client.generate_zone(
+        self.search_generate_zone3 = self.super_client.generate_zone(
             {
                 "groupId": self.list_generate_zones_group["id"],
                 "email": "test@test.com",
@@ -75,7 +77,7 @@ class ListGeneratedZonesTestContext(object):
                 }
             }, status=202)
 
-        self.non_search_generate_zone1 = self.client.generate_zone(
+        self.non_search_generate_zone1 = self.super_client.generate_zone(
             {
                 "groupId": self.list_generate_zones_group["id"],
                 "email": "test@test.com",
@@ -90,7 +92,7 @@ class ListGeneratedZonesTestContext(object):
                 }
             }, status=202)
 
-        self.non_search_generate_zone2 = self.client.generate_zone(
+        self.non_search_generate_zone2 = self.super_client.generate_zone(
             {
                 "groupId": self.list_generate_zones_group["id"],
                 "email": "test@test.com",
@@ -113,3 +115,4 @@ class ListGeneratedZonesTestContext(object):
         self.client.clear_generate_zones()
         self.client.clear_groups()
         self.client.tear_down()
+        self.super_client.tear_down()

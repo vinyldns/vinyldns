@@ -22,7 +22,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.mockito.MockitoSugar
 import cats.effect._
-import org.json4s.JString
+import org.json4s.{JArray, JString}
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import vinyldns.api.config.ValidEmailConfig
 import vinyldns.api.domain.access.AccessValidations
@@ -230,11 +230,22 @@ class GenerateZoneServiceSpec
         .save(any[GenerateZone])
 
       val result =
-        underTest.handleGenerateZoneRequest(generatePdnsZoneAuthorized, okAuth).value.unsafeRunSync().toOption.get
+        underTest.handleGenerateZoneRequest(generatePdnsZoneAuthorized, superUserAuth).value.unsafeRunSync().toOption.get
 
       result.zoneName shouldBe generatePdnsZoneAuthorized.zoneName
       result.providerParams shouldBe generatePdnsZoneAuthorized.providerParams
       result.provider shouldBe generatePdnsZoneAuthorized.provider
+    }
+
+    "reject a create from an admin group member who is not a super user" in {
+      doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+
+      val result =
+        underTest.handleGenerateZoneRequest(generatePdnsZoneAuthorized, okAuth).value.unsafeRunSync().swap.toOption.get
+      result shouldBe NotAuthorizedError(
+        s"User '${okAuth.signedInUser.userName}' cannot create generated zones; only super users can."
+      )
     }
 
     "reject generating a zone that collides with an existing VinylDNS-managed zone" in {
@@ -242,7 +253,7 @@ class GenerateZoneServiceSpec
       doReturn(IO.pure(Some(okZone))).when(mockZoneRepo).getZoneByName(anyString)
 
       val result =
-        underTest.handleGenerateZoneRequest(generatePdnsZoneAuthorized, okAuth).value.unsafeRunSync().swap.toOption.get
+        underTest.handleGenerateZoneRequest(generatePdnsZoneAuthorized, superUserAuth).value.unsafeRunSync().swap.toOption.get
       result shouldBe a[ZoneAlreadyExistsError]
     }
 
@@ -254,7 +265,7 @@ class GenerateZoneServiceSpec
         .save(any[GenerateZone])
 
       val result =
-        underTest.handleGenerateZoneRequest(generatePdnsZoneAuthorized, okAuth).value.unsafeRunSync().swap.toOption.get
+        underTest.handleGenerateZoneRequest(generatePdnsZoneAuthorized, superUserAuth).value.unsafeRunSync().swap.toOption.get
       result shouldBe a[ZoneAlreadyExistsError]
     }
 
@@ -297,10 +308,38 @@ class GenerateZoneServiceSpec
           "kind"-> JString("Native")
         )), okAuth).value.unsafeRunSync().toOption.get
       result.zoneName shouldBe updatePdnsZoneAuthorized.zoneName
-      // PUT semantics: request providerParams replace the stored set (nameservers dropped).
-      result.providerParams shouldBe Map("kind" -> JString("Native"))
+      // nameservers isn't in the PowerDNS update schema, so the stored value is kept.
+      result.providerParams shouldBe Map(
+        "nameservers" -> powerDNSProviderParams("nameservers"),
+        "kind" -> JString("Native")
+      )
       result.provider shouldBe updatePdnsZoneAuthorized.provider
       result.groupId shouldBe okGroup.id
+    }
+
+    "replace stored params the update schema covers and keep the ones it doesn't" in {
+      val stored = generatePdnsZone.copy(
+        providerParams = powerDNSProviderParams + ("masters" -> JArray(List(JString("10.0.0.1"))))
+      )
+      doReturn(IO.pure(Some(stored))).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(stored)).when(mockGenerateZoneRepository).save(any[GenerateZone])
+
+      val result =
+        underTest
+          .handleUpdateGeneratedZoneRequest(
+            updatePdnsZoneAuthorized.copy(providerParams = Map("kind" -> JString("Native"))),
+            okAuth
+          )
+          .value
+          .unsafeRunSync()
+          .toOption
+          .get
+
+      // masters is updatable, so omitting it removes it; nameservers is not, so it survives.
+      result.providerParams shouldBe Map(
+        "nameservers" -> powerDNSProviderParams("nameservers"),
+        "kind" -> JString("Native")
+      )
     }
 
     "return an error response for invalid request in provider params" in {

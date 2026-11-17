@@ -38,7 +38,7 @@ import vinyldns.api.domain.record.RecordSetChangeGenerator
 import vinyldns.api.engine.TestMessageQueue
 import vinyldns.mysql.TransactionProvider
 import vinyldns.api.{MySqlApiIntegrationSpec, ResultHelpers}
-import vinyldns.core.TestMembershipData.{abcAuth, okAuth, okGroup, okUser}
+import vinyldns.core.TestMembershipData.{abcAuth, okAuth, okGroup, okUser, superUserAuth}
 import vinyldns.core.TestZoneData.{abcZone, okZone}
 import vinyldns.core.crypto.NoOpCrypto
 import vinyldns.core.domain.{Encrypted, Fqdn}
@@ -382,7 +382,7 @@ class ZoneServiceIntegrationSpec
       // and cause a 409 Conflict on the next run.
       try {
         val createResult =
-          testGenerateZoneService.handleGenerateZoneRequest(createInput, okAuth).value.unsafeRunSync()
+          testGenerateZoneService.handleGenerateZoneRequest(createInput, superUserAuth).value.unsafeRunSync()
         withClue(s"create failed: ${createResult.swap.toOption}") {
           createResult.isRight shouldBe true
         }
@@ -401,6 +401,8 @@ class ZoneServiceIntegrationSpec
         val updated = updateResult.toOption.get
         updated.response.flatMap(_.responseCode) shouldBe Some(204)
         updated.response.map(_.changeType) shouldBe Some(GenerateZoneChangeType.Update)
+        // The update can't carry nameservers, so the stored ones must survive it.
+        updated.providerParams.get("nameservers") shouldBe pdnsProviderParams.get("nameservers")
 
         val deleteResult =
           testGenerateZoneService.handleDeleteGeneratedZoneRequest(created.id, okAuth).value.unsafeRunSync()
@@ -436,7 +438,7 @@ class ZoneServiceIntegrationSpec
       // linger and interfere with the next run.
       try {
         val createResult =
-          testGenerateZoneServiceBind.handleGenerateZoneRequest(createInput, okAuth).value.unsafeRunSync()
+          testGenerateZoneServiceBind.handleGenerateZoneRequest(createInput, superUserAuth).value.unsafeRunSync()
         withClue(s"create failed: ${createResult.swap.toOption}") {
           createResult.isRight shouldBe true
         }

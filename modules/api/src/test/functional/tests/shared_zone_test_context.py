@@ -123,7 +123,7 @@ class SharedZoneTestContext(object):
             self.history_group = self.history_client.create_group(history_group, status=200)
             self.confirm_member_in_group(self.history_client, self.history_group)
 
-            self.ok_generate_zone = self.ok_vinyldns_client.generate_zone(
+            self.ok_generate_zone = self.super_user_client.generate_zone(
                 {
                     "groupId": self.ok_group["id"],
                     "email": "test@test.com",
@@ -141,7 +141,7 @@ class SharedZoneTestContext(object):
             # # initialize history
             self.ok_vinyldns_client.wait_until_generate_zone_active(self.ok_generate_zone["id"])
 
-            self.dummy_generate_zone = self.dummy_vinyldns_client.generate_zone(
+            self.dummy_generate_zone = self.super_user_client.generate_zone(
                 {
                     "groupId": self.dummy_group["id"],
                     "email": "test@test.com",
@@ -156,7 +156,7 @@ class SharedZoneTestContext(object):
                     }
                 }, status=202)
 
-            self.system_test_generate_zone = self.ok_vinyldns_client.generate_zone(
+            self.system_test_generate_zone = self.super_user_client.generate_zone(
                 {
                     "groupId": self.ok_group["id"],
                     "email": "test@test.com",

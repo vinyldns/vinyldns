@@ -443,6 +443,8 @@ The DNS provider API lets users create zones on a DNS server through the
 [Generate Zone](../api/generate-zone.html) endpoints. Each provider is an HTTP management API (for example PowerDNS, or
 a service in front of BIND) that VinylDNS calls to create, update and delete zones.
 
+**Note:** This feature is experimental. The configuration format may change in a future release.
+
 It is configured with a `dns-provider-api` block inside the `settings` of a `DnsBackendProviderLoader` backend
 provider. If no backend provider has this block, no providers are available and generate zone requests are rejected.
 Generated zones are stored in the `generate-zone` MySQL repository, which must also be enabled (see
