@@ -12,6 +12,8 @@ Current supported record types for creating a batch change are: `A`, `AAAA`, `CN
 Supported record types for records in shared zones may vary. Contact your VinylDNS administrators to find the allowed record types.
 This does not apply to zone administrators or users with specific ACL access rules.
 
+For new `NS` record sets, batch validation rejects additions at the zone apex and requires an approved nameserver target. Manual approval does not bypass these validations.
+
 #### HTTP REQUEST
 
 > POST /zones/batchrecordchanges?allowManualReview={true &#124; false}

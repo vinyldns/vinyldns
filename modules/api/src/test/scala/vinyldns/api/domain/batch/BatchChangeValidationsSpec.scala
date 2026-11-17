@@ -274,7 +274,7 @@ class BatchChangeValidationsSpec
   }
 
   property(
-    "isNotOrigin: should be valid if the record is not origin"
+    "isNotOrigin: should return an error if the record is origin"
   ) {
     val recordSetName = "ok.zone.recordsets."
     val error = s"Record with name $recordSetName is an NS record at apex and cannot be added"
@@ -282,11 +282,64 @@ class BatchChangeValidationsSpec
   }
 
   property(
-    "isNotOrigin: should throw an error if the record is origin"
+    "isNotOrigin: should be valid if the record is not origin"
   ) {
     val recordSetName = "test."
     val error = s"Record with name $recordSetName is an NS record at apex and cannot be added"
     isNotOrigin(recordSetName, okZone, error) shouldBe ().validNel
+  }
+
+  property("nsValidations: should reject apex names even with an approved name server") {
+    List("@", validZone.name, validZone.name.stripSuffix(".")).foreach { recordName =>
+      nsValidations(
+        NSData(Fqdn("some.test.ns.")),
+        recordName,
+        validZone,
+        VinylDNSTestHelpers.approvedNameServers
+      ) should haveInvalid[DomainValidationError](
+        InvalidBatchRequest(s"Record with name $recordName is an NS record at apex and cannot be added")
+      )
+    }
+  }
+
+  property("nsValidations: should allow a non-apex record with an approved name server") {
+    nsValidations(
+      NSData(Fqdn("some.test.ns.")),
+      "delegation",
+      validZone,
+      VinylDNSTestHelpers.approvedNameServers
+    ) shouldBe ().validNel
+  }
+
+  property("nsValidations: should reject an unapproved name server") {
+    val nsData = NSData(Fqdn("not.valid."))
+    nsValidations(
+      nsData,
+      "delegation",
+      validZone,
+      VinylDNSTestHelpers.approvedNameServers
+    ) should haveInvalid[DomainValidationError](NotApprovedNSError(nsData.nsdname.fqdn))
+  }
+
+  property("validateChangesWithContext: should reject apex NS additions before and after approval") {
+    List(false, true).foreach { isApproved =>
+      val change = AddChangeForValidation(
+        validZone,
+        "@",
+        AddChangeInput(validZone.name, RecordType.NS, None, ttl, NSData(Fqdn("some.test.ns."))),
+        defaultTtl
+      )
+      val result = validateChangesWithContext(
+        ChangeForValidationMap(List(change.validNel), ExistingRecordSets(List.empty)),
+        okAuth,
+        isApproved,
+        None
+      )
+
+      result.head should haveInvalid[DomainValidationError](
+        InvalidBatchRequest("Record with name @ is an NS record at apex and cannot be added")
+      )
+    }
   }
 
   property(

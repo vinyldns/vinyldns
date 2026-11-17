@@ -780,8 +780,7 @@ class BatchChangeValidations(
         newRecordSetName,
         zone,
         s"Record with name $newRecordSetName is an NS record at apex and cannot be added"
-      )
-      containsApprovedNameServers(newRecordSetData, approvedNameServers)
+      ) |+| containsApprovedNameServers(newRecordSetData, approvedNameServers)
   }
 
   def isNotOrigin(recordSet: String, zone: Zone, err: String): SingleValidation[Unit] =
