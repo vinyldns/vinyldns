@@ -449,7 +449,7 @@ class FrontendControllerSpec extends Specification with Mockito with TestApplica
       }
       "redirect to the no access page when a user is locked out" in new WithApplication(app) {
         val result =
-          lockedUserUnderTest.viewAllBatchChanges()(
+          lockedUserUnderTest.getAllowedDNSProviders()(
             FakeRequest(GET, "/config/allowedDNSProviders")
               .withSession("username" -> "lockedFbaggins")
               .withCSRFToken
