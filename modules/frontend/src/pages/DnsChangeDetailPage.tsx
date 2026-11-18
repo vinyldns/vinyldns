@@ -606,8 +606,7 @@ export function DnsChangeDetailPage() {
   // other than the original submitter, even super users.
   const isOwner = Boolean(currentUserId) && change.userId === currentUserId;
   const canCancelChange = isPendingReview && isOwner;
-  const showReviewShortcut =
-    (change.changes?.length ?? 0) > REVIEW_SHORTCUT_MIN_ROWS;
+  const showReviewShortcut = (change.changes?.length ?? 0) > REVIEW_SHORTCUT_MIN_ROWS;
   const reviewConfirmationMsg =
     reviewType === "approve"
       ? "Confirm approval of this DNS change?"
