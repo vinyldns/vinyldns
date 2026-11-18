@@ -36,7 +36,7 @@
             <!-- Dynamic Fields -->
             <modal-element ng-repeat="field in zoneFields"
                            label="{{ formatLabel(field.label) }}"
-                           ng-if="field.type === 'Display' ? isProviderFieldVisible(field) : hasProviderParamValue(createZone.providerParams[field.field]) && isProviderFieldVisible(field)">
+                           ng-if="field.field !== 'nameservers' && (field.type === 'Display' ? isProviderFieldVisible(field) : hasProviderParamValue(createZone.providerParams[field.field]) && isProviderFieldVisible(field))">
 
                 <div class="form-control-static" ng-if="field.type === 'Display'">
                     {{ displayProviderParamValue(createZone.providerParams[field.field]) }}
