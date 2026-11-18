@@ -376,7 +376,6 @@ function ChangeTypeBadge({ changeType }: { changeType: string }) {
 }
 
 const REVIEW_SHORTCUT_MIN_ROWS = 10;
-
 /**
  * Detail view for a single batch DNS change identified by the `id` URL param.
  * The page covers four responsibilities:
