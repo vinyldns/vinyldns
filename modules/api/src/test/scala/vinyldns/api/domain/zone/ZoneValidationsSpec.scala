@@ -54,6 +54,35 @@ class ZoneValidationsSpec
     }
   }
 
+  "noCustomZoneConnections" should {
+    "succeed when both connections are absent" in {
+      noCustomZoneConnections(None, None) should be(right)
+    }
+
+    "fail when a primary connection is supplied" in {
+      leftValue(noCustomZoneConnections(okZone.connection, None)) shouldBe a[InvalidRequest]
+    }
+
+    "fail when a transfer connection is supplied" in {
+      leftValue(noCustomZoneConnections(None, okZone.connection)) shouldBe a[InvalidRequest]
+    }
+  }
+
+  "noCustomZoneConnectionUpdates" should {
+    "succeed when existing custom connections are unchanged" in {
+      noCustomZoneConnectionUpdates(okZone, okZone) should be(right)
+    }
+
+    "fail when a custom connection is changed" in {
+      val replacement = okZone.connection.map(_.copy(primaryServer = "10.1.1.2"))
+      leftValue(noCustomZoneConnectionUpdates(okZone.copy(connection = replacement), okZone)) shouldBe a[InvalidRequest]
+    }
+
+    "succeed when custom connections are removed" in {
+      noCustomZoneConnectionUpdates(okZone.copy(connection = None), okZone) should be(right)
+    }
+  }
+
   "isValidAclRule" should {
     "fail if mask is an invalid regex" in {
       val invalidRegexMaskRuleInfo = baseAclRuleInfo.copy(recordMask = Some("x{5,-3}"))

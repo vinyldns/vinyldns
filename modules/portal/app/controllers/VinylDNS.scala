@@ -250,6 +250,17 @@ class VinylDNS @Inject() (
     })
   }
 
+  def searchUsers(pattern: String): Action[AnyContent] = userAction.async { implicit request =>
+    val params = new java.util.HashMap[String, java.util.List[String]]()
+    params.put("pattern", java.util.Arrays.asList(pattern))
+    val vinyldnsRequest = VinylDNSRequest("GET", s"$vinyldnsServiceBackend", "users/search", parameters = params)
+    executeRequest(vinyldnsRequest, request.user).map(response => {
+      logger.info(s"user search [$pattern] retrieved with status [${response.status}]")
+      Status(response.status)(response.body)
+        .withHeaders(cacheHeaders: _*)
+    })
+  }
+
   def deleteGroup(id: String): Action[AnyContent] = userAction.async { implicit request =>
     val vinyldnsRequest = VinylDNSRequest("DELETE", s"$vinyldnsServiceBackend", s"groups/$id")
     executeRequest(vinyldnsRequest, request.user).map(response => {
