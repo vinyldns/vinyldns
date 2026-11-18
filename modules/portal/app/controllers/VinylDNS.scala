@@ -389,28 +389,29 @@ class VinylDNS @Inject() (
             for {
               existingAccount <- userAccountAccessor.get(userDetails.username)
               userAccount <- existingAccount match {
-                case Some(user) => IO(VinylDNS.UserInfo.fromUser(user))
+                case Some(user) => IO.pure(user)
                 case None =>
-                  createNewUser(userDetails).map(VinylDNS.UserInfo.fromUser)
+                  createNewUser(userDetails)
               }
             } yield userAccount
           case Left(LdapServiceException("LDAP not configured")) =>
             // NoOpAuthenticator (OIDC-only mode) — fall back to database lookup
             userAccountAccessor.get(username).flatMap {
-              case Some(user) => IO(VinylDNS.UserInfo.fromUser(user))
+              case Some(user) => IO.pure(user)
               case None => IO.raiseError(UserDoesNotExistException(username))
             }
           case Left(err) =>
             IO.raiseError(err)
         }
       }.unsafeToFuture()
-        .map(Json.toJson(_))
+        .map(user => Json.obj("id" -> user.id, "userName" -> user.userName))
         .map(Ok(_).withHeaders(cacheHeaders: _*))
         .recover {
           case _: UserDoesNotExistException =>
             NotFound(s"User $username was not found")
           case le: LdapException =>
-            InternalServerError(le.getMessage)
+            logger.error("An unexpected error occurred when looking up a user", le)
+            InternalServerError("Unable to look up user. Please contact your VinylDNS administrators.")
         }
   }
 
