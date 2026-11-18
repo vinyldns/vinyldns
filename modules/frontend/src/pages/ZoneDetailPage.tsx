@@ -363,6 +363,10 @@ export function ZoneDetailPage() {
     getPanelTitle: recPanelTitle,
     search: searchRecords,
     refetch: refetchRecords,
+    nameSort: recordsNameSort,
+    recordTypeSort: recordsTypeSort,
+    toggleNameSort: toggleRecordsNameSort,
+    toggleRecordTypeSort: toggleRecordsTypeSort,
     createRecord,
     updateRecord,
     deleteRecord,
@@ -383,8 +387,43 @@ export function ZoneDetailPage() {
   // ── Sync zone ──────────────────────────────────────────────────────────────
   const syncMutation = useMutation({
     mutationFn: () => zonesService.syncZone(id),
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ["zone", id] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["zone", id] });
+      void queryClient.invalidateQueries({ queryKey: ["zone-changes", id] });
+      setOwnershipAlert({
+        type: "success",
+        title: "Zone Sync Started",
+        icon: "bi-arrow-repeat",
+        accent: "#0d9488",
+        msg: `Sync for zone “${zoneData?.name ?? id}” was submitted successfully.`,
+      });
+      setTimeout(() => setOwnershipAlert(null), 5000);
+    },
+    onError: (err: unknown) => {
+      const error = err as {
+        response?: { data?: string | { errors?: string[] } };
+      };
+      const data = error.response?.data;
+      let msg = "Failed to sync the zone.";
+      if (
+        data &&
+        typeof data === "object" &&
+        "errors" in data &&
+        Array.isArray(data.errors)
+      ) {
+        msg = data.errors.join("\n");
+      } else if (typeof data === "string") {
+        msg = data.replace(/^"|"$/g, "");
+      }
+      setOwnershipAlert({
+        type: "danger",
+        title: "Zone Sync Failed",
+        icon: "bi-exclamation-octagon-fill",
+        accent: "#dc2626",
+        msg,
+      });
+      setTimeout(() => setOwnershipAlert(null), 8000);
+    },
   });
 
   // ── Update zone (Manage Zone tab) ──────────────────────────────────────────
@@ -1836,6 +1875,10 @@ export function ZoneDetailPage() {
                       (!statusFilter || r.status === statusFilter) &&
                       (ttlFilter === null || r.ttl === ttlFilter),
                   )}
+                  nameSort={recordsNameSort}
+                  recordTypeSort={recordsTypeSort}
+                  onToggleNameSort={toggleRecordsNameSort}
+                  onToggleTypeSort={toggleRecordsTypeSort}
                   onEdit={(rec) => {
                     setEditRecord(rec);
                     setShowRecordForm(false);

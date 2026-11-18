@@ -53,7 +53,7 @@ vi.mock("../../components/dnsChanges/DnsChangeForm", () => ({
         type="button"
         data-testid="mock-submit"
         onClick={() =>
-          onSubmit({ comments: "", changes: [{ changeType: "Add" }] }, false)
+          onSubmit({ comments: "", changes: [{ changeType: "Add" }] }, true)
         }
       >
         submit
@@ -147,13 +147,23 @@ describe("<DnsChangeNewPage />", () => {
     expect(navigateMock).toHaveBeenCalledWith("/dnschanges");
   });
 
-  it("navigates to /dnschanges on a successful createBatchChange", async () => {
+  it("navigates to the new change detail page on a successful createBatchChange", async () => {
+    createBatchChangeMock.mockImplementation((_payload, { onSuccess }) => {
+      onSuccess({ data: { id: "abc-123" } });
+    });
+    renderWithProviders(<DnsChangeNewPage />);
+    await userEvent.click(await screen.findByTestId("mock-submit"));
+    expect(createBatchChangeMock).toHaveBeenCalledTimes(1);
+    expect(createBatchChangeMock.mock.calls[0][0].allowManualReview).toBe(true);
+    expect(navigateMock).toHaveBeenCalledWith("/dnschanges/abc-123");
+  });
+
+  it("falls back to /dnschanges when the success response has no id", async () => {
     createBatchChangeMock.mockImplementation((_payload, { onSuccess }) => {
       onSuccess();
     });
     renderWithProviders(<DnsChangeNewPage />);
     await userEvent.click(await screen.findByTestId("mock-submit"));
-    expect(createBatchChangeMock).toHaveBeenCalledTimes(1);
     expect(navigateMock).toHaveBeenCalledWith("/dnschanges");
   });
 

@@ -134,7 +134,10 @@ export function DnsChangeNewPage() {
     createBatchChange(
       { data, allowManualReview },
       {
-        onSuccess: () => void navigate("/dnschanges"),
+        onSuccess: (response?: { data?: { id?: string } }) => {
+          const id = response?.data?.id;
+          void navigate(id ? `/dnschanges/${id}` : "/dnschanges");
+        },
         onError: (err: unknown) => {
           const error = err as {
             response?: { status?: number; data?: unknown };
