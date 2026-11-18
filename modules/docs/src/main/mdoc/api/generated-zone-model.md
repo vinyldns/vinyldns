@@ -77,9 +77,9 @@ configuration, any param not listed for a provider is rejected.
 
 param          | type          | create   | update   | description |
  ------------- | ------------- | -------- | -------- | :---------- |
-kind           | string        | required | optional | `Native` or `Master` |
-nameservers    | array         | required | not allowed | Name servers for the zone. Each must be a fully qualified name ending with a dot. At least one is required. |
-masters        | array         | optional | optional | Primary servers for the zone |
+kind           | string        | required | optional | `Native`, `Master` or `Slave` |
+nameservers    | array         | required unless `Slave` | not allowed | Name servers for the zone. Each must be a fully qualified name ending with a dot. At least one is required. |
+masters        | array         | required for `Slave`, otherwise not allowed | required for `Slave`, otherwise not allowed | Primary servers a `Slave` zone transfers from |
 
 **BIND**
 

@@ -287,9 +287,96 @@ class GenerateZoneServiceSpec
         "property 'retry' is not defined in the schema and the schema does not allow additional properties; $: required " +
         "property 'kind' not found; $: property 'negative_cache_ttl' is not defined in the schema and the schema does not allow additional properties")
     }
+
+    "accept a PowerDNS Slave zone with masters and no nameservers" in {
+      doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+      doReturn(IO.pure(generatePdnsZone))
+        .when(mockGenerateZoneRepository)
+        .save(any[GenerateZone])
+
+      val slaveParams = Map(
+        "kind" -> JString("Slave"),
+        "masters" -> JArray(List(JString("172.17.42.1")))
+      )
+      val result = underTest
+        .handleGenerateZoneRequest(generatePdnsZoneAuthorized.copy(providerParams = slaveParams), superUserAuth)
+        .value
+        .unsafeRunSync()
+        .toOption
+        .get
+      result.providerParams shouldBe slaveParams
+    }
+
+    "reject a PowerDNS Slave zone without masters" in {
+      doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+
+      val request = generatePdnsZoneAuthorized.copy(providerParams = Map("kind" -> JString("Slave")))
+      val result = underTest.handleGenerateZoneRequest(request, superUserAuth).value.unsafeRunSync().swap.toOption.get
+      result shouldBe a[InvalidRequest]
+      result.getMessage should include("masters")
+    }
+
+    "reject a PowerDNS Native zone without nameservers" in {
+      doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+
+      val request = generatePdnsZoneAuthorized.copy(providerParams = Map("kind" -> JString("Native")))
+      val result = underTest.handleGenerateZoneRequest(request, superUserAuth).value.unsafeRunSync().swap.toOption.get
+      result shouldBe a[InvalidRequest]
+      result.getMessage should include("nameservers")
+    }
+
+    "reject a PowerDNS Native zone with masters" in {
+      doReturn(IO.pure(None)).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(None)).when(mockZoneRepo).getZoneByName(anyString)
+
+      val request = generatePdnsZoneAuthorized.copy(
+        providerParams = powerDNSProviderParams ++ Map(
+          "kind" -> JString("Native"),
+          "masters" -> JArray(List(JString("172.17.42.1")))
+        )
+      )
+      val result = underTest.handleGenerateZoneRequest(request, superUserAuth).value.unsafeRunSync().swap.toOption.get
+      result shouldBe a[InvalidRequest]
+    }
   }
 
   "Update generated Zones" should {
+    "switch a PowerDNS zone to Slave with masters and keep stored nameservers" in {
+      doReturn(IO.pure(Some(generatePdnsZone))).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+      doReturn(IO.pure(generatePdnsZone)).when(mockGenerateZoneRepository).save(any[GenerateZone])
+
+      val slaveParams = Map(
+        "kind" -> JString("Slave"),
+        "masters" -> JArray(List(JString("172.17.42.1")))
+      )
+      val result = underTest
+        .handleUpdateGeneratedZoneRequest(updatePdnsZoneAuthorized.copy(providerParams = slaveParams), okAuth)
+        .value
+        .unsafeRunSync()
+        .toOption
+        .get
+      result.providerParams shouldBe slaveParams + ("nameservers" -> powerDNSProviderParams("nameservers"))
+    }
+
+    "reject a PowerDNS Slave update without masters" in {
+      doReturn(IO.pure(Some(generatePdnsZone))).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
+
+      val result = underTest
+        .handleUpdateGeneratedZoneRequest(
+          updatePdnsZoneAuthorized.copy(providerParams = Map("kind" -> JString("Slave"))),
+          okAuth
+        )
+        .value
+        .unsafeRunSync()
+        .swap
+        .toOption
+        .get
+      result shouldBe a[InvalidRequest]
+    }
+
     "return an error response for provider params not supported the correct provider" in {
       doReturn(IO.pure(Some(generateBindZone))).when(mockGenerateZoneRepository).getGenerateZoneByName(anyString)
       val result =

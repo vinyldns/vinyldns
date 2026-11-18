@@ -115,11 +115,11 @@ object TestZoneData {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "title": "PowerDNS Create Zone",
                     "type": "object",
-                    "required": ["kind", "nameservers"],
+                    "required": ["kind"],
                     "properties": {
                       "kind": {
                         "type": "string",
-                        "enum": ["Native", "Master"]
+                        "enum": ["Native", "Master", "Slave"]
                       },
                       "nameservers": {
                         "type": "array",
@@ -131,6 +131,16 @@ object TestZoneData {
                         "items": { "type": "string" }
                       }
                     },
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": { "kind": { "const": "Slave" } },
+                          "required": ["kind"]
+                        },
+                        "then": { "required": ["masters"] },
+                        "else": { "required": ["nameservers"], "not": { "required": ["masters"] } }
+                      }
+                    ],
                     "additionalProperties": false
                   }""",
           "update-zone" -> """{
@@ -140,13 +150,23 @@ object TestZoneData {
                     "properties": {
                       "kind": {
                         "type": "string",
-                        "enum": ["Native", "Master"]
+                        "enum": ["Native", "Master", "Slave"]
                       },
                       "masters": {
                         "type": "array",
                         "items": { "type": "string" }
                       }
                     },
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": { "kind": { "const": "Slave" } },
+                          "required": ["kind"]
+                        },
+                        "then": { "required": ["masters"] },
+                        "else": { "not": { "required": ["masters"] } }
+                      }
+                    ],
                     "additionalProperties": false
                   }"""
         ),

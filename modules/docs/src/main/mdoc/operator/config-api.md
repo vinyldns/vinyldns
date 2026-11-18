@@ -510,9 +510,9 @@ backend {
                 {
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "type": "object",
-                  "required": ["kind", "nameservers"],
+                  "required": ["kind"],
                   "properties": {
-                    "kind": { "type": "string", "enum": ["Native", "Master"] },
+                    "kind": { "type": "string", "enum": ["Native", "Master", "Slave"] },
                     "nameservers": {
                       "type": "array",
                       "minItems": 1,
@@ -520,6 +520,13 @@ backend {
                     },
                     "masters": { "type": "array", "items": { "type": "string" } }
                   },
+                  "allOf": [
+                    {
+                      "if": { "properties": { "kind": { "const": "Slave" } }, "required": ["kind"] },
+                      "then": { "required": ["masters"] },
+                      "else": { "required": ["nameservers"], "not": { "required": ["masters"] } }
+                    }
+                  ],
                   "additionalProperties": false
                 }
                 """
@@ -528,9 +535,16 @@ backend {
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "type": "object",
                   "properties": {
-                    "kind": { "type": "string", "enum": ["Native", "Master"] },
+                    "kind": { "type": "string", "enum": ["Native", "Master", "Slave"] },
                     "masters": { "type": "array", "items": { "type": "string" } }
                   },
+                  "allOf": [
+                    {
+                      "if": { "properties": { "kind": { "const": "Slave" } }, "required": ["kind"] },
+                      "then": { "required": ["masters"] },
+                      "else": { "not": { "required": ["masters"] } }
+                    }
+                  ],
                   "additionalProperties": false
                 }
                 """
