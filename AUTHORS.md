@@ -35,6 +35,7 @@ in any way, but do not see your name here, please open a PR to add yourself (in 
 - Deepak Mohanakrishnan
 - Jon Moore
 - Palash Nigam
+- Thirumoorthy Palanimalai
 - Joshulyne Park
 - Nathan Pierce
 - Michael Pilquist

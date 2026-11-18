@@ -2,7 +2,7 @@
 layout: page
 title: "FAQ"
 section: "user_menu"
-position: 6
+position: 7
 ---
 
 # VinylDNS FAQ
