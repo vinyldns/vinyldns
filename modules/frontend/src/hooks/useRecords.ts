@@ -226,10 +226,14 @@ function normalizeOwnershipStatus(record: RecordSet): RecordSet {
   return record;
 }
 
+export type ZoneSortDir = "asc" | "desc" | "";
+
 /** Hook for records within a single zone */
 export function useZoneRecords(zoneId: string) {
   const [nameFilter, setNameFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [nameSort, setNameSort] = useState<ZoneSortDir>("asc");
+  const [recordTypeSort, setRecordTypeSort] = useState<ZoneSortDir>("");
   const {
     paging,
     nextPageUpdate,
@@ -257,7 +261,15 @@ export function useZoneRecords(zoneId: string) {
   }, [queryClient, zoneId]);
 
   const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ['zone-recordsets', zoneId, nameFilter, typeFilter, paging.next],
+    queryKey: [
+      'zone-recordsets',
+      zoneId,
+      nameFilter,
+      typeFilter,
+      nameSort,
+      recordTypeSort,
+      paging.next,
+    ],
     queryFn: async () => {
       const res = await recordsService.listRecordSetsByZone(
         zoneId,
@@ -265,6 +277,8 @@ export function useZoneRecords(zoneId: string) {
         paging.next as string | undefined,
         nameFilter,
         typeFilter,
+        nameSort,
+        recordTypeSort,
       );
       return res.data;
     },
@@ -343,6 +357,18 @@ export function useZoneRecords(zoneId: string) {
     [resetPaging],
   );
 
+  const toggleNameSort = useCallback(() => {
+    setRecordTypeSort("");
+    setNameSort((prev) => (prev === "asc" ? "desc" : "asc"));
+    resetPaging();
+  }, [resetPaging]);
+
+  const toggleRecordTypeSort = useCallback(() => {
+    setNameSort("");
+    setRecordTypeSort((prev) => (prev === "asc" ? "desc" : "asc"));
+    resetPaging();
+  }, [resetPaging]);
+
   const nextPage = useCallback(() => {
     nextPageUpdate(data?.recordSets?.length ?? 0, data?.nextId);
   }, [data, nextPageUpdate]);
@@ -355,6 +381,10 @@ export function useZoneRecords(zoneId: string) {
     records: (data?.recordSets ?? []).map(normalizeOwnershipStatus),
     isLoading,
     isFetching,
+    nameSort,
+    recordTypeSort,
+    toggleNameSort,
+    toggleRecordTypeSort,
     search,
     refetch,
     nextPage,

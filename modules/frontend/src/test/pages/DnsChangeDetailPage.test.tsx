@@ -420,6 +420,50 @@ describe("<DnsChangeDetailPage /> Review actions (super/support only)", () => {
     expect(screen.getByPlaceholderText(/Add comments/i)).toBeInTheDocument();
   });
 
+  describe("Review Actions shortcut button", () => {
+    function pendingBatchWithRows(count: number) {
+      const base = makeBatch().changes[0];
+      return makeBatch({
+        userId: "u-alice",
+        status: "PendingReview",
+        approvalStatus: "PendingReview",
+        changes: Array.from({ length: count }, (_, i) => ({
+          ...base,
+          id: `sc-${i}`,
+          inputName: `host${i}.example.`,
+        })),
+      });
+    }
+
+    async function renderAsReviewer(rows: number) {
+      setProfile({
+        id: "u-admin",
+        userName: "admin",
+        isSuper: true,
+        isSupport: false,
+      });
+      (
+        dnsChangeService.getBatchChange as ReturnType<typeof vi.fn>
+      ).mockResolvedValue({ data: pendingBatchWithRows(rows) });
+      renderAt();
+      await screen.findByText("Review DNS Change");
+    }
+
+    it("is hidden when the table has exactly 10 rows", async () => {
+      await renderAsReviewer(10);
+      expect(
+        screen.queryByRole("button", { name: /Review Actions/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("is shown when the table has more than 10 rows", async () => {
+      await renderAsReviewer(11);
+      expect(
+        screen.getByRole("button", { name: /Review Actions/i }),
+      ).toBeInTheDocument();
+    });
+  });
+
   it("requires two clicks before approveBatchChange is invoked", async () => {
     setProfile({
       id: "u-admin",

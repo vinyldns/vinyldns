@@ -63,6 +63,63 @@ describe("<RecordsTable />", () => {
     expect(screen.getByText("Active")).toBeInTheDocument();
   });
 
+  describe("column sorting", () => {
+    it("calls the toggle handlers when the Name and Type headers are clicked", async () => {
+      const onToggleNameSort = vi.fn();
+      const onToggleTypeSort = vi.fn();
+      renderWithProviders(
+        <RecordsTable
+          records={[record()]}
+          nameSort="asc"
+          onToggleNameSort={onToggleNameSort}
+          onToggleTypeSort={onToggleTypeSort}
+        />,
+      );
+
+      await userEvent.click(screen.getByText("Name"));
+      expect(onToggleNameSort).toHaveBeenCalledTimes(1);
+      expect(onToggleTypeSort).not.toHaveBeenCalled();
+
+      await userEvent.click(screen.getByText("Type"));
+      expect(onToggleTypeSort).toHaveBeenCalledTimes(1);
+    });
+
+    it("shows an up arrow on the sorted column and a neutral arrow on the other", () => {
+      const { container } = renderWithProviders(
+        <RecordsTable
+          records={[record()]}
+          nameSort="asc"
+          onToggleNameSort={vi.fn()}
+          onToggleTypeSort={vi.fn()}
+        />,
+      );
+
+      expect(container.querySelectorAll("th .bi-arrow-up")).toHaveLength(1);
+      expect(container.querySelectorAll("th .bi-arrow-down-up")).toHaveLength(1);
+    });
+
+    it("shows a down arrow when sorted descending by type", () => {
+      const { container } = renderWithProviders(
+        <RecordsTable
+          records={[record()]}
+          recordTypeSort="desc"
+          onToggleNameSort={vi.fn()}
+          onToggleTypeSort={vi.fn()}
+        />,
+      );
+
+      expect(container.querySelectorAll("th .bi-arrow-down")).toHaveLength(1);
+    });
+
+    it("shows no sort arrows when no toggle handlers are provided", () => {
+      const { container } = renderWithProviders(
+        <RecordsTable records={[record()]} />,
+      );
+
+      expect(container.querySelectorAll("th i[class*='bi-arrow']")).toHaveLength(0);
+    });
+  });
+
   it("renders the private zone banner and pill when not shared", () => {
     renderWithProviders(
       <RecordsTable records={[record()]} isSharedZone={false} />,

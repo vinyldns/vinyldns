@@ -24,7 +24,14 @@ import {
 import { dnsChangeService } from "../services/dnsChangeService";
 import { usePaging } from "./usePaging";
 import { useAlerts } from "../contexts/AlertContext";
-import type { CreateDnsChangeRequest } from "../types/dnsChange";
+import type { CreateDnsChangeRequest, DnsChange } from "../types/dnsChange";
+
+type ApiError = {
+  response?: { status?: number; statusText?: string; data?: unknown };
+};
+
+const APPROVE_OUTSTANDING_ISSUES_MSG =
+  "Issues still remain, cannot approve DNS Change. Resolve all outstanding issues or reject the DNS Change.";
 
 /**
  * Manages data fetching and all mutations for the DNS Changes feature.
@@ -109,9 +116,13 @@ export function useDnsChanges(
       // errors. DnsChangeNewPage handles these inline so the generic
       // alert here to avoid double-reporting the same failure.
       if (status === 400 && Array.isArray(responseData)) return;
+      const detail =
+        typeof responseData === "string"
+          ? responseData.replace(/^"+|"+$/g, "")
+          : "";
       addAlert(
         "danger",
-        `Error submitting DNS change: HTTP ${status ?? 0} ${error.response?.statusText ?? ""}`,
+        `Error submitting DNS change: HTTP ${status ?? 0} ${error.response?.statusText ?? ""}${detail ? `: ${detail}` : ""}`,
       );
     },
   });
@@ -138,7 +149,34 @@ export function useDnsChanges(
       addAlert("success", "Batch change approved");
       void queryClient.invalidateQueries({ queryKey: ["dnschanges"] });
     },
-    onError: () => {
+    onError: (err: unknown, { id }) => {
+      const response = (err as ApiError | null)?.response;
+      if (Array.isArray(response?.data)) {
+        const rows = response.data as Array<{ errors?: string[] } | undefined>;
+        queryClient.setQueryData<DnsChange>(["dnschange", id], (old) =>
+          old
+            ? {
+                ...old,
+                changes: old.changes.map((c, i) => {
+                  const rowErrors = rows[i]?.errors;
+                  return rowErrors
+                    ? {
+                        ...c,
+                        validationErrors: rowErrors,
+                        outstandingErrors: true,
+                      }
+                    : { ...c, validationErrors: [] };
+                }),
+              }
+            : old,
+        );
+        const statusText = response.statusText ? ` (${response.statusText})` : "";
+        addAlert(
+          "danger",
+          `HTTP ${response.status ?? 400}${statusText}: ${APPROVE_OUTSTANDING_ISSUES_MSG}`,
+        );
+        return;
+      }
       addAlert("danger", "Failed to approve batch change");
     },
   });

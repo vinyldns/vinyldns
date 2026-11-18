@@ -20,8 +20,73 @@ import {
   changeSignature,
   findDuplicateGroups,
   formatRecordData,
+  toLocalDateTimeInput,
+  localDatetimeToUtc,
+  getLocalTimeZoneLabel,
+  validateScheduledTime,
   type ChangeFormItem,
 } from "../../../components/dnsChanges/DnsChangeForm";
+
+describe("localDatetimeToUtc", () => {
+  it("returns UTC ISO format without milliseconds (legacy portal format)", () => {
+    const result = localDatetimeToUtc("2026-11-18T15:00");
+    expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00Z$/);
+    expect(result).not.toContain(".");
+  });
+
+  it("round-trips to the same instant as the local input", () => {
+    const result = localDatetimeToUtc("2026-11-21T15:00");
+    expect(new Date(result).getTime()).toBe(
+      new Date(2026, 10, 21, 15, 0, 0, 0).getTime(),
+    );
+  });
+
+  it("returns empty string for invalid input", () => {
+    expect(localDatetimeToUtc("")).toBe("");
+    expect(localDatetimeToUtc("invalid")).toBe("");
+    expect(localDatetimeToUtc("2026-13-45T25:70")).toBe("");
+  });
+});
+
+describe("getLocalTimeZoneLabel", () => {
+  it("returns a short zone label, not an IANA id", () => {
+    const label = getLocalTimeZoneLabel();
+    expect(label).not.toBe("");
+    expect(label).not.toContain("/");
+  });
+});
+
+describe("validateScheduledTime", () => {
+  it("is valid when not scheduling for later", () => {
+    expect(validateScheduledTime("", "now")).toBe(true);
+  });
+
+  it("requires a value when scheduling for later", () => {
+    expect(validateScheduledTime("", "later")).toBe("Select a date and time.");
+  });
+
+  it("rejects invalid date strings", () => {
+    expect(validateScheduledTime("invalid", "later")).toBe(
+      "Select a valid date and time.",
+    );
+  });
+
+  it("rejects a time in the past", () => {
+    const now = new Date();
+    const pastDate = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+    const pastLocalStr = toLocalDateTimeInput(pastDate);
+    expect(validateScheduledTime(pastLocalStr, "later")).toBe(
+      "Scheduled time must be in the future.",
+    );
+  });
+
+  it("accepts a time in the future", () => {
+    const now = new Date();
+    const futureDate = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+    const futureLocalStr = toLocalDateTimeInput(futureDate);
+    expect(validateScheduledTime(futureLocalStr, "later")).toBe(true);
+  });
+});
 
 const HEADER = "Change Type,Record Type,Input Name,TTL,Record Data";
 
