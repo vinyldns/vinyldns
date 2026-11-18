@@ -18,7 +18,7 @@ section: "new_portal_menu"
 
 If a DNS Change is submitted with errors, the portal highlights the affected rows and shows the error message for each one, so you can correct them and submit again. This includes [non-fatal errors](../api/batchchange-errors.html#non-fatal-errors), such as a record that requires manual review. When a DNS Change is sent for manual review, a VinylDNS administrator will determine if your request can be approved or if it needs to be rejected. After the review your DNS Change will include the review details, including the review status, reviewer name, review time and review comment, if provided.
 
-[![New DNS Change Form with non-fatal errors](../img/new-portal/manual-review-dnschange.png){:.screenshot}](../img/new-portal/manual-review-dnschange.png)
+[![New DNS Change form with non-fatal errors](../img/new-portal/manual-review-dnschange.png){:.screenshot}](../img/new-portal/manual-review-dnschange.png)
 
 [![Rejected DNS Change showing the review details](../img/new-portal/rejected-dnschange.png){:.screenshot}](../img/new-portal/rejected-dnschange.png)
 
