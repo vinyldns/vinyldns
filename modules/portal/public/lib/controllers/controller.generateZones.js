@@ -228,9 +228,7 @@ angular.module('controller.generateZones', [])
                     source: config.source,
                     description: config.description,
                     preserveWhenHidden: config['preserve-when-hidden'],
-                    requiredWhen: config['required-when'],
-                    payloadLocation: config['payload-location'],
-                    payloadLocationWhen: config['payload-location-when']
+                    requiredWhen: config['required-when']
                 };
             });
         });
@@ -259,11 +257,6 @@ angular.module('controller.generateZones', [])
                 const isSelect = type.toLowerCase().includes('select');
                 const value = config.source === 'nameservers' ? [] : isSelect ? (config.value || '').split(',').map(v => v.trim()).filter(Boolean) : config.value;
 
-                if ($scope.createZone.providerParams[field] === undefined && $scope.createZone[field] !== undefined &&
-                    (config['payload-location'] === 'zone' || config['payload-location-when'])) {
-                    $scope.createZone.providerParams[field] = angular.copy($scope.createZone[field]);
-                }
-
                 // Only initialize providerParams entry if not already populated from existing zone data
                 if (config.type !== 'Display' && ($scope.createZone.providerParams[field] === undefined || $scope.createZone.providerParams[field] === null)) {
                     $scope.createZone.providerParams[field] = config.type === 'Boolean' ? config.value : type === 'IP-Array' ? [''] : type === 'Multi-Select' ? [] : '';
@@ -278,9 +271,7 @@ angular.module('controller.generateZones', [])
                     source: config.source,
                     description: config.description,
                     preserveWhenHidden: config['preserve-when-hidden'],
-                    requiredWhen: config['required-when'],
-                    payloadLocation: config['payload-location'],
-                    payloadLocationWhen: config['payload-location-when']
+                    requiredWhen: config['required-when']
                 };
             });
         });
@@ -393,8 +384,10 @@ angular.module('controller.generateZones', [])
             const values = visibility.values || [visibility.value];
             nameserversVisible = values.indexOf(zone.providerParams[visibility.field]) !== -1;
         }
+        // A Display-only nameservers field is read-only, so it isn't sent (e.g. PowerDNS update rejects it)
+        const nameserversEditable = nameserversConfig && nameserversConfig.type !== 'Display';
         if (zone.providerParams && zone.providerParams.nameservers !== undefined && nameserversVisible &&
-            (nameserversConfig || ($scope.UpdateRequiredFields || []).indexOf('nameservers') !== -1)) {
+            (nameserversEditable || ($scope.UpdateRequiredFields || []).indexOf('nameservers') !== -1)) {
             providerParams.nameservers = zone.providerParams.nameservers;
         }
         const payload = {
@@ -421,14 +414,7 @@ angular.module('controller.generateZones', [])
             if (!$scope.hasProviderParamValue(value)) {
                 continue;
             }
-            const rootWhen = config['payload-location-when'];
-            const putAtRoot = config['payload-location'] === 'zone' ||
-                (rootWhen && zone.providerParams[rootWhen.field] === rootWhen.value);
-            if (putAtRoot) {
-                payload[field] = value;
-            } else {
-                providerParams[field] = value;
-            }
+            providerParams[field] = value;
         }
         return payload;
     };
@@ -463,14 +449,7 @@ angular.module('controller.generateZones', [])
             if (!$scope.hasProviderParamValue(value)) {
                 return;
             }
-            const rootWhen = config['payload-location-when'];
-            const putAtRoot = config['payload-location'] === 'zone' ||
-                (rootWhen && zone.providerParams[rootWhen.field] === rootWhen.value);
-            if (putAtRoot) {
-                payload[field] = value;
-            } else {
-                payload.providerParams[field] = value;
-            }
+            payload.providerParams[field] = value;
         });
         return payload;
     };
