@@ -9,7 +9,7 @@ set -euo pipefail
 
 usage() {
   echo "USAGE: publish_signed_image.sh <image> <tag> [floating-tag...]"
-  echo -e "\te.g. publish_signed_image.sh vinyldns/api 0.22.0 latest"
+  echo -e "\te.g. publish_signed_image.sh vinyldns/api <version> latest"
 }
 
 if [[ $# -lt 2 ]]; then
@@ -51,12 +51,15 @@ if cosign verify "${IMAGE_REF}" \
 fi
 echo "Rejected unexpected identity ${UNEXPECTED_IDENTITY}"
 
-# Floating tags move only after verification, and must resolve to the signed digest
+# Floating tags move only after verification, and must resolve to the signed digest.
+# --prefer-index=false copies a single-platform manifest as-is instead of wrapping it in a new (unsigned) index.
 for FLOATING_TAG in ${FLOATING_TAGS[@]+"${FLOATING_TAGS[@]}"}; do
-  docker buildx imagetools create --tag "${IMAGE}:${FLOATING_TAG}" "${IMAGE_REF}"
+  PREVIOUS_DIGEST="$(resolve_digest "${IMAGE}:${FLOATING_TAG}" 2> /dev/null || echo "none")"
+  docker buildx imagetools create --prefer-index=false --tag "${IMAGE}:${FLOATING_TAG}" "${IMAGE_REF}"
   FLOATING_DIGEST="$(resolve_digest "${IMAGE}:${FLOATING_TAG}")"
   if [[ "${FLOATING_DIGEST}" != "${DIGEST}" ]]; then
     echo "ERROR: ${IMAGE}:${FLOATING_TAG} resolved to ${FLOATING_DIGEST}, expected ${DIGEST}" >&2
+    echo "ERROR: ${IMAGE}:${FLOATING_TAG} previously pointed at ${PREVIOUS_DIGEST}; restore it manually" >&2
     exit 1
   fi
   echo "Pointed ${IMAGE}:${FLOATING_TAG} at ${IMAGE_REF}"

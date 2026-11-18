@@ -17,15 +17,21 @@ defaults:
 
 jobs:
   sign-and-verify:
-    name: Sign and Verify Test Image
+    name: Sign and Verify Test Image (${{ matrix.manifest }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # single: plain image manifest (classic image store, no attestations)
+        # index: image index with an attestation manifest (containerd image store)
+        manifest: [ single, index ]
     # Fork PRs cannot request an OIDC token
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
       id-token: write
     env:
-      IMAGE: ttl.sh/vinyldns-signing-test-${{ github.run_id }}-${{ github.run_attempt }}
+      IMAGE: ttl.sh/vinyldns-signing-test-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.manifest }}
       ISSUER: https://token.actions.githubusercontent.com
       # Must match the default trusted identity in build/docker/publish_signed_image.sh
       RELEASE_IDENTITY_REGEXP: '^https://github\.com/vinyldns/vinyldns/\.github/workflows/(release|release-beta|release-vnext)\.yml@refs/(heads/main|tags/v.+)$'
@@ -33,15 +39,44 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: sigstore/cosign-installer@v3
+      - uses: docker/setup-docker-action@v4
+        with:
+          daemon-config: |
+            { "features": { "containerd-snapshotter": ${{ matrix.manifest == 'index' }} } }
 
       - name: Build throwaway image
-        run: printf 'FROM busybox\nLABEL run="%s"\n' "${GITHUB_RUN_ID}" | docker build -t "${IMAGE}:1h" -
+        run: |
+          if [[ "${{ matrix.manifest }}" == "index" ]]; then
+            ATTESTATIONS=(--provenance=mode=min)
+          else
+            ATTESTATIONS=(--provenance=false --sbom=false)
+          fi
+          printf 'FROM busybox\nLABEL run="%s"\n' "${GITHUB_RUN_ID}" \
+            | docker buildx build "${ATTESTATIONS[@]}" --load -t "${IMAGE}:1h" -
 
       - name: Publish, sign and verify with this workflow's identity
         run: |
           IDENTITY="${GITHUB_SERVER_URL}/${GITHUB_WORKFLOW_REF}"
           export COSIGN_IDENTITY_REGEXP="^$(sed 's/[.[\*^$()+?{|]/\\&/g' <<< "${IDENTITY}")$"
           build/docker/publish_signed_image.sh "${IMAGE}" 1h 2h
+
+      - name: Pushed manifest type matches the matrix
+        run: |
+          MEDIA_TYPE="$(docker buildx imagetools inspect --raw "${IMAGE}:1h" | jq -er .mediaType)"
+          echo "Pushed ${IMAGE}:1h as ${MEDIA_TYPE}" | tee -a "${GITHUB_STEP_SUMMARY}"
+          if [[ "${{ matrix.manifest }}" == "index" ]]; then
+            [[ "${MEDIA_TYPE}" =~ (index|list) ]]
+          else
+            [[ ! "${MEDIA_TYPE}" =~ (index|list) ]]
+          fi
+
+      - name: Floating tag is signed
+        run: |
+          IDENTITY="${GITHUB_SERVER_URL}/${GITHUB_WORKFLOW_REF}"
+          cosign verify "${IMAGE}:2h" \
+            --certificate-oidc-issuer "${ISSUER}" \
+            --certificate-identity "${IDENTITY}" > /dev/null
+          echo "Verified floating tag ${IMAGE}:2h" | tee -a "${GITHUB_STEP_SUMMARY}"
 
       - name: Release identity policy rejects this workflow
         run: |
