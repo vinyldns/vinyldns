@@ -70,8 +70,8 @@ class VinylDNSServiceSpec
   ) =
     HttpRequest(uri = Uri(path), entity = HttpEntity(body))
 
-  private def buildMockResponse(body: String = "results") =
-    HttpResponse(StatusCodes.OK, entity = HttpEntity(body))
+  private def buildMockResponse(body: String = "results", status: StatusCode = StatusCodes.OK) =
+    HttpResponse(status, entity = HttpEntity(body))
 
   override def extractLog: Directive1[LoggingAdapter] = super.extractLog
 
@@ -179,7 +179,7 @@ class VinylDNSServiceSpec
         s"""{"zone":{"name":"zone.","connection":{"key":"$tsigKey","primaryServer":"10.0.0.0"},
            |"account":"foo","shared":false}"changeType":"Create","status":"Complete"}""".stripMargin
       val mockRequest = buildMockRequest()
-      val mockResponse = buildMockResponse(body = body)
+      val mockResponse = buildMockResponse(body = body, status = StatusCodes.BadRequest)
 
       val actual = buildLogMessage(mockRequest, Some(mockResponse), 20)
       (actual should not).include(tsigKey)
@@ -190,7 +190,7 @@ class VinylDNSServiceSpec
       val key3 = "tsig-key-3"
       val body = s"""{"key":"$key1","key":"$key3","key":"$key2"}"""
       val mockRequest = buildMockRequest()
-      val mockResponse = buildMockResponse(body = body)
+      val mockResponse = buildMockResponse(body = body, status = StatusCodes.BadRequest)
 
       val actual = buildLogMessage(mockRequest, Some(mockResponse), 20)
       (actual should not).include(key1)
@@ -202,7 +202,7 @@ class VinylDNSServiceSpec
       val reqBody = s"""{ "key" :"$key"}"""
       val resBody = s"""{"key" :"$key"}"""
       val mockRequest = buildMockRequest(body = reqBody)
-      val mockResponse = buildMockResponse(body = resBody)
+      val mockResponse = buildMockResponse(body = resBody, status = StatusCodes.BadRequest)
 
       val actual = buildLogMessage(mockRequest, Some(mockResponse), 20)
       (actual should not).include(key)
@@ -212,10 +212,81 @@ class VinylDNSServiceSpec
       val reqBody = s"""{"key": "$key","next":"value"}"""
       val resBody = s"""{"key":"$key" ,"next":"value"}"""
       val mockRequest = buildMockRequest(body = reqBody)
-      val mockResponse = buildMockResponse(body = resBody)
+      val mockResponse = buildMockResponse(body = resBody, status = StatusCodes.BadRequest)
 
       val actual = buildLogMessage(mockRequest, Some(mockResponse), 20)
       (actual should not).include(key)
+    }
+    "hide the key in a zone validation failure response and keep the other fields" in {
+      val tsigKey = "plaintext-tsig-key"
+      val body =
+        s"""{"zone":{"name":"zone.","connection":{"name":"zone.","keyName":"zone.","key":"$tsigKey",
+           |"primaryServer":"10.0.0.0"}},"errors":["Missing apex NS record"]}""".stripMargin
+      val mockResponse = buildMockResponse(body = body, status = StatusCodes.BadRequest)
+
+      val actual = buildLogMessage(buildMockRequest(), Some(mockResponse), 20)
+      (actual should not).include(tsigKey)
+      actual should include(""""key":"*****"""")
+      actual should include("status_code=400")
+      actual should include("Missing apex NS record")
+      actual should include("10.0.0.0")
+    }
+    "hide keys that contain escaped quotes" in {
+      val body = """{"connection":{"key":"abc\"def-secret","primaryServer":"10.0.0.0"}}"""
+      val mockResponse = buildMockResponse(body = body, status = StatusCodes.BadRequest)
+
+      val actual = buildLogMessage(buildMockRequest(), Some(mockResponse), 20)
+      (actual should not).include("def-secret")
+      actual should include("10.0.0.0")
+    }
+    "hide secretKey values in an error response" in {
+      val body = """{"userName":"fred","secretKey":"super-secret"}"""
+      val mockResponse = buildMockResponse(body = body, status = StatusCodes.Forbidden)
+
+      val actual = buildLogMessage(buildMockRequest(), Some(mockResponse), 20)
+      (actual should not).include("super-secret")
+      actual should include("fred")
+    }
+    "still log plain text error messages" in {
+      val mockResponse = buildMockResponse(body = "Zone not found", status = StatusCodes.NotFound)
+
+      val actual = buildLogMessage(buildMockRequest(), Some(mockResponse), 20)
+      actual should include("status_code=404")
+      actual should include("entity=Zone not found")
+    }
+    "truncate very large error responses" in {
+      val mockResponse =
+        buildMockResponse(body = "x" * 10000, status = StatusCodes.InternalServerError)
+
+      val actual = buildLogMessage(buildMockRequest(), Some(mockResponse), 20)
+      actual should include("...(truncated)")
+      actual.length should be < 3000
+    }
+    "log an empty error response as empty" in {
+      val mockResponse = HttpResponse(StatusCodes.NotFound)
+
+      val actual = buildLogMessage(buildMockRequest(), Some(mockResponse), 20)
+      actual should include("entity=(empty)")
+      (actual should not).include("body not logged")
+    }
+    "not log the body of non-strict error responses" in {
+      val streamed = HttpEntity(
+        ContentTypes.`application/json`,
+        akka.stream.scaladsl.Source.single(akka.util.ByteString("""{"key":"streamed-secret"}"""))
+      )
+      val mockResponse = HttpResponse(StatusCodes.BadRequest, entity = streamed)
+
+      val actual = buildLogMessage(buildMockRequest(), Some(mockResponse), 20)
+      (actual should not).include("streamed-secret")
+      actual should include("body not logged")
+    }
+    "not backtrack catastrophically on an unterminated key value" in {
+      val body = """{"key":""" + "\"" + ("\\a" * 100000)
+      val mockResponse = buildMockResponse(body = body, status = StatusCodes.BadRequest)
+
+      val start = System.nanoTime()
+      buildLogMessage(buildMockRequest(), Some(mockResponse), 20)
+      (System.nanoTime() - start) / 1000000 should be < 2000L
     }
     "handle multiple whitespace characters" in {
       val key = "tsig-key"
