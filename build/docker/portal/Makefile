@@ -52,8 +52,7 @@ run:
 
 publish: build
 	@set -euo pipefail
-	DOCKER_CONTENT_TRUST=1 docker push $(IMAGE_NAME):$(IMAGE_TAG)
-	DOCKER_CONTENT_TRUST=1 docker push $(IMAGE_NAME):latest
+	"$(ROOT_DIR)/../publish_signed_image.sh" $(IMAGE_NAME) $(IMAGE_TAG) latest
 
 build-vnext:
 	@set -euo pipefail
@@ -63,5 +62,4 @@ build-vnext:
 
 publish-vnext: build-vnext
 	@set -euo pipefail
-	DOCKER_CONTENT_TRUST=1 docker push $(IMAGE_NAME):vnext
-	DOCKER_CONTENT_TRUST=1 docker push "$(IMAGE_NAME):vnext-$$(date -u  +'%Y%m%d')"
+	"$(ROOT_DIR)/../publish_signed_image.sh" $(IMAGE_NAME) "vnext-$$(date -u  +'%Y%m%d')" vnext
