@@ -296,8 +296,7 @@ describe('Controller: GenerateZonesController', function () {
                 type: 'Display',
                 field: 'nameservers',
                 value: 'Name servers used by this zone',
-                'visible-when': { field: 'kind', values: ['Native', 'Master'] },
-                'required-when': { field: 'kind', values: ['Native', 'Master'] }
+                'visible-when': { field: 'kind', values: ['Native', 'Master'] }
             },
             'Slave Masters': {
                 type: 'Multi-Select',
@@ -536,6 +535,69 @@ describe('Controller: GenerateZonesController', function () {
             email: 'test@example.com',
             providerParams: { admin_email: 'admin@example.com' }
         });
+    });
+
+    it('adds the picked nameservers to a BIND create payload', function () {
+        this.scope.requiredFields = ['nameservers', 'admin_email'];
+        this.scope.createZoneTemplate = {
+            Admin_Email: { type: 'String', field: 'admin_email' },
+            TTL: { type: 'Integer', field: 'ttl' }
+        };
+
+        var zone = {
+            groupId: 'group-id',
+            provider: 'bind',
+            zoneName: 'example.com.',
+            email: 'test@example.com',
+            providerParams: {
+                nameservers: ['ns1.example.com.', ''],
+                admin_email: 'admin@example.com',
+                ttl: ''
+            }
+        };
+
+        expect(this.scope.getCreatePayload(zone).providerParams).toEqual({
+            admin_email: 'admin@example.com',
+            nameservers: ['ns1.example.com.']
+        });
+    });
+
+    it('allows switching a PowerDNS Slave zone without nameservers to Native', function () {
+        this.scope.isEditMode = true;
+        this.scope.UpdateRequiredFields = ['kind'];
+        this.scope.updateZoneTemplate = {
+            Kind: { type: 'Select', value: 'Native, Master, Slave' },
+            'Name Servers': {
+                type: 'Display',
+                field: 'nameservers',
+                value: 'Name servers used by this zone',
+                'visible-when': { field: 'kind', values: ['Native', 'Master'] }
+            },
+            'Slave Masters': {
+                type: 'Multi-Select',
+                field: 'masters',
+                value: '172.17.42.1, 172.17.42.2',
+                'visible-when': { field: 'kind', value: 'Slave' },
+                'required-when': { field: 'kind', value: 'Slave' }
+            }
+        };
+        this.scope.zoneFields = Object.keys(this.scope.updateZoneTemplate).map(function (label) {
+            var config = this.scope.updateZoneTemplate[label];
+            return {
+                label: label,
+                field: config.field || label.replace(/ /g, '').toLowerCase(),
+                type: config.type,
+                visibleWhen: config['visible-when'],
+                requiredWhen: config['required-when']
+            };
+        }, this);
+        this.scope.createZone = {
+            provider: 'powerdns',
+            providerParams: { kind: 'Native', masters: ['172.17.42.1'] }
+        };
+
+        expect(this.scope.hasRequiredProviderParams()).toBe(true);
+        expect(this.scope.getUpdatePayload(this.scope.createZone).providerParams).toEqual({ kind: 'Native' });
     });
 
     it('adds and removes entries in an editable provider IP array', function () {

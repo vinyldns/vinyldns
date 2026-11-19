@@ -451,6 +451,14 @@ angular.module('controller.generateZones', [])
             }
             payload.providerParams[field] = value;
         });
+        // The nameserver picker isn't part of the provider template (e.g. BIND), so add its selection when required
+        const nameservers = (zone.providerParams.nameservers || []).filter(function (ns) {
+            return ns !== undefined && ns !== null && String(ns).trim() !== '';
+        });
+        if (payload.providerParams.nameservers === undefined && nameservers.length > 0 &&
+            ($scope.requiredFields || []).indexOf('nameservers') !== -1) {
+            payload.providerParams.nameservers = nameservers;
+        }
         return payload;
     };
 
