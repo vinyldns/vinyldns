@@ -17,6 +17,12 @@ release.
 This does not connect VinylDNS to the zone. When the zone is generated, use [Create Zone](create-zone.html) with the same
 zone name to manage its records in VinylDNS.
 
+To connect a generated zone, VinylDNS needs a [backend](../operator/config-api.html#zone-connections) configured for the
+provider's DNS server. Pass its ID as `backendId`; custom connections are not accepted. The DNS server must also accept
+that backend's TSIG key for the zone's transfers and updates. For PowerDNS, this means setting `TSIG-ALLOW-AXFR` and
+`TSIG-ALLOW-DNSUPDATE` metadata on each generated zone. A PowerDNS `Slave` zone can be connected for viewing, but records
+can't be changed through VinylDNS.
+
 VinylDNS sends the request to the provider before saving anything. If the provider returns an error, nothing is saved.
 
 #### HTTP REQUEST
