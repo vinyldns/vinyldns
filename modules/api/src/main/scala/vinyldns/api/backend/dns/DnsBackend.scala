@@ -30,7 +30,9 @@ import vinyldns.core.domain.record.{RecordSet, RecordSetChange, RecordSetChangeT
 import vinyldns.core.domain.zone.{Algorithm, Zone, ZoneConnection}
 
 import java.io.{PrintWriter, StringWriter}
+import java.time.Duration
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 object DnsProtocol {
 
@@ -91,8 +93,12 @@ class DnsQuery(val lookup: DNS.Lookup, val zoneName: DNS.Name) {
 
 final case class TransferInfo(address: SocketAddress, tsig: Option[DNS.TSIG])
 
-class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: TransferInfo)
-    extends Backend
+class DnsBackend(
+    val id: String,
+    val resolver: DNS.SimpleResolver,
+    val xfrInfo: TransferInfo,
+    val zoneTransferTimeout: Duration = DnsBackend.ZoneTransferTimeout
+) extends Backend
     with DnsConversions {
 
   import DnsProtocol._
@@ -127,22 +133,32 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
       .map(key => DNS.ZoneTransferIn.newAXFR(dnsZoneName, xfrInfo.address, key))
       .getOrElse(DNS.ZoneTransferIn.newAXFR(dnsZoneName, xfrInfo.address, null))
 
+    zti.setTimeout(zoneTransferTimeout)
+
+    val maxReceivedRecords = maxZoneSize.toLong * DnsBackend.MaxReceivedRecordsFactor
+
     for {
-      zoneXfr <- IO {
-        zti.run()
-        zti.getAXFR.asScala.map(_.asInstanceOf[DNS.Record]).toList.distinct
-      }
-      rawDnsRecords = zoneXfr.filter(
-        record => fromDnsRecordType(record.getType) != RecordType.UNKNOWN
-      )
-      _ <- if (rawDnsRecords.length > maxZoneSize) {
-        IO.raiseError(
-          ZoneTooLargeError(
-            s"Zone too large ${zone.name}, ${rawDnsRecords.length} records exceeded max $maxZoneSize"
-          )
-        )
-      } else {
-        IO.pure(Unit)
+      rawDnsRecords <- IO {
+        val records = mutable.LinkedHashSet.empty[DNS.Record]
+        var received = 0L
+        zti.run(new DNS.ZoneTransferIn.ZoneTransferHandler {
+          override def startAXFR(): Unit = ()
+          override def startIXFR(): Unit = ()
+          override def startIXFRDeletes(soa: DNS.Record): Unit = ()
+          override def startIXFRAdds(soa: DNS.Record): Unit = ()
+          override def handleRecord(record: DNS.Record): Unit = {
+            received += 1
+            if (fromDnsRecordType(record.getType) != RecordType.UNKNOWN) {
+              records += record
+            }
+            if (records.size > maxZoneSize || received > maxReceivedRecords) {
+              throw ZoneTooLargeError(
+                s"Zone too large ${zone.name}, records exceeded max $maxZoneSize"
+              )
+            }
+          }
+        })
+        records.toList
       }
       dnsZoneName <- IO(zoneDnsName(zone.name))
       recordSets <- IO(rawDnsRecords.map(toRecordSet(_, dnsZoneName, zone.id)))
@@ -275,6 +291,8 @@ class DnsBackend(val id: String, val resolver: DNS.SimpleResolver, val xfrInfo: 
 }
 
 object DnsBackend {
+  val ZoneTransferTimeout: Duration = Duration.ofMinutes(5)
+  val MaxReceivedRecordsFactor: Long = 10L
 
   def apply(
       id: String,
