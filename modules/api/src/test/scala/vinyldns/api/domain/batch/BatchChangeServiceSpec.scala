@@ -464,6 +464,37 @@ class BatchChangeServiceSpec
   )
 
   "applyBatchChange" should {
+    "reject an apex NS add even when the name server is approved and manual review is enabled" in {
+      val change = AddChangeInput(apexZone.name, NS, None, ttl, NSData(Fqdn("some.test.ns.")))
+      val input = BatchChangeInput(None, List(change), Some(authGrp.id))
+
+      val result = underTestManualEnabled.applyBatchChange(input, auth, true).value.unsafeRunSync()
+
+      result.left.value match {
+        case InvalidBatchChangeResponses(_, responses) =>
+          responses.head should haveInvalid[DomainValidationError](
+            InvalidBatchRequest(s"Record with name ${apexZone.name} is an NS record at apex and cannot be added")
+          )
+        case other => fail(s"Expected apex NS validation failure, got $other")
+      }
+    }
+
+    "allow a non-apex NS add with an approved name server through manual approval" in {
+      val change = AddChangeInput("delegated.test.com.", NS, None, ttl, NSData(Fqdn("some.test.ns.")))
+      val input = BatchChangeInput(None, List(change), Some(authGrp.id))
+      val submitted = underTestManualEnabled.applyBatchChange(input, auth, true).value.unsafeRunSync().right.value
+
+      submitted.approvalStatus shouldBe BatchChangeApprovalStatus.PendingReview
+      submitted.changes.head.validationErrors shouldBe empty
+
+      val approved = underTestManualEnabled
+        .approveBatchChange(submitted.id, supportUserAuth, ApproveBatchChangeInput())
+        .value.unsafeRunSync().right.value
+
+      approved.approvalStatus shouldBe BatchChangeApprovalStatus.ManuallyApproved
+      approved.changes.head.validationErrors shouldBe empty
+    }
+
     "succeed if all inputs are good" in {
       val input = BatchChangeInput(None, List(apexAddA, nonApexAddA))
 
@@ -742,6 +773,35 @@ class BatchChangeServiceSpec
       Some(authGrp.id),
       BatchChangeApprovalStatus.PendingReview
     )
+    "keep a previously submitted apex NS add pending review with a validation error" in {
+      val change = singleChangeGood.copy(
+        zoneId = Some(apexZone.id),
+        zoneName = Some(apexZone.name),
+        recordName = Some(apexZone.name),
+        inputName = apexZone.name,
+        typ = NS,
+        recordData = NSData(Fqdn("some.test.ns."))
+      )
+      val batchChange = batchChangeNeedsApproval.copy(changes = List(change))
+      batchChangeRepo.save(batchChange)
+
+      val result = underTestManualEnabled
+        .approveBatchChange(batchChange.id, supportUserAuth, ApproveBatchChangeInput())
+        .value.unsafeRunSync()
+
+      result.left.value match {
+        case BatchChangeFailedApproval(failedBatch) =>
+          failedBatch.approvalStatus shouldBe BatchChangeApprovalStatus.PendingReview
+          failedBatch.changes.head.validationErrors should contain(
+            SingleChangeError(
+              InvalidBatchRequest(s"Record with name ${apexZone.name} is an NS record at apex and cannot be added")
+            )
+          )
+          batchChangeRepo.getBatchChange(batchChange.id).unsafeRunSync() shouldBe Some(failedBatch)
+        case other => fail(s"Expected apex NS approval failure, got $other")
+      }
+    }
+
     "succeed if the batchChange is PendingReview and reviewer is authorized" in {
       batchChangeRepo.save(batchChangeNeedsApproval)
 
