@@ -25,6 +25,12 @@ Please keep these numbers in mind when you perform syncs.
 
 > POST /zones/{zoneId}/sync
 
+#### EXAMPLE HTTP REQUEST
+
+```http
+POST /zones/621a13df-a2e3-4394-84c0-3eb3a664dff4/sync
+```
+
 #### HTTP RESPONSE TYPES
 
 Code          | description |

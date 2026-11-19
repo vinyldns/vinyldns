@@ -19,7 +19,7 @@
 angular.module('service.records', [])
     .service('recordsService', function ($http, utilityService) {
 
-        this.listRecordSetData = function (limit, startFrom, nameFilter, typeFilter, nameSort, ownerGroupFilter) {
+        this.listRecordSetData = function (limit, startFrom, nameFilter, typeFilter, nameSort, ownerGroupFilter, skipLoader) {
             if (typeFilter == "") {
                 typeFilter = null;
             }
@@ -40,22 +40,23 @@ angular.module('service.records', [])
                 "recordOwnerGroupFilter": ownerGroupFilter
             };
             var url = utilityService.urlBuilder("/api/recordsets", params);
-
+            let promis = $http.get(url);
+            
 
             let loader = $("#loader");
-            loader.modal({
-                             backdrop: "static", //remove ability to close modal with click
-                             keyboard: false, //remove option to close with keyboard
-                             show: true //Display loader!
-                             });
-            let promis = $http.get(url);
-            // What?
-            promis.then(()=>loader.modal("hide"), ()=>loader.modal("hide"))
-
+            if (!skipLoader) {
+                loader.modal({
+                                backdrop: "static", //remove ability to close modal with click
+                                keyboard: false, //remove option to close with keyboard
+                                show: true //Display loader!
+                                });
+                promis.then(()=>loader.modal("hide"), ()=>loader.modal("hide"))
+            }
             return promis
         };
 
-        this.listRecordSetsByZone = function (id, limit, startFrom, nameFilter, typeFilter, nameSort, recordTypeSort) {
+        this.listRecordSetsByZone = function (id, limit, startFrom, nameFilter, typeFilter, nameSort, recordTypeSort, showLoader) {
+            if (showLoader === undefined) { showLoader = true; }
             if (nameFilter == "") {
                 nameFilter = null;
             }
@@ -77,15 +78,16 @@ angular.module('service.records', [])
                 "recordTypeSort": recordTypeSort
             };
             var url = utilityService.urlBuilder("/api/zones/"+id+"/recordsets", params);
-            let loader = $("#loader");
-            loader.modal({
-                          backdrop: "static", //remove ability to close modal with click
-                          keyboard: false, //remove option to close with keyboard
-                          show: true //Display loader!
-                          })
-            let promis =  $http.get(url);
-            // Hide loader when api gets response
-            promis.then(()=>loader.modal("hide"), ()=>loader.modal("hide"))
+            let promis = $http.get(url);
+            if (showLoader) {
+                let loader = $("#loader");
+                loader.modal({
+                              backdrop: "static", //remove ability to close modal with click
+                              keyboard: false, //remove option to close with keyboard
+                              show: true //Display loader!
+                              });
+                promis.then(()=>loader.modal("hide"), ()=>loader.modal("hide"));
+            }
             return promis;
         };
 

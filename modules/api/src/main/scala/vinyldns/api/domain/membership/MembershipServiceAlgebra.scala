@@ -83,4 +83,11 @@ trait MembershipServiceAlgebra {
                userIdentifier: String,
                authPrincipal: AuthPrincipal
              ): Result[UserResponseInfo]
+
+  def searchUsers(
+               pattern: String,
+               startFrom: Option[Int],
+               maxItems: Int,
+               authPrincipal: AuthPrincipal
+             ): Result[List[UserResponseInfo]]
 }
