@@ -75,7 +75,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         return true;
     };
     //Autocomplete for group search
-    $("#my-group-search-text").autocomplete({
+    var myGroupAutocomplete = $("#my-group-search-text").autocomplete({
       source: function( request, response ) {
         $.ajax({
           url: "/api/groups?maxItems=100&abridged=true",
@@ -103,33 +103,9 @@ angular.module('controller.groups', []).controller('GroupsController', function 
       }
     });
 
-    $.ui.autocomplete.prototype._renderItem = function(ul, item) {
-        const label = String(item.label);
-        const searchTerm = String(this.term || '');
-        const labelElement = $('<div></div>');
+    vinyldnsAutocomplete.applyRenderer(myGroupAutocomplete);
 
-        if (!searchTerm) {
-            labelElement.text(label);
-        } else {
-            const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const matcher = new RegExp(escapedSearchTerm, 'gi');
-            let lastIndex = 0;
-            let match;
-
-            while ((match = matcher.exec(label)) !== null) {
-                labelElement[0].appendChild(document.createTextNode(label.slice(lastIndex, match.index)));
-                $('<b></b>').text(match[0]).appendTo(labelElement);
-                lastIndex = matcher.lastIndex;
-            }
-            labelElement[0].appendChild(document.createTextNode(label.slice(lastIndex)));
-        }
-
-        return $('<li></li>')
-            .data('ui-autocomplete-item', item.value)
-            .append(labelElement)
-            .appendTo(ul);
-    };
-    $("#all-group-search-text").autocomplete({
+    var allGroupAutocomplete = $("#all-group-search-text").autocomplete({
         source: function (request, response) {
             if ($scope.isSearchByUser) {
                 //USER SEARCH
@@ -213,45 +189,7 @@ angular.module('controller.groups', []).controller('GroupsController', function 
         });
     });
 
-    // Apply safe text-highlight renderer to MY-GROUPS autocomplete instance only
-    var myGroupAutocomplete = $("#my-group-search-text").autocomplete("instance");
-    if (myGroupAutocomplete) {
-        myGroupAutocomplete._renderItem = function(ul, item) {
-            var label = $("<div>").text(String(item.label)).html();
-            var term = String(this.term || "");
-            if (term) {
-                var escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                label = label.replace(
-                    new RegExp(escapedTerm, "gi"),
-                    "<b>$&</b>"
-                );
-            }
-            return $("<li></li>")
-                .data("ui-autocomplete-item", item.value)
-                .append($("<div></div>").html(label))
-                .appendTo(ul);
-        };
-    }
-
-    // Apply safe text-highlight renderer to ALL-GROUPS autocomplete instance only
-    var allGroupAutocomplete = $("#all-group-search-text").autocomplete("instance");
-    if (allGroupAutocomplete) {
-        allGroupAutocomplete._renderItem = function(ul, item) {
-            var label = $("<div>").text(String(item.label)).html();
-            var term = String(this.term || "");
-            if (term) {
-                var escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                label = label.replace(
-                    new RegExp(escapedTerm, "gi"),
-                    "<b>$&</b>"
-                );
-            }
-            return $("<li></li>")
-                .data("ui-autocomplete-item", item.value)
-                .append($("<div></div>").html(label))
-                .appendTo(ul);
-        };
-    }
+    vinyldnsAutocomplete.applyRenderer(allGroupAutocomplete);
 
     $scope.createGroup = function (name, email, description) {
         //prevent user executing service call multiple times

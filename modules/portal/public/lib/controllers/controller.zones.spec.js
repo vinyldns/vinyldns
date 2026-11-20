@@ -65,21 +65,6 @@ describe('Controller: ZonesController', function () {
         this.controller = $controller('ZonesController', {'$scope': this.scope});
     }));
 
-    it('renders autocomplete labels as text and safely highlights matches', function () {
-        var renderer = $.ui.autocomplete.prototype._renderItem;
-        var list = $('<ul></ul>');
-        var label = 'zone <img src=x onerror=alert(1)> [internal]';
-
-        renderer.call({term: '<img'}, list[0], {label: label, value: label});
-
-        expect(list.find('img').length).toBe(0);
-        expect(list.text()).toBe(label);
-        expect(list.find('b').text()).toBe('<img');
-
-        renderer.call({term: '['}, list[0], {label: label, value: label});
-        expect(list.find('b').last().text()).toBe('[');
-    });
-
     it('test that we properly get users groups when loading ZonesController', function(){
         var validDomains = spyOn(this.scope, 'validDomains')
                             .and.stub();
@@ -224,6 +209,13 @@ describe('Controller: ZonesController', function () {
         expect(rendered.find('img').length).toBe(0);
         expect(rendered.find('div').text()).toBe('<img src=x onerror=alert(1)>Team');
         expect(rendered.find('b').text()).toBe('Team');
+
+        instance.term = '[';
+        rendered = instance._renderItem($('<ul></ul>'), {
+            label: '<img src=x onerror=alert(1)>[Team]',
+            value: '<img src=x onerror=alert(1)>[Team]'
+        });
+        expect(rendered.find('b').text()).toBe('[');
 
         document.body.innerHTML = '';
     });

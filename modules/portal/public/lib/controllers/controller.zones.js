@@ -167,33 +167,6 @@ angular.module('controller.zones', [])
         }
     });
 
-    $.ui.autocomplete.prototype._renderItem = function(ul, item) {
-        const label = String(item.label);
-        const searchTerm = String(this.term || '');
-        const labelElement = $('<div></div>');
-
-        if (!searchTerm) {
-            labelElement.text(label);
-        } else {
-            const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const matcher = new RegExp(escapedSearchTerm, 'gi');
-            let lastIndex = 0;
-            let match;
-
-            while ((match = matcher.exec(label)) !== null) {
-                labelElement[0].appendChild(document.createTextNode(label.slice(lastIndex, match.index)));
-                $('<b></b>').text(match[0]).appendTo(labelElement);
-                lastIndex = matcher.lastIndex;
-            }
-            labelElement[0].appendChild(document.createTextNode(label.slice(lastIndex)));
-        }
-
-        return $('<li></li>')
-            .data('ui-autocomplete-item', item.value)
-            .append(labelElement)
-            .appendTo(ul);
-    };
-
     /* Refreshes zone data set and then re-displays */
     $scope.refreshZones = function () {
         zonesPaging = pagingService.resetPaging(zonesPaging);
