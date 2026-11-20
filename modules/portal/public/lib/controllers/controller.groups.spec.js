@@ -61,6 +61,21 @@ describe('Controller: GroupsController', function () {
             .and.returnValue(this.mockFailureAlert);
     }));
 
+    it('renders autocomplete labels as text and safely highlights matches', function () {
+        var renderer = $.ui.autocomplete.prototype._renderItem;
+        var list = $('<ul></ul>');
+        var label = 'group <img src=x onerror=alert(1)> [admins]';
+
+        renderer.call({term: '<img'}, list[0], {label: label, value: label});
+
+        expect(list.find('img').length).toBe(0);
+        expect(list.text()).toBe(label);
+        expect(list.find('b').text()).toBe('<img');
+
+        renderer.call({term: '['}, list[0], {label: label, value: label});
+        expect(list.find('b').last().text()).toBe('[');
+    });
+
     it('test that we properly set group data when running refresh', function(){
         this.scope.groups = {};
         var response = {

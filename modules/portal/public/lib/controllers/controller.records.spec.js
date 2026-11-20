@@ -23,11 +23,14 @@ describe('Controller: RecordsController', function () {
         module('service.profile'),
         module('service.utility'),
         module('directives.modals.record.module'),
+        module('recordset'),
         module('controller.records')
     });
     beforeEach(inject(function ($rootScope, $controller, $httpBackend, $q, groupsService, recordsService, pagingService, profileService) {
         this.rootScope = $rootScope;
         this.scope = this.rootScope.$new();
+        this.$controller = $controller;
+        this.groupsService = groupsService;
         this.$httpBackend = $httpBackend;
         this.controller = $controller('RecordsController',{'$scope':this.scope});
         this.groupsService = groupsService;
@@ -36,6 +39,26 @@ describe('Controller: RecordsController', function () {
         this.profileService = profileService;
         this.q = $q;
     }));
+
+    it('renders recordset autocomplete labels as text and safely highlights matches', function () {
+        this.groupsService.getGroups = function () {
+            return this.q.when({data: {groups: []}});
+        }.bind(this);
+        this.$controller('RecordSetsController', {'$scope': this.rootScope.$new()});
+
+        var renderer = $.ui.autocomplete.prototype._renderItem;
+        var list = $('<ul></ul>');
+        var label = 'name: <img src=x onerror=alert(1)> [record].example.';
+
+        renderer.call({term: '<img'}, list[0], {label: label, value: label});
+
+        expect(list.find('img').length).toBe(0);
+        expect(list.text()).toBe(label);
+        expect(list.find('b').text()).toBe('<img');
+
+        renderer.call({term: '['}, list[0], {label: label, value: label});
+        expect(list.find('b').last().text()).toBe('[');
+    });
 
     it('clearRecord should clear ttl and data', function () {
         var record = {'ttl' : 300, 'data': 'some data'};

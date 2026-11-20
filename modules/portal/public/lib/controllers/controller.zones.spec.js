@@ -63,6 +63,21 @@ describe('Controller: ZonesController', function () {
         this.controller = $controller('ZonesController', {'$scope': this.scope});
     }));
 
+    it('renders autocomplete labels as text and safely highlights matches', function () {
+        var renderer = $.ui.autocomplete.prototype._renderItem;
+        var list = $('<ul></ul>');
+        var label = 'zone <img src=x onerror=alert(1)> [internal]';
+
+        renderer.call({term: '<img'}, list[0], {label: label, value: label});
+
+        expect(list.find('img').length).toBe(0);
+        expect(list.text()).toBe(label);
+        expect(list.find('b').text()).toBe('<img');
+
+        renderer.call({term: '['}, list[0], {label: label, value: label});
+        expect(list.find('b').last().text()).toBe('[');
+    });
+
     it('test that we properly get users groups when loading ZonesController', function(){
         var validDomains = spyOn(this.scope, 'validDomains')
                             .and.stub();
