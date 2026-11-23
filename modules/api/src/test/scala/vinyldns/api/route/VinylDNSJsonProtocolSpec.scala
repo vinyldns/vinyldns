@@ -23,8 +23,9 @@ import org.json4s._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.VinylDNSTestHelpers
+import vinyldns.api.domain.zone.{ZoneACLInfo, ZoneChangeDeletedInfo, ZoneInfo, ZoneSummaryInfo}
 import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.{CreateZoneInput, UpdateZoneInput, ZoneConnection}
+import vinyldns.core.domain.zone.{AccessLevel, CreateZoneInput, UpdateZoneInput, Zone, ZoneChange, ZoneChangeType, ZoneConnection}
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.Messages._
@@ -92,6 +93,46 @@ class VinylDNSJsonProtocolSpec
       ("keyName" -> "transferConnectionKeyName") ~~
       ("key" -> "transferConnectionKey") ~~
       ("primaryServer" -> "10.1.1.2")
+
+  "Zone response serialization" should {
+    "omit both connection credentials for readers and cross-zone discovery" in {
+      val zone = Zone(
+        "private.zone.",
+        "private@test.com",
+        connection = completeCreateZoneInput.connection,
+        transferConnection = completeCreateZoneInput.transferConnection
+      )
+
+      for (access <- List(AccessLevel.Read, AccessLevel.NoAccess)) {
+        val responses = List(
+          Extraction.decompose(ZoneInfo(zone, ZoneACLInfo(Set.empty), "group", access)),
+          Extraction.decompose(ZoneSummaryInfo(zone, "group", access)),
+          Extraction.decompose(
+            ZoneChangeDeletedInfo(ZoneChange(zone, "user", ZoneChangeType.Delete), "group", "user", access)
+          ) \ "zoneChange" \ "zone"
+        )
+
+        responses.foreach { json =>
+          (json \ "connection") shouldBe JNothing
+          (json \ "transferConnection") shouldBe JNothing
+          (json \ "name") shouldBe JString(zone.name)
+        }
+      }
+    }
+
+    "preserve both connection fields for zone administrators" in {
+      val zone = Zone(
+        "owned.zone.",
+        "owner@test.com",
+        connection = completeCreateZoneInput.connection,
+        transferConnection = completeCreateZoneInput.transferConnection
+      )
+      val json = Extraction.decompose(ZoneInfo(zone, ZoneACLInfo(Set.empty), "group", AccessLevel.Delete))
+
+      (json \ "connection" \ "key") shouldBe JString("primaryConnectionKey")
+      (json \ "transferConnection" \ "key") shouldBe JString("transferConnectionKey")
+    }
+  }
 
   "CreateZoneInputSerializer" should {
     "parse a create zone input with no connections" in {

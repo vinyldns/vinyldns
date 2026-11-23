@@ -198,14 +198,12 @@ class MySqlZoneChangeRepository
 
           sb.append(s" zc.zone_status = 'Deleted' ")
 
-          val filters = if (zoneNameFilter.isDefined && zoneNameFilter.get.contains("*"))
-              zoneNameFilter.map(flt => s"zc.zone_name LIKE '${flt.replace('*', '%')}'")
-          else zoneNameFilter.map(flt => s"zc.zone_name LIKE '${flt.concat("%")}'")
+          val filterValues = zoneNameFilter.map { flt =>
+            if (flt.contains("*")) flt.replace('*', '%') else flt.concat("%")
+          }
 
-          if(zoneNameFilter.isDefined)
-            sb.append(s" AND ")
-
-          sb.append(filters.mkString)
+          if(filterValues.isDefined)
+            sb.append(" AND zc.zone_name LIKE ? ")
 
           val resultOrdering = s"""|    GROUP BY zc.zone_name
                                    |    ORDER BY zc.created_timestamp DESC
@@ -217,7 +215,7 @@ class MySqlZoneChangeRepository
 
           val deletedZoneResults: List[ZoneChange] =
             SQL(query)
-              .bind(accessors: _*)
+              .bind((accessors ++ filterValues.toSeq): _*)
               .map(extractZoneChange(1))
                 .list()
                 .apply()

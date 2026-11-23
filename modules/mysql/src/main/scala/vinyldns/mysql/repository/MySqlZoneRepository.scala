@@ -281,36 +281,35 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
-          val noReverseRegex =
-            if (!includeReverse)
-              """(in-addr\.arpa\.)|(ip6\.arpa\.)$"""
-            else None
-
-          if(adminGroupIds.nonEmpty) {
-            val groupIds = adminGroupIds.map(x => "'" + x + "'").mkString(",")
-            sb.append(s" WHERE admin_group_id IN ($groupIds) ")
+          val groupIds = adminGroupIds.toSeq
+          if(groupIds.nonEmpty) {
+            val placeholders = List.fill(groupIds.size)("?").mkString(",")
+            sb.append(s" WHERE admin_group_id IN ($placeholders) ")
           } else {
             sb.append(s" WHERE admin_group_id IN ('') ")
           }
 
           if (!includeReverse) {
             sb.append(" AND ")
-            sb.append(s"z.name NOT RLIKE '$noReverseRegex'")
+            sb.append("z.name NOT RLIKE ?")
           }
           
           if(startFrom.isDefined){
             sb.append(" AND ")
-            sb.append(s"z.name > '${startFrom.get}'")
+            sb.append("z.name > ?")
           }
 
           sb.append(s" GROUP BY z.name ")
           sb.append(s" ORDER BY z.name ASC ")
-          sb.append(s" LIMIT ${maxItems + 1}")
+          sb.append(" LIMIT ?")
 
           val query = sb.toString
+          val parameters = accessors ++ groupIds ++
+            (if (!includeReverse) Seq("""(in-addr\.arpa\.)|(ip6\.arpa\.)$""") else Seq.empty) ++
+            startFrom.toSeq :+ (maxItems + 1)
 
           val results: List[Zone] = SQL(query)
-            .bind(accessors: _*)
+            .bind(parameters: _*)
             .map(extractZone(1))
             .list()
             .apply()
@@ -359,47 +358,34 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
-          val noReverseRegex =
+          val filters = List(
+            zoneNameFilter.map { flt =>
+              val pattern =
+                if (flt.endsWith(".") || flt.contains("*"))
+                  ensureTrailingDot(flt.replace('*', '%'))
+                else flt.concat("%")
+              "z.name LIKE ?" -> pattern
+            },
+            startFrom.map(os => "z.name > ?" -> os),
             if (!includeReverse)
-              """(in-addr\.arpa\.)|(ip6\.arpa\.)$"""
+              Some("z.name NOT RLIKE ?" -> """(in-addr\.arpa\.)|(ip6\.arpa\.)$""")
             else None
-
-          val filters = if (zoneNameFilter.isDefined && (zoneNameFilter.get.takeRight(1) == "." || zoneNameFilter.get.contains("*"))) {
-            List(
-              zoneNameFilter.map(flt => s"z.name LIKE '${ensureTrailingDot(flt.replace('*', '%'))}'"),
-              startFrom.map(os => s"z.name > '$os'")
-            ).flatten
-          } else {
-            List(
-              zoneNameFilter.map(flt => s"z.name LIKE '${flt.concat("%")}'"),
-              startFrom.map(os => s"z.name > '$os'")
-            ).flatten
-          }
+          ).flatten
 
           if (filters.nonEmpty) {
             sb.append(" WHERE ")
-            sb.append(filters.mkString(" AND "))
-          }
-
-          if (!includeReverse) {
-            if (filters.nonEmpty) {
-              sb.append(" AND ")
-              sb.append(s"z.name NOT RLIKE '$noReverseRegex'")
-            }
-            else {
-              sb.append(" WHERE ")
-              sb.append(s"z.name NOT RLIKE '$noReverseRegex'")
-            }
+            sb.append(filters.map(_._1).mkString(" AND "))
           }
 
           sb.append(s" GROUP BY z.name ")
           sb.append(s" ORDER BY z.name ASC ")
-          sb.append(s" LIMIT ${maxItems + 1}")
+          sb.append(" LIMIT ?")
 
           val query = sb.toString
+          val parameters = accessors ++ filters.map(_._2) :+ (maxItems + 1)
 
           val results: List[Zone] = SQL(query)
-            .bind(accessors: _*)
+            .bind(parameters: _*)
             .map(extractZone(1))
             .list()
             .apply()

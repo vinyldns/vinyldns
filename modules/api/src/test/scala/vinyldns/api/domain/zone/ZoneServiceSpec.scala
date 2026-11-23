@@ -799,6 +799,44 @@ class ZoneServiceSpec
       val result = underTest.getZoneByName("abc.zone.recordsets", abcAuth).value.unsafeRunSync()
       result.right.value shouldBe expectedZoneInfo
     }
+
+    "preserve name-based discovery without returning another zone's connections" in {
+      val privateZone = xyzZone.copy(connection = testConnection, transferConnection = testConnection)
+      doReturn(IO.pure(Some(privateZone))).when(mockZoneRepo).getZoneByName(privateZone.name)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo).getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+      doReturn(IO.pure(Set.empty[Group])).when(mockGroupRepo).getGroups(any[Set[String]])
+      doReturn(IO.pure(Some(xyzGroup))).when(mockGroupRepo).getGroup(xyzGroup.id)
+
+      val result = underTest.getZoneByName(privateZone.name, abcAuth)
+        .value.unsafeRunSync().right.value
+
+      result.name shouldBe privateZone.name
+      result.accessLevel shouldBe AccessLevel.NoAccess
+      result.connection shouldBe None
+      result.transferConnection shouldBe None
+      privateZone.connection shouldBe testConnection
+    }
+
+    "allow ACL readers to look up zones without returning DNS credentials" in {
+      val readableZone = xyzZone.copy(
+        connection = testConnection,
+        transferConnection = testConnection,
+        acl = ZoneACL(Set(ACLRule(AccessLevel.Read, userId = Some(abcAuth.userId))))
+      )
+      doReturn(IO.pure(Some(readableZone))).when(mockZoneRepo).getZoneByName(readableZone.name)
+      doReturn(IO.pure(ListUsersResults(Seq(), None)))
+        .when(mockUserRepo).getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
+      doReturn(IO.pure(Set.empty[Group])).when(mockGroupRepo).getGroups(any[Set[String]])
+      doReturn(IO.pure(Some(xyzGroup))).when(mockGroupRepo).getGroup(xyzGroup.id)
+
+      val result = underTest.getZoneByName(readableZone.name, abcAuth)
+        .value.unsafeRunSync().right.value
+
+      result.accessLevel shouldBe AccessLevel.Read
+      result.connection shouldBe None
+      result.transferConnection shouldBe None
+    }
   }
 
   "Getting a zone details" should {
@@ -842,6 +880,24 @@ class ZoneServiceSpec
   }
 
   "ListZones" should {
+    "preserve cross-zone discovery and administrators' connection data" in {
+      val owned = abcZone.copy(connection = testConnection, transferConnection = testConnection)
+      val privateZone = xyzZone.copy(connection = testConnection, transferConnection = testConnection)
+      doReturn(IO.pure(ListZonesResults(List(owned, privateZone), ignoreAccess = true)))
+        .when(mockZoneRepo).listZones(abcAuth, None, None, 100, true, true)
+      doReturn(IO.pure(Set(abcGroup, xyzGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+      val result = underTest.listZones(abcAuth, ignoreAccess = true)
+        .value.unsafeRunSync().right.value
+
+      result.zones.map(_.id) shouldBe List(owned.id, privateZone.id)
+      result.ignoreAccess shouldBe true
+      result.zones.head.connection shouldBe testConnection
+      result.zones.head.transferConnection shouldBe testConnection
+      result.zones.last.connection shouldBe None
+      result.zones.last.transferConnection shouldBe None
+    }
+
     "not fail with no zones returned" in {
       doReturn(IO.pure(ListZonesResults(List())))
         .when(mockZoneRepo)

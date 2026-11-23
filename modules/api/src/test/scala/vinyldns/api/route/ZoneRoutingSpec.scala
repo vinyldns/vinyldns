@@ -283,6 +283,8 @@ class ZoneRoutingSpec
       val outcome = zoneName match {
         case notFound.name => Left(ZoneNotFoundError(s"$zoneName"))
         case ok.name => Right(okAsZoneInfo)
+        case connectionOk.name =>
+          Right(ZoneInfo(connectionOk, ZoneACLInfo(Set.empty), "other-team", AccessLevel.NoAccess))
         case error.name => Left(new RuntimeException("fail"))
       }
       outcome.toResult
@@ -1028,6 +1030,17 @@ class ZoneRoutingSpec
   }
 
   "GET zone by name " should {
+    "preserve cross-zone lookup without exposing connection credentials" in {
+      Get(s"/zones/name/${connectionOk.name}") ~> zoneRoute ~> check {
+        status shouldBe OK
+        val json = responseAs[JValue] \ "zone"
+        (json \ "name") shouldBe JString(connectionOk.name)
+        (json \ "accessLevel") shouldBe JString("NoAccess")
+        (json \ "connection") shouldBe JNothing
+        (json \ "transferConnection") shouldBe JNothing
+      }
+    }
+
     "return the zone is retrieved" in {
       Get(s"/zones/name/${ok.name}") ~> zoneRoute ~> check {
         status shouldBe OK
