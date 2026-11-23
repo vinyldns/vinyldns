@@ -20,7 +20,8 @@ RUN mkdir -p /opt/vinyldns/conf && \
        rm -rf /opt/vinyldns/vinyldns-portal*; \
     fi
 
-FROM eclipse-temurin:25
+# Temurin 25.0.5.1+2 includes the fix for CVE-2026-114938.
+FROM eclipse-temurin:25@sha256:ce2ef9d2d67a68de5e196d4de9d743327c44a10b57fe02ec39f572c652cacfd3
 ARG DOCKER_FILE_PATH
 ARG VINYLDNS_VERSION
 
