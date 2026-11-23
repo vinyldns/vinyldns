@@ -82,6 +82,48 @@ interface DnsChangeFormData {
 
 const BATCH_CHANGE_LIMIT = 1000;
 
+/** Formats a Date as a local `YYYY-MM-DDTHH:mm` value for datetime-local inputs. */
+export function toLocalDateTimeInput(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/**
+ * Converts a datetime-local value (local time) to a UTC string without
+ * milliseconds, e.g. "2026-11-18T15:00:00Z". Returns "" for an unparseable value.
+ */
+export function localDatetimeToUtc(localDatetimeString: string): string {
+  const d = new Date(localDatetimeString);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+export function getLocalTimeZoneLabel(): string {
+  return (
+    new Intl.DateTimeFormat("en-US", { timeZoneName: "short" })
+      .formatToParts(new Date())
+      .find((p) => p.type === "timeZoneName")?.value ?? ""
+  );
+}
+
+function defaultScheduledTime(): string {
+  const d = new Date();
+  d.setHours(d.getHours(), 0, 0, 0);
+  d.setDate(d.getDate() + 1);
+  return toLocalDateTimeInput(d);
+}
+
+export function validateScheduledTime(
+  value: string,
+  scheduledOption: "now" | "later",
+): true | string {
+  if (scheduledOption !== "later") return true;
+  if (!value) return "Select a date and time.";
+  const ts = new Date(value).getTime();
+  if (Number.isNaN(ts)) return "Select a valid date and time.";
+  return ts > Date.now() || "Scheduled time must be in the future.";
+}
+
 const RE_IPV4 =
   /^(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)$/;
 
@@ -692,12 +734,14 @@ function ChangeRow({
 function ScheduledTimeField({
   register,
   watch,
+  error,
 }: {
   register: ReturnType<typeof useForm<DnsChangeFormData>>["register"];
   watch: ReturnType<typeof useForm<DnsChangeFormData>>["watch"];
+  error?: string;
 }) {
   const scheduledOption = watch("scheduledOption");
-  const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const localTz = getLocalTimeZoneLabel();
 
   return (
     <div className="col-12 col-md-4">
@@ -729,15 +773,28 @@ function ScheduledTimeField({
         </div>
       </div>
       {scheduledOption === "later" && (
-        <div className="d-flex align-items-center gap-1">
-          <input
-            type="datetime-local"
-            className="form-control form-control-sm vds-form-input"
-            style={{ borderRadius: "0.45rem" }}
-            {...register("scheduledTime")}
-          />
-          <span className="text-muted small text-nowrap">{localTz}</span>
-        </div>
+        <>
+          <div className="d-flex align-items-center gap-1">
+            <input
+              type="datetime-local"
+              className={`form-control form-control-sm vds-form-input ${error ? "is-invalid" : ""}`}
+              style={{ borderRadius: "0.45rem" }}
+              min={toLocalDateTimeInput(new Date())}
+              aria-invalid={error ? true : undefined}
+              {...register("scheduledTime", {
+                validate: (value, formValues) =>
+                  validateScheduledTime(value, formValues.scheduledOption),
+              })}
+            />
+            <span className="text-muted small text-nowrap">{localTz}</span>
+          </div>
+          {error && (
+            <div style={{ fontSize: "0.78rem", color: "#b02a37", marginTop: 4 }}>
+              <i className="bi bi-exclamation-circle me-1" />
+              {error}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -803,7 +860,7 @@ export function DnsChangeForm({
   serverRowErrors,
   onUnsavedChange,
 }: DnsChangeFormProps) {
-  const [allowManualReview, setAllowManualReview] = useState(false);
+  const allowManualReview = true;
   const [rowErrors, setRowErrors] = useState<string[][]>([]);
   const [csvAlert, setCsvAlert] = useState<{
     type: "success" | "danger";
@@ -845,7 +902,7 @@ export function DnsChangeForm({
       comments: "",
       ownerGroupId: "",
       scheduledOption: "now",
-      scheduledTime: "",
+      scheduledTime: defaultScheduledTime(),
       changes: [
         {
           changeType: "Add",
@@ -990,7 +1047,7 @@ export function DnsChangeForm({
         ownerGroupId: data.ownerGroupId || undefined,
         scheduledTime:
           data.scheduledOption === "later" && data.scheduledTime
-            ? new Date(data.scheduledTime).toISOString()
+            ? localDatetimeToUtc(data.scheduledTime)
             : undefined,
         changes: finalChanges,
       },
@@ -1189,7 +1246,11 @@ export function DnsChangeForm({
                   .
                 </div>
               </div>
-              <ScheduledTimeField register={register} watch={watch} />
+              <ScheduledTimeField
+                register={register}
+                watch={watch}
+                error={formState.errors.scheduledTime?.message}
+              />
             </div>
           </div>
         </div>

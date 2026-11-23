@@ -375,6 +375,7 @@ function ChangeTypeBadge({ changeType }: { changeType: string }) {
   return <span className={`vds-status-text ${mod}`}>{changeType}</span>;
 }
 
+const REVIEW_SHORTCUT_MIN_ROWS = 10;
 /**
  * Detail view for a single batch DNS change identified by the `id` URL param.
  * The page covers four responsibilities:
@@ -604,6 +605,7 @@ export function DnsChangeDetailPage() {
   // other than the original submitter, even super users.
   const isOwner = Boolean(currentUserId) && change.userId === currentUserId;
   const canCancelChange = isPendingReview && isOwner;
+  const showReviewShortcut = (change.changes?.length ?? 0) > REVIEW_SHORTCUT_MIN_ROWS;
   const reviewConfirmationMsg =
     reviewType === "approve"
       ? "Confirm approval of this DNS change?"
@@ -799,7 +801,7 @@ export function DnsChangeDetailPage() {
               Your DNS Change requires further review.
             </span>{" "}
             <span style={{ opacity: 0.85 }}>
-              It will be processed after the review is complete.
+              It will be reviewed within 24 hours and either approved for processing or rejected with an explanation.
             </span>{" "}
             <a
               href="https://www.vinyldns.io/portal/manual-review-scheduling"
@@ -873,7 +875,7 @@ export function DnsChangeDetailPage() {
             </span>
           </div>
           <div className="d-flex  align-items-center gap-2 flex-wrap">
-            {canReview && isPendingReview && (
+            {canReview && isPendingReview && showReviewShortcut && (
               <button
                 type="button"
                 className="btn btn-sm vds-btn-flat d-flex align-items-center gap-1"
@@ -885,7 +887,7 @@ export function DnsChangeDetailPage() {
                 }
               >
                 <i className="bi bi-clipboard2-check" />
-                <span className="vds-btn-flat__label">Review Actions</span>
+                <span className="vds-btn-flat__label">Go to Review Actions</span>
               </button>
             )}
             {canCancelChange && (

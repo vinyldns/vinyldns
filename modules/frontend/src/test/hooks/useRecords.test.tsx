@@ -277,6 +277,8 @@ describe("useZoneRecords", () => {
           undefined,
           "host",
           "A",
+          "asc",
+          "",
         ),
       );
     });
@@ -296,8 +298,84 @@ describe("useZoneRecords", () => {
           undefined,
           "",
           "",
+          "asc",
+          "",
         ),
       );
+    });
+  });
+
+  describe("sorting", () => {
+    it("sorts by name ascending by default", async () => {
+      const { result } = renderHook(() => useZoneRecords("zone-id-1"), {
+        wrapper: makeWrapper(),
+      });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.nameSort).toBe("asc");
+      expect(result.current.recordTypeSort).toBe("");
+      expect(mockService.listRecordSetsByZone).toHaveBeenCalledWith(
+        "zone-id-1",
+        expect.any(Number),
+        undefined,
+        "",
+        "",
+        "asc",
+        "",
+      );
+    });
+
+    it("toggles the name sort between desc and asc and refetches", async () => {
+      const { result } = renderHook(() => useZoneRecords("zone-id-1"), {
+        wrapper: makeWrapper(),
+      });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      act(() => result.current.toggleNameSort());
+      await waitFor(() => expect(result.current.nameSort).toBe("desc"));
+      await waitFor(() =>
+        expect(mockService.listRecordSetsByZone).toHaveBeenLastCalledWith(
+          "zone-id-1",
+          expect.any(Number),
+          undefined,
+          "",
+          "",
+          "desc",
+          "",
+        ),
+      );
+
+      act(() => result.current.toggleNameSort());
+      await waitFor(() => expect(result.current.nameSort).toBe("asc"));
+    });
+
+    it("sorting by type clears the name sort, and vice versa", async () => {
+      const { result } = renderHook(() => useZoneRecords("zone-id-1"), {
+        wrapper: makeWrapper(),
+      });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      act(() => result.current.toggleRecordTypeSort());
+      await waitFor(() => expect(result.current.recordTypeSort).toBe("asc"));
+      expect(result.current.nameSort).toBe("");
+      await waitFor(() =>
+        expect(mockService.listRecordSetsByZone).toHaveBeenLastCalledWith(
+          "zone-id-1",
+          expect.any(Number),
+          undefined,
+          "",
+          "",
+          "",
+          "asc",
+        ),
+      );
+
+      act(() => result.current.toggleRecordTypeSort());
+      await waitFor(() => expect(result.current.recordTypeSort).toBe("desc"));
+
+      act(() => result.current.toggleNameSort());
+      await waitFor(() => expect(result.current.nameSort).toBe("asc"));
+      expect(result.current.recordTypeSort).toBe("");
     });
   });
 

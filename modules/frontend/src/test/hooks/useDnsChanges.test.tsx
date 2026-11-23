@@ -235,6 +235,59 @@ describe("useDnsChanges", () => {
         ),
       );
     });
+
+    it("on a 400 array body, shows the outstanding-issues message and marks failing rows in the cached change", async () => {
+      mockService.approveBatchChange.mockRejectedValueOnce({
+        response: {
+          status: 400,
+          statusText: "Bad Request",
+          data: [
+            { inputName: "a.ok." },
+            { inputName: "b.ok.", errors: ["Zone Discovery Failed"] },
+          ],
+        },
+      });
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false, staleTime: 0 },
+          mutations: { retry: false },
+        },
+      });
+      queryClient.setQueryData(["dnschange", "b1"], {
+        id: "b1",
+        changes: [
+          { id: "c1", inputName: "a.ok." },
+          { id: "c2", inputName: "b.ok." },
+        ],
+      });
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      );
+      const { result } = renderHook(() => useDnsChanges(), { wrapper });
+
+      act(() => result.current.approveBatchChange({ id: "b1" }));
+
+      await waitFor(() =>
+        expect(mockAddAlert).toHaveBeenCalledWith(
+          "danger",
+          "HTTP 400 (Bad Request): Issues still remain, cannot approve DNS Change. Resolve all outstanding issues or reject the DNS Change.",
+        ),
+      );
+      const cached = queryClient.getQueryData<{
+        changes: Array<{
+          validationErrors?: string[];
+          outstandingErrors?: boolean;
+        }>;
+      }>(["dnschange", "b1"]);
+      expect(cached?.changes[0].validationErrors).toEqual([]);
+      expect(cached?.changes[0].outstandingErrors).toBeUndefined();
+      expect(cached?.changes[1].validationErrors).toEqual([
+        "Zone Discovery Failed",
+      ]);
+      expect(cached?.changes[1].outstandingErrors).toBe(true);
+    });
   });
 
   describe("rejectBatchChange", () => {

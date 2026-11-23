@@ -189,7 +189,7 @@ describe("<DnsChangeForm /> render + interaction", () => {
       expect(onSubmit).toHaveBeenCalledTimes(1);
     });
     const [payload, allowReview] = onSubmit.mock.calls[0];
-    expect(allowReview).toBe(false);
+    expect(allowReview).toBe(true);
     expect(payload).toMatchObject({
       changes: expect.arrayContaining([
         expect.objectContaining({

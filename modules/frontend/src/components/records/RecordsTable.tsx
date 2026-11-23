@@ -43,8 +43,27 @@ function MultiValueChips({ values }: { values: string[] }) {
   );
 }
 
+type SortDir = 'asc' | 'desc' | '';
+
+function SortArrow({ dir }: { dir: SortDir }) {
+  if (dir === 'asc')
+    return <i className="bi bi-arrow-up" style={{ fontSize: '0.7rem', color: '#2e5090', marginLeft: 3 }} />;
+  if (dir === 'desc')
+    return <i className="bi bi-arrow-down" style={{ fontSize: '0.7rem', color: '#2e5090', marginLeft: 3 }} />;
+  return (
+    <i
+      className="bi bi-arrow-down-up"
+      style={{ fontSize: '0.65rem', color: '#898a8b', marginLeft: 3, opacity: 0.7 }}
+    />
+  );
+}
+
 export interface RecordsTableProps {
   records: RecordSet[];
+  nameSort?: SortDir;
+  recordTypeSort?: SortDir;
+  onToggleNameSort?: () => void;
+  onToggleTypeSort?: () => void;
   onEdit?: (record: RecordSet) => void;
   onDelete?: (record: RecordSet) => void;
   /** Whether the parent zone is shared */
@@ -312,6 +331,10 @@ function OwnershipActionsDropdown({ canCancel, isPendingOnly = false, onApprove,
 
 export function RecordsTable({
   records,
+  nameSort = '',
+  recordTypeSort = '',
+  onToggleNameSort,
+  onToggleTypeSort,
   onEdit,
   onDelete,
   isSharedZone = false,
@@ -350,8 +373,18 @@ export function RecordsTable({
       <table className="vds-zones-table vds-records-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Type</th>
+            <th
+              onClick={onToggleNameSort}
+              style={{ cursor: onToggleNameSort ? 'pointer' : 'default', userSelect: 'none', whiteSpace: 'nowrap' }}
+            >
+              Name {onToggleNameSort && <SortArrow dir={nameSort} />}
+            </th>
+            <th
+              onClick={onToggleTypeSort}
+              style={{ cursor: onToggleTypeSort ? 'pointer' : 'default', userSelect: 'none', whiteSpace: 'nowrap' }}
+            >
+              Type {onToggleTypeSort && <SortArrow dir={recordTypeSort} />}
+            </th>
             <th>TTL</th>
             <th>Record Data</th>
             {isSharedZone && (
