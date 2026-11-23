@@ -25,6 +25,22 @@ import { LoginPage } from '../../pages/LoginPage';
 const mockFetch = vi.fn();
 
 beforeEach(() => {
+  window.__VINYLDNS_PORTAL_LINKS__ = [
+    {
+      displayOnSidebar: true,
+      displayOnLoginScreen: false,
+      title: 'Sidebar-only guide',
+      href: 'https://docs.example.com/sidebar',
+      icon: 'fa fa-book',
+    },
+    {
+      displayOnSidebar: false,
+      displayOnLoginScreen: true,
+      title: 'Login help',
+      href: 'https://docs.example.com/login',
+      icon: 'fa fa-life-ring',
+    },
+  ];
   mockFetch.mockReset();
   vi.stubGlobal('fetch', mockFetch);
   mockFetch.mockImplementation(async (input) => {
@@ -70,6 +86,17 @@ describe('LoginPage', () => {
     it('does not display an error alert on initial render', () => {
       renderLoginPage();
       expect(screen.queryByRole('alert')).toBeNull();
+    });
+
+    it('renders only links configured for the login screen', () => {
+      renderLoginPage();
+      expect(screen.getByRole('link', { name: 'Login help' })).toHaveAttribute(
+        'href',
+        'https://docs.example.com/login',
+      );
+      expect(
+        screen.queryByRole('link', { name: 'Sidebar-only guide' }),
+      ).not.toBeInTheDocument();
     });
   });
 

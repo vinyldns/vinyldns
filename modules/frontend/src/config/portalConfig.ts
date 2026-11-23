@@ -14,24 +14,21 @@
  * limitations under the License.
  */
 
-/**
- * Portal configuration — mirrors the Meta + CustomLinks models from the old
- * Play portal's application.conf.
-*/
+/** Values from the Play configuration passed into the React app HTML. */
 
 /// <reference types="vite/client" />
 
+export interface PortalLink {
+  displayOnSidebar: boolean;
+  displayOnLoginScreen: boolean;
+  title: string;
+  href: string;
+  icon: string;
+}
+
 export const portalConfig = {
   version: __APP_VERSION__,
-
-  loginLinks: [
-    {
-      title: 'Documentation',
-      href: 'https://www.vinyldns.io/',
-    },
-    {
-      title: 'API Docs',
-      href: 'https://www.vinyldns.io/api/',
-    },
-  ].filter((l) => Boolean(l.href)),
+  get links(): PortalLink[] {
+    return window.__VINYLDNS_PORTAL_LINKS__ ?? [];
+  },
 } as const;

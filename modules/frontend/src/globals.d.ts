@@ -18,3 +18,7 @@
 
 declare const __APP_VERSION__: string;
 declare const __OLD_PORTAL_URL__: string | undefined;
+
+interface Window {
+	__VINYLDNS_PORTAL_LINKS__?: import('./config/portalConfig').PortalLink[];
+}

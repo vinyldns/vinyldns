@@ -20,6 +20,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { AlertProvider } from "../../../contexts/AlertContext";
+import type { PortalLink } from "../../../config/portalConfig";
 import {
   BreadcrumbProvider,
   useBreadcrumbs,
@@ -42,7 +43,8 @@ vi.mock("../../../contexts/ProfileContext", () => ({
   }),
 }));
 
-function renderLayout(route = "/zones", crumbs?: Crumb[]) {
+function renderLayout(route = "/zones", crumbs?: Crumb[], links: PortalLink[] = []) {
+  window.__VINYLDNS_PORTAL_LINKS__ = links;
   function CrumbSetter() {
     const { setCrumbs } = useBreadcrumbs();
     React.useEffect(() => {
@@ -92,6 +94,35 @@ describe("<Layout />", () => {
   it("renders the page content passed as children", () => {
     renderLayout();
     expect(screen.getByText("page body")).toBeInTheDocument();
+  });
+
+  it("renders only sidebar-enabled links from portal configuration", () => {
+    renderLayout("/zones", undefined, [
+      {
+        displayOnSidebar: true,
+        displayOnLoginScreen: false,
+        title: "Portal Guide",
+        href: "https://docs.example.com/portal",
+        icon: "fa fa-book",
+      },
+      {
+        displayOnSidebar: false,
+        displayOnLoginScreen: true,
+        title: "Login-only help",
+        href: "https://docs.example.com/login",
+        icon: "fa fa-life-ring",
+      },
+    ]);
+
+    expect(screen.getByRole("link", { name: "Portal Guide" })).toHaveAttribute(
+      "href",
+      "https://docs.example.com/portal",
+    );
+    expect(
+      screen.queryByRole("link", { name: "Login-only help" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Portal Guide" }).querySelector("i"))
+      .toHaveClass("fa", "fa-book");
   });
 
   it("derives a breadcrumb label from the current route", () => {

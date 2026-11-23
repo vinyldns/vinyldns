@@ -18,8 +18,10 @@ package controllers
 
 import actions.SecuritySupport
 import javax.inject.{Inject, Singleton}
+import models.{CustomLink, CustomLinks}
 import org.slf4j.LoggerFactory
 import play.api.{Configuration, Environment}
+import play.api.libs.json.Json
 import play.api.mvc._
 import play.filters.csrf.CSRF
 
@@ -42,6 +44,21 @@ class FrontendController @Inject() (
 
   private val logger = LoggerFactory.getLogger(classOf[FrontendController])
   private val userAction = securitySupport.frontendAction
+  private val configuredLinks = CustomLinks(configuration).links
+
+  private def configuredLinksJson: String =
+    Json
+      .toJson(configuredLinks.map { link: CustomLink =>
+        Json.obj(
+          "displayOnSidebar" -> link.displayOnSidebar,
+          "displayOnLoginScreen" -> link.displayOnLoginScreen,
+          "title" -> link.title,
+          "href" -> link.href,
+          "icon" -> link.icon
+        )
+      })
+      .toString
+      .replace("<", "\\u003c")
 
   /**
    * Reads public/index.html and injects the Play CSRF token into <head>.
@@ -62,7 +79,12 @@ class FrontendController @Inject() (
         }
     contentOpt match {
       case Some(content) =>
-        val html = content.replace("<head>", s"""<head>\n    <meta id="csrf" name="csrf-token" content="$csrfToken" />""")
+        val html = content.replace(
+          "<head>",
+          s"""<head>
+             |    <meta id="csrf" name="csrf-token" content="$csrfToken" />
+             |    <script>window.__VINYLDNS_PORTAL_LINKS__ = $configuredLinksJson;</script>""".stripMargin
+        )
         Future.successful(Ok(html).as("text/html"))
       case None =>
         logger.warn("React index.html not found — run: npm run build")

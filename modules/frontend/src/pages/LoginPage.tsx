@@ -166,7 +166,7 @@ export function LoginPage() {
         >
           <span className="text-muted">VinylDNS&nbsp;v{portalConfig.version}</span>
           <ul className="list-unstyled mb-0 d-flex gap-3">
-            {portalConfig.loginLinks.map((link) => (
+            {portalConfig.links.filter((link) => link.displayOnLoginScreen).map((link) => (
               <li key={link.href}>
                 <a
                   href={link.href}
