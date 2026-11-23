@@ -176,11 +176,12 @@ class MySqlZoneChangeRepository
                .apply()
                .getOrElse(0)
 
-          // Bound parameters for the dynamic WHERE clause, in placeholder order
-          // (after the accessor join params).
-          val filterParams = scala.collection.mutable.ListBuffer[Any]()
-
           sb.append(" WHERE ")
+
+          if (zoneResults != 0)
+            sb.append(s"zc.zone_name NOT IN ($BASE_ZONE_NAME_SEARCH_SQL) AND ")
+
+          sb.append("zc.zone_status = 'Deleted' ")
 
           val filterValues = zoneNameFilter.map { flt =>
             if (flt.contains("*")) flt.replace('*', '%') else flt.concat("%")
