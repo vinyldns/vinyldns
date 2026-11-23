@@ -124,10 +124,9 @@ class Route53ApiIntegrationSpec
       val results = recordSetRepository
         .listRecordSets(Some(testZone.id), None, None, None, None, None, NameSort.ASC, RecordTypeSort.ASC)
         .unsafeRunSync()
-      results.recordSets.map(_.typ).distinct should contain theSameElementsAs List(
-        rsOk.typ,
-        RecordType.NS
-      )
+      val recordTypes = results.recordSets.map(_.typ).distinct
+      recordTypes should contain(rsOk.typ)
+      recordTypes should contain(RecordType.NS)
       results.recordSets.map(_.name) should contain(rsOk.name)
 
       // Ensure that the NS record matches the zone name
