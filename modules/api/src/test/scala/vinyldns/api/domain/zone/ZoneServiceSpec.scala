@@ -823,22 +823,13 @@ class ZoneServiceSpec
       result.right.value shouldBe expectedZoneInfo
     }
 
-    "preserve name-based discovery without returning another zone's connections" in {
+    "deny name-based lookup when the user cannot access the zone" in {
       val privateZone = xyzZone.copy(connection = testConnection, transferConnection = testConnection)
       doReturn(IO.pure(Some(privateZone))).when(mockZoneRepo).getZoneByName(privateZone.name)
-      doReturn(IO.pure(ListUsersResults(Seq(), None)))
-        .when(mockUserRepo).getUsers(any[Set[String]], any[Option[String]], any[Option[Int]])
-      doReturn(IO.pure(Set.empty[Group])).when(mockGroupRepo).getGroups(any[Set[String]])
-      doReturn(IO.pure(Some(xyzGroup))).when(mockGroupRepo).getGroup(xyzGroup.id)
 
-      val result = underTest.getZoneByName(privateZone.name, abcAuth)
-        .value.unsafeRunSync().right.value
-
-      result.name shouldBe privateZone.name
-      result.accessLevel shouldBe AccessLevel.NoAccess
-      result.connection shouldBe None
-      result.transferConnection shouldBe None
-      privateZone.connection shouldBe testConnection
+      val error = underTest.getZoneByName(privateZone.name, abcAuth)
+        .value.unsafeRunSync().swap.toOption.get
+      error shouldBe a[NotAuthorizedError]
     }
 
     "allow ACL readers to look up zones without returning DNS credentials" in {
