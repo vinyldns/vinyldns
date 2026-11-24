@@ -52,6 +52,7 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAndAfterAl
         group,
         membership,
         groupChange,
+        generateZone,
         zoneChange,
         recordChange,
         recordSetCache
@@ -60,7 +61,6 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAndAfterAl
 
     "properly load the notifier configs" in {
       val notifierConfigs = underTest.notifierConfigs
-
       notifierConfigs.length shouldBe 1
 
       notifierConfigs.head.className shouldBe "someclass"
@@ -81,6 +81,13 @@ class VinylDNSConfigSpec extends AnyWordSpec with Matchers with BeforeAndAfterAl
       config.backends.head.id shouldBe "default"
       config.backends.head.zoneConnection.decrypted(underTest.crypto) shouldBe zc
       config.backends.head.transferConnection.get.decrypted(underTest.crypto) shouldBe tc
+    }
+
+    "load the generated-zone DNS provider config separately from the zone connections" in {
+      val providers = underTest.dnsProviderApiConnection
+      providers.allowedProviders shouldBe List("bind")
+      providers.nameServers shouldBe List("ns1.parent.com.")
+      providers.providers("bind").endpoints("create-zone") shouldBe "http://localhost:19000/api/zones/generate"
     }
   }
 }
