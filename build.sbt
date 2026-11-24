@@ -343,7 +343,7 @@ lazy val docSettings = Seq(
     file("CONTRIBUTING.md") -> ExtraMdFileConfig(
       "contributing.md",
       "page",
-      Map("title" -> "Contributing", "section" -> "contributing", "position" -> "4")
+      Map("title" -> "Contributing", "section" -> "contributing", "position" -> "5")
     )
   ),
   micrositePushSiteWith := GitHub4s,

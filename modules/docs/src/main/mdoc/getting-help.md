@@ -1,7 +1,7 @@
 ---
 layout: page
 title: "Getting Help"
-position: 7
+position: 8
 ---
 
 # Getting Help

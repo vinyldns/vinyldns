@@ -1,7 +1,7 @@
 ---
 layout: page
 title: "Permissions Guide"
-position: 6
+position: 7
 ---
 
 # VinylDNS Permissions Guide
