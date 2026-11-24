@@ -24,7 +24,7 @@ import vinyldns.api.route.{ListGlobalRecordSetsResponse, ListRecordSetsByZoneRes
 import vinyldns.core.domain.record.NameSort.NameSort
 import vinyldns.core.domain.record.RecordType.RecordType
 import vinyldns.core.domain.record.RecordTypeSort.RecordTypeSort
-import vinyldns.core.domain.record.{RecordSet, RecordSetChange}
+import vinyldns.core.domain.record.{RecordSet, RecordSetChange, ZoneAccess}
 
 trait RecordSetServiceAlgebra {
   def addRecordSet(recordSet: RecordSet, auth: AuthPrincipal): Result[ZoneCommandResult]
@@ -69,6 +69,7 @@ trait RecordSetServiceAlgebra {
    * @param recordOwnerGroupId THe owner group identifier
    * @param nameSort           The sort direction
    * @param authPrincipal      The authenticated principal
+   * @param zoneAccess         Limits results to shared or private zones; None returns both
    * @return A {@link ListGlobalRecordSetsResponse}
    */
   def searchRecordSets(
@@ -79,7 +80,8 @@ trait RecordSetServiceAlgebra {
                         recordOwnerGroupId: Option[String],
                         nameSort: NameSort,
                         authPrincipal: AuthPrincipal,
-                        recordTypeSort: RecordTypeSort
+                        recordTypeSort: RecordTypeSort,
+                        zoneAccess: Option[ZoneAccess.ZoneAccess] = None
                       ): Result[ListGlobalRecordSetsResponse]
 
   def listRecordSetsByZone(

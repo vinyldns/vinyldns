@@ -37,7 +37,8 @@ trait RecordSetCacheRepository extends Repository {
                           recordTypeFilter: Option[Set[RecordType]],
                           recordOwnerGroupFilter: Option[String],
                           nameSort: NameSort,
-                          authPrincipal: Option[AuthPrincipal] = None
+                          authPrincipal: Option[AuthPrincipal] = None,
+                          zoneAccess: Option[ZoneAccess.ZoneAccess] = None
                         ): IO[ListRecordSetResults]
 
   /**

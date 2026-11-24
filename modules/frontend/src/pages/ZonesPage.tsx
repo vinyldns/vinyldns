@@ -1897,6 +1897,7 @@ export function ZonesPage() {
                       </>
                     )}
                     {/* TIME FILTER for My/All Zones */}
+                    {/* TODO: Time filter hidden from UI. Uncomment this block to restore it.
                     {(mainTab === "myZones" || mainTab === "allZones") && (
                       <TimeFilterDropdown
                         value={zoneTimeRange}
@@ -1907,7 +1908,9 @@ export function ZonesPage() {
                         onDateToChange={setZoneDateTo}
                       />
                     )}
+                    */}
                     {/* TIME FILTER for Abandoned Zones */}
+                    {/* TODO: Time filter hidden from UI. Uncomment this block to restore it.
                     {mainTab === "abandonedZones" && (
                       <TimeFilterDropdown
                         value={abanTimeRange}
@@ -1918,6 +1921,7 @@ export function ZonesPage() {
                         onDateToChange={setAbanDateTo}
                       />
                     )}
+                    */}
                   </div>
                 </div>
               )}

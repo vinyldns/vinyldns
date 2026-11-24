@@ -581,6 +581,7 @@ export function GroupDetailPage() {
             </span>
             {/* ── Time filter pushed to the right ── */}
             <div className="ms-auto d-flex align-items-center gap-2 flex-wrap">
+              {/* TODO: Time filter hidden from UI. Uncomment this block to restore it.
               <TimeFilterDropdown
                 value={chTimeRange}
                 dateFrom={chDateFrom}
@@ -589,6 +590,7 @@ export function GroupDetailPage() {
                 onDateFromChange={setChDateFrom}
                 onDateToChange={setChDateTo}
               />
+              */}
               <button
                 className="btn btn-sm d-flex align-items-center gap-1 vds-btn-flat"
                 disabled={changesLoading || changesFetching}

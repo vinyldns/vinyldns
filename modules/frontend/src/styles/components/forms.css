@@ -194,6 +194,15 @@
   background: transparent !important;
 }
 
+.vds-search-group .form-control.vds-filter-input {
+  color: #1e5fa8;
+}
+
+.vds-search-group .form-control.vds-filter-input::placeholder {
+  color: #1e5fa8;
+  opacity: 1;
+}
+
 .vds-search-group--gradient {
   background: #fff;
   border: 1.5px solid #1e5fa8 !important;
@@ -410,6 +419,17 @@
   background: transparent !important;
   color: #a1a1aa !important;
   border: none;
+}
+
+[data-vds-theme="dark"] .vds-search-group .form-control.vds-filter-input {
+  color: #ffffff97 !important;
+}
+
+[data-vds-theme="dark"]
+  .vds-search-group
+  .form-control.vds-filter-input::placeholder {
+  color: #ffffff97 !important;
+  opacity: 1;
 }
 
 [data-vds-theme="dark"] .vds-search-group--gradient {

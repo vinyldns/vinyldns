@@ -282,7 +282,7 @@ describe("<DnsChangesPage /> toolbar visibility", () => {
     renderWithProviders(<DnsChangesPage />);
 
     expect(await screen.findByText("Open Only")).toBeInTheDocument();
-    expect(screen.getByText("All Time")).toBeInTheDocument();
+    expect(screen.queryByText("All Time")).not.toBeInTheDocument();
     expect(screen.queryByText("Hide Filters")).not.toBeInTheDocument();
     expect(screen.queryByText("Show Filters")).not.toBeInTheDocument();
   });

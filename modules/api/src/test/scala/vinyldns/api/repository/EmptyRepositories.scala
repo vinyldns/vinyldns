@@ -45,7 +45,8 @@ trait EmptyRecordSetRepo extends RecordSetRepository {
                        recordOwnerGroupFilter: Option[String],
                        nameSort: NameSort,
                        recordTypeSort: RecordTypeSort,
-                       authPrincipal: Option[AuthPrincipal] = None
+                       authPrincipal: Option[AuthPrincipal] = None,
+                       zoneAccess: Option[ZoneAccess.ZoneAccess] = None
                      ): IO[ListRecordSetResults] =
     IO.pure(ListRecordSetResults(nameSort = nameSort,recordTypeSort=recordTypeSort))
 
@@ -75,7 +76,8 @@ trait EmptyRecordSetCacheRepo extends RecordSetCacheRepository {
                           recordTypeFilter: Option[Set[RecordType]],
                           recordOwnerGroupFilter: Option[String],
                           nameSort: NameSort,
-                          authPrincipal: Option[AuthPrincipal] = None
+                          authPrincipal: Option[AuthPrincipal] = None,
+                          zoneAccess: Option[ZoneAccess.ZoneAccess] = None
                         ): IO[ListRecordSetResults] =
     IO.pure(ListRecordSetResults(nameSort = nameSort, recordTypeSort = RecordTypeSort.NONE))
 }
