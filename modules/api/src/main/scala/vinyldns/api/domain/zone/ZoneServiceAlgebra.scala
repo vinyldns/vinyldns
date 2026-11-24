@@ -23,7 +23,7 @@ import vinyldns.core.domain.zone._
 trait ZoneServiceAlgebra {
 
   def connectToZone(
-      createZoneInput: CreateZoneInput,
+      ConnectZoneInput: ConnectZoneInput,
       auth: AuthPrincipal
   ): Result[ZoneCommandResult]
 
@@ -50,12 +50,12 @@ trait ZoneServiceAlgebra {
   ): Result[ListZonesResponse]
 
   def listDeletedZones(
-                        authPrincipal: AuthPrincipal,
-                        nameFilter: Option[String],
-                        startFrom: Option[String],
-                        maxItems: Int,
-                        ignoreAccess: Boolean
-                      ): Result[ListDeletedZoneChangesResponse]
+      authPrincipal: AuthPrincipal,
+      nameFilter: Option[String],
+      startFrom: Option[String],
+      maxItems: Int,
+      ignoreAccess: Boolean
+  ): Result[ListDeletedZoneChangesResponse]
 
   def listZoneChanges(
       zoneId: String,
@@ -79,8 +79,8 @@ trait ZoneServiceAlgebra {
   def getBackendIds(): Result[List[String]]
 
   def listFailedZoneChanges(
-                             authPrincipal: AuthPrincipal,
-                             startFrom: Int,
-                             maxItems: Int
-                           ): Result[ListFailedZoneChangesResponse]
+      authPrincipal: AuthPrincipal,
+      startFrom: Int,
+      maxItems: Int
+  ): Result[ListFailedZoneChangesResponse]
 }
