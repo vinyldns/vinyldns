@@ -29,7 +29,6 @@ ARG NODE_MAJOR=22
 RUN apt-get update && \
   curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - && \
   apt-get install -y nodejs && \
-  npm install -g npm@latest && \
   node --version && npm --version && \
   rm -rf /var/lib/apt/lists/*
 
