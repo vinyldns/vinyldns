@@ -25,6 +25,7 @@ import vinyldns.api.repository.ApiDataAccessor
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.membership.LockStatus.LockStatus
 import vinyldns.core.domain.zone.ZoneRepository
+import vinyldns.core.domain.zone.generate.GenerateZoneRepository
 import vinyldns.core.domain.membership._
 import vinyldns.core.domain.record.RecordSetRepository
 import vinyldns.core.Messages._
@@ -37,6 +38,7 @@ object MembershipService {
       dataAccessor.userRepository,
       dataAccessor.membershipRepository,
       dataAccessor.zoneRepository,
+      dataAccessor.generateZoneRepository,
       dataAccessor.groupChangeRepository,
       dataAccessor.recordSetRepository,
       emailConfig
@@ -48,6 +50,7 @@ class MembershipService(
     userRepo: UserRepository,
     membershipRepo: MembershipRepository,
     zoneRepo: ZoneRepository,
+    generateZoneRepo: GenerateZoneRepository,
     groupChangeRepo: GroupChangeRepository,
     recordSetRepo: RecordSetRepository,
     validDomains: ValidEmailConfig
@@ -507,15 +510,14 @@ class MembershipService(
       }
       .toResult
 
+  // Generated zones live in their own table, so a group can own one without owning a connected zone.
   def isNotZoneAdmin(group: Group): Result[Unit] =
-    zoneRepo
-      .getZonesByAdminGroupId(group.id)
-      .map { zones =>
-        ensuring(InvalidGroupRequestError(ZoneAdminError.format(group.name)))(
-          zones.isEmpty
-        )
-      }
-      .toResult
+    (for {
+      zones <- zoneRepo.getZonesByAdminGroupId(group.id)
+      generatedZones <- generateZoneRepo.getGenerateZonesByAdminGroupId(group.id)
+    } yield ensuring(InvalidGroupRequestError(ZoneAdminError.format(group.name)))(
+      zones.isEmpty && generatedZones.isEmpty
+    )).toResult
 
   def isNotRecordOwnerGroup(group: Group): Result[Unit] =
     recordSetRepo
