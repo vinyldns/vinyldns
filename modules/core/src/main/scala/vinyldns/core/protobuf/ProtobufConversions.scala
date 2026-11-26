@@ -500,7 +500,7 @@ trait ProtobufConversions {
       .setUserId(zoneChange.userId)
       .setZone(toPB(zoneChange.zone))
 
-    zoneChange.systemMessage.map(builder.setSystemMessage)
+    zoneChange.systemMessage.foreach(builder.setSystemMessage)
 
     builder.build()
   }
