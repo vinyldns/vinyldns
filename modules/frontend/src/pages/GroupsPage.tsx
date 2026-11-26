@@ -25,11 +25,19 @@ import { PaginatedSection } from "../components/common/Pagination";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { useGroups } from "../hooks/useGroups";
 import { groupsService } from "../services/groupsService";
+import { profileService } from "../services/profileService";
 import { useProfile } from "../contexts/ProfileContext";
+import { useAlerts } from "../contexts/AlertContext";
 import type { Group } from "../types/group";
+
+interface Suggestion {
+  value: string;
+  label: string;
+}
 
 export function GroupsPage() {
   const { profile } = useProfile();
+  const { addAlert } = useAlerts();
   const queryClient = useQueryClient();
   const [, setSearchParams] = useSearchParams();
   const initTab = false;
@@ -41,7 +49,9 @@ export function GroupsPage() {
   const [myGroupsQuery, setMyGroupsQuery] = useState("");
   const [allGroupsQuery, setAllGroupsQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [searchByUser, setSearchByUser] = useState(false);
+  const [userQuery, setUserQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const [searchFocused, setSearchFocused] = useState(false);
@@ -64,6 +74,9 @@ export function GroupsPage() {
   const [editFormDirty, setEditFormDirty] = useState(false);
   const FILTER_PAGE_SIZE = 100;
   const activeQuery = ignoreAccess ? allGroupsQuery : myGroupsQuery;
+  // "Search by user" is only available on the All Groups tab
+  const userMode = ignoreAccess && searchByUser;
+  const userSearchActive = userMode && userQuery !== "";
 
   const serializeFormState = useCallback((root: HTMLElement | null) => {
     if (!root) return "";
@@ -143,6 +156,35 @@ export function GroupsPage() {
     staleTime: 5 * 60 * 1000, // treat as fresh for 5 min — avoids re-fetching on every tab switch/focus
   });
 
+  const {
+    data: userSearchGroups,
+    isFetching: userSearchFetching,
+    error: userSearchError,
+  } = useQuery({
+    queryKey: ["groups", "by-user", userQuery],
+    enabled: userSearchActive,
+    staleTime: 0,
+    retry: false,
+    queryFn: async () => {
+      const res = await profileService.searchUsersByName(userQuery);
+      const groupIds = Array.from(
+        new Set((res.data ?? []).flatMap((u) => Object.keys(u.groupMap ?? {}))),
+      );
+      return Promise.all(
+        groupIds.map((id) => groupsService.getGroup(id).then((r) => r.data)),
+      );
+    },
+  });
+
+  useEffect(() => {
+    if (userSearchError) {
+      addAlert(
+        "danger",
+        `Unable to search groups for user "${userQuery}". Please try again.`,
+      );
+    }
+  }, [userSearchError]);
+
   const insightMyCount = groupCountData?.myGroupCount ?? null;
   const insightAllCount = groupCountData?.totalCount ?? null;
   const insightMgdCount = groupCountData?.adminGroupCount ?? null;
@@ -163,26 +205,46 @@ export function GroupsPage() {
       setShowSuggestions(false);
       return;
     }
+    let cancelled = false;
     const timer = setTimeout(async () => {
       try {
-        const res = await groupsService.getGroupsAbridged(
-          10,
-          undefined,
-          ignoreAccess,
-          searchInput,
-        );
-        const names = (res.data.groups ?? [])
-          .map((g: { name: string }) => g.name)
-          .slice(0, 10);
-        setSuggestions(names);
-        setShowSuggestions(names.length > 0);
+        let items: Suggestion[];
+        if (userMode) {
+          const res = await profileService.searchUsersByName(searchInput);
+          items = [];
+          for (const u of res.data ?? []) {
+            for (const groupName of Object.values(u.groupMap ?? {})) {
+              items.push({
+                value: u.userName,
+                label: `${u.userName} - ${groupName}`,
+              });
+            }
+          }
+          items = items.slice(0, 10);
+        } else {
+          const res = await groupsService.getGroupsAbridged(
+            10,
+            undefined,
+            ignoreAccess,
+            searchInput,
+          );
+          items = (res.data.groups ?? [])
+            .map((g: { name: string }) => ({ value: g.name, label: g.name }))
+            .slice(0, 10);
+        }
+        if (cancelled) return;
+        setSuggestions(items);
+        setShowSuggestions(items.length > 0);
         setActiveSuggestion(-1);
       } catch {
-        setSuggestions([]);
+        if (!cancelled) setSuggestions([]);
       }
     }, 250);
-    return () => clearTimeout(timer);
-  }, [searchInput, ignoreAccess]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [searchInput, ignoreAccess, userMode]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -203,21 +265,54 @@ export function GroupsPage() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleSearch = useCallback(() => {
-    setShowSuggestions(false);
-    setSearchFilter(searchInput);
-    if (ignoreAccess) setAllGroupsQuery(searchInput);
-    else setMyGroupsQuery(searchInput);
-    resetPaging();
-  }, [ignoreAccess, searchInput, resetPaging]);
+  const applySearch = useCallback(
+    (value: string) => {
+      setShowSuggestions(false);
+      if (userMode) {
+        // Sent as-is so wildcards (* or %) reach the backend intact
+        if (value === "") {
+          addAlert("danger", "Please enter a user name to search for groups");
+          return;
+        }
+        if (value === "%" || value === "*") {
+          addAlert(
+            "danger",
+            "User name should have at least one other character for wildcard search",
+          );
+          return;
+        }
+        setSearchFilter(value);
+        setUserQuery(value);
+        return;
+      }
+      setSearchFilter(value);
+      if (ignoreAccess) setAllGroupsQuery(value);
+      else setMyGroupsQuery(value);
+      resetPaging();
+    },
+    [userMode, ignoreAccess, resetPaging, addAlert],
+  );
+
+  const handleSearch = useCallback(
+    () => applySearch(searchInput),
+    [applySearch, searchInput],
+  );
 
   const handleSuggestionClick = (name: string) => {
     justSelectedRef.current = true;
     setSearchInput(name);
+    applySearch(name);
+  };
+
+  const handleSearchModeChange = (byUser: boolean) => {
+    if (byUser === searchByUser) return;
+    setSearchByUser(byUser);
+    setSearchInput("");
+    setSearchFilter("");
+    setUserQuery("");
+    setAllGroupsQuery("");
+    setSuggestions([]);
     setShowSuggestions(false);
-    setSearchFilter(name);
-    if (ignoreAccess) setAllGroupsQuery(name);
-    else setMyGroupsQuery(name);
     resetPaging();
   };
 
@@ -350,6 +445,7 @@ export function GroupsPage() {
     } else {
       setMyGroupsQuery("");
     }
+    setUserQuery("");
     setSearchInput("");
     setSuggestions([]);
     setShowSuggestions(false);
@@ -375,6 +471,8 @@ export function GroupsPage() {
       setTabFading(true);
       setTimeout(() => {
         setIgnoreAccess(newIgnoreAccess);
+        setSearchByUser(false);
+        setUserQuery("");
         setRoleFilter(null);
         setSearchFilter("");
         setSearchInput("");
@@ -449,10 +547,22 @@ export function GroupsPage() {
   const hasNoRoleInData =
     tabShowsAllGroups && (groupCountData?.noRoleGroupCount ?? 0) > 0;
 
-  const searchFilteredGroups = searchFilter ? groups : groups;
-  const displayedGroups = roleFilter
-    ? groups // server already filtered by role
-    : searchFilteredGroups;
+  const searchFilteredGroups = userSearchActive
+    ? (userSearchGroups ?? [])
+    : groups;
+  const displayedGroups = userSearchActive
+    ? searchFilteredGroups.filter((g) =>
+        roleFilter === "admin"
+          ? isActualAdmin(g)
+          : roleFilter === "member"
+            ? isActualMember(g) && !isActualAdmin(g)
+            : roleFilter === "norole"
+              ? !isActualMember(g) && !isActualAdmin(g)
+              : true,
+      )
+    : roleFilter
+      ? groups
+      : searchFilteredGroups;
 
   const roleFilterLabel: Record<string, string> = {
     admin: "Admin",
@@ -476,8 +586,9 @@ export function GroupsPage() {
     (g) => isActualMember(g) && !isActualAdmin(g),
   ).length;
 
-  const cardCount =
-    roleFilter === "norole"
+  const cardCount = userSearchActive
+    ? displayedGroups.length
+    : roleFilter === "norole"
       ? (groupCountData?.noRoleGroupCount ?? null)
       : roleFilter === "admin"
         ? insightMgdCount
@@ -663,24 +774,54 @@ export function GroupsPage() {
               </div>
 
               {/* ── Search ── */}
+              {ignoreAccess && (
+                <div
+                  className="vds-search-mode"
+                  role="group"
+                  aria-label="Search mode"
+                >
+                  <button
+                    type="button"
+                    className={`vds-search-mode__btn${!searchByUser ? " vds-search-mode__btn--active" : ""}`}
+                    onClick={() => handleSearchModeChange(false)}
+                    title="Search groups by group name"
+                  >
+                    <i className="bi bi-people" />
+                    Group
+                  </button>
+                  <button
+                    type="button"
+                    className={`vds-search-mode__btn${searchByUser ? " vds-search-mode__btn--active" : ""}`}
+                    onClick={() => handleSearchModeChange(true)}
+                    title="Find the groups a user belongs to (use * or % as wildcards)"
+                  >
+                    <i className="bi bi-person" />
+                    User
+                  </button>
+                </div>
+              )}
               <div
                 className="position-relative vds-search-wrapper"
                 ref={suggestionsRef}
               >
                 <div
                   className="input-group input-group-sm vds-search-group"
-                  style={{ width: 220, flexShrink: 1 }}
+                  style={{ width: userMode ? 260 : 220, flexShrink: 1 }}
                 >
                   <span className="input-group-text border-0 bg-transparent pe-1">
                     <i
-                      className={`bi bi-search${searchFocused ? " text-primary" : " text-muted"}`}
+                      className={`bi ${userMode ? "bi-person" : "bi-search"}${searchFocused ? " text-primary" : " text-muted"}`}
                     />
                   </span>
                   <input
                     id="group-search-text"
                     type="text"
                     className="form-control border-0 ps-0 shadow-none bg-transparent"
-                    placeholder="Search group by name"
+                    placeholder={
+                      userMode
+                        ? "Search groups by user name"
+                        : "Search group by name"
+                    }
                     value={searchInput}
                     autoComplete="off"
                     onChange={(e) => {
@@ -688,6 +829,7 @@ export function GroupsPage() {
                       setSearchInput(val);
                       if (val === "") {
                         setSearchFilter("");
+                        setUserQuery("");
                         if (ignoreAccess) setAllGroupsQuery("");
                         else setMyGroupsQuery("");
                         resetPaging();
@@ -703,13 +845,13 @@ export function GroupsPage() {
                     className="vds-suggestions-list list-group position-absolute w-100"
                     style={{ maxHeight: "260px", overflowY: "auto" }}
                   >
-                    {suggestions.slice(0, 10).map((name, i) => (
+                    {suggestions.slice(0, 10).map((s, i) => (
                       <li
-                        key={name}
+                        key={`${s.label}-${i}`}
                         className={`list-group-item list-group-item-action vds-suggestion-item${i === activeSuggestion ? " active" : ""}`}
-                        onMouseDown={() => handleSuggestionClick(name)}
+                        onMouseDown={() => handleSuggestionClick(s.value)}
                       >
-                        {highlightMatch(name, searchInput)}
+                        {highlightMatch(s.label, searchInput)}
                       </li>
                     ))}
                   </ul>
@@ -744,8 +886,8 @@ export function GroupsPage() {
         <div className="d-flex justify-content-end gap-2 mb-2 flex-wrap align-items-center px-1">
           {searchFilter && (
             <span className="vds-active-filter-tag d-flex align-items-center gap-1">
-              <i className="bi bi-search" />
-              Search: {searchFilter}
+              <i className={`bi ${userSearchActive ? "bi-person" : "bi-search"}`} />
+              {userSearchActive ? "User" : "Search"}: {searchFilter}
               <button
                 type="button"
                 className="btn-close ms-1"
@@ -758,6 +900,7 @@ export function GroupsPage() {
                 onClick={() => {
                   setSearchFilter("");
                   setSearchInput("");
+                  setUserQuery("");
                   if (ignoreAccess) setAllGroupsQuery("");
                   else setMyGroupsQuery("");
                   resetPaging();
@@ -793,6 +936,7 @@ export function GroupsPage() {
             onClick={() => {
               setSearchFilter("");
               setSearchInput("");
+              setUserQuery("");
               setRoleFilter(null);
               if (ignoreAccess) setAllGroupsQuery("");
               else setMyGroupsQuery("");
@@ -1017,11 +1161,11 @@ export function GroupsPage() {
           </div>
         )}
 
-        {isLoading || isFetching ? (
+        {isLoading || isFetching || (userSearchActive && userSearchFetching) ? (
           <LoadingSpinner />
         ) : (
           <>
-            {anyFilterActive && !roleFilter
+            {(anyFilterActive && !roleFilter) || userSearchActive
               ? // Client-side pagination for search-only filtered results (no role filter)
                 (() => {
                   const totalFiltered = displayedGroups.length;
@@ -1060,6 +1204,16 @@ export function GroupsPage() {
                         isDeleting={isDeleting}
                         isGroupAdmin={isGroupAdmin}
                         currentUserId={profile?.id}
+                        emptyMessage={
+                          userSearchActive
+                            ? `No groups found for user "${searchFilter}"`
+                            : undefined
+                        }
+                        emptySubtitle={
+                          userSearchActive
+                            ? "Check the spelling or try a wildcard such as fb*"
+                            : undefined
+                        }
                       />
                     </PaginatedSection>
                   );
