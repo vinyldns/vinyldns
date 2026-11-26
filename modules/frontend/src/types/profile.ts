@@ -14,6 +14,16 @@
  * limitations under the License.
  */
 
+/** A user returned by GET /users/search, with the groups they belong to (id -> name). */
+export interface UserSearchResult {
+  id?: string;
+  userName: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  groupMap?: Record<string, string>;
+}
+
 export interface UserProfile {
   id: string;
   userName: string;

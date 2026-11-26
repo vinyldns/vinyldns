@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import api from './api';
-import type { UserProfile } from '../types/profile';
+import api, { urlBuilder } from './api';
+import type { UserProfile, UserSearchResult } from '../types/profile';
 
 export const profileService = {
   getAuthenticatedUserData() {
@@ -28,6 +28,10 @@ export const profileService = {
 
   getUserDataById(userId: string) {
     return api.get<UserProfile>(`/users/${userId}`);
+  },
+
+  searchUsersByName(pattern: string) {
+    return api.get<UserSearchResult[]>(urlBuilder('/users/search', { pattern }));
   },
 
   // /regenerate-creds has no /api/ prefix in Play's routes — use fetch with absolute path

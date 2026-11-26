@@ -30,12 +30,16 @@ import { frodoUser, superFrodoUser } from '../fixtures/testData';
 
 // ── Mock the axios api instance ───────────────────────────────────────────────
 
-vi.mock('../../services/api', () => ({
-  default: {
-    get: vi.fn(),
-    post: vi.fn(),
-  },
-}));
+vi.mock('../../services/api', async () => {
+  const actual = await vi.importActual<typeof import('../../services/api')>('../../services/api');
+  return {
+    default: {
+      get: vi.fn(),
+      post: vi.fn(),
+    },
+    urlBuilder: actual.urlBuilder,
+  };
+});
 
 const mockApi = api as unknown as { get: ReturnType<typeof vi.fn>; post: ReturnType<typeof vi.fn> };
 
@@ -116,6 +120,29 @@ describe('profileService', () => {
       mockApi.get.mockResolvedValueOnce({ data: frodoUser });
       const res = await profileService.getUserDataById('frodo-uuid');
       expect(res.data.id).toBe('frodo-uuid');
+    });
+  });
+
+  // ── searchUsersByName ─────────────────────────────────────────────────────
+
+  describe('searchUsersByName', () => {
+    it('calls GET /users/search with the pattern', () => {
+      mockApi.get.mockResolvedValueOnce({ data: [] });
+      profileService.searchUsersByName('frodo');
+      expect(mockApi.get).toHaveBeenCalledWith('/users/search?pattern=frodo');
+    });
+
+    it('keeps wildcard characters and URL-encodes the pattern', () => {
+      mockApi.get.mockResolvedValueOnce({ data: [] });
+      profileService.searchUsersByName('fro%do');
+      expect(mockApi.get).toHaveBeenCalledWith('/users/search?pattern=fro%25do');
+    });
+
+    it('returns the matched users with their group maps', async () => {
+      const users = [{ userName: 'sjacob1', groupMap: { 'group-1': 'Group One' } }];
+      mockApi.get.mockResolvedValueOnce({ data: users });
+      const res = await profileService.searchUsersByName('jacob');
+      expect(res.data).toEqual(users);
     });
   });
 
