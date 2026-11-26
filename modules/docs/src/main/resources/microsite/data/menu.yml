@@ -37,8 +37,12 @@ options:
         url: portal/create-a-group.html
       - title: Manage Membership
         url: portal/manage-membership.html
+      - title: Edit a Group
+        url: portal/groups.html#edit-a-group
       - title: Delete a Group
-        url: portal/delete-a-group.html
+        url: portal/groups.html#delete-a-group
+      - title: Group Change History
+        url: portal/groups.html#group-change-history
 
   - title: Zones
     url: portal/zones.html
@@ -59,6 +63,16 @@ options:
         url: portal/search-zones.html
       - title: RecordSets Ownership Transfer
         url: portal/recordsets-ownership-transfer.html
+      - title: Manage Zone Settings
+        url: portal/zones.html#manage-zone-settings
+      - title: Sync a Zone
+        url: portal/zones.html#sync-a-zone
+      - title: Zone Change History
+        url: portal/zones.html#zone-change-history
+      - title: Abandon a Zone
+        url: portal/zones.html#abandon-a-zone
+      - title: Abandoned Zones
+        url: portal/zones.html#abandoned-zones
 
   - title: Credentials
     url: portal/credentials.html
