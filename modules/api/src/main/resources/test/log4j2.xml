@@ -27,7 +27,6 @@
         <logger name="BANNER_LOGGER" level="INFO" additivity="false">
             <appender-ref ref="BANNER_APPENDER"/>
         </logger>
-
         <Root level="INFO">
             <AppenderRef ref="CONSOLE"/>
         </Root>
