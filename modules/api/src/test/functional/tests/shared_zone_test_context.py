@@ -7,6 +7,7 @@ from tests.list_batch_summaries_test_context import ListBatchChangeSummariesTest
 from tests.list_groups_test_context import ListGroupsTestContext
 from tests.list_recordsets_test_context import ListRecordSetsTestContext
 from tests.list_zones_test_context import ListZonesTestContext
+from tests.list_generated_zones_test_context import ListGeneratedZonesTestContext
 from tests.test_data import TestData
 from utils import *
 from vinyldns_python import VinylDNSClient
@@ -37,7 +38,9 @@ class SharedZoneTestContext(object):
                         self.support_user_client, self.super_user_client, self.unassociated_client,
                         self.test_user_client, self.history_client, self.non_user_client]
         self.list_zones = ListZonesTestContext(partition_id)
+        self.list_generated_zones = ListGeneratedZonesTestContext(partition_id)
         self.list_zones_client = self.list_zones.client
+        self.list_generated_zones_client = self.list_generated_zones.client
         self.list_records_context = ListRecordSetsTestContext(partition_id)
         self.list_groups_context = ListGroupsTestContext(partition_id)
         self.list_batch_summaries_context = ListBatchChangeSummariesTestContext(partition_id)
@@ -66,7 +69,9 @@ class SharedZoneTestContext(object):
         self.ip4_10_prefix = None
         self.ip4_classless_prefix = None
         self.ip6_prefix = None
-
+        self.ok_generate_zone = None
+        self.dummy_generate_zone = None
+        self.system_test_generate_zone = None
 
     def setup(self):
         if self.setup_started:
@@ -118,6 +123,55 @@ class SharedZoneTestContext(object):
             self.history_group = self.history_client.create_group(history_group, status=200)
             self.confirm_member_in_group(self.history_client, self.history_group)
 
+            self.ok_generate_zone = self.super_user_client.generate_zone(
+                {
+                    "groupId": self.ok_group["id"],
+                    "email": "test@test.com",
+                    "provider": "powerdns",
+                    "zoneName": f"mttest{partition_id}.example.org.",
+                    "providerParams": {
+                        "kind": "Native",
+                        "nameservers": [
+                            "172.17.42.1.",
+                            "ns1.parent.com."
+                        ]
+                    }
+                }, status=202)
+
+            # # initialize history
+            self.ok_vinyldns_client.wait_until_generate_zone_active(self.ok_generate_zone["id"])
+
+            self.dummy_generate_zone = self.super_user_client.generate_zone(
+                {
+                    "groupId": self.dummy_group["id"],
+                    "email": "test@test.com",
+                    "provider": "powerdns",
+                    "zoneName": f"dummy{partition_id}.",
+                    "providerParams": {
+                        "kind": "Native",
+                        "nameservers": [
+                            "172.17.42.1.",
+                            "ns1.parent.com."
+                        ]
+                    }
+                }, status=202)
+
+            self.system_test_generate_zone = self.super_user_client.generate_zone(
+                {
+                    "groupId": self.ok_group["id"],
+                    "email": "test@test.com",
+                    "provider": "powerdns",
+                    "zoneName":  f"system-test{partition_id}.",
+                    "providerParams": {
+                        "kind": "Native",
+                        "nameservers": [
+                            "172.17.42.1.",
+                            "ns1.parent.com."
+                        ]
+                    }
+                }, status=202
+            )
+
             history_zone_change = self.history_client.create_zone(
                 {
                     "name": f"system-test-history{partition_id}.",
@@ -125,20 +179,7 @@ class SharedZoneTestContext(object):
                     "shared": False,
                     "adminGroupId": self.history_group["id"],
                     "isTest": True,
-                    "connection": {
-                        "name": "vinyldns.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    },
-                    "transferConnection": {
-                        "name": "vinyldns.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    }
+                    "backendId": "func-test-backend"
                 }, status=202)
             self.history_zone = history_zone_change["zone"]
 
@@ -153,20 +194,7 @@ class SharedZoneTestContext(object):
                     "shared": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
-                    "connection": {
-                        "name": "ok.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    },
-                    "transferConnection": {
-                        "name": "ok.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    }
+                    "backendId": "func-test-backend"
                 }, status=202)
             self.ok_zone = ok_zone_change["zone"]
 
@@ -186,20 +214,7 @@ class SharedZoneTestContext(object):
                             }
                         ]
                     },
-                    "connection": {
-                        "name": "dummy.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    },
-                    "transferConnection": {
-                        "name": "dummy.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    }
+                    "backendId": "func-test-backend"
                 }, status=202)
             self.dummy_zone = dummy_zone_change["zone"]
 
@@ -211,20 +226,7 @@ class SharedZoneTestContext(object):
                     "shared": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
-                    "connection": {
-                        "name": "ip6.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    },
-                    "transferConnection": {
-                        "name": "ip6.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    }
+                    "backendId": "func-test-backend"
                 }, status=202
             )
             self.ip6_reverse_zone = ip6_reverse_zone_change["zone"]
@@ -249,20 +251,7 @@ class SharedZoneTestContext(object):
                     "shared": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
-                    "connection": {
-                        "name": "ip4.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    },
-                    "transferConnection": {
-                        "name": "ip4.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    }
+                    "backendId": "func-test-backend"
                 }, status=202
             )
             self.ip4_reverse_zone = ip4_reverse_zone_change["zone"]
@@ -275,20 +264,7 @@ class SharedZoneTestContext(object):
                     "shared": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
-                    "connection": {
-                        "name": "classless-base.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    },
-                    "transferConnection": {
-                        "name": "classless-base.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    }
+                    "backendId": "func-test-backend"
                 }, status=202
             )
             self.classless_base_zone = classless_base_zone_change["zone"]
@@ -300,20 +276,7 @@ class SharedZoneTestContext(object):
                     "shared": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
-                    "connection": {
-                        "name": "classless.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    },
-                    "transferConnection": {
-                        "name": "classless.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    }
+                    "backendId": "func-test-backend"
                 }, status=202
             )
             self.classless_zone_delegation_zone = classless_zone_delegation_change["zone"]
@@ -325,20 +288,7 @@ class SharedZoneTestContext(object):
                     "shared": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
-                    "connection": {
-                        "name": "system-test.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    },
-                    "transferConnection": {
-                        "name": "system-test.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    }
+                    "backendId": "func-test-backend"
                 }, status=202
             )
             self.system_test_zone = system_test_zone_change["zone"]
@@ -360,20 +310,7 @@ class SharedZoneTestContext(object):
                             }
                         ]
                     },
-                    "connection": {
-                        "name": "parent.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    },
-                    "transferConnection": {
-                        "name": "parent.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    }
+                    "backendId": "func-test-backend"
                 }, status=202)
             self.parent_zone = parent_zone_change["zone"]
 
@@ -385,20 +322,7 @@ class SharedZoneTestContext(object):
                     "shared": False,
                     "adminGroupId": self.ok_group["id"],
                     "isTest": True,
-                    "connection": {
-                        "name": "example.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    },
-                    "transferConnection": {
-                        "name": "example.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    }
+                    "backendId": "func-test-backend"
                 }, status=202)
             self.ds_zone = ds_zone_change["zone"]
 
@@ -422,20 +346,7 @@ class SharedZoneTestContext(object):
                     "shared": True,
                     "adminGroupId": self.shared_record_group["id"],
                     "isTest": True,
-                    "connection": {
-                        "name": "shared.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    },
-                    "transferConnection": {
-                        "name": "shared.",
-                        "keyName": VinylDNSTestContext.dns_key_name,
-                        "key": VinylDNSTestContext.dns_key,
-                        "algorithm": VinylDNSTestContext.dns_key_algo,
-                        "primaryServer": VinylDNSTestContext.name_server_ip
-                    }
+                    "backendId": "func-test-backend"
                 }, status=202)
             self.shared_zone = shared_zone_change["zone"]
 
@@ -463,6 +374,12 @@ class SharedZoneTestContext(object):
             # note: there are no state to load, the tests only need the client
             self.list_zones_client = self.list_zones.client
 
+            # initialize list generated zones, only do this when constructing the whole!
+            self.list_generated_zones.setup()
+
+            # note: there are no state to load, the tests only need the client
+            self.list_generated_zones_client = self.list_generated_zones.client
+
             # build the list of records; note: we do need to save the test records
             self.list_records_context.setup()
 
@@ -480,8 +397,6 @@ class SharedZoneTestContext(object):
         # ten total changes including creation
         for i in range(2, 11):
             zone_update = copy.deepcopy(self.history_zone)
-            zone_update["connection"]["key"] = VinylDNSTestContext.dns_key
-            zone_update["transferConnection"]["key"] = VinylDNSTestContext.dns_key
             zone_update["email"] = "i.changed.this.{0}.times@history-test.com".format(i)
             self.history_client.update_zone(zone_update, status=202)
 
@@ -571,6 +486,7 @@ class SharedZoneTestContext(object):
         """
         try:
             self.list_zones.tear_down()
+            self.list_generated_zones.tear_down()
             self.list_records_context.tear_down()
 
             if self.list_batch_summaries_context:

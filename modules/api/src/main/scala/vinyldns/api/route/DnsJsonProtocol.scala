@@ -29,7 +29,9 @@ import vinyldns.core.domain.DomainHelpers.ensureTrailingDot
 import vinyldns.core.domain.DomainHelpers.removeWhitespace
 import vinyldns.core.domain.{EncryptFromJson, Encrypted, Fqdn}
 import vinyldns.core.domain.record._
+import vinyldns.core.domain.record.RecordSetStatus.RecordSetStatus
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate._
 import vinyldns.core.Messages._
 import vinyldns.core.domain.record.OwnershipTransferStatus
 import vinyldns.core.domain.record.OwnershipTransferStatus.OwnershipTransferStatus
@@ -37,9 +39,56 @@ import vinyldns.core.domain.record.OwnershipTransferStatus.OwnershipTransferStat
 trait DnsJsonProtocol extends JsonValidation {
   import vinyldns.core.domain.record.RecordType._
 
+  private type CommonRecordSetInputFields =
+    (
+      String,
+      RecordType,
+      Long,
+      RecordSetStatus,
+      Instant,
+      Option[Instant],
+      List[RecordData],
+      String,
+      String,
+      Option[String],
+      Option[OwnershipTransfer],
+      Option[String]
+    )
+
+  private def commonRecordSetInputFields(
+      js: JValue,
+      recordType: ValidatedNel[String, RecordType]
+  ): ValidatedNel[String, CommonRecordSetInputFields] =
+    (
+      (js \ "name")
+        .required[String]("Missing RecordSet.name")
+        .check(
+          "Record name must not exceed 255 characters" -> checkDomainNameLen,
+          "Record name cannot contain spaces" -> nameDoesNotContainSpaces
+        ),
+      recordType,
+      (js \ "ttl")
+        .required[Long]("Missing RecordSet.ttl")
+        .check(
+          "RecordSet.ttl must be a positive signed 32 bit number" -> (_ <= 2147483647),
+          "RecordSet.ttl must be a positive signed 32 bit number greater than or equal to 30" -> (_ >= 30)
+        ),
+      (js \ "status").default(RecordSetStatus, RecordSetStatus.Pending),
+      (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
+      (js \ "updated").optional[Instant],
+      recordType.andThen(extractRecords(_, js \ "records")),
+      (js \ "id").default[String](UUID.randomUUID().toString),
+      (js \ "account").default[String]("system"),
+      (js \ "ownerGroupId").optional[String],
+      (js \ "recordSetGroupChange").optional[OwnershipTransfer],
+      (js \ "fqdn").optional[String]
+    ).tupled
+
   val dnsSerializers = Seq(
-    CreateZoneInputSerializer,
+    ConnectZoneInputSerializer,
+    ZoneGenerationInputSerializer,
     UpdateZoneInputSerializer,
+    CreateRecordSetInputSerializer,
     ZoneConnectionSerializer,
     AlgorithmSerializer,
     EncryptedSerializer,
@@ -56,6 +105,7 @@ trait DnsJsonProtocol extends JsonValidation {
     JsonEnumV(RecordSetChangeStatus),
     JsonEnumV(RecordType),
     JsonEnumV(ZoneChangeType),
+    JsonEnumV(GenerateZoneChangeType),
     JsonEnumV(RecordSetChangeType),
     JsonEnumV(NameSort),
     JsonEnumV(RecordTypeSort),
@@ -104,8 +154,8 @@ trait DnsJsonProtocol extends JsonValidation {
         ("singleBatchChangeIds" -> Extraction.decompose(rs.singleBatchChangeIds))
   }
 
-  case object CreateZoneInputSerializer extends ValidationSerializer[CreateZoneInput] {
-    override def fromJson(js: JValue): ValidatedNel[String, CreateZoneInput] =
+  case object ConnectZoneInputSerializer extends ValidationSerializer[ConnectZoneInput] {
+    override def fromJson(js: JValue): ValidatedNel[String, ConnectZoneInput] =
       (
         (js \ "name")
           .required[String]("Missing Zone.name")
@@ -120,9 +170,39 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "backendId").optional[String],
         (js \ "recurrenceSchedule").optional[String],
         (js \ "scheduleRequestor").optional[String],
-        ).mapN(CreateZoneInput.apply)
+        ).mapN(ConnectZoneInput.apply)
   }
 
+  case object ZoneGenerationInputSerializer extends ValidationSerializer[ZoneGenerationInput] {
+    override def fromJson(js: JValue): ValidatedNel[String, ZoneGenerationInput] = {
+      // Validate providerParams: it is optional, but if present it must be a JSON object.
+      // A present-but-malformed value is rejected rather than silently collapsed to an empty map.
+      val providerParams: ValidatedNel[String, Map[String, JValue]] = (js \ "providerParams") match {
+        case JNothing | JNull => Map.empty[String, JValue].validNel
+        case JObject(fields) => fields.toMap.validNel
+        case _ => "providerParams must be a JSON object".invalidNel
+      }
+
+      // Validate standard fields (not provider specific)
+      // Server-owned fields (id, status, response) are deliberately not read from the request
+      // body so clients cannot set them; the server assigns them.
+      (
+        (js \ "groupId").required[String]("Missing group id"),
+        (js \ "email").required[String]("Missing email"),
+        (js \ "provider").required[String]("Missing provider"),
+        (js \ "zoneName").required[String]("Missing zone name"),
+        providerParams
+      ).mapN { (groupId, email, provider, zoneName, params) =>
+        ZoneGenerationInput(
+          groupId = groupId,
+          email = email,
+          provider = provider,
+          zoneName = zoneName,
+          providerParams = params
+        )
+      }
+    }
+  }
   case object UpdateZoneInputSerializer extends ValidationSerializer[UpdateZoneInput] {
     override def fromJson(js: JValue): ValidatedNel[String, UpdateZoneInput] =
       (
@@ -140,6 +220,44 @@ trait DnsJsonProtocol extends JsonValidation {
         (js \ "scheduleRequestor").optional[String],
         (js \ "backendId").optional[String],
         ).mapN(UpdateZoneInput.apply)
+  }
+
+  case object CreateRecordSetInputSerializer extends ValidationSerializer[CreateRecordSetInput] {
+    import RecordType._
+    override def fromJson(js: JValue): ValidatedNel[String, CreateRecordSetInput] = {
+      val recordType = (js \ "type").required(RecordType, "Missing RecordSet.type")
+      val recordTypeGet: RecordType = recordType.getOrElse(A)
+
+      val createInputResult = (
+        (js \ "zoneId").optional[String],
+        commonRecordSetInputFields(js, recordType)
+      ).mapN {
+        case (zoneId, (name, typ, ttl, status, created, updated, records, id, account, ownerGroupId, recordSetGroupChange, fqdn)) =>
+          CreateRecordSetInput(zoneId, name, typ, ttl, status, created, updated, records, id, account, ownerGroupId, recordSetGroupChange, fqdn)
+      }
+
+      // Put additional record set level checks below
+      createInputResult.checkIf(recordTypeGet == RecordType.CNAME)(
+        "CNAME record sets cannot contain multiple records" -> { crs =>
+          crs.records.length <= 1
+        }
+      )
+    }
+
+    override def toJson(crs: CreateRecordSetInput): JValue =
+      ("type" -> Extraction.decompose(crs.typ)) ~
+        ("zoneId" -> crs.zoneId) ~
+        ("name" -> crs.name) ~
+        ("ttl" -> crs.ttl) ~
+        ("status" -> Extraction.decompose(crs.status)) ~
+        ("created" -> Extraction.decompose(crs.created)) ~
+        ("updated" -> Extraction.decompose(crs.updated)) ~
+        ("records" -> Extraction.decompose(crs.records)) ~
+        ("id" -> crs.id) ~
+        ("account" -> crs.account) ~
+        ("ownerGroupId" -> crs.ownerGroupId) ~
+        ("recordSetGroupChange" -> Extraction.decompose(crs.recordSetGroupChange)) ~
+        ("fqdn" -> crs.fqdn)
   }
 
   case object AlgorithmSerializer extends ValidationSerializer[Algorithm] {
@@ -214,31 +332,11 @@ trait DnsJsonProtocol extends JsonValidation {
       val recordTypeGet: RecordType = recordType.getOrElse(A)
       val recordSetResult = (
         (js \ "zoneId").required[String]("Missing RecordSet.zoneId"),
-        (js \ "name")
-          .required[String]("Missing RecordSet.name")
-          .check(
-            "Record name must not exceed 255 characters" -> checkDomainNameLen,
-            "Record name cannot contain spaces" -> nameDoesNotContainSpaces
-          ),
-        recordType,
-        (js \ "ttl")
-          .required[Long]("Missing RecordSet.ttl")
-          .check(
-            // RFC 1035.2.3.4 and  RFC 2181.8
-            "RecordSet.ttl must be a positive signed 32 bit number" -> (_ <= 2147483647),
-            "RecordSet.ttl must be a positive signed 32 bit number greater than or equal to 30" -> (_ >= 30)
-          ),
-        (js \ "status").default(RecordSetStatus, RecordSetStatus.Pending),
-        (js \ "created").default[Instant](Instant.now.truncatedTo(ChronoUnit.MILLIS)),
-        (js \ "updated").optional[Instant],
-        recordType
-          .andThen(extractRecords(_, js \ "records")),
-        (js \ "id").default[String](UUID.randomUUID().toString),
-        (js \ "account").default[String]("system"),
-        (js \ "ownerGroupId").optional[String],
-        (js \ "recordSetGroupChange").optional[OwnershipTransfer],
-        (js \ "fqdn").optional[String]
-        ).mapN(RecordSet.apply)
+        commonRecordSetInputFields(js, recordType)
+      ).mapN {
+        case (zoneId, (name, typ, ttl, status, created, updated, records, id, account, ownerGroupId, recordSetGroupChange, fqdn)) =>
+          RecordSet(zoneId, name, typ, ttl, status, created, updated, records, id, account, ownerGroupId, recordSetGroupChange, fqdn)
+      }
 
       // Put additional record set level checks below
       recordSetResult.checkIf(recordTypeGet == RecordType.CNAME)(
@@ -267,10 +365,15 @@ trait DnsJsonProtocol extends JsonValidation {
 
 
   case object ownershipTransferSerializer extends ValidationSerializer[OwnershipTransfer] {
+    // Treat blank and the literal string "null" as an absent group id so bad
+    // client payloads never persist requestedOwnerGroupId as the string "null".
+    private def sanitizeRequestedOwnerGroupId(id: Option[String]): Option[String] =
+      id.map(_.trim).filter(v => v.nonEmpty && !v.equalsIgnoreCase("null"))
+
     override def fromJson(js: JValue): ValidatedNel[String, OwnershipTransfer] =
       (
         (js \ "ownershipTransferStatus").required[OwnershipTransferStatus]("Missing ownershipTransfer.ownershipTransferStatus"),
-        (js \ "requestedOwnerGroupId").optional[String],
+        (js \ "requestedOwnerGroupId").optional[String].map(sanitizeRequestedOwnerGroupId),
         ).mapN(OwnershipTransfer.apply)
 
     override def toJson(rsa: OwnershipTransfer): JValue =

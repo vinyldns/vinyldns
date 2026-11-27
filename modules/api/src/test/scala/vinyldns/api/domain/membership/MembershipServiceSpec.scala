@@ -27,6 +27,7 @@ import org.scalatest.BeforeAndAfterEach
 import vinyldns.api.Interfaces._
 import vinyldns.core.domain.auth.AuthPrincipal
 import vinyldns.core.domain.zone.ZoneRepository
+import vinyldns.core.domain.zone.generate.GenerateZoneRepository
 import cats.effect._
 import scalikejdbc.{ConnectionPool, DB}
 import vinyldns.api.config.ValidEmailConfig
@@ -47,6 +48,7 @@ class MembershipServiceSpec
   private val mockUserRepo = mock[UserRepository]
   private val mockMembershipRepo = mock[MembershipRepository]
   private val mockZoneRepo = mock[ZoneRepository]
+  private val mockGenerateZoneRepo = mock[GenerateZoneRepository]
   private val mockGroupChangeRepo = mock[GroupChangeRepository]
   private val mockRecordSetRepo = mock[RecordSetRepository]
   private val mockValidEmailConfig = ValidEmailConfig(valid_domains = List("test.com","*dummy.com"),2)
@@ -57,6 +59,7 @@ class MembershipServiceSpec
     mockUserRepo,
     mockMembershipRepo,
     mockZoneRepo,
+    mockGenerateZoneRepo,
     mockGroupChangeRepo,
     mockRecordSetRepo,
     mockValidEmailConfig
@@ -66,6 +69,7 @@ class MembershipServiceSpec
     mockUserRepo,
     mockMembershipRepo,
     mockZoneRepo,
+    mockGenerateZoneRepo,
     mockGroupChangeRepo,
     mockRecordSetRepo,
     mockValidEmailConfigNew
@@ -111,15 +115,18 @@ class MembershipServiceSpec
     adminUserIds = existingGroup.adminUserIds ++ updatedInfo.memberIds
   )
 
-  override protected def beforeEach(): Unit =
+  override protected def beforeEach(): Unit = {
     reset(
       mockGroupRepo,
       mockUserRepo,
       mockMembershipRepo,
+      mockGenerateZoneRepo,
       mockGroupChangeRepo,
       mockRecordSetRepo,
       underTest
     )
+    doReturn(IO.pure(List())).when(mockGenerateZoneRepo).getGenerateZonesByAdminGroupId(anyString)
+  }
   // Add connection to run tests
   ConnectionPool.add('default, "jdbc:h2:mem:vinyldns;MODE=MYSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;IGNORECASE=TRUE;INIT=RUNSCRIPT FROM 'classpath:test/ddl.sql'","sa","")
   "MembershipService" should {
@@ -738,8 +745,25 @@ class MembershipServiceSpec
         error shouldBe an[InvalidGroupRequestError]
       }
 
+      "return an error if the group owns a generated zone that was never connected" in {
+        doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(List())).when(mockZoneRepo).getZonesByAdminGroupId(anyString)
+        doReturn(IO.pure(List(generateBindZone)))
+          .when(mockGenerateZoneRepo)
+          .getGenerateZonesByAdminGroupId(okGroup.id)
+        doReturn(IO.pure(None)).when(mockRecordSetRepo).getFirstOwnedRecordByGroup(anyString())
+        doReturn(IO.pure(None)).when(mockZoneRepo).getFirstOwnedZoneAclGroupId(anyString())
+
+        val error = underTest.deleteGroup("ok", okAuth).value.unsafeRunSync().swap.toOption.get
+
+        error shouldBe an[InvalidGroupRequestError]
+        verify(mockGroupRepo, never()).delete(any[Group])
+        verify(mockMembershipRepo, never()).removeMembers(any[DB], anyString, any[Set[String]])
+      }
+
       "return an error if the group is an owner for a record set" in {
         doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(List())).when(mockZoneRepo).getZonesByAdminGroupId(anyString)
         doReturn(IO.pure(Some("somerecordsetid")))
           .when(mockRecordSetRepo)
           .getFirstOwnedRecordByGroup(anyString())
@@ -750,6 +774,8 @@ class MembershipServiceSpec
 
       "return an error if the group has an ACL rule on a zone" in {
         doReturn(IO.pure(Some(okGroup))).when(mockGroupRepo).getGroup(anyString)
+        doReturn(IO.pure(List())).when(mockZoneRepo).getZonesByAdminGroupId(anyString)
+        doReturn(IO.pure(None)).when(mockRecordSetRepo).getFirstOwnedRecordByGroup(anyString())
         doReturn(IO.pure(Some("someId")))
           .when(mockZoneRepo)
           .getFirstOwnedZoneAclGroupId(anyString())
@@ -1269,6 +1295,16 @@ class MembershipServiceSpec
         val error = underTest.isNotZoneAdmin(okGroup).value.unsafeRunSync().swap.toOption.get
         error shouldBe an[InvalidGroupRequestError]
       }
+
+      "return an InvalidGroupRequestError when a group for deletion is admin of a generated zone only" in {
+        doReturn(IO.pure(List())).when(mockZoneRepo).getZonesByAdminGroupId(okGroup.id)
+        doReturn(IO.pure(List(generateBindZone)))
+          .when(mockGenerateZoneRepo)
+          .getGenerateZonesByAdminGroupId(okGroup.id)
+
+        val error = underTest.isNotZoneAdmin(okGroup).value.unsafeRunSync().swap.toOption.get
+        error shouldBe an[InvalidGroupRequestError]
+      }
     }
 
     "isNotRecordOwnerGroup" should {
@@ -1395,10 +1431,25 @@ class MembershipServiceSpec
       "return the user info" in {
         doReturn(IO.pure(Some(okUser))).when(mockUserRepo).getUserByIdOrName(anyString)
         doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
-        val result: UserResponseInfo = underTest.getUserDetails(okUser.id, okAuth).value.unsafeRunSync().toOption.get
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+        val resultEither = underTest.getUserDetails(okUser.id, okAuth).value.unsafeRunSync()
+
+        val result = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
         result.id shouldBe okUser.id
         result.userName.get shouldBe okUser.userName
         result.groupId shouldBe Set(okGroup.id)
+        result.groupMap.headOption match {
+          case Some((id, name)) =>
+            id shouldBe okGroup.id
+            name shouldBe okGroup.name
+          case None =>
+            fail("groupMap is empty or null")
+        }
       }
 
       "return an error if the user is not found" in {
@@ -1407,5 +1458,232 @@ class MembershipServiceSpec
         error shouldBe a[UserNotFoundError]
       }
     }
+
+    "search users" should {
+      "return the matched user's info" in {
+        doReturn(IO.pure(List(okUser))).when(mockUserRepo).searchUsersByName(anyString, any[Option[Int]], anyInt)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+        val resultEither = underTest.searchUsers(okUser.userName, None, 100, okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results should have size 1
+        val result = results.head
+        result.id shouldBe okUser.id
+        result.userName.get shouldBe okUser.userName
+        result.groupId shouldBe Set(okGroup.id)
+        result.groupMap.headOption match {
+          case Some((id, name)) =>
+            id shouldBe okGroup.id
+            name shouldBe okGroup.name
+          case None =>
+            fail("groupMap is empty or null")
+        }
+      }
+
+      "return the info for every user that matches the search pattern" in {
+        doReturn(IO.pure(List(okUser, dummyUser))).when(mockUserRepo).searchUsersByName(anyString, any[Option[Int]], anyInt)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(okUser.id)
+        doReturn(IO.pure(Set(dummyGroup.id))).when(mockMembershipRepo).getGroupsForUser(dummyUser.id)
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(Set(okGroup.id))
+        doReturn(IO.pure(Set(dummyGroup))).when(mockGroupRepo).getGroups(Set(dummyGroup.id))
+
+        val resultEither = underTest.searchUsers("match", None, 100, okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results.map(_.userName.get) should contain theSameElementsAs List(okUser.userName, dummyUser.userName)
+      }
+
+      "return an empty list if no user matches the search pattern" in {
+        doReturn(IO.pure(List())).when(mockUserRepo).searchUsersByName(anyString, any[Option[Int]], anyInt)
+        val resultEither = underTest.searchUsers("nomatch", None, 100, okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results shouldBe empty
+      }
+
+      "reject empty search pattern" in {
+        val resultEither = underTest.searchUsers("", None, 100, okAuth).value.unsafeRunSync()
+
+        val error = resultEither match {
+          case Left(err)    => err
+          case Right(value) => fail(s"Expected error but got success: $value")
+        }
+
+        error shouldBe a[SearchValidationError]
+        error.getMessage should include("at least 2 characters")
+      }
+
+      "reject whitespace-only search pattern" in {
+        val resultEither = underTest.searchUsers("   ", None, 100, okAuth).value.unsafeRunSync()
+
+        val error = resultEither match {
+          case Left(err)    => err
+          case Right(value) => fail(s"Expected error but got success: $value")
+        }
+
+        error shouldBe a[SearchValidationError]
+        error.getMessage should include("at least 2 characters")
+      }
+
+      "reject single character search pattern" in {
+        val resultEither = underTest.searchUsers("a", None, 100, okAuth).value.unsafeRunSync()
+
+        val error = resultEither match {
+          case Left(err)    => err
+          case Right(value) => fail(s"Expected error but got success: $value")
+        }
+
+        error shouldBe a[SearchValidationError]
+        error.getMessage should include("at least 2 characters")
+      }
+
+      "reject bare % wildcard" in {
+        val resultEither = underTest.searchUsers("%", None, 100, okAuth).value.unsafeRunSync()
+
+        val error = resultEither match {
+          case Left(err)    => err
+          case Right(value) => fail(s"Expected error but got success: $value")
+        }
+
+        error shouldBe a[SearchValidationError]
+        error.getMessage should include("bare wildcard")
+      }
+
+      "reject bare * wildcard" in {
+        val resultEither = underTest.searchUsers("*", None, 100, okAuth).value.unsafeRunSync()
+
+        val error = resultEither match {
+          case Left(err)    => err
+          case Right(value) => fail(s"Expected error but got success: $value")
+        }
+
+        error shouldBe a[SearchValidationError]
+        error.getMessage should include("bare wildcard")
+      }
+
+      "reject consecutive wildcard-only patterns" in {
+        List("**", "***", "*%", " ** ").foreach { pattern =>
+          val resultEither = underTest.searchUsers(pattern, None, 100, okAuth).value.unsafeRunSync()
+
+          val error = resultEither match {
+            case Left(err)    => err
+            case Right(value) => fail(s"Expected error for '$pattern' but got success: $value")
+          }
+
+          error shouldBe a[SearchValidationError]
+          error.getMessage should include("bare wildcard")
+        }
+      }
+
+      "accept consecutive wildcards following a prefix" in {
+        doReturn(IO.pure(List(okUser))).when(mockUserRepo).searchUsersByName("ab**", None, 100)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+        val resultEither = underTest.searchUsers("ab**", None, 100, okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results should have size 1
+      }
+
+      "accept two-character pattern" in {
+        doReturn(IO.pure(List(okUser))).when(mockUserRepo).searchUsersByName("ab", None, 100)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+        val resultEither = underTest.searchUsers("ab", None, 100, okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results should have size 1
+      }
+
+      "accept pattern with leading/trailing whitespace and trim it" in {
+        doReturn(IO.pure(List(okUser))).when(mockUserRepo).searchUsersByName("jo", None, 100)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+        val resultEither = underTest.searchUsers("  jo  ", None, 100, okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results should have size 1
+      }
+
+      "pass startFrom parameter to repository" in {
+        doReturn(IO.pure(List(okUser))).when(mockUserRepo).searchUsersByName("jo", Some(50), 100)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+        val resultEither = underTest.searchUsers("jo", Some(50), 100, okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results should have size 1
+        verify(mockUserRepo).searchUsersByName("jo", Some(50), 100)
+      }
+
+      "pass custom maxResults parameter to repository" in {
+        doReturn(IO.pure(List(okUser))).when(mockUserRepo).searchUsersByName("jo", None, 50)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(anyString)
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(any[Set[String]])
+
+        val resultEither = underTest.searchUsers("jo", None, 50, okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results should have size 1
+        verify(mockUserRepo).searchUsersByName("jo", None, 50)
+      }
+
+      "pass both startFrom and maxResults to repository" in {
+        doReturn(IO.pure(List(okUser, dummyUser))).when(mockUserRepo).searchUsersByName("match", Some(100), 25)
+        doReturn(IO.pure(Set(okGroup.id))).when(mockMembershipRepo).getGroupsForUser(okUser.id)
+        doReturn(IO.pure(Set(dummyGroup.id))).when(mockMembershipRepo).getGroupsForUser(dummyUser.id)
+        doReturn(IO.pure(Set(okGroup))).when(mockGroupRepo).getGroups(Set(okGroup.id))
+        doReturn(IO.pure(Set(dummyGroup))).when(mockGroupRepo).getGroups(Set(dummyGroup.id))
+
+        val resultEither = underTest.searchUsers("match", Some(100), 25, okAuth).value.unsafeRunSync()
+
+        val results = resultEither match {
+          case Right(value) => value
+          case Left(err)    => fail(s"Expected success but got error: $err")
+        }
+
+        results.map(_.userName.get) should contain theSameElementsAs List(okUser.userName, dummyUser.userName)
+        verify(mockUserRepo).searchUsersByName("match", Some(100), 25)
+      }
+    }
   }
 }
+

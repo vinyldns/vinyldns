@@ -25,7 +25,10 @@ describe('Controller: ZonesController', function () {
         module('service.paging'),
         module('controller.zones')
     });
+
     beforeEach(inject(function ($rootScope, $controller, $q, groupsService, profileService, recordsService, zonesService, utilityService, pagingService) {
+        this.rootScope = $rootScope;
+        this.controllerFactory = $controller;
         this.scope = $rootScope.$new();
         this.groupsService = groupsService;
         this.zonesService = zonesService;
@@ -35,7 +38,6 @@ describe('Controller: ZonesController', function () {
         this.scope.myGroups = {};
         this.scope.allGroups = {};
         this.scope.zones = {};
-
         profileService.getAuthenticatedUserData = function() {
             return $q.when({data: {id: "userId"}});
         };
@@ -46,7 +48,7 @@ describe('Controller: ZonesController', function () {
                 }
             });
         };
-
+        window.zoneSearch = '.zone-search-text';
         zonesService.getZones = function() {
             return $q.when({
                 data: {
@@ -54,6 +56,7 @@ describe('Controller: ZonesController', function () {
                 }
             });
         };
+
         zonesService.getBackendIds = function() {
             return $q.when({
                 data: ['backend-1', 'backend-2']
@@ -63,11 +66,12 @@ describe('Controller: ZonesController', function () {
         this.controller = $controller('ZonesController', {'$scope': this.scope});
     }));
 
-    it('test that we properly get users groups when loading ZonesController', function(){
-        var validDomains = spyOn(this.scope, 'validDomains')
-                            .and.stub();
+    it('test that we properly get users groups when loading ZonesController', function() {
+        spyOn(this.scope, 'validDomains').and.stub();
+
         this.scope.$digest();
-        expect(this.scope.myGroups).toEqual([{id: "all my groups", members: [{id: "userId"}]}]);
+
+        expect(this.scope.myGroups).toEqual([{ id: "all my groups", members: [{ id: "userId" }] }]);
     });
 
     it('nextPageMyZones should call getZones with the correct parameters', function () {
@@ -186,5 +190,28 @@ describe('Controller: ZonesController', function () {
         expect(getDeletedZoneSets.calls.mostRecent().args).toEqual(
             [expectedMaxItems, expectedStartFrom, expectedQuery, expectedIgnoreAccess]);
 
+    });
+
+    it('renders group search autocomplete labels as text while preserving highlights', function () {
+        document.body.innerHTML = '<input class="zone-search-text" /><input class="isGroupSearch" type="checkbox" />';
+
+        var scope = this.rootScope.$new();
+        this.controllerFactory('ZonesController', {'$scope': scope});
+
+        $('.isGroupSearch').prop('checked', true).trigger('change');
+
+        var instance = $('.zone-search-text').autocomplete('instance');
+        instance.term = 'Team';
+
+        var rendered = instance._renderItem($('<ul></ul>'), {
+            label: '<img src=x onerror=alert(1)>Team',
+            value: '<img src=x onerror=alert(1)>Team'
+        });
+
+        expect(rendered.find('img').length).toBe(0);
+        expect(rendered.find('div').text()).toBe('<img src=x onerror=alert(1)>Team');
+        expect(rendered.find('b').text()).toBe('Team');
+
+        document.body.innerHTML = '';
     });
 });

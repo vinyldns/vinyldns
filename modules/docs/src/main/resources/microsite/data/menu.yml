@@ -37,6 +37,8 @@ options:
         url: portal/create-a-group.html
       - title: Manage Membership
         url: portal/manage-membership.html
+      - title: Delete a Group
+        url: portal/delete-a-group.html
 
   - title: Zones
     url: portal/zones.html
@@ -105,6 +107,30 @@ options:
     url: api/auth-mechanism.html
     menu_type: api
 
+  - title: Health & Monitoring
+    url: api/ping.html
+    menu_type: api
+    menu_section: healthapireference
+    nested_options:
+      - title: Ping
+        url: api/ping.html
+        menu_section: healthapireference
+      - title: Health Check
+        url: api/health.html
+        menu_section: healthapireference
+      - title: Color
+        url: api/color.html
+        menu_section: healthapireference
+      - title: Prometheus Metrics
+        url: api/prometheus-metrics.html
+        menu_section: healthapireference
+      - title: Get Status
+        url: api/get-status.html
+        menu_section: healthapireference
+      - title: Update Status
+        url: api/update-status.html
+        menu_section: healthapireference
+
   - title: Zone
     url: api/zone-model.html
     menu_type: api
@@ -143,6 +169,48 @@ options:
       - title: Abandoned Zones
         url: api/list-deleted-zones.html
         menu_section: zoneapireference
+      - title: Get Zone Details
+        url: api/get-zone-details.html
+        menu_section: zoneapireference
+      - title: Get Backend IDs
+        url: api/get-backend-ids.html
+        menu_section: zoneapireference
+      - title: Add ACL Rule
+        url: api/add-acl-rule.html
+        menu_section: zoneapireference
+      - title: Delete ACL Rule
+        url: api/delete-acl-rule.html
+        menu_section: zoneapireference
+
+  - title: Generated Zone
+    url: api/generated-zone-model.html
+    menu_type: api
+    menu_section: generatedzoneapireference
+    nested_options:
+      - title: Generated Zone Model
+        url: api/generated-zone-model.html
+        menu_section: generatedzoneapireference
+      - title: Generate Zone
+        url: api/generate-zone.html
+        menu_section: generatedzoneapireference
+      - title: Update Generated Zone
+        url: api/update-generated-zone.html
+        menu_section: generatedzoneapireference
+      - title: Delete Generated Zone
+        url: api/delete-generated-zone.html
+        menu_section: generatedzoneapireference
+      - title: Get Generated Zone by ID
+        url: api/get-generated-zone-by-id.html
+        menu_section: generatedzoneapireference
+      - title: Get Generated Zone by Name
+        url: api/get-generated-zone-by-name.html
+        menu_section: generatedzoneapireference
+      - title: List / Search Generated Zones
+        url: api/list-generated-zones.html
+        menu_section: generatedzoneapireference
+      - title: Get DNS Providers
+        url: api/get-dns-providers.html
+        menu_section: generatedzoneapireference
 
   - title: RecordSet
     url: api/recordset-model.html
@@ -184,6 +252,9 @@ options:
         menu_section: recordsetapireference
       - title: Get RecordSet Change History
         url: api/get-recordset-change-history.html
+        menu_section: recordsetapireference
+      - title: Ownership Transfer Model
+        url: api/ownership-transfer-model.html
         menu_section: recordsetapireference
 
   - title: Batch Change
@@ -227,6 +298,9 @@ options:
       - title: Get User
         url: api/get-user.html
         menu_section: membershipapireference
+      - title: Search User
+        url: api/search-user.html
+        menu_section: membershipapireference
       - title: Create Group
         url: api/create-group.html
         menu_section: membershipapireference
@@ -256,4 +330,10 @@ options:
         menu_section: membershipapireference
       - title: Get Valid Email Domains
         url: api/get-valid-email-domains.html
+        menu_section: membershipapireference
+      - title: Lock User
+        url: api/lock-user.html
+        menu_section: membershipapireference
+      - title: Unlock User
+        url: api/unlock-user.html
         menu_section: membershipapireference

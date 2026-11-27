@@ -138,6 +138,17 @@ a.action-link {
     margin-left: 10px;
 }
 
+.export-btn {
+    margin-left: 10px;
+    font-size: small;
+    font-weight: normal;
+}
+
+.export-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
 .form-control.zone-edit {
     background: #F9F9F9;
     color:#555;
@@ -450,6 +461,10 @@ input[type="file"] {
     word-break: break-all;
 }
 
+.preserve-line-breaks {
+    white-space: pre-line;
+}
+
 .no-wrap {
     white-space: nowrap;
     word-break: keep-all;
@@ -653,4 +668,40 @@ input[type="file"] {
 .small-copy-button:hover {
     background-color: #f0f0f0;
     border-radius: 4px;
+}
+
+.dropdown-container {
+    width: 100%;
+}
+
+.dropdown-toggle-btn {
+    text-align: left;
+    padding-right: 30px;
+    white-space: normal;
+    word-wrap: break-word;
+    min-height: 38px;
+    height: auto;
+}
+
+.dropdown-caret {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.dropdown-menu-box {
+    padding: 10px;
+    width: 100%;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.dropdown-search-input {
+    margin-bottom: 10px;
+}
+
+.dropdown-label {
+    width: 100%;
+    font-weight: normal;
 }

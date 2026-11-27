@@ -22,7 +22,7 @@ import javax.crypto.spec.SecretKeySpec
 import javax.crypto.{Mac, SecretKey}
 
 import akka.http.scaladsl.model.HttpRequest
-import java.time.{Instant, ZoneId, ZonedDateTime}
+import java.time.{Duration, Instant, ZoneId, ZonedDateTime}
 import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 
@@ -63,6 +63,12 @@ class Aws4Authenticator {
   val iso8601Format = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmssz").withZone(ZoneId.of("UTC"))
 
   val rfc822Format = DateTimeFormatter.ofPattern("EEE, d MMM yyyy HH:mm:ss z").withZone(ZoneId.of("UTC"))
+
+  // credential-scope date (the leading yyyyMMdd component of the scope)
+  val scopeDateFormat = DateTimeFormatter.ofPattern("yyyyMMdd").withZone(ZoneId.of("UTC"))
+
+  // max allowed difference between the request timestamp and server time (AWS SigV4 spec)
+  val maxClockSkew: Duration = Duration.ofMinutes(15)
 
   val logger = LoggerFactory.getLogger("Aws4Authenticator")
 
@@ -106,9 +112,71 @@ class Aws4Authenticator {
       signatureHeaders, // signed headers
       signatureReceived
     ) = authorization
-    val signedHeaders = Set() ++ signatureHeaders.split(';')
+    val signedHeaders = (Set() ++ signatureHeaders.split(';')).map(_.toLowerCase)
+
+    getDate(req) match {
+      case None =>
+        logger.error("Request rejected: missing or unparseable request date")
+        false
+      case Some(requestDate) =>
+        validateRequest(req, requestDate, signatureScope, signedHeaders) &&
+          verifySignature(req, requestDate, signatureScope, signatureHeaders, signedHeaders, secret, content, signatureReceived)
+    }
+  }
+
+  // Enforces AWS SigV4 request-metadata checks that are independent of the signature itself
+  private def validateRequest(
+      req: HttpRequest,
+      requestDate: Instant,
+      signatureScope: String,
+      signedHeaders: Set[String]
+  ): Boolean = {
+    // (a) reject requests outside the allowed clock-skew window
+    val skew = Duration.between(requestDate, Instant.now()).abs()
+    val freshnessOk = skew.compareTo(maxClockSkew) <= 0
+    if (!freshnessOk) {
+      logger.error(s"Request rejected: timestamp outside the allowed ${maxClockSkew.toMinutes}-minute window")
+    }
+
+    // (b) the credential-scope date must match the request date (UTC)
+    val scopeDate = signatureScope.split("/", 2).headOption.getOrElse("")
+    val scopeDateOk = scopeDate == scopeDateFormat.format(requestDate)
+    if (!scopeDateOk) {
+      logger.error("Request rejected: credential-scope date does not match the request date")
+    }
+
+    // (c) host must always be signed; x-amz-date must be signed when present
+    val hostSigned = signedHeaders.contains("host")
+    if (!hostSigned) {
+      logger.error("Request rejected: 'host' is not in SignedHeaders")
+    }
+    val xAmzDateSigned =
+      getHeader(req, "X-Amz-Date").isEmpty || signedHeaders.contains("x-amz-date")
+    if (!xAmzDateSigned) {
+      logger.error("Request rejected: 'x-amz-date' is present but not in SignedHeaders")
+    }
+
+    // (d) every declared signed header must actually be present on the request
+    val allSignedHeadersPresent = signedHeaders.forall(h => getSignedHeaderValue(req, h).isDefined)
+    if (!allSignedHeadersPresent) {
+      logger.error("Request rejected: a declared signed header is missing from the request")
+    }
+
+    freshnessOk && scopeDateOk && hostSigned && xAmzDateSigned && allSignedHeadersPresent
+  }
+
+  private def verifySignature(
+      req: HttpRequest,
+      requestDate: Instant,
+      signatureScope: String,
+      signatureHeaders: String,
+      signedHeaders: Set[String],
+      secret: String,
+      content: String,
+      signatureReceived: String
+  ): Boolean = {
     // convert Date header to canonical form required by AWS
-    val dateTime = iso8601Format.format(getDate(req).get).replace("UTC", "Z")
+    val dateTime = iso8601Format.format(requestDate).replace("UTC", "Z")
     // get canonical headers, but only those that were in the signed set
     val headers = canonicalHeaders(req, signedHeaders).toSeq
     // create a canonical representation of the request
@@ -133,24 +201,26 @@ class Aws4Authenticator {
     signature.equals(signatureReceived)
   }
 
+  // resolves the value of a signed header, handling AWS' special-cased headers
+  def getSignedHeaderValue(req: HttpRequest, name: String): Option[String] =
+    name.toLowerCase match {
+      case "content-type" => Some(req.entity.contentType.value)
+      case "content-length" => req.entity.contentLengthOption.map(_.toString)
+      case n => req.headers.find(_.name.toLowerCase == n).map(_.value)
+    }
+
   // XXX - need to canonicalize non-trimmed white space
   def canonicalHeaders(
       req: HttpRequest,
       signedHeaderNames: Set[String]
   ): TreeMap[String, Seq[String]] = {
-    def getHeaderValue(name: String): Option[String] = name match {
-      case "content-type" => Some(req.entity.contentType.value)
-      case "content-length" => req.entity.contentLengthOption.map(_.toString)
-      case _ => req.headers.find(_.name.toLowerCase == name).map(_.value)
-    }
-
     val filteredHeaders =
       signedHeaderNames.map(_.toLowerCase).foldLeft(Seq.empty[(String, Seq[String])]) {
         (acc, cur) =>
-          getHeaderValue(cur) match {
+          getSignedHeaderValue(req, cur) match {
             case Some(found) => acc :+ (cur -> Seq(found))
             case None =>
-              // This is a problem, so log loudly, and just continue
+              // missing signed headers are rejected upstream in authenticateReq
               logger.error(s"Unable to find signed header value: '$cur'")
               acc
           }

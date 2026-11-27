@@ -23,11 +23,16 @@ import java.time.temporal.ChronoUnit
 import vinyldns.api.Interfaces.ensuring
 import vinyldns.core.domain.membership.User
 import vinyldns.core.domain.record.RecordType
-import vinyldns.core.domain.zone.{ACLRule, Zone, ZoneACL}
+import vinyldns.core.domain.zone.{ACLRule, Zone, ZoneACL, ZoneConnection}
+import vinyldns.core.domain.zone.generate.DnsProviderConfig
 
 import scala.util.{Failure, Success, Try}
 
 class ZoneValidations(syncDelayMillis: Int) {
+
+  private val customConnectionError = InvalidRequest(
+    "Custom zone connections are not supported; use a configured backendId"
+  )
 
   def outsideSyncDelay(zone: Zone): Either[Throwable, Unit] =
     zone.latestSync match {
@@ -35,6 +40,23 @@ class ZoneValidations(syncDelayMillis: Int) {
         RecentSyncError(s"Zone ${zone.name} was recently synced. Cannot complete sync").asLeft
       }
       case _ => Right(())
+    }
+
+  def noCustomZoneConnections(
+      connection: Option[ZoneConnection],
+      transferConnection: Option[ZoneConnection]
+  ): Either[Throwable, Unit] =
+    ensuring(customConnectionError)(connection.isEmpty && transferConnection.isEmpty)
+
+  // Allows removing a pre-existing connection, but rejects introducing or modifying one.
+  def noCustomZoneConnectionUpdates(newZone: Zone, existingZone: Zone): Either[Throwable, Unit] =
+    if (
+      newZone.connection != existingZone.connection ||
+      newZone.transferConnection != existingZone.transferConnection
+    ) {
+      noCustomZoneConnections(newZone.connection, newZone.transferConnection)
+    } else {
+      Right(())
     }
 
   // TODO - zone ACL validations should happen up front as input validation longer term
@@ -52,6 +74,11 @@ class ZoneValidations(syncDelayMillis: Int) {
   def isUserOrGroupRule(rule: ACLRule): Either[Throwable, Unit] =
     ensuring(InvalidRequest("Invalid ACL rule: ACL rules must have a group or user id")) {
       (rule.groupId ++ rule.userId).size == 1
+    }
+
+  def isValidGenerateZoneConn(responseCode : Int, responseMsg : String): Either[Throwable, Unit] =
+    ensuring(InvalidRequest(responseMsg)) {
+      responseCode >= 200 && responseCode < 300
     }
 
   def aclRuleMaskIsValid(rule: ACLRule): Either[Throwable, Unit] =
@@ -89,4 +116,32 @@ class ZoneValidations(syncDelayMillis: Int) {
         s"Not authorized to update zone shared status from $currentShared to $updateShared."
       )
     )(currentShared == updateShared || user.isSuper || user.isSupport)
+
+  def validateProvider(
+                        provider: String,
+                        availableProviders: Map[String, DnsProviderConfig]
+                      ): Either[Throwable, DnsProviderConfig] =
+    availableProviders.get(provider.toLowerCase) match {
+      case Some(config) => Right(config)
+      case None => Left(InvalidRequest(s"Unsupported DNS provider: $provider"))
+    }
+
+  // The provider of an existing generated zone cannot be switched on update: the saved record
+  // still points at the original provider, so allowing a different provider here would leave the
+  // record inconsistent with the endpoint the update was actually sent to.
+  def validateProviderUnchanged(
+                                 requestedProvider: String,
+                                 existingProvider: String
+                               ): Either[Throwable, Unit] =
+    ensuring(
+      InvalidRequest(
+        s"Cannot change the DNS provider of an existing generated zone " +
+          s"(current: '$existingProvider', requested: '$requestedProvider')."
+      )
+    )(requestedProvider.equalsIgnoreCase(existingProvider))
+
+  def validateZoneName(zoneName: String): Either[Throwable, Unit] =
+    ensuring(InvalidRequest(s"Invalid zone name: $zoneName")) {
+      zoneName.matches("""^[a-zA-Z0-9.-]+\.$""")
+    }
 }

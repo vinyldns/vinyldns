@@ -103,17 +103,19 @@ object UserInfo {
 }
 
 case class UserResponseInfo(
-   id: String,
-   userName: Option[String] = None,
-   groupId: Set[String] = Set.empty
- )
+      id: String,
+      userName: Option[String] = None,
+      groupId: Set[String] = Set.empty,
+      groupMap: Map[String, String] = Map.empty
+)
 
 object UserResponseInfo {
-  def apply(user: User , group: Group): UserResponseInfo =
+  def apply(user: User, group: Group): UserResponseInfo =
     UserResponseInfo(
       id = user.id,
       userName = Some(user.userName),
-      groupId = Set(group.id)
+      groupId = Set(group.id),
+      groupMap = Map(group.id -> group.name)
     )
 }
 
@@ -191,3 +193,5 @@ final case class UnableToRemoveLastMemberFromGroupError(msg: String) extends Thr
 final case class UnableToRemoveLastAdminUserFromGroupError(msg: String) extends Throwable(msg)
 
 final case class InvalidGroupRequestError(msg: String) extends Throwable(msg)
+
+final case class SearchValidationError(msg: String) extends Throwable(msg)

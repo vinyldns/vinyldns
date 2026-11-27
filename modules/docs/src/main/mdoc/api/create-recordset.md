@@ -108,3 +108,9 @@ singleBatchChangeIds |  array of SingleBatchChange Id objects  | If the recordse
   "singleBatchChangeIds": []
 }
 ```
+
+#### EXAMPLE ERROR RESPONSE
+
+```text
+RecordSet with name foo and type A already exists in zone vinyl.
+```

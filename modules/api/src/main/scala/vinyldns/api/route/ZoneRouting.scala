@@ -26,6 +26,7 @@ import vinyldns.api.domain.membership.EmailValidationError
 import vinyldns.api.domain.zone._
 import vinyldns.core.crypto.CryptoAlgebra
 import vinyldns.core.domain.zone._
+import vinyldns.core.domain.zone.generate._
 
 import java.security.GeneralSecurityException
 import scala.concurrent.duration._
@@ -40,6 +41,7 @@ object ZoneRoute {
 
 class ZoneRoute(
     zoneService: ZoneServiceAlgebra,
+    generateZoneService: GenerateZoneServiceAlgebra,
     limitsConfig: LimitsConfig,
     val vinylDNSAuthenticator: VinylDNSAuthenticator,
     crypto: CryptoAlgebra
@@ -58,6 +60,10 @@ class ZoneRoute(
 
   def handleErrors(errors: Throwable): PartialFunction[Throwable, Route] = {
     case ZoneAlreadyExistsError(msg) => complete(StatusCodes.Conflict, msg)
+    // Safety net for the generated-zone unique name index: a conflict reaching the route from
+    // any path (not just create) is a 409, never an unhandled 500.
+    case DuplicateGenerateZoneNameError(zoneName) =>
+      complete(StatusCodes.Conflict, s"Zone with name $zoneName already exists.")
     case ConnectionFailed(_, msg) => complete(StatusCodes.BadRequest, msg)
     case ZoneValidationFailed(zone, errorList, _) =>
       complete(StatusCodes.BadRequest, ZoneRejected(zone, errorList))
@@ -116,8 +122,7 @@ class ZoneRoute(
             }
         }
       }
-  } ~
-    path("zones" / "deleted" / "changes") {
+  } ~ path("zones" / "deleted" / "changes") {
       (get & monitor("Endpoint.listDeletedZones")) {
         parameters(
           "nameFilter".?,
@@ -146,6 +151,90 @@ class ZoneRoute(
               }
             }
           }
+        }
+      }
+    } ~
+    path("zones" / "generate") {
+      (post & monitor("Endpoint.generateZone")) {
+        authenticateAndExecuteWithEntity[GenerateZone, ZoneGenerationInput](
+          (authPrincipal, zoneGenerationInput) =>
+            generateZoneService.handleGenerateZoneRequest(zoneGenerationInput, authPrincipal)
+        ) { response =>
+          complete(StatusCodes.Accepted -> response)
+        }
+      } ~
+      (put & monitor("Endpoint.updateGeneratedZone")) {
+        authenticateAndExecuteWithEntity[GenerateZone, ZoneGenerationInput](
+          (authPrincipal, generateZone) =>
+            generateZoneService.handleUpdateGeneratedZoneRequest(generateZone, authPrincipal)
+        ) { response =>
+          complete(StatusCodes.Accepted, response)
+        }
+      }
+    } ~
+    path("zones" / "generate" / "info") {
+      (get & monitor("Endpoint.listGeneratedZones")) {
+        parameters(
+          "nameFilter".?,
+          "startFrom".as[String].?,
+          "maxItems".as[Int].?(DEFAULT_MAX_ITEMS),
+          "searchByAdminGroup".as[Boolean].?(false)
+        ) {
+          (
+            nameFilter: Option[String],
+            startFrom: Option[String],
+            maxItems: Int,
+            searchByAdminGroup: Boolean
+          ) => {
+            handleRejections(invalidQueryHandler) {
+              validate(
+                0 < maxItems && maxItems <= MAX_ITEMS_LIMIT,
+                s"maxItems was $maxItems, maxItems must be between 0 and $MAX_ITEMS_LIMIT"
+              ) {
+                authenticateAndExecute(
+                  generateZoneService
+                    .listGeneratedZones(_, nameFilter, startFrom, maxItems, searchByAdminGroup)
+                ) { result =>
+                  complete(StatusCodes.OK, result)
+                }
+              }
+            }
+          }
+        }
+      }
+    } ~
+    path("zones" / "generate" / "name" / Segment) { zoneName =>
+      (get & monitor("Endpoint.getGenerateZoneByName")) {
+        authenticateAndExecute(generateZoneService.getGenerateZoneByName(zoneName, _)) { zone =>
+          complete(StatusCodes.OK, zone)
+        }
+      }
+    } ~
+    path("zones" / "generate" / "id" / Segment) { id =>
+      (get & monitor("Endpoint.getGenerateZone")) {
+        authenticateAndExecute(generateZoneService.getGeneratedZoneById(id, _)) { zone =>
+          complete(StatusCodes.OK, zone)
+        }
+      }
+    } ~
+    path("zones" / "generate" / "allowedDNSProviders") {
+      (get & monitor("Endpoint.getBackendIds")) {
+        authenticateAndExecute(_ => generateZoneService.allowedDNSProviders()) { allowedProviders =>
+          complete(StatusCodes.OK, allowedProviders)
+        }
+      }
+    } ~
+    path("zones" / "generate" / "nameservers") {
+      (get & monitor("Endpoint.getBackendIds")) {
+        authenticateAndExecute(_ => generateZoneService.dnsNameServers()) { NS =>
+          complete(StatusCodes.OK, NS)
+        }
+      }
+    } ~
+    path("zones" / "generate" / Segment) { id =>
+      (delete & monitor("Endpoint.deleteGeneratedZone")) {
+        authenticateAndExecute(generateZoneService.handleDeleteGeneratedZoneRequest(id, _)) { response =>
+          complete(StatusCodes.Accepted, response)
         }
       }
     } ~

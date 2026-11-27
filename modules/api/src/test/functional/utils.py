@@ -76,7 +76,11 @@ def dns_server_port(zone):
     :param zone: a populated zone model
     :return: a tuple (host, port), port is an int
     """
-    name_server = zone["connection"]["primaryServer"]
+    if "connection" in zone:
+        name_server = zone["connection"]["primaryServer"]
+    else:
+        # Zones created with backendId do not expose connection details in API responses.
+        name_server = VinylDNSTestContext.name_server_ip
     name_server_port = 53
     if VinylDNSTestContext.resolver_ip is not None:
         name_server = VinylDNSTestContext.resolver_ip
@@ -95,8 +99,9 @@ def dns_do_command(zone, record_name, record_type, command, ttl=0, rdata=""):
     """
     # Get the algorithm name from the DNS library (vinylDNS uses "-" in the name and dnspython uses "_")
     algo_name = getattr(dns.tsig, VinylDNSTestContext.dns_key_algo.replace("-", "_"))
+    key_name = zone["connection"]["keyName"] if "connection" in zone else VinylDNSTestContext.dns_key_name
     keyring = dns.tsigkeyring.from_text({
-        zone["connection"]["keyName"]: (algo_name, VinylDNSTestContext.dns_key)
+        key_name: (algo_name, VinylDNSTestContext.dns_key)
     })
 
     (name_server, name_server_port) = dns_server_port(zone)
@@ -393,6 +398,18 @@ def clear_zones(client):
         if len(zone_ids_to_delete) > 0:
             client.abandon_zones(zone_ids_to_delete)
 
+def clear_generated_zones(client):
+    # Get the groups for the ok user
+    groups = client.list_all_my_groups()
+    group_ids = [x["id"] for x in groups]
+
+    zones = client.list_generated_zones()["zones"]
+    if len(zones) > 0:
+        # we only want to delete zones that the ok user "owns"
+        zones_to_delete = [x for x in zones if (x["groupId"] in group_ids or x["account"] in group_ids) and x["accessLevel"] == "Delete"]
+        zone_ids_to_delete = [x["id"] for x in zones_to_delete]
+        if len(zone_ids_to_delete) > 0:
+            client.abandon_generated_zones(zone_ids_to_delete)
 
 def clear_groups(client, exclude=[]):
     groups = client.list_all_my_groups()
