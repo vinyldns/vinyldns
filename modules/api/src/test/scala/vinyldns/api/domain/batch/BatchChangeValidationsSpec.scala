@@ -261,6 +261,36 @@ class BatchChangeValidationsSpec
   }
 
   property(
+    "nsValidations: should reject apex names even when the name server is approved"
+  ) {
+    List("@", validZone.name, validZone.name.stripSuffix(".")).foreach { name =>
+      nsValidations(NSData(Fqdn("some.test.ns.")), name, validZone, VinylDNSTestHelpers.approvedNameServers) shouldBe
+        InvalidBatchRequest(s"Record with name $name is an NS record at apex and cannot be added").invalidNel
+    }
+  }
+
+  property("nsValidations: should allow a non-apex record with an approved name server") {
+    nsValidations(
+      NSData(Fqdn("some.test.ns.")),
+      "delegated",
+      validZone,
+      VinylDNSTestHelpers.approvedNameServers
+    ) shouldBe ().validNel
+  }
+
+  property("nsValidations: should accumulate apex and unapproved name server errors") {
+    val name = validZone.name
+    val nsData = NSData(Fqdn("not.valid."))
+    val result = nsValidations(nsData, name, validZone, VinylDNSTestHelpers.approvedNameServers)
+
+    result should haveInvalid[DomainValidationError](
+      InvalidBatchRequest(s"Record with name $name is an NS record at apex and cannot be added")
+    )
+    result should haveInvalid[DomainValidationError](NotApprovedNSError(nsData.nsdname.fqdn))
+    result.swap.toOption.get.toList should have size 2
+  }
+
+  property(
     "isOriginRecord: should return true if the record is origin"
   ) {
     isOriginRecord("@", "ok.") shouldBe true
