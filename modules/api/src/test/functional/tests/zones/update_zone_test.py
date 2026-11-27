@@ -941,7 +941,7 @@ def test_user_can_update_zone_to_another_admin_group(shared_zone_test_context):
         client.wait_until_zone_active(result["zone"]["id"])
 
         new_joint_group = {
-            "name": "new-ok-group",
+            "name": f"new-ok-group{shared_zone_test_context.partition_id}",
             "email": "test@test.com",
             "description": "this is a description",
             "members": [{"id": "ok"}, {"id": "dummy"}],

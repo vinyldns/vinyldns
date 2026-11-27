@@ -59,12 +59,12 @@ angular.module('controller.records', [])
     var loadRecordsPromise;
     $scope.isNotRequestedGroupMember = false;
 
-   	$scope.ownershipTransferApproverStatus = [{value: 'ManuallyApproved' , label: 'Approve'},
-                                           {value: 'ManuallyRejected',  label: 'Reject'}];
+	$scope.ownershipTransferApproverStatus = [{value: 'ManuallyApproved' , label: 'Approve'},
+                                            {value: 'ManuallyRejected',  label: 'Reject'}];
 
-   	$scope.adminOwnershipTransferApproverStatus = [{value: 'ManuallyApproved' , label: 'Approve'},
-                                           {value: 'ManuallyRejected',  label: 'Reject'},
-                                           {value: 'Cancelled',  label: 'Cancel'}];
+	$scope.adminOwnershipTransferApproverStatus = [{value: 'ManuallyApproved' , label: 'Approve'},
+                                                 {value: 'ManuallyRejected',  label: 'Reject'},
+                                                 {value: 'Cancelled',  label: 'Cancel'}];
 
 	$scope.ownershipTransferRequestorStatus = [{value: 'Requested',  label: 'Request'},
 	                                        {value: 'Cancelled',  label: 'Cancel'}];
@@ -147,7 +147,7 @@ angular.module('controller.records', [])
         }
         function success(response) {
            var ownershipTransferStatus;
-           const status = record.recordSetGroupChange && record.recordSetGroupChange.ownershipTransferStatus 
+           const status = record.recordSetGroupChange && record.recordSetGroupChange.ownershipTransferStatus
                           ? record.recordSetGroupChange.ownershipTransferStatus : "None";
            isNotRequestedGroupMemberResponse(record, profileId).then(result => {
             if($scope.profile.isSuper || $scope.profile.isSupport || $scope.profile.isZoneAdmin){
@@ -185,7 +185,6 @@ angular.module('controller.records', [])
             });
     };
 
-    // Treats missing, null, and the string "null" as an absent group id
     function isValidGroupId(groupId) {
         return groupId != undefined && groupId != null && groupId != "null";
     }
