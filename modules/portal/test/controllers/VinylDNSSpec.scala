@@ -25,7 +25,7 @@ import org.specs2.mock.Mockito
 import org.specs2.mutable._
 import org.specs2.runner._
 import org.specs2.specification.BeforeEach
-import play.api.libs.json.{JsValue, Json, OWrites}
+import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WSClient
 import play.api.mvc._
 import play.api.test.Helpers._
@@ -1889,16 +1889,17 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
     }
 
     ".lookupUserAccount" should {
-      implicit val userInfoWrites: OWrites[VinylDNS.UserInfo] = Json.writes[VinylDNS.UserInfo]
-
-      "return a list of users from a list of usernames" in new WithApplication(app) {
+      "return only id and userName when a regular user looks up a privileged user" in new WithApplication(app) {
         val lookupValue = "someNTID"
-        authenticator.lookup(lookupValue).returns(Right(frodoDetails))
-        userAccessor.get(frodoDetails.username).returns(IO.pure(Some(frodoUser)))
+        authenticator
+          .lookup(lookupValue)
+          .returns(Right(frodoDetails.copy(username = superFrodoUser.userName)))
+        userAccessor.get("frodo").returns(IO.pure(Some(frodoUser)))
+        userAccessor.get(superFrodoUser.userName).returns(IO.pure(Some(superFrodoUser)))
         val vinyldnsPortal =
           TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto, mockOidcAuth)
 
-        val expected = Json.toJson(VinylDNS.UserInfo.fromUser(frodoUser))
+        val expected = Json.obj("id" -> superFrodoUser.id, "userName" -> superFrodoUser.userName)
 
         val result = vinyldnsPortal
           .getUserDataByUsername(lookupValue)
@@ -1909,6 +1910,47 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         status(result) must beEqualTo(200)
         hasCacheHeaders(result)
         contentAsJson(result) must beEqualTo(expected)
+      }
+      "return only id and userName when creating an account from LDAP details" in new WithApplication(app) {
+        val newUser = frodoUser.copy(userName = "newuser", id = "new-user-id")
+        val details = frodoDetails.copy(username = newUser.userName)
+        authenticator.lookup(newUser.userName).returns(Right(details))
+        userAccessor.get(frodoUser.userName).returns(IO.pure(Some(frodoUser)))
+        userAccessor.get(newUser.userName).returns(IO.pure(None))
+        userAccessor.create(any[User]).returns(IO.pure(newUser))
+        val vinyldnsPortal =
+          TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto, mockOidcAuth)
+
+        val result = vinyldnsPortal
+          .getUserDataByUsername(newUser.userName)
+          .apply(
+            FakeRequest(GET, s"/api/users/lookupuser/${newUser.userName}")
+              .withSession("username" -> frodoUser.userName)
+          )
+
+        status(result) mustEqual 200
+        hasCacheHeaders(result)
+        contentAsJson(result) mustEqual Json.obj("id" -> newUser.id, "userName" -> newUser.userName)
+        there was one(userAccessor).create(any[User])
+      }
+      "return a generic error without LDAP exception details" in new WithApplication(app) {
+        authenticator
+          .lookup("someNTID")
+          .returns(Left(LdapServiceException("connection failed: ldap.internal.example:636")))
+        userAccessor.get(frodoUser.userName).returns(IO.pure(Some(frodoUser)))
+        val vinyldnsPortal =
+          TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto, mockOidcAuth)
+
+        val result = vinyldnsPortal
+          .getUserDataByUsername("someNTID")
+          .apply(
+            FakeRequest(GET, "/api/users/lookupuser/someNTID")
+              .withSession("username" -> frodoUser.userName)
+          )
+
+        status(result) mustEqual 500
+        contentAsString(result) mustEqual
+          "Unable to look up user. Please contact your VinylDNS administrators."
       }
       "return unauthorized (401) if user is not logged in" in new WithApplication(app) {
         val lookupValue = "someNTID"
@@ -1981,20 +2023,21 @@ class VinylDNSSpec extends Specification with Mockito with TestApplicationData w
         status(result) must beEqualTo(404)
         hasCacheHeaders(result)
       }
-      "fall back to database lookup when LDAP is not configured" in new WithApplication(app) {
+      "return only id and userName from database lookup when LDAP is not configured" in new WithApplication(app) {
         authenticator
-          .lookup(frodoUser.userName)
+          .lookup(superFrodoUser.userName)
           .returns(Left(LdapServiceException("LDAP not configured")))
         userAccessor.get(frodoUser.userName).returns(IO.pure(Some(frodoUser)))
+        userAccessor.get(superFrodoUser.userName).returns(IO.pure(Some(superFrodoUser)))
         val vinyldnsPortal =
           TestVinylDNS(config, authenticator, userAccessor, ws, components, crypto, mockOidcAuth)
 
-        val expected = Json.toJson(VinylDNS.UserInfo.fromUser(frodoUser))
+        val expected = Json.obj("id" -> superFrodoUser.id, "userName" -> superFrodoUser.userName)
 
         val result = vinyldnsPortal
-          .getUserDataByUsername(frodoUser.userName)
+          .getUserDataByUsername(superFrodoUser.userName)
           .apply(
-            FakeRequest(GET, s"/api/users/lookupuser/${frodoUser.userName}")
+            FakeRequest(GET, s"/api/users/lookupuser/${superFrodoUser.userName}")
               .withSession("username" -> frodoUser.userName)
           )
         status(result) must beEqualTo(200)

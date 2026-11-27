@@ -2,6 +2,15 @@
 
 Supplies a UI for and offers authentication into VinylDNS.
 
+## User Lookup
+
+`GET /api/users/lookupuser/:uname` resolves a username for group membership and zone
+ACL configuration. Access requires an authenticated user with an unlocked account.
+Successful responses contain only the user's `id` and `userName`.
+
+LDAP service failures return a generic error response. Diagnostic details are
+recorded in the server logs and are not exposed to clients.
+
 # Running Unit Tests
 
 First, startup sbt: `build/sbt.sh`.
