@@ -53,11 +53,11 @@ class JavaCryptoSpec extends AnyWordSpec with Matchers {
     javax.xml.bind.DatatypeConverter.parseHexBinary(cryptoConf.getString("secret"))
 
   // Produces a value exactly the way earlier releases (AES-CBC, "ENC:" prefix) did
-  private def legacyEncrypt(value: String): String = {
+  private def legacyEncrypt(value: String, keyBytes: Array[Byte] = secretBytes): String = {
     val iv = new Array[Byte](16)
     new SecureRandom().nextBytes(iv)
     val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-    cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(secretBytes, "AES"), new IvParameterSpec(iv))
+    cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(keyBytes, "AES"), new IvParameterSpec(iv))
     val ct = cipher.doFinal(value.getBytes(StandardCharsets.UTF_8))
     "ENC:" + Base64.getEncoder.encodeToString(iv ++ ct)
   }
@@ -169,6 +169,13 @@ class JavaCryptoSpec extends AnyWordSpec with Matchers {
 
     "pass well formed legacy values through encrypt unchanged" in {
       val legacy = legacyEncrypt("legacy")
+      javaCrypto.encrypt(legacy) shouldBe legacy
+    }
+
+    "pass structurally valid legacy values encrypted with a different secret through encrypt unchanged" in {
+      val otherSecret = new Array[Byte](32)
+      otherSecret(31) = 1
+      val legacy = legacyEncrypt("legacy", otherSecret)
       javaCrypto.encrypt(legacy) shouldBe legacy
     }
 
