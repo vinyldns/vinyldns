@@ -25,7 +25,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import vinyldns.api.VinylDNSTestHelpers
 import vinyldns.api.domain.zone.{ZoneACLInfo, ZoneChangeDeletedInfo, ZoneInfo, ZoneSummaryInfo}
 import vinyldns.core.domain.record._
-import vinyldns.core.domain.zone.{AccessLevel, CreateZoneInput, UpdateZoneInput, Zone, ZoneChange, ZoneChangeType, ZoneConnection}
+import vinyldns.core.domain.zone.{AccessLevel, ConnectZoneInput, UpdateZoneInput, Zone, ZoneChange, ZoneChangeType, ZoneConnection}
 import vinyldns.core.TestRecordSetData._
 import vinyldns.core.domain.{Encrypted, Fqdn}
 import vinyldns.core.Messages._
@@ -99,8 +99,8 @@ class VinylDNSJsonProtocolSpec
       val zone = Zone(
         "private.zone.",
         "private@test.com",
-        connection = completeCreateZoneInput.connection,
-        transferConnection = completeCreateZoneInput.transferConnection
+        connection = completeConnectZoneInput.connection,
+        transferConnection = completeConnectZoneInput.transferConnection
       )
 
       for (access <- List(AccessLevel.Read, AccessLevel.NoAccess)) {
@@ -124,8 +124,8 @@ class VinylDNSJsonProtocolSpec
       val zone = Zone(
         "owned.zone.",
         "owner@test.com",
-        connection = completeCreateZoneInput.connection,
-        transferConnection = completeCreateZoneInput.transferConnection
+        connection = completeConnectZoneInput.connection,
+        transferConnection = completeConnectZoneInput.transferConnection
       )
       val json = Extraction.decompose(ZoneInfo(zone, ZoneACLInfo(Set.empty), "group", AccessLevel.Delete))
 
@@ -134,7 +134,7 @@ class VinylDNSJsonProtocolSpec
     }
   }
 
-  "CreateZoneInputSerializer" should {
+  "ConnectZoneInputSerializer" should {
     "parse a create zone input with no connections" in {
       val ConnectZoneInput: JValue =
         ("name" -> "testZone.") ~~
