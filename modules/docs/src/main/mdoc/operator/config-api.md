@@ -273,24 +273,31 @@ vinyldns {
 }
 ```
 
+
+### JavaCrypto ciphertext format
+
+`JavaCrypto` encrypts new values with AES-256-GCM (authenticated encryption) and stores them as
+`ENC:v2:<base64(IV || ciphertext || tag)>`. Values written by earlier releases (`ENC:<base64(IV || AES-CBC ciphertext)>`) are still decrypted, so no data migration is required; they are replaced by the new format whenever the value is re-encrypted (for example, when user credentials are regenerated).
+
+Any modification of an `ENC:v2:` value is detected, and all decryption failures surface as the same generic error.
+Values supplied with an `ENC:` prefix (for example, a zone connection key in an API request) are only accepted if they are valid ciphertext; otherwise the API responds with `400 Bad Request`. `ENC:v2:` values must authenticate against the configured secret, while legacy `ENC:` values are checked for structural validity but are NOT authenticated.
+
+Because older releases cannot read `ENC:v2:` values, upgrade the API and the portal together and do not roll back to an older release once new values have been written.
+
 ## Zone Connections
 
 VinylDNS has three ways of indicating zone connections:
 
-1. Global default connection applies to all zones unless overridden by one of the following connections. This
-   configuration is required.
-2. Backends allows you to specify zone connection information for an individual zone by choosing a pre-configured zone
-   connection. This configuration is optional.
-3. Zone level override allows you to specify zone update and transfer connection information _for each zone_. More
-   information is in the [Zone Model](../api/zone-model.html).
+1. Global default connection applies to all zones unless overridden by one of the following connections. This configuration is required.
+2. Backends allows you to specify zone connection information for an individual zone by choosing a pre-configured zone connection. This configuration is optional.
+3. Zone level override allows you to specify zone update and transfer connection information _for each zone_. More information is in the [Zone Model](../api/zone-model.html).
 
 VinylDNS has **2** connections for each zone:
 
 1. The DDNS connection - used for making DDNS updates to the zone
 1. The Transfer connection - used for making AXFR requests for zone syncing with the DNS backend
 
-VinylDNS also ties in testing network connectivity to the default zone connection's primary server into its API health
-checks. A value for the health check connection timeout in milliseconds can be specified using `health-check-timeout`; a
+VinylDNS also ties in testing network connectivity to the default zone connection's primary server into its API health checks. A value for the health check connection timeout in milliseconds can be specified using `health-check-timeout`; a
 default value of 10000 will be used if not provided.
 
 ### Global Zone Connections Configuration:
