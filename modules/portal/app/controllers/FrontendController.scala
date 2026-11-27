@@ -17,10 +17,13 @@
 package controllers
 
 import actions.SecuritySupport
+import com.typesafe.config.ConfigRenderOptions
+
 import javax.inject.{Inject, Singleton}
 import models.{CustomLinks, DnsChangeNotices, Meta}
 import org.slf4j.LoggerFactory
 import play.api.Configuration
+import play.api.libs.json.Json
 import play.api.mvc._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -67,7 +70,7 @@ class FrontendController @Inject() (
   }
 
   def viewAllZones(): Action[AnyContent] = userAction.async { implicit request =>
-    Future(Ok(views.html.zones.zones(request.user.userName)))
+    Future(Ok(views.html.zones.zones(request.user.userName, request.user.isSuper)))
   }
 
   def viewZone(zoneId: String): Action[AnyContent] = userAction.async { implicit request =>
@@ -104,5 +107,51 @@ class FrontendController @Inject() (
 
   def viewNewBatchChange(): Action[AnyContent] = userAction.async { implicit request =>
     Future(Ok(views.html.dnsChanges.dnsChangeNew(request.user.userName)))
+  }
+
+  def getAllowedDNSProviders: Action[AnyContent] = userAction.async {
+    Future {
+      val providersConfig = configuration.getOptional[Configuration]("api.dns-provider-portal-fields.providers")
+      val providerKeys = providersConfig match {
+        case Some(conf) =>
+          conf.subKeys.toSeq
+        case None =>
+          Seq.empty
+      }
+      Ok(Json.obj("allowedDNSProviders" -> providerKeys))
+    }
+  }
+
+  def getCreateZoneTemplate(provider: String): Action[AnyContent] = userAction.async {
+    Future {
+      val providersConfigOpt = configuration.getOptional[Configuration]("api.dns-provider-portal-fields.providers")
+      if (!providersConfigOpt.exists(_.subKeys.contains(provider))) {
+        NotFound(Json.obj("error" -> s"Missing request-templates or required-fields for provider '$provider'"))
+      } else {
+        val templatesPath = s"api.dns-provider-portal-fields.providers.$provider.request-templates"
+        val requiredPath = s"api.dns-provider-portal-fields.providers.$provider.required-fields"
+
+        val templateConfigOpt = configuration.getOptional[Configuration](templatesPath)
+        val requiredConfigOpt = configuration.getOptional[Configuration](requiredPath)
+        (templateConfigOpt, requiredConfigOpt) match {
+          case (Some(templateConfig), Some(requiredConfig)) =>
+            val renderedTemplates = Json.parse(
+              templateConfig.underlying.root().render(ConfigRenderOptions.concise())
+            )
+            val renderedRequired = Json.parse(
+              requiredConfig.underlying.root().render(ConfigRenderOptions.concise())
+            )
+
+            Ok(Json.obj(
+              "provider" -> provider,
+              "request-templates" -> renderedTemplates,
+              "required-fields"   -> renderedRequired
+            ))
+
+          case _ =>
+            NotFound(Json.obj("error" -> s"Missing request-templates or required-fields for provider '$provider'"))
+        }
+      }
+    }
   }
 }
