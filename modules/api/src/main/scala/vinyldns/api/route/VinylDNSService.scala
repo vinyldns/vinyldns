@@ -27,7 +27,7 @@ import vinyldns.api.domain.auth.AuthPrincipalProvider
 import vinyldns.api.domain.batch.BatchChangeServiceAlgebra
 import vinyldns.api.domain.membership.MembershipServiceAlgebra
 import vinyldns.api.domain.record.RecordSetServiceAlgebra
-import vinyldns.api.domain.zone.ZoneServiceAlgebra
+import vinyldns.api.domain.zone.{GenerateZoneServiceAlgebra, ZoneServiceAlgebra}
 import vinyldns.core.health.HealthService
 
 object VinylDNSService {
@@ -60,6 +60,7 @@ class VinylDNSService(
     val limits: LimitsConfig,
     val processingDisabled: SignallingRef[IO, Boolean],
     val zoneService: ZoneServiceAlgebra,
+    val generateZoneService: GenerateZoneServiceAlgebra,
     val healthService: HealthService,
     val recordSetService: RecordSetServiceAlgebra,
     val batchChangeService: BatchChangeServiceAlgebra,
@@ -84,7 +85,7 @@ class VinylDNSService(
     )
 
   val zoneRoute: Route =
-    new ZoneRoute(zoneService, limits, vinylDNSAuthenticator, vinyldnsConfig.crypto).getRoutes
+    new ZoneRoute(zoneService, generateZoneService, limits, vinylDNSAuthenticator, vinyldnsConfig.crypto).getRoutes
   val recordSetRoute: Route =
     new RecordSetRoute(recordSetService, limits, vinylDNSAuthenticator).getRoutes
   val membershipRoute: Route =
