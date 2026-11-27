@@ -81,9 +81,9 @@ class ZoneRoute(
 
   val zoneRoute: Route = path("zones") {
     (post & monitor("Endpoint.createZone")) {
-      authenticateAndExecuteWithEntity[ZoneCommandResult, CreateZoneInput](
-        (authPrincipal, createZoneInput) =>
-          encrypt(createZoneInput).toResult.flatMap(zoneService.connectToZone(_, authPrincipal))
+      authenticateAndExecuteWithEntity[ZoneCommandResult, ConnectZoneInput](
+        (authPrincipal, connectZoneInput) =>
+          encrypt(connectZoneInput).toResult.flatMap(zoneService.connectToZone(_, authPrincipal))
       ) { chg =>
         complete(StatusCodes.Accepted, chg)
       }
@@ -339,14 +339,14 @@ class ZoneRoute(
 
   /**
     * Important!  Will encrypt the key on the zone if a connection is present
-    * @param createZoneInput/updateZoneInput The zone input to be encrypted
+    * @param connectZoneInput/updateZoneInput The zone input to be encrypted
     * @return A new zone with the connection encrypted, or the same zone if not connection;
     *         an InvalidRequest if a supplied key carries an encrypted prefix but is not a valid encrypted value
     */
-  private def encrypt(createZoneInput: CreateZoneInput): Either[Throwable, CreateZoneInput] =
-    encryptConnections(createZoneInput.connection, createZoneInput.transferConnection).map {
+  private def encrypt(connectZoneInput: ConnectZoneInput): Either[Throwable, ConnectZoneInput] =
+    encryptConnections(connectZoneInput.connection, connectZoneInput.transferConnection).map {
       case (conn, transferConn) =>
-        createZoneInput.copy(connection = conn, transferConnection = transferConn)
+        connectZoneInput.copy(connection = conn, transferConnection = transferConn)
     }
 
   private def encrypt(updateZoneInput: UpdateZoneInput): Either[Throwable, UpdateZoneInput] =
