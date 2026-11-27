@@ -542,17 +542,17 @@ def test_create_zone_with_injected_ciphertext_key_is_rejected(shared_zone_test_c
     zone = {
         "name": zone_name,
         "email": "test@test.com",
-        "adminGroupId": shared_zone_test_context.ok_group["id"],
-        "connection": {
-            "name": zone_name,
-            "keyName": VinylDNSTestContext.dns_key_name,
-            "key": VinylDNSTestContext.dns_key,
-            "primaryServer": VinylDNSTestContext.name_server_ip
-        }
+        "adminGroupId": shared_zone_test_context.ok_group["id"]
+    }
+    connection = {
+        "name": zone_name,
+        "keyName": VinylDNSTestContext.dns_key_name,
+        "key": VinylDNSTestContext.dns_key,
+        "primaryServer": VinylDNSTestContext.name_server_ip
     }
     # A custom transfer connection is only used when an update connection is also supplied.
-    invalid_zone = copy.deepcopy(zone)
-    invalid_zone[connection_field] = dict(zone["connection"], key="ENC:////////////////////////")
+    invalid_zone = dict(zone, connection=connection)
+    invalid_zone[connection_field] = dict(connection, key="ENC:////////////////////////")
 
     client.create_zone(invalid_zone, status=400)
     client.get_zone_by_name(zone_name, status=404)

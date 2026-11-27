@@ -1108,13 +1108,7 @@ def test_update_zone_with_injected_ciphertext_key_is_rejected(shared_zone_test_c
         zone = {
             "name": zone_name,
             "email": "test@test.com",
-            "adminGroupId": shared_zone_test_context.ok_group["id"],
-            "connection": {
-                "name": zone_name,
-                "keyName": VinylDNSTestContext.dns_key_name,
-                "key": VinylDNSTestContext.dns_key,
-                "primaryServer": VinylDNSTestContext.name_server_ip
-            }
+            "adminGroupId": shared_zone_test_context.ok_group["id"]
         }
         result = client.create_zone(zone, status=202)
         result_zone = result["zone"]
