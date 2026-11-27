@@ -280,38 +280,35 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
-          // Bound parameters for the dynamic WHERE clause, in the order their
-          // placeholders appear in the query (after the accessor join params).
-          val filterParams = scala.collection.mutable.ListBuffer[Any]()
-
-          if (adminGroupIds.nonEmpty) {
-            val ids = adminGroupIds.toList
-            val placeholders = List.fill(ids.size)("?").mkString(",")
+          val groupIds = adminGroupIds.toSeq
+          if(groupIds.nonEmpty) {
+            val placeholders = List.fill(groupIds.size)("?").mkString(",")
             sb.append(s" WHERE admin_group_id IN ($placeholders) ")
-            filterParams ++= ids
           } else {
             sb.append(" WHERE admin_group_id IN ('') ")
           }
 
           if (!includeReverse) {
-            sb.append(" AND z.name NOT RLIKE ?")
-            filterParams += """(in-addr\.arpa\.)|(ip6\.arpa\.)$"""
+            sb.append(" AND ")
+            sb.append("z.name NOT RLIKE ?")
           }
-
-          if (startFrom.isDefined) {
-            sb.append(" AND z.name > ?")
-            filterParams += startFrom.get
+          
+          if(startFrom.isDefined){
+            sb.append(" AND ")
+            sb.append("z.name > ?")
           }
 
           sb.append(s" GROUP BY z.name ")
           sb.append(s" ORDER BY z.name ASC ")
           sb.append(" LIMIT ?")
-          filterParams += (maxItems + 1)
 
           val query = sb.toString
+          val parameters = accessors ++ groupIds ++
+            (if (!includeReverse) Seq("""(in-addr\.arpa\.)|(ip6\.arpa\.)$""") else Seq.empty) ++
+            startFrom.toSeq :+ (maxItems + 1)
 
           val results: List[Zone] = SQL(query)
-            .bind(accessors ++ filterParams.toList: _*)
+            .bind(parameters: _*)
             .map(extractZone(1))
             .list()
             .apply()
@@ -360,48 +357,34 @@ class MySqlZoneRepository extends ZoneRepository with ProtobufConversions with M
           val sb = new StringBuilder
           sb.append(withAccessorCheck)
 
-          // Bound parameters for the dynamic WHERE clause, in the order their
-          // placeholders appear in the query (after the accessor join params).
-          val filterParams = scala.collection.mutable.ListBuffer[Any]()
-          val filters = scala.collection.mutable.ListBuffer[String]()
-
-          // '*' is the only user-facing wildcard; literal LIKE metacharacters are
-          // escaped and the pattern is bound, never interpolated into SQL.
-          // A trailing '.' or a '*' yields a fully-qualified LIKE; otherwise prefix match.
-          zoneNameFilter.foreach { flt =>
-            val pattern =
-              if (flt.takeRight(1) == "." || flt.contains("*")) ensureTrailingDot(LikePattern.escape(flt))
-              else LikePattern.escape(flt) + "%"
-            // '\\\\' in this plain string literal is two backslashes at runtime,
-            // which MySQL parses to the single backslash escape char.
-            filters += "z.name LIKE ? ESCAPE '\\\\'"
-            filterParams += pattern
-          }
-          startFrom.foreach { os =>
-            filters += "z.name > ?"
-            filterParams += os
-          }
+          val filters = List(
+            zoneNameFilter.map { flt =>
+              val pattern =
+                if (flt.endsWith(".") || flt.contains("*"))
+                  ensureTrailingDot(flt.replace('*', '%'))
+                else flt.concat("%")
+              "z.name LIKE ?" -> pattern
+            },
+            startFrom.map(os => "z.name > ?" -> os),
+            if (!includeReverse)
+              Some("z.name NOT RLIKE ?" -> """(in-addr\.arpa\.)|(ip6\.arpa\.)$""")
+            else None
+          ).flatten
 
           if (filters.nonEmpty) {
             sb.append(" WHERE ")
-            sb.append(filters.mkString(" AND "))
-          }
-
-          if (!includeReverse) {
-            sb.append(if (filters.nonEmpty) " AND " else " WHERE ")
-            sb.append("z.name NOT RLIKE ?")
-            filterParams += """(in-addr\.arpa\.)|(ip6\.arpa\.)$"""
+            sb.append(filters.map(_._1).mkString(" AND "))
           }
 
           sb.append(s" GROUP BY z.name ")
           sb.append(s" ORDER BY z.name ASC ")
           sb.append(" LIMIT ?")
-          filterParams += (maxItems + 1)
 
           val query = sb.toString
+          val parameters = accessors ++ filters.map(_._2) :+ (maxItems + 1)
 
           val results: List[Zone] = SQL(query)
-            .bind(accessors ++ filterParams.toList: _*)
+            .bind(parameters: _*)
             .map(extractZone(1))
             .list()
             .apply()

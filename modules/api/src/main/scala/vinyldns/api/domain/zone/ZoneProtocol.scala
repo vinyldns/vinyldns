@@ -70,8 +70,8 @@ object ZoneInfo {
       created = zone.created,
       updated = zone.updated,
       id = zone.id,
-      connection = zone.connection,
-      transferConnection = zone.transferConnection,
+      connection = zone.connection.filter(_ => accessLevel == AccessLevel.Delete),
+      transferConnection = zone.transferConnection.filter(_ => accessLevel == AccessLevel.Delete),
       account = zone.account,
       shared = zone.shared,
       acl = aclInfo,
@@ -137,8 +137,8 @@ object ZoneSummaryInfo {
       created = zone.created,
       updated = zone.updated,
       id = zone.id,
-      connection = zone.connection,
-      transferConnection = zone.transferConnection,
+      connection = zone.connection.filter(_ => accessLevel == AccessLevel.Delete),
+      transferConnection = zone.transferConnection.filter(_ => accessLevel == AccessLevel.Delete),
       account = zone.account,
       shared = zone.shared,
       acl = zone.acl,
@@ -193,6 +193,20 @@ case class ZoneChangeDeletedInfo(
                           )
 
 object ZoneChangeDeletedInfo {
+  def apply(
+      zoneChange: ZoneChange,
+      adminGroupName: String,
+      userName: String,
+      accessLevel: AccessLevel
+  ): ZoneChangeDeletedInfo =
+    new ZoneChangeDeletedInfo(
+      if (accessLevel == AccessLevel.Delete) zoneChange
+      else zoneChange.copy(zone = zoneChange.zone.copy(connection = None, transferConnection = None)),
+      adminGroupName,
+      userName,
+      accessLevel
+    )
+
   def apply(zoneChange: List[ZoneChange],
             groupName: String,
             userName: String,

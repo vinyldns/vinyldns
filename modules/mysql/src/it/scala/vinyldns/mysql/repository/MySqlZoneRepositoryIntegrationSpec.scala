@@ -113,6 +113,64 @@ class MySqlZoneRepositoryIntegrationSpec
     }
 
   "MySqlZoneRepository" should {
+    "treat SQL syntax in name filters as data with and without access checks" in {
+      saveZones(testZones.take(2)).unsafeRunSync()
+      val auth = AuthPrincipal(okUser, groups.map(_.id))
+      val filters = List("x%' OR 1=1 -- ", "x*' OR 1=1 -- ", "x' OR 1=1 -- .")
+
+      for {
+        ignoreAccess <- List(false, true)
+        filter <- filters
+      } {
+        repo.listZones(auth, Some(filter), ignoreAccess = ignoreAccess)
+          .unsafeRunSync().zones shouldBe empty
+      }
+    }
+
+    "match a literal apostrophe without changing prefix and wildcard searches" in {
+      val quoted = testZone("team's.zone.")
+      val other = testZone("other.zone.")
+      saveZones(Seq(quoted, other)).unsafeRunSync()
+
+      for (filter <- List("team's", "team's.zone.", "team's*")) {
+        repo.listZones(dummyAuth, Some(filter), ignoreAccess = true)
+          .unsafeRunSync().zones shouldBe List(quoted)
+      }
+    }
+
+    "bind pagination cursors in both zone listing modes" in {
+      saveZones(testZones.take(2)).unsafeRunSync()
+      val auth = AuthPrincipal(okUser, groups.map(_.id))
+      val cursor = "z' OR 1=1 -- "
+
+      for (ignoreAccess <- List(false, true)) {
+        repo.listZones(auth, startFrom = Some(cursor), ignoreAccess = ignoreAccess)
+          .unsafeRunSync().zones shouldBe empty
+        repo.listZonesByAdminGroupIds(
+          auth,
+          Some(cursor),
+          100,
+          Set(testZoneAdminGroupId),
+          ignoreAccess = ignoreAccess
+        ).unsafeRunSync().zones shouldBe empty
+      }
+    }
+
+    "bind admin group IDs without changing reverse filtering or pagination" in {
+      val groupId = "team's-group"
+      val forward = testZone("forward.zone.", groupId)
+      val reverse = testZone("1.2.3.in-addr.arpa.", groupId)
+      saveZones(Seq(forward, reverse)).unsafeRunSync()
+
+      repo.listZonesByAdminGroupIds(
+        dummyAuth, None, 1, Set(groupId), ignoreAccess = true, includeReverse = false
+      ).unsafeRunSync().zones shouldBe List(forward)
+
+      repo.listZonesByAdminGroupIds(
+        dummyAuth, None, 100, Set("x') OR 1=1 -- "), ignoreAccess = true
+      ).unsafeRunSync().zones shouldBe empty
+    }
+
     "return the zone when it is saved" in {
       repo.save(okZone).unsafeRunSync() shouldBe Right(okZone)
     }

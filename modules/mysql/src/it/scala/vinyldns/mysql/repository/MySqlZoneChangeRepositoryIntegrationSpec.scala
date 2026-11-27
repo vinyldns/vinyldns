@@ -202,6 +202,30 @@ class MySqlZoneChangeRepositoryIntegrationSpec
   }
 
   "MySqlZoneChangeRepository" should {
+    "treat SQL syntax in deleted-zone filters as data" in {
+      saveZoneChanges(deletedZoneChanges).unsafeRunSync()
+      val auth = AuthPrincipal(okUser, groups.map(_.id))
+
+      for {
+        ignoreAccess <- List(false, true)
+        filter <- List("x%' OR 1=1 -- ", "x*' OR 1=1 -- ")
+      } {
+        repo.listDeletedZones(auth, Some(filter), ignoreAccess = ignoreAccess)
+          .unsafeRunSync().zoneDeleted shouldBe empty
+      }
+    }
+
+    "match literal apostrophes in deleted-zone filters" in {
+      val change = deletedZoneChanges.head
+      val quoted = change.copy(zone = change.zone.copy(name = "team's.deleted.zone."))
+      repo.save(quoted).unsafeRunSync()
+
+      for (filter <- List("team's", "team's*")) {
+        repo.listDeletedZones(dummyAuth, Some(filter), ignoreAccess = true)
+          .unsafeRunSync().zoneDeleted shouldBe List(quoted)
+      }
+    }
+
     "save a change" in {
       val change = changes(1)
       // save the change

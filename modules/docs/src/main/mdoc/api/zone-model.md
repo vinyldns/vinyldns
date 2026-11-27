@@ -37,6 +37,12 @@ latestSync    | date-time   | The last date and time the zone was synced
 isTest        | boolean     | Defaults to **false**. Used for restricted access during VinylDNS testing, can be ignored by clients
 accessLevel   | string      | Access level of the user requesting the zone. Current levels are Delete (full access), Read and NoAccess.
 
+**Connection visibility:** Zone retrieval, zone listing, and deleted-zone listing
+responses include `connection` and `transferConnection` only when the requesting
+user has `Delete` access to the zone. These fields are omitted for users with
+`Read` or `NoAccess`. The `ignoreAccess` parameter controls zone discovery; it does
+not grant access to connection credentials.
+
 #### ZONE EXAMPLE <a id="zone-example"></a>
 
 ```json
