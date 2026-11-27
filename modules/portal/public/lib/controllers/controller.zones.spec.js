@@ -212,6 +212,13 @@ describe('Controller: ZonesController', function () {
         expect(rendered.find('div').text()).toBe('<img src=x onerror=alert(1)>Team');
         expect(rendered.find('b').text()).toBe('Team');
 
+        instance.term = '[';
+        rendered = instance._renderItem($('<ul></ul>'), {
+            label: '<img src=x onerror=alert(1)>[Team]',
+            value: '<img src=x onerror=alert(1)>[Team]'
+        });
+        expect(rendered.find('b').text()).toBe('[');
+
         document.body.innerHTML = '';
     });
 });
