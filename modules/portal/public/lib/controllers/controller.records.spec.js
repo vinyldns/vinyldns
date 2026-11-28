@@ -97,6 +97,52 @@ describe('Controller: RecordsController', function () {
         expect(this.scope.currentRecord.sshfpItems).toEqual([{algorithm: '', type: '', fingerprint: ''}]);
     });
 
+    describe('viewRecordInfo', function () {
+        beforeEach(function () {
+            this.testRecord = {
+                id: 'record-id-1',
+                zoneId: 'zone-id-1',
+                name: 'test-record',
+                type: 'A',
+                ttl: 300,
+                records: [{address: '1.2.3.4'}],
+                status: 'Active'
+            };
+
+            spyOn(this.recordsService, 'toDisplayRecord').and.callFake(function (record) {
+                return angular.copy(record);
+            });
+
+            spyOn(this.groupsService, 'getGroup').and.returnValue(this.q.when({ data: { name: 'group-name' } }));
+        });
+
+        it('opens record info when recordSetGroupChange is missing', function () {
+            expect(function () {
+                this.scope.viewRecordInfo(this.testRecord);
+            }.bind(this)).not.toThrow();
+
+            expect(this.scope.recordModal.action).toBe(this.scope.recordModalState.VIEW_DETAILS);
+            expect(this.scope.currentRecord.name).toBe('test-record');
+            expect(this.recordsService.toDisplayRecord.calls.count()).toBe(1);
+            expect(this.groupsService.getGroup).not.toHaveBeenCalled();
+        });
+
+        it('opens record info and keeps requested owner group when recordSetGroupChange exists', function () {
+            var recordWithGroupChange = angular.copy(this.testRecord);
+            recordWithGroupChange.recordSetGroupChange = {
+                requestedOwnerGroupId: 'group-id-1',
+                ownershipTransferStatus: 'PendingReview'
+            };
+
+            this.scope.viewRecordInfo(recordWithGroupChange);
+
+            expect(this.scope.recordModal.action).toBe(this.scope.recordModalState.VIEW_DETAILS);
+            expect(this.scope.currentRecord.recordSetGroupChange.requestedOwnerGroupId).toBe('group-id-1');
+            expect(this.recordsService.toDisplayRecord.calls.count()).toBe(1);
+            expect(this.groupsService.getGroup).toHaveBeenCalledWith('group-id-1');
+        });
+    });
+
     it('refreshZone updates zoneInfo and isZoneAdmin when user is in admin group', function() {
         mockZone = {
             name: "dummy.",
