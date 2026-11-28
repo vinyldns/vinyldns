@@ -37,7 +37,13 @@ while [ "$1" != "" ]; do
 done
 
 VINYL_USER="$1"
-MAKE_SUPPORT="$2"
+MAKE_SUPPORT=""
+
+if [ $2 = "True" ]; then
+    MAKE_SUPPORT="--support=yes"
+elif [ $2 = "False" ]; then
+	MAKE_SUPPORT="--support=no"
+fi
 
 ERROR=
 if [ -z "$DB_USER" ]; then
