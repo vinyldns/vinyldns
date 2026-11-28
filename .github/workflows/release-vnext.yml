@@ -36,7 +36,10 @@ jobs:
   docker-release-api:
     name: Release API vNext Image
     needs: [ verify ]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout current branch (full)
@@ -50,21 +53,19 @@ jobs:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Import Content Trust Key
-        run: docker trust key load <(echo "${SIGNING_KEY}") --name vinyldns_svc
-        env:
-          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-          DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
 
-      - name: Publish API Docker Image
+      - name: Publish and Sign API Docker Image
         run: make -C build/docker/api publish-vnext
-        env:
-          DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
 
   docker-release-portal:
     name: Release Portal vNext Image
     needs: [ verify ]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout current branch (full)
@@ -78,13 +79,8 @@ jobs:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Import Content Trust Key
-        run: docker trust key load <(echo "${SIGNING_KEY}") --name vinyldns_svc
-        env:
-          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-          DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
 
-      - name: Publish Portal Docker Image
+      - name: Publish and Sign Portal Docker Image
         run: make -C build/docker/portal publish-vnext
-        env:
-          DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE: ${{ secrets.DOCKER_CONTENT_TRUST_REPOSITORY_PASSPHRASE }}
