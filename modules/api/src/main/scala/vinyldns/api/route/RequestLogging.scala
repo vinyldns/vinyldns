@@ -25,8 +25,39 @@ import akka.http.scaladsl.server.directives.{BasicDirectives, LogEntry}
 import akka.http.scaladsl.server.{Directive0, ExceptionHandler}
 import vinyldns.core.logging.RequestTracing
 
+import java.nio.charset.StandardCharsets
+import java.util.regex.{Matcher, Pattern}
 import scala.util.Try
 import scala.util.control.NonFatal
+
+object RequestLogging {
+  private val MaxLoggedEntityLength = 1024
+  private val Redacted = "*****"
+
+  private val SensitiveJsonField: Pattern = Pattern.compile(
+    "(\"(?:key|secretKey)\"\\s*:\\s*)\"(?:[^\"\\\\]++|\\\\.)*+\"",
+    Pattern.CASE_INSENSITIVE | Pattern.DOTALL
+  )
+
+  /** Masks the values of secret fields (e.g. a zone connection `key`) in a response body */
+  private[route] def redactSecrets(body: String): String =
+    SensitiveJsonField.matcher(body).replaceAll("$1\"" + Matcher.quoteReplacement(Redacted) + "\"")
+
+  /**
+    * The response entity as it may be written to the logs: only fully buffered textual bodies are
+    * included, with secrets masked and the length bounded. Anything else is described, not dumped.
+    */
+  private[route] def entityForLog(entity: HttpEntity): String =
+    entity match {
+      case HttpEntity.Strict(contentType, data) if !contentType.binary =>
+        val charset = contentType.charsetOption.map(_.nioCharset).getOrElse(StandardCharsets.UTF_8)
+        val body = redactSecrets(data.decodeString(charset))
+        if (body.length > MaxLoggedEntityLength) body.take(MaxLoggedEntityLength) + "...(truncated)"
+        else body
+      case HttpEntity.Empty => "(empty)"
+      case other => s"(${other.contentType} body not logged)"
+    }
+}
 
 /** Utilities for request logging  */
 trait RequestLogging {
@@ -109,7 +140,7 @@ trait RequestLogging {
     val response = responseOption match {
       case Some(res) =>
         val errorResponse = if (res.status.intValue() > 202) {
-          s", entity=${res.entity}"
+          s", entity=${RequestLogging.entityForLog(res.entity)}"
         } else ""
         s"Response: status_code=${res.status.intValue}$errorResponse"
       case None => ""

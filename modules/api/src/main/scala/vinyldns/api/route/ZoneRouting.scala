@@ -24,6 +24,7 @@ import vinyldns.api.config.LimitsConfig
 import vinyldns.api.domain.membership.EmailValidationError
 import vinyldns.api.domain.zone._
 import vinyldns.core.crypto.CryptoAlgebra
+import vinyldns.core.domain.Encrypted
 import vinyldns.core.domain.zone._
 import vinyldns.core.domain.zone.generate._
 
@@ -32,6 +33,27 @@ import scala.concurrent.duration._
 case class GetZoneResponse(zone: ZoneInfo)
 case class GetZoneDetailsResponse(zone: ZoneDetails)
 case class ZoneRejected(zone: Zone, errors: List[String])
+
+object ZoneRejected {
+  val RedactedKey: String = "*****"
+
+  /**
+    * Builds a rejection whose zone never carries the connection keys. The zone that failed validation
+    * holds the key exactly as submitted (plaintext when no real crypto is configured), and that must
+    * not be echoed to the client or end up in the request/response logs.
+    */
+  def sanitized(zone: Zone, errors: List[String]): ZoneRejected = {
+    def redact(conn: ZoneConnection): ZoneConnection = conn.copy(key = Encrypted(RedactedKey))
+
+    ZoneRejected(
+      zone.copy(
+        connection = zone.connection.map(redact),
+        transferConnection = zone.transferConnection.map(redact)
+      ),
+      errors
+    )
+  }
+}
 
 class ZoneRoute(
     zoneService: ZoneServiceAlgebra,
@@ -60,7 +82,7 @@ class ZoneRoute(
       complete(StatusCodes.Conflict, s"Zone with name $zoneName already exists.")
     case ConnectionFailed(_, msg) => complete(StatusCodes.BadRequest, msg)
     case ZoneValidationFailed(zone, errorList, _) =>
-      complete(StatusCodes.BadRequest, ZoneRejected(zone, errorList))
+      complete(StatusCodes.BadRequest, ZoneRejected.sanitized(zone, errorList))
     case NotAuthorizedError(msg) => complete(StatusCodes.Forbidden, msg)
     case InvalidGroupError(msg) => complete(StatusCodes.BadRequest, msg)
     case ZoneNotFoundError(msg) => complete(StatusCodes.NotFound, msg)

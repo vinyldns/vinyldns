@@ -1243,6 +1243,28 @@ class ZoneRoutingSpec
       }
     }
 
+    "redact the connection key when the zone validation fails" in {
+      post(zoneValidationFailed) ~> zoneRoute ~> check {
+        status shouldBe BadRequest
+        val body = response.entity.toString
+        body should include(""""key":""" + "\"" + ZoneRejected.RedactedKey + "\"")
+      }
+    }
+
+    "redact both the connection and transfer connection keys in a rejected zone" in {
+      val secret1 = "connection-secret"
+      val secret2 = "transfer-secret"
+      val zone = connectionOk.copy(
+        connection = connectionOk.connection.map(_.copy(key = Encrypted(secret1))),
+        transferConnection = connectionOk.transferConnection.map(_.copy(key = Encrypted(secret2)))
+      )
+      val sanitized = ZoneRejected.sanitized(zone, List("fail")).zone
+      sanitized.connection.map(_.key.value) shouldBe Some(ZoneRejected.RedactedKey)
+      sanitized.transferConnection.map(_.key.value) shouldBe Some(ZoneRejected.RedactedKey)
+      sanitized.name shouldBe zone.name
+      sanitized.connection.map(_.primaryServer) shouldBe zone.connection.map(_.primaryServer)
+    }
+
     "report missing data" in {
       post(missingFields) ~> Route.seal(zoneRoute) ~> check {
         status shouldBe BadRequest
